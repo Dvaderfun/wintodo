@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="Wintodo.Controls.ResponsiveTitleSearch"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="ResponsiveStates">
+                <VisualState x:Name="Compact">
+                    <VisualState.Setters>
+                        <Setter Target="SearchBox.Visibility" Value="Collapsed" />
+                        <Setter Target="SearchButton.Visibility" Value="Visible" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Wide">
+                    <VisualState.Setters>
+                        <Setter Target="SearchBox.Visibility" Value="Visible" />
+                        <Setter Target="SearchButton.Visibility" Value="Collapsed" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <AutoSuggestBox
+            x:Name="SearchBox"
+            x:Uid="TitleSearchBox"
+            Width="460"
+            Height="32"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            AutomationProperties.AutomationId="Todo.TitleBar.SearchBox"
+            Background="{ThemeResource ControlFillColorDefaultBrush}"
+            BorderThickness="0"
+            CornerRadius="{StaticResource ControlCornerRadius}"
+            QueryIcon="Find"
+            Visibility="Collapsed" />
+
+        <Button
+            x:Name="SearchButton"
+            x:Uid="TitleSearchButton"
+            Width="32"
+            Height="32"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            AutomationProperties.AutomationId="Todo.TitleBar.SearchButton"
+            Style="{StaticResource SubtleButtonStyle}">
+            <SymbolIcon Symbol="Find" />
+            <Button.Flyout>
+                <Flyout Placement="Bottom">
+                    <AutoSuggestBox
+                        x:Uid="CompactSearchBox"
+                        Width="320"
+                        AutomationProperties.AutomationId="Todo.TitleBar.CompactSearchBox"
+                        Background="{ThemeResource ControlFillColorDefaultBrush}"
+                        BorderThickness="0"
+                        CornerRadius="{StaticResource ControlCornerRadius}"
+                        QueryIcon="Find" />
+                </Flyout>
+            </Button.Flyout>
+        </Button>
+    </Grid>
+</UserControl>
