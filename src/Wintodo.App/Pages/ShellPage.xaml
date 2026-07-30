@@ -14,6 +14,13 @@
     <Page.KeyboardAccelerators>
         <KeyboardAccelerator Key="L" Modifiers="Control" Invoked="OnNewListAccelerator" />
         <KeyboardAccelerator Key="L" Modifiers="Control,Shift" Invoked="OnNewGroupAccelerator" />
+        <KeyboardAccelerator Key="F" Modifiers="Control" Invoked="OnFocusSearchAccelerator" />
+        <KeyboardAccelerator Key="E" Modifiers="Control" Invoked="OnFocusSearchAccelerator" />
+        <KeyboardAccelerator Key="Number1" Modifiers="Control" Invoked="OnSmartListAccelerator" />
+        <KeyboardAccelerator Key="Number2" Modifiers="Control" Invoked="OnSmartListAccelerator" />
+        <KeyboardAccelerator Key="Number3" Modifiers="Control" Invoked="OnSmartListAccelerator" />
+        <KeyboardAccelerator Key="Number4" Modifiers="Control" Invoked="OnSmartListAccelerator" />
+        <KeyboardAccelerator Key="Number5" Modifiers="Control" Invoked="OnSmartListAccelerator" />
         <KeyboardAccelerator Key="Escape" Invoked="OnEscapeAccelerator" />
     </Page.KeyboardAccelerators>
 

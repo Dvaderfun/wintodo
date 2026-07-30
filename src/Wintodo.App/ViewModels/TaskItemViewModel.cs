@@ -30,6 +30,7 @@ public sealed partial class TaskItemViewModel : TaskListEntryViewModel
         Metadata = string.Empty;
         AccessibleName = task.Summary;
         CompletionDateText = string.Empty;
+        HighlightText = string.Empty;
     }
 
     internal TodoTask Model { get; set; }
@@ -66,6 +67,15 @@ public sealed partial class TaskItemViewModel : TaskListEntryViewModel
 
     [ObservableProperty]
     public partial string CompletionDateText { get; set; }
+
+    [ObservableProperty]
+    public partial string HighlightText { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsOverdue { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsDueToday { get; set; }
 
     [RelayCommand]
     private Task ToggleCompletionAsync()

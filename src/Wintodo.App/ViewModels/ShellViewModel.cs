@@ -17,6 +17,8 @@ public sealed partial class ShellViewModel : ObservableObject
     private readonly ShellStateService _stateService;
     private readonly ResourceLoader _resources = new();
     private string _selectedNavigationKey = MyDayNavigationKey;
+    private string _selectedNavigationTitle = string.Empty;
+    private bool _selectedNavigationIsMyDay = true;
 
     internal ShellViewModel(
         ITaskStore taskStore,
@@ -96,6 +98,36 @@ public sealed partial class ShellViewModel : ObservableObject
     {
         CloseDetail();
         _selectedNavigationKey = navigationKey;
+        _selectedNavigationTitle = title;
+        _selectedNavigationIsMyDay = isMyDay;
+        await LoadSelectedTaskListAsync(cancellationToken);
+        await _stateService.SaveSelectedNavigationAsync(navigationKey, cancellationToken);
+    }
+
+    internal async Task SearchAsync(
+        string text,
+        CancellationToken cancellationToken = default)
+    {
+        CloseDetail();
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            await TaskList.LoadSearchAsync(text, cancellationToken);
+            return;
+        }
+
+        if (_selectedNavigationKey == "settings")
+        {
+            TaskList.ShowSettings(_resources.GetString("Shell_SettingsTitle"));
+            return;
+        }
+
+        await LoadSelectedTaskListAsync(cancellationToken);
+    }
+
+    private async Task LoadSelectedTaskListAsync(
+        CancellationToken cancellationToken)
+    {
+        string navigationKey = _selectedNavigationKey;
         if (navigationKey.StartsWith(UserListNavigationPrefix, StringComparison.Ordinal))
         {
             string uid = navigationKey[UserListNavigationPrefix.Length..];
@@ -115,16 +147,20 @@ public sealed partial class ShellViewModel : ObservableObject
                 "smart:completed" => ListQueryKind.Completed,
                 _ => ListQueryKind.MyDay,
             };
-            await TaskList.LoadSmartListAsync(kind, title, isMyDay, cancellationToken);
+            await TaskList.LoadSmartListAsync(
+                kind,
+                _selectedNavigationTitle,
+                _selectedNavigationIsMyDay,
+                cancellationToken);
         }
-
-        await _stateService.SaveSelectedNavigationAsync(navigationKey, cancellationToken);
     }
 
     internal void SelectSettings()
     {
         CloseDetail();
         _selectedNavigationKey = "settings";
+        _selectedNavigationTitle = _resources.GetString("Shell_SettingsTitle");
+        _selectedNavigationIsMyDay = false;
         TaskList.ShowSettings(_resources.GetString("Shell_SettingsTitle"));
     }
 

@@ -202,3 +202,47 @@ x64 and ARM64 builds completed with zero warnings.
   hard-fail lines. The ten-minute trend is flat/decreasing rather than a leak,
   and no budget relaxation was accepted. Startup hydration, framework shared
   pages, and the Native AOT result must be profiled and resolved by M9.
+
+## M5 — Smart lists, search, sort, group          2026-07-31
+
+**Gate:** PASS — the deterministic M5 UI suite passed 6/6 in one live process
+and both per-list sort assertions passed after packaged restart; advancing an
+injected clock across local midnight and reactivating the still-running app
+emptied My Day; Planned rendered yesterday under a critical-colour Overdue
+header; the 10,000-task FTS search measured 1.971 ms worst warm query against
+the 60 ms budget; all 47 Core/Data tests passed; and Debug x64 plus Release x64
+and ARM64 builds completed with zero warnings.
+
+**Shipped**
+- Completed the five smart-list surfaces and added culture-aware Planned
+  buckets with sticky group headers for Overdue, Today, Tomorrow, This week,
+  Later, and No date.
+- Wired the responsive title search to FTS5 with a 120 ms debounce, stale-query
+  cancellation, per-list result groups, inline match highlighting, compact and
+  wide search synchronization, and Escape restoration of the selected view.
+- Added one-shot local-midnight refresh scheduling plus an activation check so
+  My Day and relative due labels refresh without restarting the app.
+- Finished sort labels and ascending/descending behavior for smart lists,
+  retained persisted per-user-list sort choices, and disabled manual drag
+  ordering while a non-manual sort is active.
+- Migrated the task list to a grouped `CollectionViewSource`, preserved
+  virtualization, added the completed count to its accessible header, and
+  rendered overdue metadata with `SystemFillColorCriticalBrush`.
+- Added the deterministic clock/database launch hooks, the 10,000-task FTS
+  performance test, and repeatable M5 live/restart UI gates with visual
+  artifacts.
+- Completed the WinUI code review with no actionable findings.
+
+**Deviations from PLAN.md**
+- The midnight gate advances a file-backed injected `IClock` and exercises the
+  required activation check instead of waiting for the one-shot timer in real
+  time. Production still schedules exactly one timer for the next local
+  midnight and reschedules it after each tick or activation.
+- Search displays at most the store contract's top 1,000 ranked matches while
+  still querying the complete FTS5 index; this keeps the live grouped view
+  bounded and virtualized.
+
+**Known issues carried forward**
+- The framework-dependent startup and loaded-working-set misses recorded in M4
+  remain open for profiling and the Native AOT gate in M9. M5 introduced no
+  additional known issues.

@@ -33,6 +33,7 @@
             BorderThickness="0"
             CornerRadius="{StaticResource ControlCornerRadius}"
             QueryIcon="Find"
+            TextChanged="OnSearchTextChanged"
             Visibility="Collapsed" />
 
         <Button
@@ -46,15 +47,20 @@
             Style="{StaticResource SubtleButtonStyle}">
             <SymbolIcon Symbol="Find" />
             <Button.Flyout>
-                <Flyout Placement="Bottom">
+                <Flyout
+                    x:Name="CompactSearchFlyout"
+                    Opened="OnCompactSearchFlyoutOpened"
+                    Placement="Bottom">
                     <AutoSuggestBox
+                        x:Name="CompactSearchBox"
                         x:Uid="CompactSearchBox"
                         Width="320"
                         AutomationProperties.AutomationId="Todo.TitleBar.CompactSearchBox"
                         Background="{ThemeResource ControlFillColorDefaultBrush}"
                         BorderThickness="0"
                         CornerRadius="{StaticResource ControlCornerRadius}"
-                        QueryIcon="Find" />
+                        QueryIcon="Find"
+                        TextChanged="OnSearchTextChanged" />
                 </Flyout>
             </Button.Flyout>
         </Button>
