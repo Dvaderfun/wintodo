@@ -21,6 +21,7 @@ public sealed partial class MainWindow : Window
     private readonly SqliteTaskStore _store;
     private readonly IClock _clock;
     private readonly ShellStateService _stateService;
+    private ShellPage? _shellPage;
     private PointInt32 _restoredPosition;
     private SizeInt32 _restoredSize;
     private bool _maximizeAfterActivation;
@@ -47,6 +48,8 @@ public sealed partial class MainWindow : Window
 
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
+        _shellPage = new ShellPage(_store, _clock, _stateService);
+        RootFrame.Content = _shellPage;
         WindowPlacementState? placement =
             await _stateService.LoadWindowPlacementAsync(cancellationToken);
         if (placement is not null)
@@ -54,9 +57,7 @@ public sealed partial class MainWindow : Window
             ApplyPlacement(placement.Value);
         }
 
-        var shellPage = new ShellPage(_store, _clock, _stateService);
-        RootFrame.Content = shellPage;
-        await shellPage.InitializeAsync(cancellationToken);
+        await _shellPage.InitializeAsync(cancellationToken);
     }
 
     internal void ApplyDeferredPresenterState()
