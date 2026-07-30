@@ -24,6 +24,60 @@
   <data name="MainWindowTitle" xml:space="preserve">
     <value>Wintodo</value>
   </data>
+  <data name="CompactSearchBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Search tasks</value>
+  </data>
+  <data name="CompactSearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="NavAll.Content" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="NavCompleted.Content" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="NavImportant.Content" xml:space="preserve">
+    <value>Important</value>
+  </data>
+  <data name="NavLists.Content" xml:space="preserve">
+    <value>Lists</value>
+  </data>
+  <data name="NavMyDay.Content" xml:space="preserve">
+    <value>My Day</value>
+  </data>
+  <data name="NavPlanned.Content" xml:space="preserve">
+    <value>Planned</value>
+  </data>
+  <data name="NewGroupButton.AutomationProperties.Name" xml:space="preserve">
+    <value>New group</value>
+  </data>
+  <data name="NewGroupButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>New group</value>
+  </data>
+  <data name="NewListButton.AutomationProperties.Name" xml:space="preserve">
+    <value>New list</value>
+  </data>
+  <data name="NewListButtonLabel.Text" xml:space="preserve">
+    <value>New list</value>
+  </data>
+  <data name="Shell_MyDayTitle" xml:space="preserve">
+    <value>My Day</value>
+  </data>
+  <data name="Shell_SettingsTitle" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="TitleSearchBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Search tasks</value>
+  </data>
+  <data name="TitleSearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="TitleSearchButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="TitleSearchButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Search</value>
+  </data>
   <data name="PublisherDisplayName" xml:space="preserve">
     <value>AppPublisher</value>
   </data>

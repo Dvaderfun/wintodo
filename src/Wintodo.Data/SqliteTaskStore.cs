@@ -3,7 +3,7 @@ using Wintodo.Core.Services;
 
 namespace Wintodo.Data;
 
-public sealed partial class SqliteTaskStore : ITaskStore
+public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
 {
     private const string MigrationResourceName = "Wintodo.Data.Migrations.001_init.sql";
     private const string ConnectionPragmas = """

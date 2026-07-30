@@ -144,6 +144,20 @@ public sealed class MigrationAndListTests
         Assert.Equal(0, (await fixture.Store.GetStatsAsync()).ActiveReadConnections);
     }
 
+    [Fact]
+    public async Task Settings_RoundTripAndDelete()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+
+        Assert.Null(await fixture.Store.GetSettingAsync("shell.test"));
+        await fixture.Store.SetSettingAsync("shell.test", "value");
+        Assert.Equal("value", await fixture.Store.GetSettingAsync("shell.test"));
+        await fixture.Store.SetSettingAsync("shell.test", "updated");
+        Assert.Equal("updated", await fixture.Store.GetSettingAsync("shell.test"));
+        await fixture.Store.DeleteSettingAsync("shell.test");
+        Assert.Null(await fixture.Store.GetSettingAsync("shell.test"));
+    }
+
     private static async Task<long> ScalarLongAsync(
         SqliteConnection connection,
         string sql,

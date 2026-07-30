@@ -87,3 +87,38 @@ ARM64 builds completed with zero trim/AOT analyzer warnings.
 
 **Known issues carried forward**
 - None.
+
+## M2 — Shell: window, title bar, Mica, navigation          2026-07-30
+
+**Gate:** PASS — the packaged x64 app built and launched with zero warnings
+or errors; the shell UI suite passed 10/10 from 1180 down to the 640 minimum;
+Light, Dark, and High Contrast updated live in one process with visible focus
+and the original OS appearance restored; and all 42 Core/Data tests passed.
+Static review found no hardcoded colors, corner radii, or font sizes, and the
+High Contrast dictionary references only permitted `SystemColor*` brushes.
+
+**Shipped**
+- Replaced the scaffold page with a Mica-backed extended title bar and
+  responsive title search, plus the three-column shell and deferred detail
+  surface.
+- Added smart-list navigation, generated user-list entries with stable
+  AutomationIds, localized footer and Settings controls, and persisted the
+  last selected list.
+- Added DPI-aware default/minimum sizing and persisted/restored window
+  position, normal size, and maximized state through the SQLite settings
+  table.
+- Added Light, Dark, and High Contrast theme dictionaries and resource-backed
+  shell brushes.
+- Added repeatable resize, navigation, search-flyout, keyboard, AutomationId,
+  live theme, High Contrast, and focus gates with visual artifacts.
+- Completed the WinUI code review; its generated user-list AutomationId
+  finding was fixed before commit.
+
+**Deviations from PLAN.md**
+- The responsive search is a `UserControl` over the extended title-bar row
+  instead of `TitleBar.Content` because that content is measured at its own
+  fixed width and cannot observe the window breakpoints. It remains centered,
+  interactive, and entirely VisualStateManager-driven.
+
+**Known issues carried forward**
+- None.
