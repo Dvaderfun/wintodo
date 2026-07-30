@@ -46,3 +46,4 @@ Generated Files/
 .codegraph/*.db-wal
 .codegraph/cache/
 .codegraph/.dirty
+.codegraph/daemon.pid
