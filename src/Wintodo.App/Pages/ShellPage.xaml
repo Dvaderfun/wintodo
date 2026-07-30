@@ -3,12 +3,18 @@
     x:Class="Wintodo.Pages.ShellPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Wintodo.Controls"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:Wintodo.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewModels="using:Wintodo.ViewModels"
     x:Name="RootPage"
     mc:Ignorable="d">
+
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="L" Modifiers="Control" Invoked="OnNewListAccelerator" />
+        <KeyboardAccelerator Key="L" Modifiers="Control,Shift" Invoked="OnNewGroupAccelerator" />
+    </Page.KeyboardAccelerators>
 
     <Grid x:Name="ShellRoot">
         <VisualStateManager.VisualStateGroups>
@@ -168,19 +174,43 @@
             </NavigationView.MenuItems>
 
             <NavigationView.PaneFooter>
-                <Grid ColumnSpacing="8">
+                <Grid ColumnSpacing="8" RowSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="32" />
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="40" />
+                    </Grid.RowDefinitions>
+                    <TextBox
+                        x:Name="NewListNameBox"
+                        x:Uid="NewListNameBox"
+                        Grid.Row="0"
+                        Grid.ColumnSpan="2"
+                        AutomationProperties.AutomationId="Todo.Nav.NewListNameBox"
+                        KeyDown="OnNewListNameBoxKeyDown"
+                        Text="{x:Bind ViewModel.NewListName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        x:Load="{x:Bind ViewModel.IsCreatingList, Mode=OneWay}" />
+                    <TextBox
+                        x:Name="NewGroupNameBox"
+                        x:Uid="NewGroupNameBox"
+                        Grid.Row="1"
+                        Grid.ColumnSpan="2"
+                        AutomationProperties.AutomationId="Todo.Nav.NewGroupNameBox"
+                        KeyDown="OnNewGroupNameBoxKeyDown"
+                        Text="{x:Bind ViewModel.NewGroupName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        x:Load="{x:Bind ViewModel.IsCreatingGroup, Mode=OneWay}" />
                     <Button
                         x:Name="NewListButton"
                         x:Uid="NewListButton"
+                        Grid.Row="2"
                         Height="40"
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Left"
                         AutomationProperties.AutomationId="Todo.Nav.NewListButton"
-                        IsEnabled="False"
+                        Command="{x:Bind ViewModel.BeginCreateListCommand, Mode=OneTime}"
                         Style="{StaticResource SubtleButtonStyle}">
                         <StackPanel Orientation="Horizontal" Spacing="12">
                             <SymbolIcon Symbol="Add" />
@@ -192,11 +222,12 @@
                     <Button
                         x:Name="NewGroupButton"
                         x:Uid="NewGroupButton"
+                        Grid.Row="2"
                         Grid.Column="1"
                         Width="32"
                         Height="32"
                         AutomationProperties.AutomationId="Todo.Nav.NewGroupButton"
-                        IsEnabled="False"
+                        Command="{x:Bind ViewModel.BeginCreateGroupCommand, Mode=OneTime}"
                         Style="{StaticResource SubtleButtonStyle}">
                         <SymbolIcon Symbol="NewFolder" />
                     </Button>
@@ -217,24 +248,10 @@
                     <Grid
                         x:Name="ListContentGrid"
                         Padding="24,16,24,0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="64" />
-                            <RowDefinition Height="*" />
-                        </Grid.RowDefinitions>
-
-                        <StackPanel VerticalAlignment="Top" Spacing="4">
-                            <TextBlock
-                                AutomationProperties.AutomationId="Todo.Shell.PageTitle"
-                                Style="{StaticResource TitleTextBlockStyle}"
-                                Text="{x:Bind ViewModel.SelectedTitle, Mode=OneWay}"
-                                TextTrimming="CharacterEllipsis" />
-                            <TextBlock
-                                AutomationProperties.AutomationId="Todo.Shell.Subtitle"
-                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                Style="{StaticResource CaptionTextBlockStyle}"
-                                Text="{x:Bind ViewModel.SelectedSubtitle, Mode=OneWay}"
-                                Visibility="{x:Bind local:ShellPage.BoolToVisibility(ViewModel.IsMyDaySelected), Mode=OneWay}" />
-                        </StackPanel>
+                        <controls:TaskListView
+                            x:Name="TaskList"
+                            x:Load="{x:Bind ViewModel.IsTaskListLoaded, Mode=OneWay}"
+                            ViewModel="{x:Bind ViewModel.TaskList, Mode=OneWay}" />
                     </Grid>
                 </Border>
 
@@ -258,5 +275,17 @@
                 </Grid>
             </Grid>
         </NavigationView>
+
+        <ContentDialog
+            x:Name="DeleteListDialog"
+            x:Uid="DeleteListDialog"
+            AutomationProperties.AutomationId="Todo.Dialog.DeleteList"
+            DefaultButton="Primary"
+            x:Load="{x:Bind ViewModel.IsDeleteListDialogLoaded, Mode=OneWay}">
+            <TextBlock
+                x:Name="DeleteListMessage"
+                Style="{StaticResource BodyTextBlockStyle}"
+                TextWrapping="Wrap" />
+        </ContentDialog>
     </Grid>
 </Page>

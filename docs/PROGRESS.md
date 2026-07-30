@@ -122,3 +122,39 @@ High Contrast dictionary references only permitted `SystemColor*` brushes.
 
 **Known issues carried forward**
 - None.
+
+## M3 — Lists and the task list          2026-07-30
+
+**Gate:** PASS with owner-approved performance tolerance — a clean M3 UI run
+passed 10/10, the exact `5,3,4` active order and two completed tasks survived a
+packaged restart, 44/44 Core/Data tests passed, and Release x64 and ARM64 builds
+completed with zero warnings. The 10,000-task probe measured 107.18-119.64 fps
+with zero callback allocations and zero or one frame above 25 ms.
+
+**Shipped**
+- Added inline list and group creation, rename, delete confirmation, drag
+  ordering/grouping, list color themes, and persisted list display options.
+- Added the virtualized task list, pinned composer, task rows, collapsible
+  completed section, completion/importance controls, drag ordering, task
+  movement, keyboard commands, and five-second delete undo.
+- Added repository-local packaged launch arguments, deterministic M3 and
+  performance fixtures, restart-state assertions, and repeatable UI gates.
+- Deferred task-list hydration until after the first rendered shell frame and
+  kept Release framework-dependent until the planned M9 Native AOT switch.
+- Completed the WinUI code review; literal transparent fills and a post-
+  `WhenAll` blocking access were corrected.
+
+**Deviations from PLAN.md**
+- The owner accepted the M3 performance gate with a 203.37 MB working set at
+  30 seconds, no 10-minute sample, and up to one isolated scroll hitch because
+  continuing to tune the harness was disproportionate for this milestone.
+- Completion retains the 250 ms state-change delay and row transition but omits
+  the spring scale effect because applying `Scale` through the custom checkbox
+  visual states caused a native WinUI fail-fast during pointer activation.
+
+**Known issues carried forward**
+- Remeasure startup, 30-second/10-minute memory, and scrolling at M4. The first
+  M3 performance row records the accepted baseline rather than a budget pass.
+- Coordinate-driven task drag automation can occasionally miss the insertion
+  target; an earlier clean run and the restart database assertion verified the
+  persisted order.

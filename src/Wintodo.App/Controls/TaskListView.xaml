@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Wintodo.Controls.TaskListView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Wintodo.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Wintodo.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewModels="using:Wintodo.ViewModels"
+    x:Name="Root"
+    d:DesignHeight="720"
+    d:DesignWidth="640"
+    IsTabStop="False"
+    mc:Ignorable="d">
+
+    <UserControl.KeyboardAccelerators>
+        <KeyboardAccelerator Key="N" Modifiers="Control" Invoked="OnFocusComposerAccelerator" />
+        <KeyboardAccelerator Key="Space" Invoked="OnToggleCompletionAccelerator" />
+        <KeyboardAccelerator Key="I" Modifiers="Control" Invoked="OnToggleImportanceAccelerator" />
+        <KeyboardAccelerator Key="Delete" Invoked="OnDeleteAccelerator" />
+        <KeyboardAccelerator Key="Z" Modifiers="Control" Invoked="OnUndoAccelerator" />
+        <KeyboardAccelerator Key="F2" Invoked="OnRenameAccelerator" />
+        <KeyboardAccelerator Key="Up" Modifiers="Menu" Invoked="OnMoveUpAccelerator" />
+        <KeyboardAccelerator Key="Down" Modifiers="Menu" Invoked="OnMoveDownAccelerator" />
+    </UserControl.KeyboardAccelerators>
+
+    <UserControl.Resources>
+        <Style x:Key="TaskListViewItemStyle" TargetType="ListViewItem">
+            <Setter Property="MinHeight" Value="44" />
+            <Setter Property="Margin" Value="0,0,0,4" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="{StaticResource ControlCornerRadius}" />
+        </Style>
+
+        <DataTemplate
+            x:Key="TaskRowTemplate"
+            x:DataType="viewModels:TaskItemViewModel">
+            <controls:TaskRow ViewModel="{x:Bind Mode=OneWay}" />
+        </DataTemplate>
+
+        <DataTemplate
+            x:Key="CompletedHeaderTemplate"
+            x:DataType="viewModels:CompletedHeaderViewModel">
+            <ToggleButton
+                Margin="0,12,0,4"
+                MinHeight="40"
+                HorizontalContentAlignment="Stretch"
+                AutomationProperties.AutomationId="Todo.List.CompletedHeader"
+                AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneTime}"
+                Command="{x:Bind ToggleCommand, Mode=OneWay}"
+                IsChecked="{x:Bind IsExpanded, Mode=OneWay}"
+                Style="{StaticResource TaskSubtleToggleButtonStyle}">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="20" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <FontIcon
+                        Grid.Column="0"
+                        Glyph="{x:Bind local:TaskListView.CompletedChevron(IsExpanded), Mode=OneWay}" />
+                    <TextBlock
+                        x:Uid="CompletedHeader"
+                        Grid.Column="1"
+                        Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock
+                        Grid.Column="2"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind Count, Mode=OneWay}" />
+                </Grid>
+            </ToggleButton>
+        </DataTemplate>
+
+        <local:TaskListTemplateSelector
+            x:Key="TaskTemplateSelector"
+            CompletedHeaderTemplate="{StaticResource CompletedHeaderTemplate}"
+            TaskTemplate="{StaticResource TaskRowTemplate}" />
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="64" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="12" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" VerticalAlignment="Top" Spacing="0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        x:Name="SmartListTitle"
+                        AutomationProperties.AutomationId="Todo.Shell.PageTitle"
+                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                        Style="{StaticResource TitleTextBlockStyle}"
+                        Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis"
+                        Visibility="{x:Bind local:TaskListView.InverseBoolToVisibility(ViewModel.IsUserListSelected), Mode=OneWay}" />
+                    <Button
+                        x:Name="UserListTitleButton"
+                        Grid.Column="0"
+                        HorizontalAlignment="Left"
+                        AutomationProperties.AutomationId="Todo.List.TitleButton"
+                        Command="{x:Bind ViewModel.BeginRenameListCommand, Mode=OneTime}"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsUserListSelected), Mode=OneWay}">
+                        <TextBlock
+                            Foreground="{ThemeResource ListAccentBrush}"
+                            Style="{StaticResource TitleTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+                    </Button>
+                    <TextBox
+                        x:Name="RenameListBox"
+                        Grid.Column="0"
+                        MinWidth="240"
+                        AutomationProperties.AutomationId="Todo.List.RenameBox"
+                        BorderThickness="0"
+                        KeyDown="OnRenameListBoxKeyDown"
+                        Text="{x:Bind ViewModel.RenameListName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                        Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsRenamingList), Mode=OneWay}" />
+                    <TextBlock
+                        Grid.Column="1"
+                        Margin="8,8,0,0"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}"
+                        Text="{x:Bind ViewModel.ActiveCount, Mode=OneWay}"
+                        Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}" />
+                </Grid>
+                <TextBlock
+                    AutomationProperties.AutomationId="Todo.Shell.Subtitle"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
+                    Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.HasSubtitle), Mode=OneWay}" />
+            </StackPanel>
+
+            <DropDownButton
+                x:Name="SortButton"
+                Grid.Column="1"
+                AutomationProperties.AutomationId="Todo.List.SortButton"
+                Style="{StaticResource SubtleButtonStyle}"
+                Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="&#xE8CB;" />
+                    <TextBlock
+                        Style="{StaticResource BodyTextBlockStyle}"
+                        Text="{x:Bind ViewModel.SortLabel, Mode=OneWay}" />
+                </StackPanel>
+                <DropDownButton.Flyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem
+                            x:Uid="SortManual"
+                            AutomationProperties.AutomationId="Todo.List.Sort.Manual"
+                            Command="{x:Bind ViewModel.SortByCommand, Mode=OneTime}"
+                            CommandParameter="Manual" />
+                        <MenuFlyoutItem
+                            x:Uid="SortImportance"
+                            AutomationProperties.AutomationId="Todo.List.Sort.Importance"
+                            Command="{x:Bind ViewModel.SortByCommand, Mode=OneTime}"
+                            CommandParameter="Importance" />
+                        <MenuFlyoutItem
+                            x:Uid="SortDueDate"
+                            AutomationProperties.AutomationId="Todo.List.Sort.DueDate"
+                            Command="{x:Bind ViewModel.SortByCommand, Mode=OneTime}"
+                            CommandParameter="DueDate" />
+                        <MenuFlyoutItem
+                            x:Uid="SortAlphabetical"
+                            AutomationProperties.AutomationId="Todo.List.Sort.Alphabetical"
+                            Command="{x:Bind ViewModel.SortByCommand, Mode=OneTime}"
+                            CommandParameter="Alphabetical" />
+                        <MenuFlyoutItem
+                            x:Uid="SortCreationDate"
+                            AutomationProperties.AutomationId="Todo.List.Sort.CreationDate"
+                            Command="{x:Bind ViewModel.SortByCommand, Mode=OneTime}"
+                            CommandParameter="CreationDate" />
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem
+                            x:Uid="SortReverse"
+                            AutomationProperties.AutomationId="Todo.List.Sort.Reverse"
+                            Command="{x:Bind ViewModel.ToggleSortDirectionCommand, Mode=OneTime}" />
+                    </MenuFlyout>
+                </DropDownButton.Flyout>
+            </DropDownButton>
+
+            <Button
+                x:Name="ListMenuButton"
+                x:Uid="ListMenuButton"
+                Grid.Column="2"
+                Width="32"
+                Height="32"
+                AutomationProperties.AutomationId="Todo.List.MenuButton"
+                Style="{StaticResource SubtleButtonStyle}"
+                Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}">
+                <FontIcon Glyph="&#xE712;" />
+                <Button.Flyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem
+                            x:Uid="RenameListMenu"
+                            AutomationProperties.AutomationId="Todo.List.Menu.Rename"
+                            Command="{x:Bind ViewModel.BeginRenameListCommand, Mode=OneTime}"
+                            IsEnabled="{x:Bind ViewModel.IsUserListSelected, Mode=OneWay}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE70F;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSubItem
+                            x:Uid="ChangeThemeMenu"
+                            AutomationProperties.AutomationId="Todo.List.Menu.ChangeTheme"
+                            IsEnabled="{x:Bind ViewModel.IsUserListSelected, Mode=OneWay}">
+                            <MenuFlyoutSubItem.Icon>
+                                <FontIcon Glyph="&#xE790;" />
+                            </MenuFlyoutSubItem.Icon>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeBlue"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Blue"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Blue">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentBlueBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeRed"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Red"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Red">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentRedBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeOrange"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Orange"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Orange">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentOrangeBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeYellow"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Yellow"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Yellow">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentYellowBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeGreen"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Green"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Green">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentGreenBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeTeal"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Teal"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Teal">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentTealBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeLime"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Lime"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Lime">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentLimeBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemePurple"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Purple"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Purple">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentPurpleBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemePink"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Pink"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Pink">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentPinkBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeOlive"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Olive"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Olive">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentOliveBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeGraphite"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Graphite"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Graphite">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentGraphiteBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                            <MenuFlyoutItem
+                                x:Uid="ThemeNavy"
+                                AutomationProperties.AutomationId="Todo.List.Theme.Navy"
+                                Command="{x:Bind ViewModel.ChangeListColorCommand, Mode=OneTime}"
+                                CommandParameter="Navy">
+                                <MenuFlyoutItem.Icon>
+                                    <FontIcon Foreground="{ThemeResource ListAccentNavyBrush}" Glyph="&#xE915;" />
+                                </MenuFlyoutItem.Icon>
+                            </MenuFlyoutItem>
+                        </MenuFlyoutSubItem>
+                        <MenuFlyoutItem
+                            AutomationProperties.AutomationId="Todo.List.Menu.ShowCompleted"
+                            Command="{x:Bind ViewModel.ToggleShowCompletedCommand, Mode=OneTime}"
+                            IsEnabled="{x:Bind ViewModel.IsUserListSelected, Mode=OneWay}"
+                            Text="{x:Bind ViewModel.ShowCompletedMenuLabel, Mode=OneWay}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE8FB;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutSeparator />
+                        <MenuFlyoutItem
+                            x:Uid="DeleteListMenu"
+                            AutomationProperties.AutomationId="Todo.List.Menu.Delete"
+                            Command="{x:Bind ViewModel.RequestDeleteListCommand, Mode=OneTime}"
+                            IsEnabled="{x:Bind ViewModel.IsUserListSelected, Mode=OneWay}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE74D;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
+        </Grid>
+
+        <controls:AddTaskComposer
+            x:Name="Composer"
+            Grid.Row="1"
+            ViewModel="{x:Bind ViewModel, Mode=OneWay}"
+            Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}" />
+
+        <Grid
+            x:Name="TaskContent"
+            Grid.Row="3"
+            Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}">
+            <ListView
+                x:Name="TasksList"
+                AutomationProperties.AutomationId="Todo.List.Tasks"
+                AllowDrop="True"
+                CanDragItems="True"
+                CanReorderItems="True"
+                ContainerContentChanging="OnContainerContentChanging"
+                DragItemsCompleted="OnDragItemsCompleted"
+                DragItemsStarting="OnDragItemsStarting"
+                IsItemClickEnabled="False"
+                ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                ItemsSource="{x:Bind ViewModel.VisibleItems, Mode=OneWay}"
+                ItemTemplateSelector="{StaticResource TaskTemplateSelector}"
+                SelectionChanged="OnTaskSelectionChanged"
+                SelectionMode="Single">
+                <ListView.ItemContainerTransitions>
+                    <TransitionCollection>
+                        <AddDeleteThemeTransition />
+                        <ReorderThemeTransition />
+                    </TransitionCollection>
+                </ListView.ItemContainerTransitions>
+            </ListView>
+
+            <StackPanel
+                x:Name="EmptyState"
+                Width="320"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="4"
+                x:Load="{x:Bind ViewModel.IsEmpty, Mode=OneWay}">
+                <FontIcon
+                    Margin="0,0,0,12"
+                    Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                    Glyph="{x:Bind ViewModel.EmptyGlyph, Mode=OneWay}" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                    Text="{x:Bind ViewModel.EmptyTitle, Mode=OneWay}"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.EmptySubtitle, Mode=OneWay}"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </Grid>
+
+        <Border
+            x:Name="UndoSnackbar"
+            Grid.Row="3"
+            Margin="16"
+            Padding="12,8"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
+            BorderThickness="1"
+            CornerRadius="{StaticResource OverlayCornerRadius}"
+            Translation="0,0,32"
+            x:Load="{x:Bind ViewModel.IsUndoVisible, Mode=OneWay}">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    Grid.Column="0"
+                    VerticalAlignment="Center"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    Text="{x:Bind ViewModel.UndoMessage, Mode=OneWay}" />
+                <Button
+                    x:Uid="UndoButton"
+                    Grid.Column="1"
+                    AutomationProperties.AutomationId="Todo.List.UndoButton"
+                    Command="{x:Bind ViewModel.UndoDeleteCommand, Mode=OneTime}"
+                    Style="{StaticResource AccentButtonStyle}" />
+            </Grid>
+        </Border>
+
+        <TextBlock
+            Width="1"
+            Height="1"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Bottom"
+            IsHitTestVisible="False"
+            Opacity="0"
+            AutomationProperties.AutomationId="Todo.List.CompletionAnnouncement"
+            AutomationProperties.LiveSetting="Assertive"
+            Text="{x:Bind ViewModel.CompletionAnnouncement, Mode=OneWay}" />
+    </Grid>
+</UserControl>

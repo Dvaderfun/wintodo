@@ -81,4 +81,280 @@
   <data name="PublisherDisplayName" xml:space="preserve">
     <value>AppPublisher</value>
   </data>
+  <data name="AddTaskBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Add a task</value>
+  </data>
+  <data name="AddTaskBox.PlaceholderText" xml:space="preserve">
+    <value>Add a task</value>
+  </data>
+  <data name="AddTaskButton.Content" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="CompletedHeader.Text" xml:space="preserve">
+    <value>Completed</value>
+  </data>
+  <data name="NewListNameBox.AutomationProperties.Name" xml:space="preserve">
+    <value>New list name</value>
+  </data>
+  <data name="NewListNameBox.PlaceholderText" xml:space="preserve">
+    <value>List name</value>
+  </data>
+  <data name="NewGroupNameBox.AutomationProperties.Name" xml:space="preserve">
+    <value>New group name</value>
+  </data>
+  <data name="NewGroupNameBox.PlaceholderText" xml:space="preserve">
+    <value>Group name</value>
+  </data>
+  <data name="ListMenuButton.AutomationProperties.Name" xml:space="preserve">
+    <value>List options</value>
+  </data>
+  <data name="ListMenuButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>List options</value>
+  </data>
+  <data name="RenameListMenu.Text" xml:space="preserve">
+    <value>Rename list</value>
+  </data>
+  <data name="ChangeThemeMenu.Text" xml:space="preserve">
+    <value>Change theme</value>
+  </data>
+  <data name="DeleteListMenu.Text" xml:space="preserve">
+    <value>Delete list</value>
+  </data>
+  <data name="List_Rename" xml:space="preserve">
+    <value>Rename list</value>
+  </data>
+  <data name="List_Delete" xml:space="preserve">
+    <value>Delete list</value>
+  </data>
+  <data name="ThemeBlue.Text" xml:space="preserve">
+    <value>Blue</value>
+  </data>
+  <data name="ThemeRed.Text" xml:space="preserve">
+    <value>Red</value>
+  </data>
+  <data name="ThemeOrange.Text" xml:space="preserve">
+    <value>Orange</value>
+  </data>
+  <data name="ThemeYellow.Text" xml:space="preserve">
+    <value>Yellow</value>
+  </data>
+  <data name="ThemeGreen.Text" xml:space="preserve">
+    <value>Green</value>
+  </data>
+  <data name="ThemeTeal.Text" xml:space="preserve">
+    <value>Teal</value>
+  </data>
+  <data name="ThemeLime.Text" xml:space="preserve">
+    <value>Lime</value>
+  </data>
+  <data name="ThemePurple.Text" xml:space="preserve">
+    <value>Purple</value>
+  </data>
+  <data name="ThemePink.Text" xml:space="preserve">
+    <value>Pink</value>
+  </data>
+  <data name="ThemeOlive.Text" xml:space="preserve">
+    <value>Olive</value>
+  </data>
+  <data name="ThemeGraphite.Text" xml:space="preserve">
+    <value>Graphite</value>
+  </data>
+  <data name="ThemeNavy.Text" xml:space="preserve">
+    <value>Navy</value>
+  </data>
+  <data name="SortManual.Text" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="SortImportance.Text" xml:space="preserve">
+    <value>Importance</value>
+  </data>
+  <data name="SortDueDate.Text" xml:space="preserve">
+    <value>Due date</value>
+  </data>
+  <data name="SortAlphabetical.Text" xml:space="preserve">
+    <value>Alphabetical</value>
+  </data>
+  <data name="SortCreationDate.Text" xml:space="preserve">
+    <value>Creation date</value>
+  </data>
+  <data name="SortReverse.Text" xml:space="preserve">
+    <value>Reverse order</value>
+  </data>
+  <data name="DeleteListDialog.Title" xml:space="preserve">
+    <value>Delete list?</value>
+  </data>
+  <data name="DeleteListDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="DeleteListDialog.CloseButtonText" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="DeleteListDialog_Message" xml:space="preserve">
+    <value>Delete "{0}" and all of its tasks? This action cannot be undone.</value>
+  </data>
+  <data name="UndoButton.Content" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="ComposerDueToday.Text" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="ComposerDueTomorrow.Text" xml:space="preserve">
+    <value>Tomorrow</value>
+  </data>
+  <data name="ComposerReminderLater.Text" xml:space="preserve">
+    <value>Later today</value>
+  </data>
+  <data name="ComposerReminderTomorrow.Text" xml:space="preserve">
+    <value>Tomorrow morning</value>
+  </data>
+  <data name="ComposerRepeatDaily.Text" xml:space="preserve">
+    <value>Daily</value>
+  </data>
+  <data name="ComposerRepeatWeekly.Text" xml:space="preserve">
+    <value>Weekly</value>
+  </data>
+  <data name="ComposerDueClear.Text" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="ComposerReminderClear.Text" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="ComposerRepeatClear.Text" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="Composer_DueDate" xml:space="preserve">
+    <value>Due date</value>
+  </data>
+  <data name="Composer_RemindMe" xml:space="preserve">
+    <value>Remind me</value>
+  </data>
+  <data name="Composer_Repeat" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="Composer_Daily" xml:space="preserve">
+    <value>Daily</value>
+  </data>
+  <data name="Composer_Weekly" xml:space="preserve">
+    <value>Weekly</value>
+  </data>
+  <data name="TaskList_Sort" xml:space="preserve">
+    <value>Sort</value>
+  </data>
+  <data name="TaskList_HideCompleted" xml:space="preserve">
+    <value>Hide completed</value>
+  </data>
+  <data name="TaskList_ShowCompleted" xml:space="preserve">
+    <value>Show completed</value>
+  </data>
+  <data name="Sort_Manual" xml:space="preserve">
+    <value>Manual</value>
+  </data>
+  <data name="Sort_Importance" xml:space="preserve">
+    <value>Importance</value>
+  </data>
+  <data name="Sort_DueDate" xml:space="preserve">
+    <value>Due date</value>
+  </data>
+  <data name="Sort_Alphabetical" xml:space="preserve">
+    <value>Alphabetical</value>
+  </data>
+  <data name="Sort_CreationDate" xml:space="preserve">
+    <value>Creation date</value>
+  </data>
+  <data name="Sort_Ascending" xml:space="preserve">
+    <value>ascending</value>
+  </data>
+  <data name="Sort_Descending" xml:space="preserve">
+    <value>descending</value>
+  </data>
+  <data name="Sort_Label" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Empty_MyDayTitle" xml:space="preserve">
+    <value>Focus on your day</value>
+  </data>
+  <data name="Empty_MyDaySubtitle" xml:space="preserve">
+    <value>Add tasks you want to get done today.</value>
+  </data>
+  <data name="Empty_ImportantTitle" xml:space="preserve">
+    <value>Nothing important yet</value>
+  </data>
+  <data name="Empty_ImportantSubtitle" xml:space="preserve">
+    <value>Star a task to see it here.</value>
+  </data>
+  <data name="Empty_PlannedTitle" xml:space="preserve">
+    <value>Nothing planned</value>
+  </data>
+  <data name="Empty_PlannedSubtitle" xml:space="preserve">
+    <value>Tasks with a due date show up here.</value>
+  </data>
+  <data name="Empty_AllTitle" xml:space="preserve">
+    <value>No tasks yet</value>
+  </data>
+  <data name="Empty_AllSubtitle" xml:space="preserve">
+    <value>Add your first task to get started.</value>
+  </data>
+  <data name="Empty_CompletedTitle" xml:space="preserve">
+    <value>Nothing completed yet</value>
+  </data>
+  <data name="Empty_CompletedSubtitle" xml:space="preserve">
+    <value>Finished tasks land here.</value>
+  </data>
+  <data name="Empty_UserListTitle" xml:space="preserve">
+    <value>This list is empty</value>
+  </data>
+  <data name="Empty_UserListSubtitle" xml:space="preserve">
+    <value>Add a task above.</value>
+  </data>
+  <data name="Task_Metadata_Repeats" xml:space="preserve">
+    <value>Repeats</value>
+  </data>
+  <data name="Task_Metadata_MyDay" xml:space="preserve">
+    <value>My Day</value>
+  </data>
+  <data name="Task_Metadata_Completed" xml:space="preserve">
+    <value>Completed {0:d}</value>
+  </data>
+  <data name="Task_Metadata_Yesterday" xml:space="preserve">
+    <value>Yesterday</value>
+  </data>
+  <data name="Task_Metadata_Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Task_Metadata_Tomorrow" xml:space="preserve">
+    <value>Tomorrow</value>
+  </data>
+  <data name="Task_Accessible_Important" xml:space="preserve">
+    <value>important</value>
+  </data>
+  <data name="Task_Accessible_Completed" xml:space="preserve">
+    <value>completed</value>
+  </data>
+  <data name="Task_MarkImportant" xml:space="preserve">
+    <value>Mark as important</value>
+  </data>
+  <data name="Task_RemoveImportance" xml:space="preserve">
+    <value>Remove importance</value>
+  </data>
+  <data name="Task_MarkCompleted" xml:space="preserve">
+    <value>Mark as completed</value>
+  </data>
+  <data name="Task_MarkNotCompleted" xml:space="preserve">
+    <value>Mark as not completed</value>
+  </data>
+  <data name="Task_CompletionNotification" xml:space="preserve">
+    <value>{0} completed</value>
+  </data>
+  <data name="Task_UncompletionNotification" xml:space="preserve">
+    <value>{0} marked not completed</value>
+  </data>
+  <data name="Task_MoveTo" xml:space="preserve">
+    <value>Move task to</value>
+  </data>
+  <data name="Task_Delete" xml:space="preserve">
+    <value>Delete task</value>
+  </data>
+  <data name="Undo_TaskDeleted" xml:space="preserve">
+    <value>"{0}" deleted</value>
+  </data>
 </root>

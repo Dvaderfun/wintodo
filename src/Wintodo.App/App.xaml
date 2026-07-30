@@ -10,6 +10,12 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <ResourceDictionary Source="Themes/Colors.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <Style x:Key="TaskSubtleToggleButtonStyle" TargetType="ToggleButton">
+                <Setter Property="Background" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="CornerRadius" Value="{StaticResource ControlCornerRadius}" />
+                <Setter Property="Padding" Value="0" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

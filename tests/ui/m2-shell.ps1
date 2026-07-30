@@ -47,6 +47,9 @@ using System.Runtime.InteropServices;
 public static class WindowTestNative
 {
     [DllImport("user32.dll")]
+    public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr value);
+
+    [DllImport("user32.dll")]
     public static extern bool SetWindowPos(
         IntPtr hWnd,
         IntPtr hWndInsertAfter,
@@ -82,16 +85,28 @@ function Set-WindowSizeInDips {
     $pixelHeight = [int][Math]::Round($Height * $dpiScale)
     $noMove = 0x0002
     $noZOrder = 0x0004
-    [WindowTestNative]::SetWindowPos(
-        $windowHandle,
-        [IntPtr]::Zero,
-        0,
-        0,
-        $pixelWidth,
-        $pixelHeight,
-        $noMove -bor $noZOrder) | Out-Null
+    $perMonitorAwareV2 = [IntPtr]::new(-4)
+    $previousContext =
+        [WindowTestNative]::SetThreadDpiAwarenessContext($perMonitorAwareV2)
+    try {
+        [WindowTestNative]::SetWindowPos(
+            $windowHandle,
+            [IntPtr]::Zero,
+            0,
+            0,
+            $pixelWidth,
+            $pixelHeight,
+            $noMove -bor $noZOrder) | Out-Null
+    } finally {
+        if ($previousContext -ne [IntPtr]::Zero) {
+            [WindowTestNative]::SetThreadDpiAwarenessContext(
+                $previousContext) | Out-Null
+        }
+    }
     Start-Sleep -Milliseconds 500
 }
+
+Set-WindowSizeInDips -Width 1180 -Height 820
 
 Test-UI "Navigation root exists" {
     winapp ui wait-for "Todo.Nav.Root" -a $AppPid -t 3000

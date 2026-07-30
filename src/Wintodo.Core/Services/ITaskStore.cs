@@ -21,6 +21,22 @@ public interface ITaskStore : IAsyncDisposable
 
     Task SetListColorAsync(long listId, ListColor color, CancellationToken cancellationToken = default);
 
+    Task SetListSortAsync(
+        long listId,
+        SortMode sortMode,
+        bool descending,
+        CancellationToken cancellationToken = default);
+
+    Task SetListShowCompletedAsync(
+        long listId,
+        bool showCompleted,
+        CancellationToken cancellationToken = default);
+
+    Task SetListCompletedExpandedAsync(
+        long listId,
+        bool completedExpanded,
+        CancellationToken cancellationToken = default);
+
     Task ReorderListAsync(long listId, double sortOrder, CancellationToken cancellationToken = default);
 
     Task MoveListToGroupAsync(long listId, long? groupId, CancellationToken cancellationToken = default);

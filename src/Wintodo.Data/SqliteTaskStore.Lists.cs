@@ -108,6 +108,44 @@ public sealed partial class SqliteTaskStore
         return UpdateListAsync(listId, "color = @value", (int)color, cancellationToken);
     }
 
+    public Task SetListSortAsync(
+        long listId,
+        SortMode sortMode,
+        bool descending,
+        CancellationToken cancellationToken = default)
+    {
+        return UpdateListAsync(
+            listId,
+            "sort_mode = @value, sort_descending = @secondaryValue",
+            (int)sortMode,
+            descending,
+            cancellationToken);
+    }
+
+    public Task SetListShowCompletedAsync(
+        long listId,
+        bool showCompleted,
+        CancellationToken cancellationToken = default)
+    {
+        return UpdateListAsync(
+            listId,
+            "show_completed = @value",
+            showCompleted,
+            cancellationToken);
+    }
+
+    public Task SetListCompletedExpandedAsync(
+        long listId,
+        bool completedExpanded,
+        CancellationToken cancellationToken = default)
+    {
+        return UpdateListAsync(
+            listId,
+            "completed_expanded = @value",
+            completedExpanded,
+            cancellationToken);
+    }
+
     public Task ReorderListAsync(
         long listId,
         double sortOrder,
@@ -188,6 +226,21 @@ public sealed partial class SqliteTaskStore
         object? value,
         CancellationToken cancellationToken)
     {
+        return UpdateListAsync(
+            listId,
+            assignment,
+            value,
+            secondaryValue: null,
+            cancellationToken);
+    }
+
+    private Task UpdateListAsync(
+        long listId,
+        string assignment,
+        object? value,
+        object? secondaryValue,
+        CancellationToken cancellationToken)
+    {
         return ExecuteWriteAsync(
             (connection, transaction, context) =>
             {
@@ -201,6 +254,7 @@ public sealed partial class SqliteTaskStore
                     """;
                 command.Parameters.AddWithValue("@listId", listId);
                 AddParameter(command, "@value", value);
+                AddParameter(command, "@secondaryValue", secondaryValue);
                 command.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(_clock.UtcNow));
                 if (command.ExecuteNonQuery() != 1)
                 {
