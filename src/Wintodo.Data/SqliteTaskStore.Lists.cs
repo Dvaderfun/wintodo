@@ -1,0 +1,215 @@
+using Microsoft.Data.Sqlite;
+using Wintodo.Core.Models;
+using Wintodo.Data.Mapping;
+
+namespace Wintodo.Data;
+
+public sealed partial class SqliteTaskStore
+{
+    public Task<IReadOnlyList<TodoList>> GetListsAsync(CancellationToken cancellationToken = default)
+    {
+        return ExecuteReadAsync<IReadOnlyList<TodoList>>(
+            connection =>
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = """
+                    SELECT id, uid, display_name, color, background_theme, group_id,
+                           sort_order, sort_mode, sort_descending, show_completed,
+                           completed_expanded, is_deleted, created_utc, modified_utc,
+                           account_id, remote_url, remote_ctag, sync_token
+                    FROM lists
+                    WHERE is_deleted = 0
+                    ORDER BY sort_order, id;
+                    """;
+                using SqliteDataReader reader = command.ExecuteReader();
+                var lists = new List<TodoList>();
+                while (reader.Read())
+                {
+                    lists.Add(SqliteMapper.ReadList(reader));
+                }
+
+                return lists;
+            },
+            cancellationToken);
+    }
+
+    public Task<TodoList> CreateListAsync(
+        string displayName,
+        ListColor color = ListColor.Blue,
+        long? groupId = null,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateName(displayName, nameof(displayName));
+        return ExecuteWriteAsync(
+            (connection, transaction, context) =>
+            {
+                string uid = Guid.NewGuid().ToString("D");
+                DateTimeOffset now = _clock.UtcNow;
+                double sortOrder = GetNextSortOrder(connection, transaction, "lists");
+
+                using SqliteCommand command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = """
+                    INSERT INTO lists(
+                        uid, display_name, color, background_theme, group_id,
+                        sort_order, sort_mode, sort_descending, show_completed,
+                        completed_expanded, is_deleted, created_utc, modified_utc)
+                    VALUES(
+                        @uid, @displayName, @color, NULL, @groupId,
+                        @sortOrder, 0, 0, 1, 0, 0, @createdUtc, @modifiedUtc)
+                    RETURNING id;
+                    """;
+                command.Parameters.AddWithValue("@uid", uid);
+                command.Parameters.AddWithValue("@displayName", displayName.Trim());
+                command.Parameters.AddWithValue("@color", (int)color);
+                AddParameter(command, "@groupId", groupId);
+                command.Parameters.AddWithValue("@sortOrder", sortOrder);
+                command.Parameters.AddWithValue("@createdUtc", SqliteMapper.FormatInstant(now));
+                command.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(now));
+                long id = (long)(command.ExecuteScalar()
+                    ?? throw new InvalidOperationException("List insert did not return an id."));
+
+                LogChange(connection, transaction, ListEntityType, uid, ChangeOperation.Create);
+                context.AddList(id);
+                return new TodoList
+                {
+                    Id = id,
+                    Uid = uid,
+                    DisplayName = displayName.Trim(),
+                    Color = color,
+                    GroupId = groupId,
+                    SortOrder = sortOrder,
+                    ShowCompleted = true,
+                    Created = now,
+                    Modified = now,
+                };
+            },
+            cancellationToken);
+    }
+
+    public Task RenameListAsync(
+        long listId,
+        string displayName,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateName(displayName, nameof(displayName));
+        return UpdateListAsync(
+            listId,
+            "display_name = @value",
+            displayName.Trim(),
+            cancellationToken);
+    }
+
+    public Task SetListColorAsync(
+        long listId,
+        ListColor color,
+        CancellationToken cancellationToken = default)
+    {
+        return UpdateListAsync(listId, "color = @value", (int)color, cancellationToken);
+    }
+
+    public Task ReorderListAsync(
+        long listId,
+        double sortOrder,
+        CancellationToken cancellationToken = default)
+    {
+        if (!double.IsFinite(sortOrder))
+        {
+            throw new ArgumentOutOfRangeException(nameof(sortOrder));
+        }
+
+        return UpdateListAsync(listId, "sort_order = @value", sortOrder, cancellationToken);
+    }
+
+    public Task MoveListToGroupAsync(
+        long listId,
+        long? groupId,
+        CancellationToken cancellationToken = default)
+    {
+        return UpdateListAsync(listId, "group_id = @value", groupId, cancellationToken);
+    }
+
+    public Task DeleteListAsync(long listId, CancellationToken cancellationToken = default)
+    {
+        return ExecuteWriteAsync(
+            (connection, transaction, context) =>
+            {
+                string listUid = GetListUid(connection, transaction, listId);
+                var taskUids = new List<string>();
+                using (SqliteCommand selectTasks = connection.CreateCommand())
+                {
+                    selectTasks.Transaction = transaction;
+                    selectTasks.CommandText = """
+                        SELECT uid
+                        FROM tasks
+                        WHERE list_id = @listId AND is_deleted = 0;
+                        """;
+                    selectTasks.Parameters.AddWithValue("@listId", listId);
+                    using SqliteDataReader reader = selectTasks.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        taskUids.Add(reader.GetString(0));
+                    }
+                }
+
+                using (SqliteCommand command = connection.CreateCommand())
+                {
+                    command.Transaction = transaction;
+                    command.CommandText = """
+                        UPDATE lists
+                        SET is_deleted = 1, modified_utc = @modifiedUtc
+                        WHERE id = @listId AND is_deleted = 0;
+
+                        UPDATE tasks
+                        SET is_deleted = 1, is_dirty = 1,
+                            modified_utc = @modifiedUtc, sequence = sequence + 1
+                        WHERE list_id = @listId AND is_deleted = 0;
+                        """;
+                    command.Parameters.AddWithValue("@listId", listId);
+                    command.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(_clock.UtcNow));
+                    command.ExecuteNonQuery();
+                }
+
+                LogChange(connection, transaction, ListEntityType, listUid, ChangeOperation.Delete);
+                foreach (string taskUid in taskUids)
+                {
+                    LogChange(connection, transaction, TaskEntityType, taskUid, ChangeOperation.Delete);
+                    context.AddTask(listId, taskUid);
+                }
+
+                context.AddList(listId);
+            },
+            cancellationToken);
+    }
+
+    private Task UpdateListAsync(
+        long listId,
+        string assignment,
+        object? value,
+        CancellationToken cancellationToken)
+    {
+        return ExecuteWriteAsync(
+            (connection, transaction, context) =>
+            {
+                string listUid = GetListUid(connection, transaction, listId);
+                using SqliteCommand command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = $"""
+                    UPDATE lists
+                    SET {assignment}, modified_utc = @modifiedUtc
+                    WHERE id = @listId AND is_deleted = 0;
+                    """;
+                command.Parameters.AddWithValue("@listId", listId);
+                AddParameter(command, "@value", value);
+                command.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(_clock.UtcNow));
+                if (command.ExecuteNonQuery() != 1)
+                {
+                    throw new KeyNotFoundException($"List {listId} was not found.");
+                }
+
+                LogChange(connection, transaction, ListEntityType, listUid, ChangeOperation.Update);
+                context.AddList(listId);
+            },
+            cancellationToken);
+    }
+}
