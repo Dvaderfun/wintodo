@@ -357,4 +357,277 @@
   <data name="Undo_TaskDeleted" xml:space="preserve">
     <value>"{0}" deleted</value>
   </data>
+  <data name="Detail_AddToMyDay" xml:space="preserve">
+    <value>Add to My Day</value>
+  </data>
+  <data name="Detail_AddedToMyDay" xml:space="preserve">
+    <value>Added to My Day</value>
+  </data>
+  <data name="Detail_RemindMe" xml:space="preserve">
+    <value>Remind me</value>
+  </data>
+  <data name="Detail_AddDueDate" xml:space="preserve">
+    <value>Add due date</value>
+  </data>
+  <data name="Detail_Repeat" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="Detail_Days" xml:space="preserve">
+    <value>days</value>
+  </data>
+  <data name="Detail_Weeks" xml:space="preserve">
+    <value>weeks</value>
+  </data>
+  <data name="Detail_Months" xml:space="preserve">
+    <value>months</value>
+  </data>
+  <data name="Detail_Years" xml:space="preserve">
+    <value>years</value>
+  </data>
+  <data name="Detail_Daily" xml:space="preserve">
+    <value>Daily</value>
+  </data>
+  <data name="Detail_Weekdays" xml:space="preserve">
+    <value>Weekdays</value>
+  </data>
+  <data name="Detail_Weekly" xml:space="preserve">
+    <value>Weekly</value>
+  </data>
+  <data name="Detail_Monthly" xml:space="preserve">
+    <value>Monthly</value>
+  </data>
+  <data name="Detail_Yearly" xml:space="preserve">
+    <value>Yearly</value>
+  </data>
+  <data name="Detail_Custom" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="Detail_AttachmentLimit" xml:space="preserve">
+    <value>Attachments for a task cannot exceed 25 MB.</value>
+  </data>
+  <data name="Detail_AttachmentOpenFailed" xml:space="preserve">
+    <value>Windows could not open this attachment.</value>
+  </data>
+  <data name="Detail_AttachmentMissing" xml:space="preserve">
+    <value>This attachment is missing from local storage.</value>
+  </data>
+  <data name="Detail_AttachmentPickerFailed" xml:space="preserve">
+    <value>Windows could not open the file picker.</value>
+  </data>
+  <data name="Detail_SaveFailed" xml:space="preserve">
+    <value>Couldn't save the task. Try again.</value>
+  </data>
+  <data name="Detail_Created" xml:space="preserve">
+    <value>Created {0:ddd, d MMM}</value>
+  </data>
+  <data name="Detail_Due" xml:space="preserve">
+    <value>Due {0}</value>
+  </data>
+  <data name="Detail_Reminder" xml:space="preserve">
+    <value>Reminder {0:g}</value>
+  </data>
+  <data name="Detail_RepeatsDaily" xml:space="preserve">
+    <value>Repeats daily</value>
+  </data>
+  <data name="Detail_RepeatsWeekdays" xml:space="preserve">
+    <value>Repeats on weekdays</value>
+  </data>
+  <data name="Detail_RepeatsWeekly" xml:space="preserve">
+    <value>Repeats weekly</value>
+  </data>
+  <data name="Detail_RepeatsMonthly" xml:space="preserve">
+    <value>Repeats monthly</value>
+  </data>
+  <data name="Detail_RepeatsYearly" xml:space="preserve">
+    <value>Repeats yearly</value>
+  </data>
+  <data name="Detail_RepeatsCustom" xml:space="preserve">
+    <value>Repeats: {0}</value>
+  </data>
+  <data name="Detail_RepeatsEvery" xml:space="preserve">
+    <value>Repeats every {0} {1}{2}</value>
+  </data>
+  <data name="Detail_OnDays" xml:space="preserve">
+    <value> on {0}</value>
+  </data>
+  <data name="Detail_SizeBytes" xml:space="preserve">
+    <value>{0:0} B</value>
+  </data>
+  <data name="Detail_SizeKilobytes" xml:space="preserve">
+    <value>{0:0.0} KB</value>
+  </data>
+  <data name="Detail_SizeMegabytes" xml:space="preserve">
+    <value>{0:0.0} MB</value>
+  </data>
+  <data name="Detail_NextWeek" xml:space="preserve">
+    <value>Next week</value>
+  </data>
+  <data name="Detail_MarkStepCompleted" xml:space="preserve">
+    <value>Mark step as completed</value>
+  </data>
+  <data name="Detail_MarkStepNotCompleted" xml:space="preserve">
+    <value>Mark step as not completed</value>
+  </data>
+  <data name="Detail_DeleteStep" xml:space="preserve">
+    <value>Delete step {0}</value>
+  </data>
+  <data name="Detail_RemoveAttachment" xml:space="preserve">
+    <value>Remove attachment {0}</value>
+  </data>
+  <data name="DetailErrorBar.Title" xml:space="preserve">
+    <value>Task could not be updated</value>
+  </data>
+  <data name="DetailTitleBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Task title</value>
+  </data>
+  <data name="DetailCloseButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Close task details</value>
+  </data>
+  <data name="DetailCloseButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="DetailNewStepBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Add a step</value>
+  </data>
+  <data name="DetailNewStepBox.PlaceholderText" xml:space="preserve">
+    <value>Next step</value>
+  </data>
+  <data name="DetailClearMyDayButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Remove from My Day</value>
+  </data>
+  <data name="DetailClearReminderButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Clear reminder</value>
+  </data>
+  <data name="DetailClearDueButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Clear due date</value>
+  </data>
+  <data name="DetailClearRepeatButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Clear repeat</value>
+  </data>
+  <data name="DetailReminderToday.Text" xml:space="preserve">
+    <value>Later today</value>
+  </data>
+  <data name="DetailReminderTomorrow.Text" xml:space="preserve">
+    <value>Tomorrow</value>
+  </data>
+  <data name="DetailReminderNextWeek.Text" xml:space="preserve">
+    <value>Next week</value>
+  </data>
+  <data name="DetailReminderPick.Text" xml:space="preserve">
+    <value>Pick a date and time</value>
+  </data>
+  <data name="DetailDueToday.Text" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="DetailDueTomorrow.Text" xml:space="preserve">
+    <value>Tomorrow</value>
+  </data>
+  <data name="DetailDueNextWeek.Text" xml:space="preserve">
+    <value>Next week</value>
+  </data>
+  <data name="DetailDuePick.Text" xml:space="preserve">
+    <value>Pick a date and time</value>
+  </data>
+  <data name="DetailDueDatePicker.Header" xml:space="preserve">
+    <value>Due date</value>
+  </data>
+  <data name="DetailDueDatePicker.PlaceholderText" xml:space="preserve">
+    <value>Pick a date</value>
+  </data>
+  <data name="DetailDueDatePicker.AutomationProperties.Name" xml:space="preserve">
+    <value>Due date</value>
+  </data>
+  <data name="DetailDueTimePicker.Header" xml:space="preserve">
+    <value>Due time</value>
+  </data>
+  <data name="DetailDueTimePicker.AutomationProperties.Name" xml:space="preserve">
+    <value>Due time</value>
+  </data>
+  <data name="DetailApplyDueButton.Content" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="DetailReminderDatePicker.Header" xml:space="preserve">
+    <value>Reminder date</value>
+  </data>
+  <data name="DetailReminderDatePicker.PlaceholderText" xml:space="preserve">
+    <value>Pick a date</value>
+  </data>
+  <data name="DetailReminderDatePicker.AutomationProperties.Name" xml:space="preserve">
+    <value>Reminder date</value>
+  </data>
+  <data name="DetailReminderTimePicker.Header" xml:space="preserve">
+    <value>Reminder time</value>
+  </data>
+  <data name="DetailReminderTimePicker.AutomationProperties.Name" xml:space="preserve">
+    <value>Reminder time</value>
+  </data>
+  <data name="DetailApplyReminderButton.Content" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="DetailRepeatOptions.Header" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="DetailCustomInterval.Header" xml:space="preserve">
+    <value>Every</value>
+  </data>
+  <data name="DetailWeekdaySunday.Content" xml:space="preserve">
+    <value>S</value>
+  </data>
+  <data name="DetailWeekdaySunday.AutomationProperties.Name" xml:space="preserve">
+    <value>Sunday</value>
+  </data>
+  <data name="DetailWeekdayMonday.Content" xml:space="preserve">
+    <value>M</value>
+  </data>
+  <data name="DetailWeekdayMonday.AutomationProperties.Name" xml:space="preserve">
+    <value>Monday</value>
+  </data>
+  <data name="DetailWeekdayTuesday.Content" xml:space="preserve">
+    <value>T</value>
+  </data>
+  <data name="DetailWeekdayTuesday.AutomationProperties.Name" xml:space="preserve">
+    <value>Tuesday</value>
+  </data>
+  <data name="DetailWeekdayWednesday.Content" xml:space="preserve">
+    <value>W</value>
+  </data>
+  <data name="DetailWeekdayWednesday.AutomationProperties.Name" xml:space="preserve">
+    <value>Wednesday</value>
+  </data>
+  <data name="DetailWeekdayThursday.Content" xml:space="preserve">
+    <value>T</value>
+  </data>
+  <data name="DetailWeekdayThursday.AutomationProperties.Name" xml:space="preserve">
+    <value>Thursday</value>
+  </data>
+  <data name="DetailWeekdayFriday.Content" xml:space="preserve">
+    <value>F</value>
+  </data>
+  <data name="DetailWeekdayFriday.AutomationProperties.Name" xml:space="preserve">
+    <value>Friday</value>
+  </data>
+  <data name="DetailWeekdaySaturday.Content" xml:space="preserve">
+    <value>S</value>
+  </data>
+  <data name="DetailWeekdaySaturday.AutomationProperties.Name" xml:space="preserve">
+    <value>Saturday</value>
+  </data>
+  <data name="DetailAddFileButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Add file</value>
+  </data>
+  <data name="DetailAddFileLabel.Text" xml:space="preserve">
+    <value>Add file</value>
+  </data>
+  <data name="DetailNoteBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Task note</value>
+  </data>
+  <data name="DetailNoteBox.PlaceholderText" xml:space="preserve">
+    <value>Add note</value>
+  </data>
+  <data name="DetailDeleteButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Delete task</value>
+  </data>
+  <data name="DetailDeleteButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Delete task</value>
+  </data>
 </root>

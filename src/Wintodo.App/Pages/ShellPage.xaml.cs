@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
+using Windows.UI.ViewManagement;
 using Wintodo.Controls;
 using Wintodo.Core.Services;
 using Wintodo.Services;
@@ -24,6 +25,8 @@ public sealed partial class ShellPage : Page
     private readonly ResourceLoader _resources = new();
     private readonly Dictionary<string, NavigationViewItem> _navigationItems =
         new(StringComparer.Ordinal);
+    private bool _isNavigationInitialized;
+    private bool _taskListEventsAttached;
 
     internal ShellPage(
         ITaskStore taskStore,
@@ -61,6 +64,7 @@ public sealed partial class ShellPage : Page
         object selectedItem = ResolveNavigationItem(selectedNavigation);
         ShellNavigation.SelectedItem = selectedItem;
         await ApplySelectionAsync(selectedItem, isSettingsSelected: false, cancellationToken);
+        _isNavigationInitialized = true;
     }
 
     public static Visibility BoolToVisibility(bool value)
@@ -72,6 +76,11 @@ public sealed partial class ShellPage : Page
         NavigationView sender,
         NavigationViewSelectionChangedEventArgs args)
     {
+        if (!_isNavigationInitialized)
+        {
+            return;
+        }
+
         await ApplySelectionAsync(args.SelectedItem, args.IsSettingsSelected);
     }
 
@@ -340,6 +349,52 @@ public sealed partial class ShellPage : Page
                 NewGroupNameBox.SelectAll();
             });
         }
+        else if (args.PropertyName == nameof(ShellViewModel.IsDetailPaneOpen))
+        {
+            if (ViewModel.IsDetailPaneOpen)
+            {
+                VisualStateManager.GoToState(this, "DetailOpen", useTransitions: true);
+            }
+            else
+            {
+                _ = CloseDetailVisualAsync();
+            }
+        }
+    }
+
+    private async void OnTaskOpenRequested(TaskItemViewModel task)
+    {
+        await ViewModel.OpenDetailAsync(task);
+    }
+
+    private void OnTaskListLoaded(object sender, RoutedEventArgs args)
+    {
+        if (_taskListEventsAttached)
+        {
+            return;
+        }
+
+        TaskList.TaskOpenRequested += OnTaskOpenRequested;
+        _taskListEventsAttached = true;
+    }
+
+    private void OnTaskDetailLoaded(object sender, RoutedEventArgs args)
+    {
+        ViewModel.DetailInstanceCount = TaskDetailView.InstanceCount;
+    }
+
+    private async Task CloseDetailVisualAsync()
+    {
+        VisualStateManager.GoToState(this, "DetailClosing", useTransitions: true);
+        if (new UISettings().AnimationsEnabled)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(150));
+        }
+
+        if (!ViewModel.IsDetailPaneOpen)
+        {
+            VisualStateManager.GoToState(this, "DetailClosed", useTransitions: false);
+        }
     }
 
     private void OnNewListNameBoxKeyDown(object sender, KeyRoutedEventArgs args)
@@ -385,6 +440,19 @@ public sealed partial class ShellPage : Page
         KeyboardAcceleratorInvokedEventArgs args)
     {
         ViewModel.BeginCreateGroupCommand.Execute(null);
+        args.Handled = true;
+    }
+
+    private void OnEscapeAccelerator(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (!ViewModel.IsDetailPaneOpen)
+        {
+            return;
+        }
+
+        ViewModel.CloseDetail();
         args.Handled = true;
     }
 

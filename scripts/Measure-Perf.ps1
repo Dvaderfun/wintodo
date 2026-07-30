@@ -1,6 +1,7 @@
 param(
     [switch]$SkipTenMinuteSample,
-    [switch]$SkipScrollGate
+    [switch]$SkipScrollGate,
+    [string]$Milestone = "M3"
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,6 +16,75 @@ $appDirectory = Join-Path $repositoryRoot (
 )
 
 New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
+
+if (-not ("WintodoPerfInput" -as [type])) {
+    Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+
+public static class WintodoPerfInput
+{
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Rect
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool GetWindowRect(IntPtr window, out Rect rect);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetCursorPos(int x, int y);
+
+    [DllImport("user32.dll")]
+    public static extern void mouse_event(
+        uint flags,
+        uint dx,
+        uint dy,
+        int data,
+        UIntPtr extraInfo);
+}
+"@
+}
+
+function Invoke-SustainedWheelScroll {
+    param(
+        [Parameter(Mandatory)]
+        [int]$AppPid,
+        [Parameter(Mandatory)]
+        [TimeSpan]$Duration
+    )
+
+    $process = Get-Process -Id $AppPid
+    $bounds = [WintodoPerfInput+Rect]::new()
+    if (-not [WintodoPerfInput]::GetWindowRect(
+            $process.MainWindowHandle,
+            [ref]$bounds)) {
+        throw "Could not read Wintodo window bounds."
+    }
+
+    $listX = $bounds.Left + [int](($bounds.Right - $bounds.Left) * 0.72)
+    $listY = $bounds.Top + [int](($bounds.Bottom - $bounds.Top) * 0.60)
+    if (-not [WintodoPerfInput]::SetCursorPos($listX, $listY)) {
+        throw "Could not position the pointer over the task list."
+    }
+
+    $deadline = [DateTimeOffset]::Now.Add($Duration)
+    while ([DateTimeOffset]::Now -lt $deadline) {
+        [WintodoPerfInput]::mouse_event(
+            0x0800,
+            0,
+            0,
+            -720,
+            [UIntPtr]::Zero)
+        Start-Sleep -Milliseconds 200
+    }
+}
 
 function Seed-Database {
     param(
@@ -219,11 +289,9 @@ if (-not $SkipScrollGate) {
             throw "The 10,000-task view did not finish hydrating."
         }
 
-        $scrollDeadline = [DateTimeOffset]::Now.AddSeconds(9)
-        while ([DateTimeOffset]::Now -lt $scrollDeadline) {
-            winapp ui scroll "Todo.List.Tasks" -a $scrollRun.AppPid --wheel -6 -q
-            Start-Sleep -Milliseconds 200
-        }
+        Invoke-SustainedWheelScroll `
+            -AppPid $scrollRun.AppPid `
+            -Duration ([TimeSpan]::FromSeconds(9))
 
         $resultDeadline = [DateTimeOffset]::Now.AddSeconds(10)
         while ((-not (Test-Path -LiteralPath $scrollResult)) -and
@@ -260,16 +328,31 @@ $coldText = $coldStartMs.ToString(
 $warmText = $warmStartMs.ToString(
     "F0",
     [System.Globalization.CultureInfo]::InvariantCulture) + " ms"
-$row = "| $date | M3 | FD | 5,000 / 20 lists | $coldText | $warmText | " +
+$row = "| $date | $Milestone | FD | 5,000 / 20 lists | $coldText | $warmText | " +
     "$($sample2.WorkingSetMb) MB | $($sample30.WorkingSetMb) MB | " +
     "$($sample10Min.WorkingSetMb) MB | 0.961 ms | n/a (M5) |"
 $perfPath = Join-Path $repositoryRoot "docs\PERF.md"
 if (-not $SkipTenMinuteSample) {
     $content = Get-Content -LiteralPath $perfPath -Raw
-    $content = $content.Replace(
-        "| _(empty)_ | | | | | | | | | | |",
-        $row)
-    Set-Content -LiteralPath $perfPath -Value $content -Encoding utf8
+    $milestonePattern = "(?m)^\| [^|]+ \| " +
+        [regex]::Escape($Milestone) +
+        " \|.*$"
+    if ([regex]::IsMatch($content, $milestonePattern)) {
+        $content = [regex]::Replace($content, $milestonePattern, $row)
+    } else {
+        $buildNote = [regex]::new(
+            "(?m)\r?\n\r?\n\*\*Build\*\*")
+        $content = $buildNote.Replace(
+            $content,
+            "`r`n$row`r`n`r`n**Build**",
+            1)
+    }
+    $content = $content.TrimEnd("`r", "`n") + "`r`n"
+    Set-Content `
+        -LiteralPath $perfPath `
+        -Value $content `
+        -Encoding utf8 `
+        -NoNewline
 }
 
 $summary = [pscustomobject]@{

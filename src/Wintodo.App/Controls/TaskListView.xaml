@@ -16,6 +16,7 @@
 
     <UserControl.KeyboardAccelerators>
         <KeyboardAccelerator Key="N" Modifiers="Control" Invoked="OnFocusComposerAccelerator" />
+        <KeyboardAccelerator Key="Enter" Invoked="OnOpenDetailAccelerator" />
         <KeyboardAccelerator Key="Space" Invoked="OnToggleCompletionAccelerator" />
         <KeyboardAccelerator Key="I" Modifiers="Control" Invoked="OnToggleImportanceAccelerator" />
         <KeyboardAccelerator Key="Delete" Invoked="OnDeleteAccelerator" />

@@ -270,6 +270,48 @@ public sealed partial class TaskListViewModel : ObservableObject
         }
     }
 
+    internal void ApplyDetailTaskUpdate(TodoTask task)
+    {
+        if (!_itemCache.TryGetValue(task.Uid, out TaskItemViewModel? item))
+        {
+            return;
+        }
+
+        bool wasCompleted = item.IsCompleted;
+        item.Model = task;
+        UpdateItemDisplay(item);
+        if (wasCompleted == item.IsCompleted)
+        {
+            return;
+        }
+
+        if (item.IsCompleted)
+        {
+            _activeTasks.Remove(item);
+            InsertBySortOrder(_completedTasks, item);
+        }
+        else
+        {
+            _completedTasks.Remove(item);
+            InsertBySortOrder(_activeTasks, item);
+        }
+
+        RebuildVisibleItems();
+    }
+
+    internal void ApplyDetailTaskDeleted(string uid)
+    {
+        if (!_itemCache.TryGetValue(uid, out TaskItemViewModel? item))
+        {
+            return;
+        }
+
+        _activeTasks.Remove(item);
+        _completedTasks.Remove(item);
+        RebuildVisibleItems();
+        BeginUndo(item);
+    }
+
     [RelayCommand]
     private void BeginComposer()
     {
