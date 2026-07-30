@@ -630,4 +630,34 @@
   <data name="DetailDeleteButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Delete task</value>
   </data>
+  <data name="Search_Title" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Empty_SearchTitle" xml:space="preserve">
+    <value>No results for "{0}"</value>
+  </data>
+  <data name="Empty_SearchSubtitle" xml:space="preserve">
+    <value>Try a different word.</value>
+  </data>
+  <data name="Planned_Overdue" xml:space="preserve">
+    <value>Overdue</value>
+  </data>
+  <data name="Planned_Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Planned_Tomorrow" xml:space="preserve">
+    <value>Tomorrow</value>
+  </data>
+  <data name="Planned_ThisWeek" xml:space="preserve">
+    <value>This week</value>
+  </data>
+  <data name="Planned_Later" xml:space="preserve">
+    <value>Later</value>
+  </data>
+  <data name="Planned_NoDate" xml:space="preserve">
+    <value>No date</value>
+  </data>
+  <data name="CompletedHeader_AccessibleName" xml:space="preserve">
+    <value>Completed, {0} tasks</value>
+  </data>
 </root>

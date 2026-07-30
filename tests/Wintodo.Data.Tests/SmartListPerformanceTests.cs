@@ -52,6 +52,31 @@ public sealed class SmartListPerformanceTests
         }
     }
 
+    [Fact]
+    public async Task TenThousandTasks_FullTextSearchCompletesWithinSixtyMilliseconds()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TodoList list = await fixture.Store.CreateListAsync("Search benchmark");
+        await SeedTasksAsync(fixture, list.Id, count: 10_000);
+
+        await fixture.Store.SearchAsync("Task 09999");
+        double worstMilliseconds = 0;
+        for (int attempt = 0; attempt < 7; attempt++)
+        {
+            long start = Stopwatch.GetTimestamp();
+            IReadOnlyList<TodoTask> result =
+                await fixture.Store.SearchAsync("Task 09999");
+            double elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+            worstMilliseconds = Math.Max(worstMilliseconds, elapsed);
+            Assert.Equal("Task 09999", Assert.Single(result).Summary);
+        }
+
+        _output.WriteLine($"FTS search worst warm query: {worstMilliseconds:F3} ms");
+        Assert.True(
+            worstMilliseconds <= 60,
+            $"FTS search worst warm query took {worstMilliseconds:F3} ms; budget is 60 ms.");
+    }
+
     private static ListQuery Smart(ListQueryKind kind, SortMode sortMode)
     {
         return new ListQuery

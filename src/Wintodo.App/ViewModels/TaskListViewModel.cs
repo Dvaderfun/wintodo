@@ -18,10 +18,12 @@ public sealed partial class TaskListViewModel : ObservableObject
         new(StringComparer.Ordinal);
     private readonly List<TaskItemViewModel> _activeTasks = [];
     private readonly List<TaskItemViewModel> _completedTasks = [];
-    private readonly CompletedHeaderViewModel _completedHeader;
     private IReadOnlyList<ShellListItemViewModel> _lists = [];
     private ShellListItemViewModel? _selectedList;
     private ListQuery? _currentQuery;
+    private DateOnly _lastObservedToday;
+    private string _searchText = string.Empty;
+    private bool _completedExpanded;
     private int _loadVersion;
     private string? _lastDeletedTaskUid;
     private CancellationTokenSource? _undoCancellation;
@@ -33,9 +35,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         _taskStore = taskStore;
         _clock = clock;
-        _completedHeader = new CompletedHeaderViewModel(
-            ToggleCompletedAsync,
-            _resources.GetString("CompletedHeader/Text"));
+        _lastObservedToday = clock.Today;
         Title = _resources.GetString("Shell_MyDayTitle");
         Subtitle = FormatToday();
         EmptyGlyph = "\uE706";
@@ -56,6 +56,8 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     public ObservableCollection<TaskListEntryViewModel> VisibleItems { get; } = [];
 
+    public ObservableCollection<TaskListGroupViewModel> TaskGroups { get; } = [];
+
     public ObservableCollection<MoveTargetViewModel> MoveTargets { get; } = [];
 
     [ObservableProperty]
@@ -75,6 +77,15 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsTaskListVisible { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool IsComposerVisible { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool AreListCommandsVisible { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool CanReorderTasks { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddTaskCommand))]
@@ -159,6 +170,9 @@ public sealed partial class TaskListViewModel : ObservableObject
         IsUserListSelected = false;
         CanCreateTask = false;
         IsTaskListVisible = true;
+        IsComposerVisible = true;
+        AreListCommandsVisible = true;
+        CanReorderTasks = false;
         Title = title;
         Subtitle = isMyDay ? FormatToday() : string.Empty;
         HasSubtitle = isMyDay;
@@ -169,8 +183,12 @@ public sealed partial class TaskListViewModel : ObservableObject
             ListQueryKind.Important => SortMode.Importance,
             ListQueryKind.Planned => SortMode.DueDate,
             ListQueryKind.Completed => SortMode.CreationDate,
+            ListQueryKind.All => SortMode.CreationDate,
             _ => SortMode.Manual,
         };
+        SortLabel = FormatSortLabel(sortMode, descending: false);
+        _completedExpanded = kind == ListQueryKind.Completed;
+        _searchText = string.Empty;
         return LoadAsync(
             new ListQuery
             {
@@ -189,6 +207,9 @@ public sealed partial class TaskListViewModel : ObservableObject
         IsUserListSelected = true;
         CanCreateTask = true;
         IsTaskListVisible = true;
+        IsComposerVisible = true;
+        AreListCommandsVisible = true;
+        CanReorderTasks = list.SortMode == SortMode.Manual;
         Title = list.DisplayName;
         Subtitle = string.Empty;
         HasSubtitle = false;
@@ -199,7 +220,8 @@ public sealed partial class TaskListViewModel : ObservableObject
         ShowCompletedMenuLabel = list.ShowCompleted
             ? _resources.GetString("TaskList_HideCompleted")
             : _resources.GetString("TaskList_ShowCompleted");
-        _completedHeader.IsExpanded = list.CompletedExpanded;
+        _completedExpanded = list.CompletedExpanded;
+        _searchText = string.Empty;
 
         return LoadAsync(
             new ListQuery
@@ -221,12 +243,83 @@ public sealed partial class TaskListViewModel : ObservableObject
         IsUserListSelected = false;
         CanCreateTask = false;
         IsTaskListVisible = false;
+        IsComposerVisible = false;
+        AreListCommandsVisible = false;
+        CanReorderTasks = false;
         Title = title;
         Subtitle = string.Empty;
         HasSubtitle = false;
         _activeTasks.Clear();
         _completedTasks.Clear();
         RebuildVisibleItems();
+    }
+
+    internal async Task LoadSearchAsync(
+        string text,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        _loadVersion++;
+        _selectedList = null;
+        _currentQuery = null;
+        _searchText = text.Trim();
+        IsUserListSelected = false;
+        CanCreateTask = false;
+        IsTaskListVisible = true;
+        IsComposerVisible = false;
+        AreListCommandsVisible = false;
+        CanReorderTasks = false;
+        Title = _resources.GetString("Search_Title");
+        Subtitle = string.Empty;
+        HasSubtitle = false;
+        EmptyGlyph = "\uE721";
+        EmptyTitle = string.Format(
+            CultureInfo.CurrentCulture,
+            _resources.GetString("Empty_SearchTitle"),
+            _searchText);
+        EmptySubtitle = _resources.GetString("Empty_SearchSubtitle");
+
+        int loadVersion = _loadVersion;
+        IReadOnlyList<TodoTask> tasks =
+            await _taskStore.SearchAsync(_searchText, limit: 1000, cancellationToken);
+        if (loadVersion != _loadVersion)
+        {
+            return;
+        }
+
+        LoadTaskCollections(tasks, highlightText: _searchText);
+        RebuildVisibleItems();
+    }
+
+    internal async Task<bool> RefreshForDateChangeAsync(
+        CancellationToken cancellationToken = default)
+    {
+        DateOnly today = _clock.Today;
+        if (today == _lastObservedToday)
+        {
+            return false;
+        }
+
+        _lastObservedToday = today;
+        if (_currentQuery?.Kind == ListQueryKind.MyDay)
+        {
+            Subtitle = FormatToday();
+            await ReloadAsync(cancellationToken);
+            return true;
+        }
+
+        foreach (TaskItemViewModel item in _activeTasks)
+        {
+            UpdateItemDisplay(item);
+        }
+
+        foreach (TaskItemViewModel item in _completedTasks)
+        {
+            UpdateItemDisplay(item);
+        }
+
+        RebuildVisibleItems();
+        return true;
     }
 
     internal async Task DeleteListAsync(
@@ -252,12 +345,20 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     internal async Task PersistVisibleOrderAsync(CancellationToken cancellationToken = default)
     {
-        _activeTasks.Clear();
-        foreach (TaskListEntryViewModel entry in VisibleItems)
+        if (!CanReorderTasks)
         {
-            if (entry is TaskItemViewModel { IsCompleted: false } task)
+            return;
+        }
+
+        _activeTasks.Clear();
+        foreach (TaskListGroupViewModel group in TaskGroups)
+        {
+            foreach (TaskItemViewModel task in group)
             {
-                _activeTasks.Add(task);
+                if (!task.IsCompleted)
+                {
+                    _activeTasks.Add(task);
+                }
             }
         }
 
@@ -504,11 +605,13 @@ public sealed partial class TaskListViewModel : ObservableObject
                 sortMode,
                 _selectedList.SortDescending);
             SortLabel = FormatSortLabel(sortMode, _selectedList.SortDescending);
+            CanReorderTasks = sortMode == SortMode.Manual;
         }
 
         if (_currentQuery is not null)
         {
             _currentQuery.SortMode = sortMode;
+            SortLabel = FormatSortLabel(sortMode, _currentQuery.SortDescending);
             await ReloadAsync();
         }
     }
@@ -533,6 +636,12 @@ public sealed partial class TaskListViewModel : ObservableObject
             SortLabel = FormatSortLabel(
                 _selectedList.SortMode,
                 _selectedList.SortDescending);
+        }
+        else
+        {
+            SortLabel = FormatSortLabel(
+                _currentQuery.SortMode,
+                _currentQuery.SortDescending);
         }
 
         await ReloadAsync();
@@ -560,8 +669,8 @@ public sealed partial class TaskListViewModel : ObservableObject
     private async Task ToggleCompletedAsync()
     {
         await Task.Yield();
-        bool expanded = !_completedHeader.IsExpanded;
-        _completedHeader.IsExpanded = expanded;
+        bool expanded = !_completedExpanded;
+        _completedExpanded = expanded;
         if (_selectedList is not null)
         {
             _selectedList.CompletedExpanded = expanded;
@@ -646,9 +755,21 @@ public sealed partial class TaskListViewModel : ObservableObject
 
         _activeTasks.Clear();
         _completedTasks.Clear();
+        LoadTaskCollections(tasks, highlightText: string.Empty);
+
+        RebuildVisibleItems();
+    }
+
+    private void LoadTaskCollections(
+        IReadOnlyList<TodoTask> tasks,
+        string highlightText)
+    {
+        _activeTasks.Clear();
+        _completedTasks.Clear();
         foreach (TodoTask task in tasks)
         {
             TaskItemViewModel item = GetOrCreateItem(task);
+            item.HighlightText = highlightText;
             UpdateItemDisplay(item);
             if (item.IsCompleted)
             {
@@ -659,13 +780,6 @@ public sealed partial class TaskListViewModel : ObservableObject
                 _activeTasks.Add(item);
             }
         }
-
-        if (_selectedList is null)
-        {
-            _completedHeader.IsExpanded = query.Kind == ListQueryKind.Completed;
-        }
-
-        RebuildVisibleItems();
     }
 
     private Task ReloadAsync(CancellationToken cancellationToken = default)
@@ -840,19 +954,47 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         TaskItemViewModel? selected = SelectedTask;
         VisibleItems.Clear();
-        foreach (TaskItemViewModel item in _activeTasks)
-        {
-            VisibleItems.Add(item);
-        }
+        TaskGroups.Clear();
 
-        bool showCompleted = _selectedList?.ShowCompleted ?? true;
-        _completedHeader.Count = _completedTasks.Count;
-        if (showCompleted && _completedTasks.Count > 0)
+        if (!string.IsNullOrEmpty(_searchText))
         {
-            VisibleItems.Add(_completedHeader);
-            if (_completedHeader.IsExpanded)
+            BuildSearchGroups();
+        }
+        else if (_currentQuery?.Kind == ListQueryKind.Planned)
+        {
+            BuildPlannedGroups();
+        }
+        else if (_currentQuery?.Kind == ListQueryKind.Completed)
+        {
+            AddTaskGroup(CreateHiddenGroup(_completedTasks));
+        }
+        else
+        {
+            AddTaskGroup(CreateHiddenGroup(_activeTasks));
+
+            bool showCompleted = _selectedList?.ShowCompleted ?? true;
+            if (showCompleted && _completedTasks.Count > 0)
             {
-                foreach (TaskItemViewModel item in _completedTasks)
+                var completedGroup = new TaskListGroupViewModel(
+                    TaskListGroupKind.Completed,
+                    _resources.GetString("CompletedHeader/Text"),
+                    "Todo.List.CompletedHeader",
+                    toggle: ToggleCompletedAsync,
+                    accessibleName: string.Format(
+                        CultureInfo.CurrentCulture,
+                        _resources.GetString("CompletedHeader_AccessibleName"),
+                        _completedTasks.Count))
+                {
+                    CountOverride = _completedTasks.Count,
+                    IsExpanded = _completedExpanded,
+                };
+                if (_completedExpanded)
+                {
+                    AddItems(completedGroup, _completedTasks);
+                }
+
+                TaskGroups.Add(completedGroup);
+                foreach (TaskItemViewModel item in completedGroup)
                 {
                     VisibleItems.Add(item);
                 }
@@ -871,6 +1013,144 @@ public sealed partial class TaskListViewModel : ObservableObject
         }
     }
 
+    private void BuildSearchGroups()
+    {
+        foreach (ShellListItemViewModel list in _lists.OrderBy(item => item.SortOrder))
+        {
+            List<TaskItemViewModel> matches =
+                _activeTasks.Concat(_completedTasks)
+                    .Where(item => item.ListId == list.Id)
+                    .ToList();
+            if (matches.Count == 0)
+            {
+                continue;
+            }
+
+            var group = new TaskListGroupViewModel(
+                TaskListGroupKind.Named,
+                list.DisplayName,
+                $"Todo.List.SearchGroup.{list.Uid}");
+            AddItems(group, matches);
+            AddTaskGroup(group);
+        }
+    }
+
+    private void BuildPlannedGroups()
+    {
+        var buckets = new Dictionary<string, List<TaskItemViewModel>>(StringComparer.Ordinal)
+        {
+            ["Overdue"] = [],
+            ["Today"] = [],
+            ["Tomorrow"] = [],
+            ["ThisWeek"] = [],
+            ["Later"] = [],
+            ["NoDate"] = [],
+        };
+        foreach (TaskItemViewModel item in _activeTasks.Concat(_completedTasks))
+        {
+            buckets[GetPlannedBucket(item.Model.Due)].Add(item);
+        }
+
+        AddNamedBucket(
+            buckets["Overdue"],
+            "Planned_Overdue",
+            "Overdue",
+            isCritical: true);
+        AddNamedBucket(buckets["Today"], "Planned_Today", "Today");
+        AddNamedBucket(buckets["Tomorrow"], "Planned_Tomorrow", "Tomorrow");
+        AddNamedBucket(buckets["ThisWeek"], "Planned_ThisWeek", "ThisWeek");
+        AddNamedBucket(buckets["Later"], "Planned_Later", "Later");
+        AddNamedBucket(buckets["NoDate"], "Planned_NoDate", "NoDate");
+    }
+
+    private void AddNamedBucket(
+        IReadOnlyList<TaskItemViewModel> items,
+        string resourceKey,
+        string automationSuffix,
+        bool isCritical = false)
+    {
+        if (items.Count == 0)
+        {
+            return;
+        }
+
+        var group = new TaskListGroupViewModel(
+            TaskListGroupKind.Named,
+            _resources.GetString(resourceKey),
+            $"Todo.List.PlannedGroup.{automationSuffix}",
+            isCritical);
+        AddItems(group, items);
+        AddTaskGroup(group);
+    }
+
+    private void AddTaskGroup(TaskListGroupViewModel group)
+    {
+        if (group.Count == 0)
+        {
+            return;
+        }
+
+        TaskGroups.Add(group);
+        foreach (TaskItemViewModel item in group)
+        {
+            VisibleItems.Add(item);
+        }
+    }
+
+    private static TaskListGroupViewModel CreateHiddenGroup(
+        IEnumerable<TaskItemViewModel> items)
+    {
+        var group = new TaskListGroupViewModel(
+            TaskListGroupKind.Hidden,
+            string.Empty,
+            string.Empty);
+        AddItems(group, items);
+        return group;
+    }
+
+    private static void AddItems(
+        TaskListGroupViewModel group,
+        IEnumerable<TaskItemViewModel> items)
+    {
+        foreach (TaskItemViewModel item in items)
+        {
+            group.Add(item);
+        }
+    }
+
+    private string GetPlannedBucket(DateTimeOffset? due)
+    {
+        if (due is null)
+        {
+            return "NoDate";
+        }
+
+        DateOnly dueDate = DateOnly.FromDateTime(
+            TimeZoneInfo.ConvertTime(due.Value, _clock.LocalTimeZone).DateTime);
+        int offset = dueDate.DayNumber - _clock.Today.DayNumber;
+        if (offset < 0)
+        {
+            return "Overdue";
+        }
+
+        if (offset == 0)
+        {
+            return "Today";
+        }
+
+        if (offset == 1)
+        {
+            return "Tomorrow";
+        }
+
+        DayOfWeek firstDayOfWeek =
+            CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+        int currentDayIndex =
+            ((int)_clock.Today.DayOfWeek - (int)firstDayOfWeek + 7) % 7;
+        DateOnly endOfWeek = _clock.Today.AddDays(6 - currentDayIndex);
+        return dueDate <= endOfWeek ? "ThisWeek" : "Later";
+    }
+
     private void UpdateItemDisplay(TaskItemViewModel item)
     {
         TodoTask task = item.Model;
@@ -878,6 +1158,14 @@ public sealed partial class TaskListViewModel : ObservableObject
         item.IsCompleted =
             task.Status == Wintodo.Core.Models.TaskStatus.Completed;
         item.IsImportant = task.Priority is >= 1 and <= 4;
+        DateOnly? dueDate = task.Due is null
+            ? null
+            : DateOnly.FromDateTime(
+                TimeZoneInfo.ConvertTime(
+                    task.Due.Value,
+                    _clock.LocalTimeZone).DateTime);
+        item.IsOverdue = dueDate < _clock.Today && !item.IsCompleted;
+        item.IsDueToday = dueDate == _clock.Today && !item.IsCompleted;
 
         var metadata = new List<string>(4);
         if (_currentQuery?.Kind != ListQueryKind.UserList)
@@ -977,15 +1265,17 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     private string FormatDueDate(DateTimeOffset due)
     {
-        DateOnly date = DateOnly.FromDateTime(due.LocalDateTime);
+        DateTime localDue =
+            TimeZoneInfo.ConvertTime(due, _clock.LocalTimeZone).DateTime;
+        DateOnly date = DateOnly.FromDateTime(localDue);
         int dayOffset = date.DayNumber - _clock.Today.DayNumber;
         return dayOffset switch
         {
             -1 => _resources.GetString("Task_Metadata_Yesterday"),
             0 => _resources.GetString("Task_Metadata_Today"),
             1 => _resources.GetString("Task_Metadata_Tomorrow"),
-            >= 2 and <= 7 => due.ToString("dddd", CultureInfo.CurrentCulture),
-            _ => due.ToString("d MMM", CultureInfo.CurrentCulture),
+            >= 2 and <= 7 => localDue.ToString("dddd", CultureInfo.CurrentCulture),
+            _ => localDue.ToString("d MMM", CultureInfo.CurrentCulture),
         };
     }
 

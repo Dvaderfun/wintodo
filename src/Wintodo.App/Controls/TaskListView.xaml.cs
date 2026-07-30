@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using Wintodo.ViewModels;
@@ -47,6 +48,33 @@ public sealed partial class TaskListView : UserControl
         return isExpanded ? "\uE70D" : "\uE76B";
     }
 
+    public static Visibility NamedGroupVisibility(TaskListGroupKind kind)
+    {
+        return kind == TaskListGroupKind.Named
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    public static Visibility CompletedGroupVisibility(TaskListGroupKind kind)
+    {
+        return kind == TaskListGroupKind.Completed
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    public static double GroupHeaderMinHeight(TaskListGroupKind kind)
+    {
+        return kind == TaskListGroupKind.Hidden ? 0 : 32;
+    }
+
+    public static Brush GroupHeaderBrush(bool isCritical)
+    {
+        string resourceKey = isCritical
+            ? "SystemFillColorCriticalBrush"
+            : "TextFillColorPrimaryBrush";
+        return (Brush)Application.Current.Resources[resourceKey];
+    }
+
     internal void FocusComposer()
     {
         Composer.FocusComposer();
@@ -72,10 +100,15 @@ public sealed partial class TaskListView : UserControl
 
         if (args.NewValue is TaskListViewModel newViewModel)
         {
+            view.TasksCollectionViewSource.Source = newViewModel.TaskGroups;
             newViewModel.PropertyChanged += view.OnViewModelPropertyChanged;
             newViewModel.VisibleItems.CollectionChanged +=
                 view.OnVisibleItemsCollectionChanged;
             ScrollPerformanceProbe.TryStart(newViewModel.VisibleItems.Count);
+        }
+        else
+        {
+            view.TasksCollectionViewSource.Source = null;
         }
     }
 
@@ -130,12 +163,6 @@ public sealed partial class TaskListView : UserControl
             AutomationProperties.SetName(container, task.AccessibleName);
             container.CanDrag = true;
             container.AllowDrop = true;
-        }
-        else if (entry is CompletedHeaderViewModel completedHeader)
-        {
-            AutomationProperties.SetName(container, completedHeader.AccessibleName);
-            container.CanDrag = false;
-            container.AllowDrop = false;
         }
     }
 

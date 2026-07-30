@@ -43,12 +43,16 @@ public sealed partial class MainWindow : Window
 
         WindowRoot.SizeChanged += OnWindowRootSizeChanged;
         AppWindow.Changed += OnAppWindowChanged;
+        Activated += OnActivated;
         Closed += OnClosed;
+        TitleSearch.SearchRequested += OnSearchRequested;
     }
 
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         _shellPage = new ShellPage(_store, _clock, _stateService);
+        _shellPage.SearchFocusRequested += TitleSearch.FocusSearch;
+        _shellPage.SearchClearRequested += TitleSearch.TryClear;
         RootFrame.Content = _shellPage;
         WindowPlacementState? placement =
             await _stateService.LoadWindowPlacementAsync(cancellationToken);
@@ -128,6 +132,23 @@ public sealed partial class MainWindow : Window
         TitleSearch.UpdateWindowWidth(args.NewSize.Width);
     }
 
+    private async void OnSearchRequested(string text)
+    {
+        if (_shellPage is not null)
+        {
+            await _shellPage.SearchAsync(text);
+        }
+    }
+
+    private async void OnActivated(object sender, WindowActivatedEventArgs args)
+    {
+        if (args.WindowActivationState != WindowActivationState.Deactivated
+            && _shellPage is not null)
+        {
+            await _shellPage.RefreshForActivationAsync();
+        }
+    }
+
     private void CaptureRestoredBounds()
     {
         _restoredPosition = AppWindow.Position;
@@ -138,6 +159,15 @@ public sealed partial class MainWindow : Window
     {
         WindowRoot.SizeChanged -= OnWindowRootSizeChanged;
         AppWindow.Changed -= OnAppWindowChanged;
+        Activated -= OnActivated;
+        TitleSearch.SearchRequested -= OnSearchRequested;
+        if (_shellPage is not null)
+        {
+            _shellPage.SearchFocusRequested -= TitleSearch.FocusSearch;
+            _shellPage.SearchClearRequested -= TitleSearch.TryClear;
+            _shellPage.StopMidnightRefresh();
+        }
+
         bool isMaximized = AppWindow.Presenter is OverlappedPresenter
         {
             State: OverlappedPresenterState.Maximized,

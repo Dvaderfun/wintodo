@@ -1,6 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.ViewModels;
 
@@ -15,7 +17,7 @@ public sealed partial class TaskRow : UserControl
             nameof(ViewModel),
             typeof(TaskItemViewModel),
             typeof(TaskRow),
-            new PropertyMetadata(null));
+            new PropertyMetadata(null, OnViewModelChanged));
 
     public TaskRow()
     {
@@ -70,6 +72,86 @@ public sealed partial class TaskRow : UserControl
         return isCompleted
             ? StringResources.GetString("Task_MarkNotCompleted")
             : StringResources.GetString("Task_MarkCompleted");
+    }
+
+    private static void OnViewModelChanged(
+        DependencyObject dependencyObject,
+        DependencyPropertyChangedEventArgs args)
+    {
+        var row = (TaskRow)dependencyObject;
+        if (args.OldValue is TaskItemViewModel oldViewModel)
+        {
+            oldViewModel.PropertyChanged -= row.OnViewModelPropertyChanged;
+        }
+
+        if (args.NewValue is TaskItemViewModel newViewModel)
+        {
+            newViewModel.PropertyChanged += row.OnViewModelPropertyChanged;
+            row.ApplySearchHighlight();
+        }
+    }
+
+    private void OnViewModelPropertyChanged(
+        object? sender,
+        System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName is nameof(TaskItemViewModel.Summary)
+            or nameof(TaskItemViewModel.HighlightText))
+        {
+            DispatcherQueue.TryEnqueue(ApplySearchHighlight);
+        }
+    }
+
+    private void ApplySearchHighlight()
+    {
+        TaskTitle.TextHighlighters.Clear();
+        if (string.IsNullOrWhiteSpace(ViewModel?.HighlightText)
+            || string.IsNullOrEmpty(ViewModel.Summary))
+        {
+            return;
+        }
+
+        var highlighter = new TextHighlighter
+        {
+            Background = (Brush)Application.Current.Resources[
+                "AccentFillColorSecondaryBrush"],
+        };
+        var ranges = new HashSet<(int Start, int Length)>();
+        foreach (string token in ViewModel.HighlightText.Split(
+                     (char[]?)null,
+                     StringSplitOptions.RemoveEmptyEntries
+                         | StringSplitOptions.TrimEntries))
+        {
+            int startIndex = 0;
+            while (startIndex < ViewModel.Summary.Length)
+            {
+                int matchIndex = ViewModel.Summary.IndexOf(
+                    token,
+                    startIndex,
+                    StringComparison.CurrentCultureIgnoreCase);
+                if (matchIndex < 0)
+                {
+                    break;
+                }
+
+                ranges.Add((matchIndex, token.Length));
+                startIndex = matchIndex + token.Length;
+            }
+        }
+
+        foreach ((int start, int length) in ranges.OrderBy(range => range.Start))
+        {
+            highlighter.Ranges.Add(new TextRange
+            {
+                StartIndex = start,
+                Length = length,
+            });
+        }
+
+        if (highlighter.Ranges.Count > 0)
+        {
+            TaskTitle.TextHighlighters.Add(highlighter);
+        }
     }
 
     private void OnPointerEntered(object sender, PointerRoutedEventArgs args)

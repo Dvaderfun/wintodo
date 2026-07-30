@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Windows.Storage;
 using Wintodo.Core.Services;
 using Wintodo.Data;
+using Wintodo.Services;
 
 namespace Wintodo;
 
@@ -29,7 +30,7 @@ public partial class App : Application
         {
             long launchStartTimestamp = Stopwatch.GetTimestamp();
             DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
-            var clock = new SystemClock();
+            IClock clock = ResolveClock();
             string databasePath = ResolveDatabasePath();
             var store = new SqliteTaskStore(databasePath, clock);
             var window = new MainWindow(store, clock);
@@ -74,6 +75,14 @@ public partial class App : Application
         return string.IsNullOrWhiteSpace(overridePath)
             ? Path.Combine(ApplicationData.Current.LocalFolder.Path, "wintodo.db")
             : Path.GetFullPath(overridePath);
+    }
+
+    private static IClock ResolveClock()
+    {
+        string? clockFile = GetCommandLineOption("--clock-file");
+        return string.IsNullOrWhiteSpace(clockFile)
+            ? new SystemClock()
+            : new FileBackedClock(clockFile);
     }
 
     internal static string? GetCommandLineOption(string option)

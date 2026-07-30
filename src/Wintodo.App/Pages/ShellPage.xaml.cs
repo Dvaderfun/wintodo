@@ -25,6 +25,8 @@ public sealed partial class ShellPage : Page
     private readonly ResourceLoader _resources = new();
     private readonly Dictionary<string, NavigationViewItem> _navigationItems =
         new(StringComparer.Ordinal);
+    private readonly IClock _clock;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _midnightTimer;
     private bool _isNavigationInitialized;
     private bool _taskListEventsAttached;
 
@@ -33,6 +35,7 @@ public sealed partial class ShellPage : Page
         IClock clock,
         ShellStateService stateService)
     {
+        _clock = clock;
         ViewModel = new ShellViewModel(taskStore, clock, stateService);
         InitializeComponent();
 
@@ -56,6 +59,10 @@ public sealed partial class ShellPage : Page
 
     public ObservableCollection<NavigationViewItem> UserListNavigationItems { get; } = [];
 
+    internal event Action? SearchFocusRequested;
+
+    internal event Func<bool>? SearchClearRequested;
+
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         ViewModel.IsTaskListLoaded = true;
@@ -65,6 +72,33 @@ public sealed partial class ShellPage : Page
         ShellNavigation.SelectedItem = selectedItem;
         await ApplySelectionAsync(selectedItem, isSettingsSelected: false, cancellationToken);
         _isNavigationInitialized = true;
+        ScheduleMidnightRefresh();
+    }
+
+    internal Task SearchAsync(
+        string text,
+        CancellationToken cancellationToken = default)
+    {
+        return ViewModel.SearchAsync(text, cancellationToken);
+    }
+
+    internal async Task RefreshForActivationAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken);
+        ScheduleMidnightRefresh();
+    }
+
+    internal void StopMidnightRefresh()
+    {
+        if (_midnightTimer is null)
+        {
+            return;
+        }
+
+        _midnightTimer.Stop();
+        _midnightTimer.Tick -= OnMidnightTimerTick;
+        _midnightTimer = null;
     }
 
     public static Visibility BoolToVisibility(bool value)
@@ -443,17 +477,79 @@ public sealed partial class ShellPage : Page
         args.Handled = true;
     }
 
+    private void OnFocusSearchAccelerator(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        SearchFocusRequested?.Invoke();
+        args.Handled = true;
+    }
+
+    private void OnSmartListAccelerator(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        ShellNavigation.SelectedItem = sender.Key switch
+        {
+            VirtualKey.Number2 => ImportantNavigationItem,
+            VirtualKey.Number3 => PlannedNavigationItem,
+            VirtualKey.Number4 => AllNavigationItem,
+            VirtualKey.Number5 => CompletedNavigationItem,
+            _ => MyDayNavigationItem,
+        };
+        args.Handled = true;
+    }
+
     private void OnEscapeAccelerator(
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (!ViewModel.IsDetailPaneOpen)
+        if (ViewModel.IsDetailPaneOpen)
         {
+            ViewModel.CloseDetail();
+            args.Handled = true;
             return;
         }
 
-        ViewModel.CloseDetail();
-        args.Handled = true;
+        if (SearchClearRequested?.Invoke() == true)
+        {
+            args.Handled = true;
+            return;
+        }
+
+        if (ViewModel.TaskList.IsComposerExpanded)
+        {
+            ViewModel.TaskList.CancelComposerCommand.Execute(null);
+            args.Handled = true;
+        }
+    }
+
+    private void ScheduleMidnightRefresh()
+    {
+        _midnightTimer ??= DispatcherQueue.CreateTimer();
+        _midnightTimer.Stop();
+        _midnightTimer.Tick -= OnMidnightTimerTick;
+        _midnightTimer.Tick += OnMidnightTimerTick;
+        _midnightTimer.IsRepeating = false;
+
+        DateTime nextLocalMidnight = DateTime.SpecifyKind(
+            _clock.Today.AddDays(1).ToDateTime(TimeOnly.MinValue),
+            DateTimeKind.Unspecified);
+        DateTime nextUtc =
+            TimeZoneInfo.ConvertTimeToUtc(nextLocalMidnight, _clock.LocalTimeZone);
+        TimeSpan interval = nextUtc - _clock.UtcNow.UtcDateTime;
+        _midnightTimer.Interval = interval > TimeSpan.Zero
+            ? interval
+            : TimeSpan.FromSeconds(1);
+        _midnightTimer.Start();
+    }
+
+    private async void OnMidnightTimerTick(
+        Microsoft.UI.Dispatching.DispatcherQueueTimer sender,
+        object args)
+    {
+        await ViewModel.TaskList.RefreshForDateChangeAsync();
+        ScheduleMidnightRefresh();
     }
 
     private void OnActualThemeChanged(FrameworkElement sender, object args)
