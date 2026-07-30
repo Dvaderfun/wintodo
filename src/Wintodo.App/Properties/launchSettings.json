@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Wintodo (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Wintodo (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

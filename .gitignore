@@ -1,0 +1,48 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+publish/
+AppPackages/
+BundleArtifacts/
+
+# IDE and user state
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.DotSettings.user
+
+# Test and coverage output
+[Tt]est[Rr]esult*/
+tests/ui/artifacts/
+*.trx
+*.coverage
+*.coveragexml
+
+# Packages and packaged output
+*.nupkg
+*.snupkg
+*.msix
+*.msixupload
+*.appx
+*.appxbundle
+*.appxupload
+*.pfx
+
+# Logs and generated files
+*.binlog
+*.log
+Generated Files/
+*_wpftmp.csproj
+
+# Local CodeGraph index
+.codegraph/*.db
+.codegraph/*.db-shm
+.codegraph/*.db-wal
+.codegraph/cache/
+.codegraph/.dirty

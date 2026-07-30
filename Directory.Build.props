@@ -1,0 +1,28 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework Condition="'$(MSBuildProjectName)' == 'Wintodo'">net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetFramework Condition="'$(MSBuildProjectName)' != 'Wintodo'">net10.0</TargetFramework>
+    <TargetPlatformMinVersion Condition="'$(MSBuildProjectName)' == 'Wintodo'">10.0.26100.0</TargetPlatformMinVersion>
+    <Platforms>x64;ARM64</Platforms>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <PlatformTarget Condition="'$(Platform)' == 'x64'">x64</PlatformTarget>
+    <PlatformTarget Condition="'$(Platform)' == 'ARM64'">ARM64</PlatformTarget>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <IsAotCompatible Condition="'$(MSBuildProjectName)' == 'Wintodo.Core' Or '$(MSBuildProjectName)' == 'Wintodo.Data'">true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <InvariantGlobalization>false</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Wintodo'">
+    <Analyzer Include="$(MSBuildThisFileDirectory)analyzer\Microsoft.WindowsAppSDK.Analyzers.dll" />
+  </ItemGroup>
+
+  <Import
+    Project="$(MSBuildThisFileDirectory)analyzer\Microsoft.WindowsAppSDK.Analyzers.targets"
+    Condition="'$(MSBuildProjectName)' == 'Wintodo' And Exists('$(MSBuildThisFileDirectory)analyzer\Microsoft.WindowsAppSDK.Analyzers.targets')" />
+</Project>
