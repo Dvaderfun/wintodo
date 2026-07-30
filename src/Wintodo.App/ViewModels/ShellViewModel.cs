@@ -28,6 +28,10 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList = new TaskListViewModel(taskStore, clock);
         TaskList.NavigationDataChanged += OnNavigationDataChanged;
         TaskList.DeleteListRequested += OnDeleteListRequested;
+        Detail = new TaskDetailViewModel(taskStore, clock);
+        Detail.CloseRequested += CloseDetail;
+        Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
+        Detail.TaskDeleted += TaskList.ApplyDetailTaskDeleted;
     }
 
     internal event Action? NavigationStructureChanged;
@@ -41,6 +45,8 @@ public sealed partial class ShellViewModel : ObservableObject
     public ObservableCollection<ShellGroupViewModel> Groups { get; } = [];
 
     public TaskListViewModel TaskList { get; }
+
+    public TaskDetailViewModel Detail { get; }
 
     [ObservableProperty]
     public partial bool IsCreatingList { get; set; }
@@ -57,6 +63,15 @@ public sealed partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsTaskListLoaded { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsDetailPaneLoaded { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsDetailPaneOpen { get; set; }
+
+    [ObservableProperty]
+    public partial int DetailInstanceCount { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateGroupCommand))]
@@ -79,6 +94,7 @@ public sealed partial class ShellViewModel : ObservableObject
         bool isMyDay,
         CancellationToken cancellationToken = default)
     {
+        CloseDetail();
         _selectedNavigationKey = navigationKey;
         if (navigationKey.StartsWith(UserListNavigationPrefix, StringComparison.Ordinal))
         {
@@ -107,8 +123,23 @@ public sealed partial class ShellViewModel : ObservableObject
 
     internal void SelectSettings()
     {
+        CloseDetail();
         _selectedNavigationKey = "settings";
         TaskList.ShowSettings(_resources.GetString("Shell_SettingsTitle"));
+    }
+
+    internal async Task OpenDetailAsync(
+        TaskItemViewModel task,
+        CancellationToken cancellationToken = default)
+    {
+        await Detail.LoadAsync(task.Uid, cancellationToken);
+        IsDetailPaneLoaded = true;
+        IsDetailPaneOpen = true;
+    }
+
+    internal void CloseDetail()
+    {
+        IsDetailPaneOpen = false;
     }
 
     internal async Task ConfirmDeleteListAsync(

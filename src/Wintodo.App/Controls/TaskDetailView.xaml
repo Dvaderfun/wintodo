@@ -1,0 +1,648 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Wintodo.Controls.TaskDetailView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:Wintodo.Controls"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Wintodo.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:viewModels="using:Wintodo.ViewModels"
+    x:Name="Root"
+    d:DesignHeight="780"
+    d:DesignWidth="360"
+    IsTabStop="False"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <Style x:Key="DetailStepListItemStyle" TargetType="ListViewItem">
+            <Setter Property="MinHeight" Value="36" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="{StaticResource ControlCornerRadius}" />
+        </Style>
+
+        <Style
+            x:Key="DetailActionButtonStyle"
+            BasedOn="{StaticResource SubtleButtonStyle}"
+            TargetType="Button">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="8,0" />
+        </Style>
+
+        <Style
+            x:Key="DetailActionDropDownStyle"
+            BasedOn="{StaticResource SubtleButtonStyle}"
+            TargetType="DropDownButton">
+            <Setter Property="Height" Value="40" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="8,0" />
+        </Style>
+
+        <DataTemplate
+            x:Key="StepTemplate"
+            x:DataType="viewModels:StepItemViewModel">
+            <controls:StepRow ViewModel="{x:Bind Mode=OneWay}" />
+        </DataTemplate>
+
+        <DataTemplate
+            x:Key="AttachmentTemplate"
+            x:DataType="viewModels:AttachmentItemViewModel">
+            <Grid Height="40" ColumnSpacing="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="32" />
+                </Grid.ColumnDefinitions>
+                <Button
+                    Grid.Column="0"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Left"
+                    AutomationProperties.AutomationId="{x:Bind OpenAutomationId, Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind FileName, Mode=OneWay}"
+                    Command="{x:Bind OpenCommand, Mode=OneWay}"
+                    Style="{StaticResource SubtleButtonStyle}">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE723;" />
+                        <TextBlock
+                            Grid.Column="1"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            Text="{x:Bind FileName, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+                        <TextBlock
+                            Grid.Column="2"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind SizeText, Mode=OneWay}" />
+                    </Grid>
+                </Button>
+                <Button
+                    Grid.Column="1"
+                    Width="32"
+                    Height="32"
+                    Padding="0"
+                    AutomationProperties.AutomationId="{x:Bind RemoveAutomationId, Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind local:TaskDetailView.RemoveAttachmentName(FileName), Mode=OneWay}"
+                    Command="{x:Bind RemoveCommand, Mode=OneWay}"
+                    Style="{StaticResource SubtleButtonStyle}">
+                    <FontIcon Glyph="&#xE711;" />
+                </Button>
+            </Grid>
+        </DataTemplate>
+
+    </UserControl.Resources>
+
+    <Grid
+        Padding="16"
+        AutomationProperties.AutomationId="Todo.Detail.Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <InfoBar
+            x:Uid="DetailErrorBar"
+            Margin="0,0,0,8"
+            AutomationProperties.AutomationId="Todo.Detail.Error"
+            IsClosable="False"
+            IsOpen="{x:Bind ViewModel.IsErrorOpen, Mode=OneWay}"
+            Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+            Severity="Error" />
+
+        <Grid Grid.Row="1" ColumnSpacing="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="32" />
+            </Grid.ColumnDefinitions>
+            <ToggleButton
+                Grid.Column="0"
+                Width="32"
+                Height="32"
+                Padding="0"
+                VerticalAlignment="Top"
+                AutomationProperties.AutomationId="Todo.Detail.Complete"
+                AutomationProperties.Name="{x:Bind local:TaskDetailView.CompletionName(ViewModel.IsCompleted), Mode=OneWay}"
+                Command="{x:Bind ViewModel.ToggleCompletionCommand, Mode=OneWay}"
+                IsChecked="{x:Bind ViewModel.IsCompleted, Mode=OneWay}"
+                Style="{StaticResource TaskSubtleToggleButtonStyle}">
+                <Grid Width="24" Height="24">
+                    <Ellipse
+                        Fill="{ThemeResource SubtleFillColorTransparentBrush}"
+                        Stroke="{ThemeResource TextFillColorSecondaryBrush}"
+                        StrokeThickness="1" />
+                    <Ellipse
+                        Fill="{ThemeResource ListAccentBrush}"
+                        Visibility="{x:Bind local:TaskDetailView.BoolToVisibility(ViewModel.IsCompleted), Mode=OneWay}" />
+                    <FontIcon
+                        Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                        Glyph="&#xE73E;"
+                        Visibility="{x:Bind local:TaskDetailView.BoolToVisibility(ViewModel.IsCompleted), Mode=OneWay}" />
+                </Grid>
+            </ToggleButton>
+            <TextBox
+                x:Uid="DetailTitleBox"
+                Grid.Column="1"
+                MinHeight="40"
+                MaxHeight="96"
+                VerticalAlignment="Top"
+                AcceptsReturn="True"
+                AutomationProperties.AutomationId="Todo.Detail.Title"
+                BorderThickness="0"
+                Style="{StaticResource DefaultTextBoxStyle}"
+                Text="{x:Bind ViewModel.Summary, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                TextWrapping="Wrap" />
+            <ToggleButton
+                Grid.Column="2"
+                Width="32"
+                Height="32"
+                AutomationProperties.AutomationId="Todo.Detail.Importance"
+                AutomationProperties.Name="{x:Bind local:TaskDetailView.ImportanceName(ViewModel.IsImportant), Mode=OneWay}"
+                Command="{x:Bind ViewModel.ToggleImportanceCommand, Mode=OneWay}"
+                IsChecked="{x:Bind ViewModel.IsImportant, Mode=OneWay}"
+                Style="{StaticResource TaskSubtleToggleButtonStyle}">
+                <FontIcon
+                    Foreground="{ThemeResource ListAccentBrush}"
+                    Glyph="{x:Bind local:TaskDetailView.ImportanceGlyph(ViewModel.IsImportant), Mode=OneWay}" />
+            </ToggleButton>
+            <Button
+                x:Uid="DetailCloseButton"
+                Grid.Column="3"
+                Width="32"
+                Height="32"
+                Padding="0"
+                AutomationProperties.AutomationId="Todo.Detail.Close"
+                Command="{x:Bind ViewModel.CloseCommand, Mode=OneWay}"
+                Style="{StaticResource SubtleButtonStyle}">
+                <FontIcon Glyph="&#xE711;" />
+            </Button>
+        </Grid>
+
+        <Rectangle
+            Grid.Row="2"
+            Height="1"
+            Margin="0,12"
+            Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+        <ListView
+            x:Name="StepsList"
+            Grid.Row="3"
+            MaxHeight="180"
+            AutomationProperties.AutomationId="Todo.Detail.Steps"
+            AllowDrop="True"
+            CanDragItems="True"
+            CanReorderItems="True"
+            ContainerContentChanging="OnStepContainerContentChanging"
+            DragItemsCompleted="OnStepDragItemsCompleted"
+            DragItemsStarting="OnStepDragItemsStarting"
+            ItemContainerStyle="{StaticResource DetailStepListItemStyle}"
+            ItemTemplate="{StaticResource StepTemplate}"
+            ItemsSource="{x:Bind ViewModel.Steps, Mode=OneWay}"
+            SelectionMode="None">
+            <ListView.ItemContainerTransitions>
+                <TransitionCollection>
+                    <AddDeleteThemeTransition />
+                    <ReorderThemeTransition />
+                </TransitionCollection>
+            </ListView.ItemContainerTransitions>
+        </ListView>
+
+        <Grid Grid.Row="4" Height="36" ColumnSpacing="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <SymbolIcon Grid.Column="0" Symbol="Add" />
+            <TextBox
+                x:Name="NewStepBox"
+                x:Uid="DetailNewStepBox"
+                Grid.Column="1"
+                AutomationProperties.AutomationId="Todo.Detail.NewStep"
+                BorderThickness="0"
+                KeyDown="OnNewStepKeyDown"
+                Text="{x:Bind ViewModel.NewStepTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        </Grid>
+
+        <Rectangle
+            Grid.Row="5"
+            Height="1"
+            Margin="0,12"
+            Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+        <ScrollViewer
+            Grid.Row="6"
+            HorizontalScrollBarVisibility="Disabled"
+            HorizontalScrollMode="Disabled"
+            VerticalScrollBarVisibility="Auto"
+            VerticalScrollMode="Auto">
+            <StackPanel Spacing="0">
+                <Grid ColumnSpacing="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="32" />
+                    </Grid.ColumnDefinitions>
+                    <Button
+                        Grid.Column="0"
+                        AutomationProperties.AutomationId="Todo.Detail.MyDay"
+                        AutomationProperties.Name="{x:Bind ViewModel.MyDayLabel, Mode=OneWay}"
+                        Command="{x:Bind ViewModel.ToggleMyDayCommand, Mode=OneWay}"
+                        Style="{StaticResource DetailActionButtonStyle}">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" Glyph="&#xE706;" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind ViewModel.MyDayLabel, Mode=OneWay}" />
+                        </Grid>
+                    </Button>
+                    <Button
+                        x:Uid="DetailClearMyDayButton"
+                        Grid.Column="1"
+                        Width="32"
+                        Height="32"
+                        Padding="0"
+                        AutomationProperties.AutomationId="Todo.Detail.ClearMyDay"
+                        Command="{x:Bind ViewModel.ToggleMyDayCommand, Mode=OneWay}"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Visibility="{x:Bind local:TaskDetailView.BoolToVisibility(ViewModel.IsMyDay), Mode=OneWay}">
+                        <FontIcon Glyph="&#xE711;" />
+                    </Button>
+                </Grid>
+
+                <Grid ColumnSpacing="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="32" />
+                    </Grid.ColumnDefinitions>
+                    <DropDownButton
+                        x:Name="ReminderButton"
+                        Grid.Column="0"
+                        AutomationProperties.AutomationId="Todo.Detail.Reminder"
+                        AutomationProperties.Name="{x:Bind ViewModel.ReminderLabel, Mode=OneWay}"
+                        Style="{StaticResource DetailActionDropDownStyle}">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" Glyph="&#xEA8F;" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind ViewModel.ReminderLabel, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                        <FlyoutBase.AttachedFlyout>
+                            <Flyout>
+                                <StackPanel Width="280" Spacing="12">
+                                    <CalendarDatePicker
+                                        x:Uid="DetailReminderDatePicker"
+                                        HorizontalAlignment="Stretch"
+                                        AutomationProperties.AutomationId="Todo.Detail.ReminderDatePicker"
+                                        Date="{x:Bind ViewModel.PendingReminderDate, Mode=TwoWay}" />
+                                    <TimePicker
+                                        x:Uid="DetailReminderTimePicker"
+                                        AutomationProperties.AutomationId="Todo.Detail.ReminderTimePicker"
+                                        Time="{x:Bind ViewModel.PendingReminderTime, Mode=TwoWay}" />
+                                    <Button
+                                        x:Uid="DetailApplyReminderButton"
+                                        HorizontalAlignment="Right"
+                                        AutomationProperties.AutomationId="Todo.Detail.ApplyReminder"
+                                        Command="{x:Bind ViewModel.ApplyCustomReminderCommand, Mode=OneWay}"
+                                        Style="{StaticResource AccentButtonStyle}" />
+                                </StackPanel>
+                            </Flyout>
+                        </FlyoutBase.AttachedFlyout>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem
+                                    x:Uid="DetailReminderToday"
+                                    AutomationProperties.AutomationId="Todo.Detail.Reminder.Today"
+                                    Command="{x:Bind ViewModel.SetReminderQuickCommand, Mode=OneWay}"
+                                    CommandParameter="Today" />
+                                <MenuFlyoutItem
+                                    x:Uid="DetailReminderTomorrow"
+                                    AutomationProperties.AutomationId="Todo.Detail.Reminder.Tomorrow"
+                                    Command="{x:Bind ViewModel.SetReminderQuickCommand, Mode=OneWay}"
+                                    CommandParameter="Tomorrow" />
+                                <MenuFlyoutItem
+                                    x:Uid="DetailReminderNextWeek"
+                                    AutomationProperties.AutomationId="Todo.Detail.Reminder.NextWeek"
+                                    Command="{x:Bind ViewModel.SetReminderQuickCommand, Mode=OneWay}"
+                                    CommandParameter="NextWeek" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem
+                                    x:Uid="DetailReminderPick"
+                                    AutomationProperties.AutomationId="Todo.Detail.Reminder.Pick"
+                                    Command="{x:Bind ViewModel.SetReminderQuickCommand, Mode=OneWay}"
+                                    CommandParameter="Pick" />
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                    <Button
+                        x:Uid="DetailClearReminderButton"
+                        Grid.Column="1"
+                        Width="32"
+                        Height="32"
+                        Padding="0"
+                        AutomationProperties.AutomationId="Todo.Detail.ClearReminder"
+                        Command="{x:Bind ViewModel.ClearReminderCommand, Mode=OneWay}"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Visibility="{x:Bind local:TaskDetailView.HasValue(ViewModel.PendingReminderDate), Mode=OneWay}">
+                        <FontIcon Glyph="&#xE711;" />
+                    </Button>
+                </Grid>
+
+                <Grid ColumnSpacing="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="32" />
+                    </Grid.ColumnDefinitions>
+                    <DropDownButton
+                        x:Name="DueButton"
+                        Grid.Column="0"
+                        AutomationProperties.AutomationId="Todo.Detail.Due"
+                        AutomationProperties.Name="{x:Bind ViewModel.DueLabel, Mode=OneWay}"
+                        Style="{StaticResource DetailActionDropDownStyle}">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" Glyph="&#xE787;" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind ViewModel.DueLabel, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                        <FlyoutBase.AttachedFlyout>
+                            <Flyout>
+                                <StackPanel Width="280" Spacing="12">
+                                    <CalendarDatePicker
+                                        x:Uid="DetailDueDatePicker"
+                                        HorizontalAlignment="Stretch"
+                                        AutomationProperties.AutomationId="Todo.Detail.DueDatePicker"
+                                        Date="{x:Bind ViewModel.PendingDueDate, Mode=TwoWay}" />
+                                    <TimePicker
+                                        x:Uid="DetailDueTimePicker"
+                                        AutomationProperties.AutomationId="Todo.Detail.DueTimePicker"
+                                        Time="{x:Bind ViewModel.PendingDueTime, Mode=TwoWay}" />
+                                    <Button
+                                        x:Uid="DetailApplyDueButton"
+                                        HorizontalAlignment="Right"
+                                        AutomationProperties.AutomationId="Todo.Detail.ApplyDue"
+                                        Command="{x:Bind ViewModel.ApplyCustomDueCommand, Mode=OneWay}"
+                                        Style="{StaticResource AccentButtonStyle}" />
+                                </StackPanel>
+                            </Flyout>
+                        </FlyoutBase.AttachedFlyout>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem
+                                    x:Uid="DetailDueToday"
+                                    AutomationProperties.AutomationId="Todo.Detail.Due.Today"
+                                    Command="{x:Bind ViewModel.SetDueQuickCommand, Mode=OneWay}"
+                                    CommandParameter="Today" />
+                                <MenuFlyoutItem
+                                    x:Uid="DetailDueTomorrow"
+                                    AutomationProperties.AutomationId="Todo.Detail.Due.Tomorrow"
+                                    Command="{x:Bind ViewModel.SetDueQuickCommand, Mode=OneWay}"
+                                    CommandParameter="Tomorrow" />
+                                <MenuFlyoutItem
+                                    x:Uid="DetailDueNextWeek"
+                                    AutomationProperties.AutomationId="Todo.Detail.Due.NextWeek"
+                                    Command="{x:Bind ViewModel.SetDueQuickCommand, Mode=OneWay}"
+                                    CommandParameter="NextWeek" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem
+                                    x:Uid="DetailDuePick"
+                                    AutomationProperties.AutomationId="Todo.Detail.Due.Pick"
+                                    Command="{x:Bind ViewModel.SetDueQuickCommand, Mode=OneWay}"
+                                    CommandParameter="Pick" />
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                    <Button
+                        x:Uid="DetailClearDueButton"
+                        Grid.Column="1"
+                        Width="32"
+                        Height="32"
+                        Padding="0"
+                        AutomationProperties.AutomationId="Todo.Detail.ClearDue"
+                        Command="{x:Bind ViewModel.ClearDueCommand, Mode=OneWay}"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Visibility="{x:Bind local:TaskDetailView.HasValue(ViewModel.PendingDueDate), Mode=OneWay}">
+                        <FontIcon Glyph="&#xE711;" />
+                    </Button>
+                </Grid>
+
+                <Grid ColumnSpacing="4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="32" />
+                    </Grid.ColumnDefinitions>
+                    <DropDownButton
+                        Grid.Column="0"
+                        AutomationProperties.AutomationId="Todo.Detail.Repeat"
+                        AutomationProperties.Name="{x:Bind ViewModel.RepeatLabel, Mode=OneWay}"
+                        Style="{StaticResource DetailActionDropDownStyle}">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" Glyph="&#xE8EE;" />
+                            <TextBlock
+                                Grid.Column="1"
+                                Style="{StaticResource BodyTextBlockStyle}"
+                                Text="{x:Bind ViewModel.RepeatLabel, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                        <DropDownButton.Flyout>
+                            <Flyout Opened="OnRepeatFlyoutOpened">
+                                <StackPanel Width="280" Spacing="12">
+                                    <RadioButtons
+                                        x:Uid="DetailRepeatOptions"
+                                        AutomationProperties.AutomationId="Todo.Detail.RepeatOptions"
+                                        ItemsSource="{x:Bind ViewModel.RepeatOptions, Mode=OneWay}"
+                                        SelectedIndex="{x:Bind ViewModel.RepeatModeIndex, Mode=TwoWay}" />
+                                    <Grid
+                                        RowSpacing="8"
+                                        Visibility="{x:Bind local:TaskDetailView.CustomRepeatVisibility(ViewModel.RepeatModeIndex), Mode=OneWay}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Grid ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <NumberBox
+                                                x:Uid="DetailCustomInterval"
+                                                Grid.Column="0"
+                                                AutomationProperties.AutomationId="Todo.Detail.CustomInterval"
+                                                Minimum="1"
+                                                SpinButtonPlacementMode="Compact"
+                                                Value="{x:Bind ViewModel.CustomInterval, Mode=TwoWay}" />
+                                            <ComboBox
+                                                Grid.Column="1"
+                                                AutomationProperties.AutomationId="Todo.Detail.CustomPeriod"
+                                                DropDownOpened="OnCustomPeriodDropDownOpened"
+                                                ItemsSource="{x:Bind ViewModel.CustomPeriodOptions, Mode=OneWay}"
+                                                SelectedIndex="{x:Bind ViewModel.CustomPeriodIndex, Mode=TwoWay}" />
+                                        </Grid>
+                                        <StackPanel
+                                            Grid.Row="1"
+                                            Orientation="Horizontal"
+                                            Spacing="4"
+                                            Visibility="{x:Bind local:TaskDetailView.WeeklyOptionsVisibility(ViewModel.RepeatModeIndex, ViewModel.CustomPeriodIndex), Mode=OneWay}">
+                                            <ToggleButton
+                                                x:Uid="DetailWeekdaySunday"
+                                                Width="32"
+                                                Height="32"
+                                                AutomationProperties.AutomationId="Todo.Detail.Weekday.Sunday"
+                                                IsChecked="{x:Bind ViewModel.CustomSunday, Mode=TwoWay}" />
+                                            <ToggleButton
+                                                x:Uid="DetailWeekdayMonday"
+                                                Width="32"
+                                                Height="32"
+                                                AutomationProperties.AutomationId="Todo.Detail.Weekday.Monday"
+                                                IsChecked="{x:Bind ViewModel.CustomMonday, Mode=TwoWay}" />
+                                            <ToggleButton
+                                                x:Uid="DetailWeekdayTuesday"
+                                                Width="32"
+                                                Height="32"
+                                                AutomationProperties.AutomationId="Todo.Detail.Weekday.Tuesday"
+                                                IsChecked="{x:Bind ViewModel.CustomTuesday, Mode=TwoWay}" />
+                                            <ToggleButton
+                                                x:Uid="DetailWeekdayWednesday"
+                                                Width="32"
+                                                Height="32"
+                                                AutomationProperties.AutomationId="Todo.Detail.Weekday.Wednesday"
+                                                IsChecked="{x:Bind ViewModel.CustomWednesday, Mode=TwoWay}" />
+                                            <ToggleButton
+                                                x:Uid="DetailWeekdayThursday"
+                                                Width="32"
+                                                Height="32"
+                                                AutomationProperties.AutomationId="Todo.Detail.Weekday.Thursday"
+                                                IsChecked="{x:Bind ViewModel.CustomThursday, Mode=TwoWay}" />
+                                            <ToggleButton
+                                                x:Uid="DetailWeekdayFriday"
+                                                Width="32"
+                                                Height="32"
+                                                AutomationProperties.AutomationId="Todo.Detail.Weekday.Friday"
+                                                IsChecked="{x:Bind ViewModel.CustomFriday, Mode=TwoWay}" />
+                                            <ToggleButton
+                                                x:Uid="DetailWeekdaySaturday"
+                                                Width="32"
+                                                Height="32"
+                                                AutomationProperties.AutomationId="Todo.Detail.Weekday.Saturday"
+                                                IsChecked="{x:Bind ViewModel.CustomSaturday, Mode=TwoWay}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Flyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+                    <Button
+                        x:Uid="DetailClearRepeatButton"
+                        Grid.Column="1"
+                        Width="32"
+                        Height="32"
+                        Padding="0"
+                        AutomationProperties.AutomationId="Todo.Detail.ClearRepeat"
+                        Command="{x:Bind ViewModel.ClearRepeatCommand, Mode=OneWay}"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Visibility="{x:Bind local:TaskDetailView.RepeatClearVisibility(ViewModel.RepeatModeIndex), Mode=OneWay}">
+                        <FontIcon Glyph="&#xE711;" />
+                    </Button>
+                </Grid>
+
+                <Rectangle
+                    Height="1"
+                    Margin="0,12"
+                    Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
+                <Button
+                    x:Uid="DetailAddFileButton"
+                    AutomationProperties.AutomationId="Todo.Detail.AddFile"
+                    Command="{x:Bind ViewModel.RequestAddAttachmentCommand, Mode=OneWay}"
+                    Style="{StaticResource DetailActionButtonStyle}">
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="16" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE723;" />
+                        <TextBlock
+                            x:Uid="DetailAddFileLabel"
+                            Grid.Column="1"
+                            Style="{StaticResource BodyTextBlockStyle}" />
+                    </Grid>
+                </Button>
+
+                <ItemsRepeater
+                    AutomationProperties.AutomationId="Todo.Detail.Attachments"
+                    ItemTemplate="{StaticResource AttachmentTemplate}"
+                    ItemsSource="{x:Bind ViewModel.Attachments, Mode=OneWay}" />
+
+                <TextBox
+                    x:Uid="DetailNoteBox"
+                    MinHeight="88"
+                    Margin="0,12,0,0"
+                    AcceptsReturn="True"
+                    AutomationProperties.AutomationId="Todo.Detail.Note"
+                    Background="{ThemeResource ControlFillColorDefaultBrush}"
+                    Text="{x:Bind ViewModel.Note, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+        </ScrollViewer>
+
+        <Grid Grid.Row="7" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="32" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                Grid.Column="0"
+                VerticalAlignment="Center"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="{x:Bind ViewModel.CreatedText, Mode=OneWay}"
+                TextTrimming="CharacterEllipsis" />
+            <Button
+                x:Uid="DetailDeleteButton"
+                Grid.Column="1"
+                Width="32"
+                Height="32"
+                Padding="0"
+                AutomationProperties.AutomationId="Todo.Detail.Delete"
+                Command="{x:Bind ViewModel.DeleteTaskCommand, Mode=OneWay}"
+                Style="{StaticResource SubtleButtonStyle}">
+                <SymbolIcon Symbol="Delete" />
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

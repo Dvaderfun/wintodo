@@ -14,6 +14,7 @@
     <Page.KeyboardAccelerators>
         <KeyboardAccelerator Key="L" Modifiers="Control" Invoked="OnNewListAccelerator" />
         <KeyboardAccelerator Key="L" Modifiers="Control,Shift" Invoked="OnNewGroupAccelerator" />
+        <KeyboardAccelerator Key="Escape" Invoked="OnEscapeAccelerator" />
     </Page.KeyboardAccelerators>
 
     <Grid x:Name="ShellRoot">
@@ -30,7 +31,6 @@
                         <Setter Target="NewListButton.Visibility" Value="Collapsed" />
                         <Setter Target="NewGroupButton.Visibility" Value="Collapsed" />
                         <Setter Target="ListContentGrid.Padding" Value="64,16,24,0" />
-                        <Setter Target="DetailColumn.Width" Value="0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="0" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="2" />
                         <Setter Target="DetailHost.HorizontalAlignment" Value="Stretch" />
@@ -50,7 +50,6 @@
                         <Setter Target="NewListButton.Visibility" Value="Collapsed" />
                         <Setter Target="NewGroupButton.Visibility" Value="Collapsed" />
                         <Setter Target="ListContentGrid.Padding" Value="24,16,24,0" />
-                        <Setter Target="DetailColumn.Width" Value="0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="0" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="2" />
                         <Setter Target="DetailHost.HorizontalAlignment" Value="Right" />
@@ -70,7 +69,6 @@
                         <Setter Target="NewListButton.Visibility" Value="Visible" />
                         <Setter Target="NewGroupButton.Visibility" Value="Visible" />
                         <Setter Target="ListContentGrid.Padding" Value="24,16,24,0" />
-                        <Setter Target="DetailColumn.Width" Value="0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="0" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="2" />
                         <Setter Target="DetailHost.HorizontalAlignment" Value="Right" />
@@ -90,12 +88,39 @@
                         <Setter Target="NewListButton.Visibility" Value="Visible" />
                         <Setter Target="NewGroupButton.Visibility" Value="Visible" />
                         <Setter Target="ListContentGrid.Padding" Value="24,16,24,0" />
-                        <Setter Target="DetailColumn.Width" Value="0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="1" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="1" />
                         <Setter Target="DetailHost.HorizontalAlignment" Value="Stretch" />
                         <Setter Target="DetailHost.Width" Value="Auto" />
                         <Setter Target="DetailHost.Margin" Value="8" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+            <VisualStateGroup x:Name="DetailPaneStates">
+                <VisualStateGroup.Transitions>
+                    <VisualTransition
+                        To="DetailOpen"
+                        GeneratedDuration="0:0:0.2" />
+                    <VisualTransition
+                        To="DetailClosing"
+                        GeneratedDuration="0:0:0.15" />
+                </VisualStateGroup.Transitions>
+                <VisualState x:Name="DetailClosed">
+                    <VisualState.Setters>
+                        <Setter Target="DetailHost.Visibility" Value="Collapsed" />
+                        <Setter Target="DetailHost.Opacity" Value="0" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="DetailClosing">
+                    <VisualState.Setters>
+                        <Setter Target="DetailHost.Visibility" Value="Visible" />
+                        <Setter Target="DetailHost.Opacity" Value="0" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="DetailOpen">
+                    <VisualState.Setters>
+                        <Setter Target="DetailHost.Visibility" Value="Visible" />
+                        <Setter Target="DetailHost.Opacity" Value="1" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -237,7 +262,7 @@
             <Grid x:Name="ContentGrid" MinWidth="400">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition x:Name="DetailColumn" Width="360" />
+                    <ColumnDefinition x:Name="DetailColumn" Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <Border
@@ -250,6 +275,7 @@
                         Padding="24,16,24,0">
                         <controls:TaskListView
                             x:Name="TaskList"
+                            Loaded="OnTaskListLoaded"
                             x:Load="{x:Bind ViewModel.IsTaskListLoaded, Mode=OneWay}"
                             ViewModel="{x:Bind ViewModel.TaskList, Mode=OneWay}" />
                     </Grid>
@@ -259,18 +285,31 @@
                     x:Name="DetailHost"
                     Grid.Column="1"
                     Margin="8"
+                    Opacity="0"
                     Visibility="Collapsed">
+                    <Grid.OpacityTransition>
+                        <ScalarTransition Duration="0:0:0.2" />
+                    </Grid.OpacityTransition>
+                    <Grid.ChildrenTransitions>
+                        <TransitionCollection>
+                            <EntranceThemeTransition FromHorizontalOffset="32" />
+                        </TransitionCollection>
+                    </Grid.ChildrenTransitions>
                     <Border
                         x:Name="DetailPane"
                         Background="{ThemeResource ShellDetailBackgroundBrush}"
                         BorderBrush="{ThemeResource ShellDetailBorderBrush}"
                         BorderThickness="1"
-                        CornerRadius="{StaticResource OverlayCornerRadius}"
-                        Translation="0,0,32"
-                        x:Load="False">
+                        CornerRadius="{StaticResource OverlayCornerRadius}">
                         <Border.Shadow>
                             <ThemeShadow />
                         </Border.Shadow>
+                        <controls:TaskDetailView
+                            x:Name="TaskDetail"
+                            AutomationProperties.AutomationId="Todo.Detail.View"
+                            Loaded="OnTaskDetailLoaded"
+                            ViewModel="{x:Bind ViewModel.Detail, Mode=OneWay}"
+                            x:Load="{x:Bind ViewModel.IsDetailPaneLoaded, Mode=OneWay}" />
                     </Border>
                 </Grid>
             </Grid>
@@ -287,5 +326,15 @@
                 Style="{StaticResource BodyTextBlockStyle}"
                 TextWrapping="Wrap" />
         </ContentDialog>
+
+        <TextBlock
+            Width="1"
+            Height="1"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Bottom"
+            IsHitTestVisible="False"
+            Opacity="0"
+            AutomationProperties.AutomationId="Todo.Detail.InstanceCount"
+            Text="{x:Bind ViewModel.DetailInstanceCount, Mode=OneWay}" />
     </Grid>
 </Page>

@@ -30,6 +30,8 @@ public sealed partial class TaskListView : UserControl
         set => SetValue(ViewModelProperty, value);
     }
 
+    internal event Action<TaskItemViewModel>? TaskOpenRequested;
+
     public static Visibility BoolToVisibility(bool value)
     {
         return value ? Visibility.Visible : Visibility.Collapsed;
@@ -108,6 +110,7 @@ public sealed partial class TaskListView : UserControl
         if (ViewModel.SelectedTask is not null)
         {
             ViewModel.SelectedTask.IsSelected = true;
+            TaskOpenRequested?.Invoke(ViewModel.SelectedTask);
         }
     }
 
@@ -190,6 +193,19 @@ public sealed partial class TaskListView : UserControl
     {
         ViewModel.ToggleSelectedCompletionCommand.Execute(null);
         args.Handled = ViewModel.SelectedTask is not null;
+    }
+
+    private void OnOpenDetailAccelerator(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (ViewModel.SelectedTask is null)
+        {
+            return;
+        }
+
+        TaskOpenRequested?.Invoke(ViewModel.SelectedTask);
+        args.Handled = true;
     }
 
     private void OnToggleImportanceAccelerator(

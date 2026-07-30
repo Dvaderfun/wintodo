@@ -158,3 +158,47 @@ with zero callback allocations and zero or one frame above 25 ms.
 - Coordinate-driven task drag automation can occasionally miss the insertion
   target; an earlier clean run and the restart database assertion verified the
   persisted order.
+
+## M4 — Task detail pane          2026-07-31
+
+**Gate:** PASS — the M4 UI suite passed 7/7 and the packaged restart
+round-trip passed; the detail view remained uninstantiated until first open;
+every field, step, alarm, attachment, and recurrence setting survived SQLite
+restart; completing the biweekly Tuesday task advanced its due date exactly 14
+days and added `completion_history`; 45/45 Core/Data tests passed; and Release
+x64 and ARM64 builds completed with zero warnings.
+
+**Shipped**
+- Added the responsive, `x:Load`-deferred task detail pane with debounced title
+  and note editing, completion, importance, My Day, due date, reminder,
+  recurrence, footer, delete, Escape close, and Enter-to-add-step behavior.
+- Added child-task steps with add, edit, complete, delete, drag reorder, stable
+  AutomationIds, and direct persisted ordering for the future project-tree
+  model.
+- Added quick and custom date/time controls plus daily, weekday, weekly,
+  monthly, yearly, and custom every-N/by-weekday recurrence editing.
+- Added local attachments with generated collision-safe names, a cumulative
+  25 MB cap, constrained LocalState paths, open/remove commands, and the
+  Windows App SDK desktop picker.
+- Added deterministic M4 persistence, recurrence-completion, deferred-load,
+  restart, keyboard, attachment, and responsive UI gates with visual artifacts.
+- Fixed startup navigation restoration so the XAML-default My Day selection
+  cannot overwrite persisted state before initialization completes.
+- Reworked the performance scroll driver to use sustained wheel input from one
+  process; the final 10,000-task sample passed at 119.86 fps with zero dropped
+  frames and zero callback allocations.
+- Completed the WinUI code review; legacy picker usage, raw exception text,
+  attachment path confinement, size-overflow handling, and startup navigation
+  initialization were corrected before commit.
+
+**Deviations from PLAN.md**
+- Custom `CalendarDatePicker` and `TimePicker` controls use attached flyouts
+  launched from the action rows because `MenuFlyout` cannot host arbitrary
+  picker controls; the quick choices remain `MenuFlyout` commands.
+
+**Known issues carried forward**
+- The framework-dependent M4 performance row still misses the §7 startup and
+  loaded-working-set budgets, including the warm-start and loaded-memory
+  hard-fail lines. The ten-minute trend is flat/decreasing rather than a leak,
+  and no budget relaxation was accepted. Startup hydration, framework shared
+  pages, and the Native AOT result must be profiled and resolved by M9.
