@@ -283,8 +283,10 @@ app-password stored in SQLite is a defect, not a shortcut.
 CREATE INDEX ix_tasks_list_status_sort ON tasks(list_id, status, sort_order) WHERE is_deleted = 0;
 CREATE INDEX ix_tasks_due              ON tasks(due_utc)      WHERE is_deleted = 0 AND status <> 2;
 CREATE INDEX ix_tasks_parent           ON tasks(parent_uid)   WHERE is_deleted = 0 AND parent_uid IS NOT NULL;
-CREATE INDEX ix_tasks_myday            ON tasks(my_day_date)  WHERE is_deleted = 0 AND my_day_date IS NOT NULL;
+CREATE INDEX ix_tasks_myday            ON tasks(my_day_date, sort_order) WHERE is_deleted = 0 AND my_day_date IS NOT NULL;
 CREATE INDEX ix_tasks_important        ON tasks(priority)     WHERE is_deleted = 0 AND priority BETWEEN 1 AND 4;
+CREATE INDEX ix_tasks_completed        ON tasks(status, completed_utc DESC) WHERE is_deleted = 0 AND status = 2;
+CREATE INDEX ix_tasks_created          ON tasks(created_utc)  WHERE is_deleted = 0;
 CREATE INDEX ix_tasks_dirty            ON tasks(is_dirty)     WHERE is_dirty = 1;
 CREATE INDEX ix_alarms_trigger         ON alarms(trigger_utc) WHERE is_acknowledged = 0;
 CREATE INDEX ix_changelog_unsynced     ON change_log(synced)  WHERE synced = 0;

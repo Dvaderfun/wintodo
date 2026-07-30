@@ -51,3 +51,39 @@ warnings and zero errors across all five projects.
 
 **Known issues carried forward**
 - None.
+
+## M1 — Domain model and SQLite store          2026-07-30
+
+**Gate:** PASS — 41/41 tests passed; merged line coverage is 81.64% for
+`Wintodo.Core` and 96.82% for `Wintodo.Data`; every 10,000-task smart-list
+query completed in 0.961 ms or less against a 5 ms budget; migration
+initialization and reopen both held `schema_version` at 1; and Release x64 and
+ARM64 builds completed with zero trim/AOT analyzer warnings.
+
+**Shipped**
+- Added the complete domain model, query shapes, injected clock, store contract,
+  coalesced change notifications, and RFC 5545 recurrence parser/serializer.
+- Implemented daily, weekly, monthly, and yearly recurrence advancement,
+  including finite rules, date filters, leap years, and DST-aware wall time.
+- Added the embedded SQLite v1 migration with WAL, partial indexes, FTS5,
+  synchronization metadata, unknown iCalendar preservation, and change logging.
+- Implemented serialized writes, bounded concurrent reads, list/group/task/step
+  operations, soft deletion, movement and ordering, smart lists, FTS search,
+  alarms, recurring completion history, vacuum, and store statistics.
+- Added deterministic recurrence tests and SQLite integration tests for schema
+  idempotency, CRUD, collection round-trips, change notifications, soft delete,
+  FTS, smart lists, alarms, recurrence completion, connection cleanup, coverage,
+  and the 10,000-task performance budget.
+- Completed the WinUI code review with no actionable findings.
+
+**Deviations from PLAN.md**
+- Added `ix_tasks_completed` and `ix_tasks_created`, and extended
+  `ix_tasks_myday` with `sort_order`, because the original index set could not
+  reliably meet the explicit 5 ms smart-list gate. `docs/DATA-MODEL.md` now
+  records the shipped schema.
+- Added an explicit `SQLitePCLRaw.bundle_e_sqlite3` reference so the store uses
+  SQLite 3.53.4 instead of the vulnerable transitive 3.40.1 native bundle
+  initially selected by `Microsoft.Data.Sqlite`.
+
+**Known issues carried forward**
+- None.
