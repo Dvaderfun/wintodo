@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.Diagnostics;
+using System.IO.Compression;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
@@ -8,10 +10,14 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.ApplicationModel.Resources;
+using Microsoft.Windows.Storage.Pickers;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 using Windows.System;
 using Windows.UI.ViewManagement;
 using Wintodo.Controls;
+using Wintodo.Core.Ical;
+using Wintodo.Core.Models;
 using Wintodo.Core.Services;
 using Wintodo.Services;
 using Wintodo.ViewModels;
@@ -22,10 +28,14 @@ public sealed partial class ShellPage : Page
 {
     private const string UserListNavigationPrefix = "list:";
     private const string ListDragFormat = "application/x-wintodo-list-uid";
+    private const long MaximumImportFileBytes = 32 * 1024 * 1024;
+    private const long MaximumImportBatchBytes = 128 * 1024 * 1024;
     private readonly ResourceLoader _resources = new();
     private readonly Dictionary<string, NavigationViewItem> _navigationItems =
         new(StringComparer.Ordinal);
     private readonly IClock _clock;
+    private readonly ITaskStore _taskStore;
+    private CancellationTokenSource? _transferStatusCancellation;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _midnightTimer;
     private bool _isNavigationInitialized;
     private bool _taskListEventsAttached;
@@ -36,12 +46,16 @@ public sealed partial class ShellPage : Page
         ShellStateService stateService)
     {
         _clock = clock;
+        _taskStore = taskStore;
         ViewModel = new ShellViewModel(taskStore, clock, stateService);
         InitializeComponent();
 
         ViewModel.NavigationStructureChanged += OnNavigationStructureChanged;
         ViewModel.NavigationRequested += OnNavigationRequested;
         ViewModel.DeleteListRequested += OnDeleteListRequested;
+        ViewModel.ImportIcalRequested += OnImportIcalRequested;
+        ViewModel.ExportAllRequested += OnExportAllRequested;
+        ViewModel.ExportListRequested += OnExportListRequested;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ShellRoot.ActualThemeChanged += OnActualThemeChanged;
 
@@ -49,10 +63,6 @@ public sealed partial class ShellPage : Page
         UserListsNavigationItem.DragOver += OnNavigationDragOver;
         UserListsNavigationItem.Drop += OnUngroupedDrop;
 
-        if (ShellNavigation.SettingsItem is NavigationViewItem settingsItem)
-        {
-            AutomationProperties.SetAutomationId(settingsItem, "Todo.Nav.Settings");
-        }
     }
 
     public ShellViewModel ViewModel { get; }
@@ -106,6 +116,11 @@ public sealed partial class ShellPage : Page
         return value ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    public InfoBarSeverity ToInfoBarSeverity(bool isError)
+    {
+        return isError ? InfoBarSeverity.Error : InfoBarSeverity.Success;
+    }
+
     private async void OnNavigationSelectionChanged(
         NavigationView sender,
         NavigationViewSelectionChangedEventArgs args)
@@ -123,7 +138,8 @@ public sealed partial class ShellPage : Page
         bool isSettingsSelected,
         CancellationToken cancellationToken = default)
     {
-        if (isSettingsSelected)
+        if (isSettingsSelected
+            || selectedItem is NavigationViewItem { Tag: "settings" })
         {
             ViewModel.SelectSettings();
             ApplyListAccent(list: null);
@@ -361,6 +377,447 @@ public sealed partial class ShellPage : Page
         {
             await ViewModel.ConfirmDeleteListAsync(list);
         }
+    }
+
+    private async void OnImportIcalRequested()
+    {
+        ViewModel.SetTransferBusy(true);
+        try
+        {
+            var picker = new FileOpenPicker(App.WindowId)
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+            };
+            picker.FileTypeFilter.Add(".ics");
+            IReadOnlyList<PickFileResult> files = await picker.PickMultipleFilesAsync();
+            if (files.Count == 0)
+            {
+                return;
+            }
+
+            var calendars = new List<IcalCalendar>(files.Count);
+            var reader = new IcalReader(_clock.LocalTimeZone);
+            long batchBytes = 0;
+            foreach (PickFileResult file in files)
+            {
+                var fileInfo = new FileInfo(file.Path);
+                if (fileInfo.Length > MaximumImportFileBytes)
+                {
+                    await ShowImportErrorAsync(_resources.GetString("Import_FileTooLarge"));
+                    return;
+                }
+
+                if (fileInfo.Length > MaximumImportBatchBytes - batchBytes)
+                {
+                    await ShowImportErrorAsync(_resources.GetString("Import_BatchTooLarge"));
+                    return;
+                }
+
+                batchBytes += fileInfo.Length;
+
+                byte[] content = await File.ReadAllBytesAsync(file.Path);
+                IcalCalendar calendar = reader.Read(content);
+                calendar.Name = string.IsNullOrWhiteSpace(calendar.Name)
+                    ? System.IO.Path.GetFileNameWithoutExtension(file.Path)
+                    : calendar.Name.Trim();
+                calendars.Add(calendar);
+            }
+
+            IcalImportPreview preview = await _taskStore.PreviewIcalImportAsync(calendars);
+            ViewModel.IsImportPreviewDialogLoaded = true;
+            await Task.Yield();
+            ImportPreviewDialog.XamlRoot = XamlRoot;
+            ImportPreviewDialog.IsPrimaryButtonEnabled = preview.TaskCount > 0;
+            ImportPreviewMessage.Text = string.Format(
+                CultureInfo.CurrentCulture,
+                _resources.GetString("Import_PreviewMessage"),
+                preview.TaskCount,
+                preview.ListCount,
+                preview.ConflictCount);
+            ContentDialogResult decision = await ImportPreviewDialog.ShowAsync();
+            if (decision != ContentDialogResult.Primary)
+            {
+                return;
+            }
+
+            try
+            {
+                IcalImportResult result = await _taskStore.ImportIcalAsync(calendars);
+                await ViewModel.RefreshNavigationAsync();
+                ShowTransferStatus(
+                    _resources.GetString("Transfer_StatusTitleSuccess"),
+                    string.Format(
+                        CultureInfo.CurrentCulture,
+                        _resources.GetString("Import_SuccessMessage"),
+                        result.CreatedTaskCount,
+                        result.UpdatedTaskCount),
+                    InfoBarSeverity.Success);
+            }
+            catch (Exception exception)
+            {
+                Trace.WriteLine($"WINTODO_ICAL_IMPORT_APPLY_EXCEPTION={exception}");
+                await ShowImportErrorAsync(_resources.GetString("Import_ApplyFailed"));
+            }
+        }
+        catch (IcalFormatException exception)
+        {
+            Trace.WriteLine($"WINTODO_ICAL_IMPORT_FORMAT_EXCEPTION={exception}");
+            string message = exception.LineNumber > 0
+                ? string.Format(
+                    CultureInfo.CurrentCulture,
+                    _resources.GetString("Import_MalformedMessage"),
+                    exception.LineNumber)
+                : _resources.GetString("Import_MalformedMessageNoLine");
+            await ShowImportErrorAsync(message);
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            Trace.WriteLine($"WINTODO_ICAL_IMPORT_READ_EXCEPTION={exception}");
+            await ShowImportErrorAsync(_resources.GetString("Import_ReadFailed"));
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_ICAL_IMPORT_EXCEPTION={exception}");
+            await ShowImportErrorAsync(_resources.GetString("Import_ApplyFailed"));
+        }
+        finally
+        {
+            ViewModel.SetTransferBusy(false);
+        }
+    }
+
+    private async void OnExportListRequested(ShellListItemViewModel list)
+    {
+        ViewModel.SetTransferBusy(true);
+        try
+        {
+            var picker = new FileSavePicker(App.WindowId)
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+                SuggestedFileName = SanitizeFileName(list.DisplayName),
+            };
+            picker.FileTypeChoices.Add(
+                _resources.GetString("Ical_FileType"),
+                new List<string> { ".ics" });
+            PickFileResult? target = await picker.PickSaveFileAsync();
+            if (target is null)
+            {
+                return;
+            }
+
+            IReadOnlyList<TodoTask> tasks = await _taskStore.GetTasksForExportAsync(list.Id);
+            var model = new TodoList
+            {
+                Id = list.Id,
+                Uid = list.Uid,
+                DisplayName = list.DisplayName,
+                Color = list.Color,
+            };
+            byte[] content = new IcalWriter(_clock.LocalTimeZone).WriteCalendar(
+                model,
+                tasks,
+                _clock.UtcNow,
+                ApplicationData.Current.LocalFolder.Path);
+            await WriteFileAtomicallyAsync(target.Path, content);
+            ShowTransferStatus(
+                _resources.GetString("Transfer_StatusTitleSuccess"),
+                string.Format(
+                    CultureInfo.CurrentCulture,
+                    _resources.GetString("ExportList_SuccessMessage"),
+                    list.DisplayName),
+                InfoBarSeverity.Success);
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_ICAL_EXPORT_LIST_EXCEPTION={exception}");
+            ShowTransferStatus(
+                _resources.GetString("Transfer_StatusTitleError"),
+                _resources.GetString("Export_Failed"),
+                InfoBarSeverity.Error);
+        }
+        finally
+        {
+            ViewModel.SetTransferBusy(false);
+        }
+    }
+
+    private async void OnExportAllRequested()
+    {
+        ViewModel.SetTransferBusy(true);
+        string? temporaryPath = null;
+        try
+        {
+            var picker = new FileSavePicker(App.WindowId)
+            {
+                SuggestedStartLocation = PickerLocationId.DocumentsLibrary,
+                SuggestedFileName = _resources.GetString("ExportAll_SuggestedFileName"),
+            };
+            picker.FileTypeChoices.Add(
+                _resources.GetString("Zip_FileType"),
+                new List<string> { ".zip" });
+            PickFileResult? target = await picker.PickSaveFileAsync();
+            if (target is null)
+            {
+                return;
+            }
+
+            temporaryPath = CreateTemporarySiblingPath(target.Path);
+            var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var writer = new IcalWriter(_clock.LocalTimeZone);
+            await using (var file = new FileStream(
+                             temporaryPath,
+                             FileMode.CreateNew,
+                             FileAccess.Write,
+                             FileShare.None,
+                             bufferSize: 81920,
+                             useAsync: true))
+            using (var archive = new ZipArchive(file, ZipArchiveMode.Create, leaveOpen: false))
+            {
+                foreach (ShellListItemViewModel list in ViewModel.UserLists)
+                {
+                    IReadOnlyList<TodoTask> tasks =
+                        await _taskStore.GetTasksForExportAsync(list.Id);
+                    var model = new TodoList
+                    {
+                        Id = list.Id,
+                        Uid = list.Uid,
+                        DisplayName = list.DisplayName,
+                        Color = list.Color,
+                    };
+                    byte[] content = writer.WriteCalendar(
+                        model,
+                        tasks,
+                        _clock.UtcNow,
+                        ApplicationData.Current.LocalFolder.Path);
+                    string entryName = GetUniqueFileName(list.DisplayName, usedNames);
+                    ZipArchiveEntry entry = archive.CreateEntry(
+                        entryName,
+                        CompressionLevel.Optimal);
+                    await using Stream entryStream = entry.Open();
+                    await entryStream.WriteAsync(content);
+                }
+            }
+
+            File.Move(temporaryPath, target.Path, overwrite: true);
+            temporaryPath = null;
+            ShowTransferStatus(
+                _resources.GetString("Transfer_StatusTitleSuccess"),
+                string.Format(
+                    CultureInfo.CurrentCulture,
+                    _resources.GetString("ExportAll_SuccessMessage"),
+                    ViewModel.UserLists.Count),
+                InfoBarSeverity.Success);
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_ICAL_EXPORT_ALL_EXCEPTION={exception}");
+            ShowTransferStatus(
+                _resources.GetString("Transfer_StatusTitleError"),
+                _resources.GetString("Export_Failed"),
+                InfoBarSeverity.Error);
+        }
+        finally
+        {
+            TryDeleteTemporaryFile(temporaryPath);
+            ViewModel.SetTransferBusy(false);
+        }
+    }
+
+    private async Task ShowImportErrorAsync(string message)
+    {
+        ViewModel.IsImportErrorDialogLoaded = true;
+        await Task.Yield();
+        ImportErrorDialog.XamlRoot = XamlRoot;
+        ImportErrorMessage.Text = message;
+        await ImportErrorDialog.ShowAsync();
+    }
+
+    private void OnImportPreviewDialogOpened(
+        ContentDialog sender,
+        ContentDialogOpenedEventArgs args)
+    {
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "PrimaryButton",
+            "Todo.Dialog.ImportPreview.Import");
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "CloseButton",
+            "Todo.Dialog.ImportPreview.Cancel");
+    }
+
+    private void OnImportErrorDialogOpened(
+        ContentDialog sender,
+        ContentDialogOpenedEventArgs args)
+    {
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "CloseButton",
+            "Todo.Dialog.ImportError.Close");
+    }
+
+    private void SetOpenDialogButtonAutomationId(
+        ContentDialog dialog,
+        string generatedId,
+        string automationId)
+    {
+        if (TrySetOpenDialogButtonAutomationId(dialog, generatedId, automationId))
+        {
+            return;
+        }
+
+        DispatcherQueue.TryEnqueue(
+            () => TrySetOpenDialogButtonAutomationId(dialog, generatedId, automationId));
+    }
+
+    private static bool TrySetOpenDialogButtonAutomationId(
+        ContentDialog dialog,
+        string generatedId,
+        string automationId)
+    {
+        foreach (Microsoft.UI.Xaml.Controls.Primitives.Popup popup in
+                 VisualTreeHelper.GetOpenPopupsForXamlRoot(dialog.XamlRoot))
+        {
+            if (TrySetDialogButtonAutomationId(popup.Child, generatedId, automationId))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool TrySetDialogButtonAutomationId(
+        DependencyObject root,
+        string generatedId,
+        string automationId)
+    {
+        int childCount = VisualTreeHelper.GetChildrenCount(root);
+        for (int index = 0; index < childCount; index++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, index);
+            if (child is Button button
+                && (button.Name == generatedId
+                    || AutomationProperties.GetAutomationId(button) == generatedId))
+            {
+                AutomationProperties.SetAutomationId(button, automationId);
+                return true;
+            }
+
+            if (TrySetDialogButtonAutomationId(child, generatedId, automationId))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void ShowTransferStatus(
+        string title,
+        string message,
+        InfoBarSeverity severity)
+    {
+        _transferStatusCancellation?.Cancel();
+        _transferStatusCancellation?.Dispose();
+        _transferStatusCancellation = new CancellationTokenSource();
+        ViewModel.ShowTransferStatus(
+            title,
+            message,
+            severity == InfoBarSeverity.Error);
+        _ = CloseTransferStatusAsync(_transferStatusCancellation.Token);
+    }
+
+    private async Task CloseTransferStatusAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(6), cancellationToken);
+            ViewModel.IsTransferStatusOpen = false;
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private static async Task WriteFileAtomicallyAsync(string targetPath, byte[] content)
+    {
+        string temporaryPath = CreateTemporarySiblingPath(targetPath);
+        try
+        {
+            await File.WriteAllBytesAsync(temporaryPath, content);
+            File.Move(temporaryPath, targetPath, overwrite: true);
+        }
+        finally
+        {
+            TryDeleteTemporaryFile(temporaryPath);
+        }
+    }
+
+    private static void TryDeleteTemporaryFile(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return;
+        }
+
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception exception) when (
+            exception is IOException or UnauthorizedAccessException)
+        {
+            Trace.WriteLine($"WINTODO_ICAL_TEMP_CLEANUP_EXCEPTION={exception}");
+        }
+    }
+
+    private static string CreateTemporarySiblingPath(string targetPath)
+    {
+        string directory = System.IO.Path.GetDirectoryName(targetPath)
+            ?? throw new IOException("The selected destination has no directory.");
+        return System.IO.Path.Combine(
+            directory,
+            $".{System.IO.Path.GetFileName(targetPath)}.{Guid.NewGuid():N}.tmp");
+    }
+
+    private string GetUniqueFileName(string displayName, ISet<string> usedNames)
+    {
+        string stem = SanitizeFileName(displayName);
+        string candidate = stem + ".ics";
+        int suffix = 2;
+        while (!usedNames.Add(candidate))
+        {
+            candidate = string.Format(
+                CultureInfo.CurrentCulture,
+                _resources.GetString("Export_DuplicateFileNameFormat"),
+                stem,
+                suffix++);
+        }
+
+        return candidate;
+    }
+
+    private string SanitizeFileName(string value)
+    {
+        char[] invalid = System.IO.Path.GetInvalidFileNameChars();
+        string sanitized = new(value
+            .Select(character => invalid.Contains(character) ? '_' : character)
+            .ToArray());
+        sanitized = sanitized.Trim().TrimEnd('.');
+        if (sanitized.Length == 0)
+        {
+            sanitized = _resources.GetString("Export_FallbackFileName");
+        }
+
+        if (sanitized.Length <= 96)
+        {
+            return sanitized;
+        }
+
+        int length = char.IsHighSurrogate(sanitized[95]) ? 95 : 96;
+        return sanitized[..length];
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)

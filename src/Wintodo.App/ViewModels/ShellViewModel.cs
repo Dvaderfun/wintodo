@@ -30,6 +30,7 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList = new TaskListViewModel(taskStore, clock);
         TaskList.NavigationDataChanged += OnNavigationDataChanged;
         TaskList.DeleteListRequested += OnDeleteListRequested;
+        TaskList.ExportListRequested += OnExportListRequested;
         Detail = new TaskDetailViewModel(taskStore, clock);
         Detail.CloseRequested += CloseDetail;
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
@@ -41,6 +42,12 @@ public sealed partial class ShellViewModel : ObservableObject
     internal event Action<string>? NavigationRequested;
 
     internal event Action<ShellListItemViewModel>? DeleteListRequested;
+
+    internal event Action? ImportIcalRequested;
+
+    internal event Action? ExportAllRequested;
+
+    internal event Action<ShellListItemViewModel>? ExportListRequested;
 
     public ObservableCollection<ShellListItemViewModel> UserLists { get; } = [];
 
@@ -64,6 +71,12 @@ public sealed partial class ShellViewModel : ObservableObject
     public partial bool IsDeleteListDialogLoaded { get; set; }
 
     [ObservableProperty]
+    public partial bool IsImportPreviewDialogLoaded { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsImportErrorDialogLoaded { get; set; }
+
+    [ObservableProperty]
     public partial bool IsTaskListLoaded { get; set; }
 
     [ObservableProperty]
@@ -71,6 +84,26 @@ public sealed partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsDetailPaneOpen { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsSettingsVisible { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ImportIcalCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ExportAllCommand))]
+    public partial bool IsTransferBusy { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsTransferStatusOpen { get; set; }
+
+    [ObservableProperty]
+    public partial string TransferStatusTitle { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string TransferStatusMessage { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial bool TransferStatusIsError { get; set; }
 
     [ObservableProperty]
     public partial int DetailInstanceCount { get; set; }
@@ -97,6 +130,7 @@ public sealed partial class ShellViewModel : ObservableObject
         CancellationToken cancellationToken = default)
     {
         CloseDetail();
+        IsSettingsVisible = false;
         _selectedNavigationKey = navigationKey;
         _selectedNavigationTitle = title;
         _selectedNavigationIsMyDay = isMyDay;
@@ -111,12 +145,14 @@ public sealed partial class ShellViewModel : ObservableObject
         CloseDetail();
         if (!string.IsNullOrWhiteSpace(text))
         {
+            IsSettingsVisible = false;
             await TaskList.LoadSearchAsync(text, cancellationToken);
             return;
         }
 
         if (_selectedNavigationKey == "settings")
         {
+            IsSettingsVisible = true;
             TaskList.ShowSettings(_resources.GetString("Shell_SettingsTitle"));
             return;
         }
@@ -158,10 +194,42 @@ public sealed partial class ShellViewModel : ObservableObject
     internal void SelectSettings()
     {
         CloseDetail();
+        IsSettingsVisible = true;
         _selectedNavigationKey = "settings";
         _selectedNavigationTitle = _resources.GetString("Shell_SettingsTitle");
         _selectedNavigationIsMyDay = false;
         TaskList.ShowSettings(_resources.GetString("Shell_SettingsTitle"));
+    }
+
+    internal async Task RefreshNavigationAsync(CancellationToken cancellationToken = default)
+    {
+        Task<IReadOnlyList<TodoList>> listsTask = _taskStore.GetListsAsync(cancellationToken);
+        Task<IReadOnlyList<ListGroup>> groupsTask = _taskStore.GetGroupsAsync(cancellationToken);
+        await Task.WhenAll(listsTask, groupsTask);
+        LoadNavigationData(await listsTask, await groupsTask);
+        NavigationStructureChanged?.Invoke();
+    }
+
+    internal void SetTransferBusy(bool value)
+    {
+        if (value)
+        {
+            IsTransferStatusOpen = false;
+        }
+
+        IsTransferBusy = value;
+        TaskList.IsTransferBusy = value;
+    }
+
+    internal void ShowTransferStatus(
+        string title,
+        string message,
+        bool isError)
+    {
+        TransferStatusTitle = title;
+        TransferStatusMessage = message;
+        TransferStatusIsError = isError;
+        IsTransferStatusOpen = true;
     }
 
     internal async Task OpenDetailAsync(
@@ -339,6 +407,23 @@ public sealed partial class ShellViewModel : ObservableObject
         DeleteListRequested?.Invoke(list);
     }
 
+    private bool CanTransferData()
+    {
+        return !IsTransferBusy;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanTransferData))]
+    private void ImportIcal()
+    {
+        ImportIcalRequested?.Invoke();
+    }
+
+    [RelayCommand(CanExecute = nameof(CanTransferData))]
+    private void ExportAll()
+    {
+        ExportAllRequested?.Invoke();
+    }
+
     private void LoadNavigationData(
         IReadOnlyList<TodoList> lists,
         IReadOnlyList<ListGroup> groups)
@@ -394,5 +479,10 @@ public sealed partial class ShellViewModel : ObservableObject
     private void OnDeleteListRequested(ShellListItemViewModel list)
     {
         DeleteListRequested?.Invoke(list);
+    }
+
+    private void OnExportListRequested(ShellListItemViewModel list)
+    {
+        ExportListRequested?.Invoke(list);
     }
 }

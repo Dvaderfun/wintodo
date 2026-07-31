@@ -19,6 +19,9 @@ public partial class App : Application
     public static nint WindowHandle =>
         WinRT.Interop.WindowNative.GetWindowHandle(Window);
 
+    public static Microsoft.UI.WindowId WindowId =>
+        Microsoft.UI.Win32Interop.GetWindowIdFromWindow(WindowHandle);
+
     public App()
     {
         InitializeComponent();

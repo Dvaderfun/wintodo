@@ -246,3 +246,55 @@ and ARM64 builds completed with zero warnings.
 - The framework-dependent startup and loaded-working-set misses recorded in M4
   remain open for profiling and the Native AOT gate in M9. M5 introduced no
   additional known issues.
+
+## M6 — iCalendar interop (`.ics` import/export)          2026-07-31
+
+**Gate:** AUTOMATED PASS; MANUAL INTEROP PENDING — all four fixture families
+round-trip with equal VTODO/VALARM property sets while ignoring only `DTSTAMP`
+and property order; unknown physical property lines, folding, and terminators
+round-trip byte-for-byte; 70/70 Core/Data tests and the 7/7 M6 UI suite passed;
+malformed input showed a line-specific dialog without a crash or partial
+write; and Debug x64 plus Release x64 and ARM64 builds completed with zero
+warnings. The required one-time hand import into a current Nextcloud Tasks or
+Thunderbird installation has not been run in this environment, so M6 is not
+reported as fully complete.
+
+**Shipped**
+- Added the purpose-built RFC 5545 `IcalReader` and `IcalWriter` with strict
+  UTF-8, 75-octet folding, physical-line unfolding, TEXT and RFC 6868
+  escaping, quoted parameters, DATE/DATE-TIME/TZID handling, RFC duration
+  alarms, recurrence passthrough, local attachment URIs, and documented custom
+  properties.
+- Preserved unmodelled VTODO and VALARM properties verbatim in
+  `tasks.ical_unknown`, together with internal presence and DTSTART timezone
+  metadata needed to retain the original property set without freezing edited
+  values.
+- Added transactional SQLite preview/import, UID conflict replacement,
+  deleted-task revival, collection replacement, child-before-parent support,
+  cycle/cross-list hierarchy rejection, coalesced notifications, and complete
+  per-list export queries including steps, alarms, tags, and attachments.
+- Added localized Settings data commands, current desktop open/save pickers,
+  task/list/conflict preview, line-specific import errors, per-list `.ics`
+  export, all-list ZIP export, atomic destination replacement, progress/status
+  feedback, responsive layout, and stable M6 AutomationIds.
+- Added a sanitized Nextcloud, Tasks.org, Thunderbird, and Apple Reminders
+  fixture corpus with source provenance, exact unknown-line assertions,
+  canonical property-set comparisons, malformed data, storage rollback, and
+  deterministic picker-driven UI coverage.
+- Completed the WinUI code review; stale transfer feedback, UI types in the
+  view model, generic generated-dialog IDs, temp-file cleanup failures,
+  attachment path confinement, non-finite ordering, RFC duration edge cases,
+  and hierarchy integrity findings were fixed before this entry.
+
+**Deviations from PLAN.md**
+- The checked-in client corpus is sanitized and minimized from public exports
+  and documented client conventions rather than copied directly from personal
+  live-client accounts. `tests/fixtures/ical/README.md` records provenance and
+  explicitly does not treat those fixtures as the manual interop gate.
+
+**Known issues carried forward**
+- A human must import a Wintodo-exported list into current Nextcloud Tasks or
+  Thunderbird and verify dates, priority, steps, and recurrence before M6 can
+  be marked fully complete.
+- The framework-dependent startup and loaded-working-set misses recorded in M4
+  remain open for profiling and the Native AOT gate in M9.
