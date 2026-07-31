@@ -19,4 +19,10 @@
     <ProjectReference Include="..\..\src\Wintodo.Core\Wintodo.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\fixtures\ical\**\*.ics"
+             Link="fixtures\ical\%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

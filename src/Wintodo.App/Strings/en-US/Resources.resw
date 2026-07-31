@@ -48,6 +48,9 @@
   <data name="NavPlanned.Content" xml:space="preserve">
     <value>Planned</value>
   </data>
+  <data name="NavSettings.Content" xml:space="preserve">
+    <value>Settings</value>
+  </data>
   <data name="NewGroupButton.AutomationProperties.Name" xml:space="preserve">
     <value>New group</value>
   </data>
@@ -659,5 +662,98 @@
   </data>
   <data name="CompletedHeader_AccessibleName" xml:space="preserve">
     <value>Completed, {0} tasks</value>
+  </data>
+  <data name="SettingsTitle.Text" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsDataHeader.Text" xml:space="preserve">
+    <value>Data</value>
+  </data>
+  <data name="SettingsImportButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Import iCalendar files</value>
+  </data>
+  <data name="SettingsImportLabel.Text" xml:space="preserve">
+    <value>Import .ics</value>
+  </data>
+  <data name="SettingsExportAllButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Export all lists</value>
+  </data>
+  <data name="SettingsExportAllLabel.Text" xml:space="preserve">
+    <value>Export all</value>
+  </data>
+  <data name="ExportListMenu.Text" xml:space="preserve">
+    <value>Export list</value>
+  </data>
+  <data name="ImportPreviewDialog.Title" xml:space="preserve">
+    <value>Import tasks</value>
+  </data>
+  <data name="ImportPreviewDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="ImportPreviewDialog.CloseButtonText" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ImportErrorDialog.Title" xml:space="preserve">
+    <value>Could not import tasks</value>
+  </data>
+  <data name="ImportErrorDialog.CloseButtonText" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="Import_PreviewMessage" xml:space="preserve">
+    <value>Tasks ready: {0}. Lists: {1}. Existing tasks to replace: {2}.</value>
+  </data>
+  <data name="Import_MalformedMessage" xml:space="preserve">
+    <value>The selected file is not valid iCalendar data at line {0}. No tasks were imported.</value>
+  </data>
+  <data name="Import_MalformedMessageNoLine" xml:space="preserve">
+    <value>The selected file is not valid iCalendar data. No tasks were imported.</value>
+  </data>
+  <data name="Import_FileTooLarge" xml:space="preserve">
+    <value>The selected iCalendar file is too large. No tasks were imported.</value>
+  </data>
+  <data name="Import_BatchTooLarge" xml:space="preserve">
+    <value>The selected files are too large to import together. No tasks were imported.</value>
+  </data>
+  <data name="Import_ReadFailed" xml:space="preserve">
+    <value>The selected files could not be read. No tasks were imported.</value>
+  </data>
+  <data name="Import_ApplyFailed" xml:space="preserve">
+    <value>The import could not be completed. No tasks were imported.</value>
+  </data>
+  <data name="Import_SuccessMessage" xml:space="preserve">
+    <value>Tasks imported: {0}. Existing tasks updated: {1}.</value>
+  </data>
+  <data name="ExportList_SuccessMessage" xml:space="preserve">
+    <value>Exported {0}.</value>
+  </data>
+  <data name="ExportAll_SuccessMessage" xml:space="preserve">
+    <value>Lists exported: {0}.</value>
+  </data>
+  <data name="Export_Failed" xml:space="preserve">
+    <value>The export could not be completed.</value>
+  </data>
+  <data name="Transfer_StatusTitleSuccess" xml:space="preserve">
+    <value>Data transfer complete</value>
+  </data>
+  <data name="Transfer_StatusTitleError" xml:space="preserve">
+    <value>Data transfer failed</value>
+  </data>
+  <data name="Ical_FileType" xml:space="preserve">
+    <value>iCalendar files</value>
+  </data>
+  <data name="Zip_FileType" xml:space="preserve">
+    <value>ZIP archives</value>
+  </data>
+  <data name="ExportAll_SuggestedFileName" xml:space="preserve">
+    <value>Wintodo-backup</value>
+  </data>
+  <data name="Export_FallbackFileName" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="Export_DuplicateFileNameFormat" xml:space="preserve">
+    <value>{0} ({1}).ics</value>
+  </data>
+  <data name="SettingsTransferProgress.AutomationProperties.Name" xml:space="preserve">
+    <value>Data transfer in progress</value>
   </data>
 </root>

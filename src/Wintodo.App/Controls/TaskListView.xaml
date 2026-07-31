@@ -373,6 +373,14 @@
                         </MenuFlyoutItem>
                         <MenuFlyoutSeparator />
                         <MenuFlyoutItem
+                            x:Uid="ExportListMenu"
+                            AutomationProperties.AutomationId="Todo.List.Menu.Export"
+                            Command="{x:Bind ViewModel.RequestExportListCommand, Mode=OneTime}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE898;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                        <MenuFlyoutItem
                             x:Uid="DeleteListMenu"
                             AutomationProperties.AutomationId="Todo.List.Menu.Delete"
                             Command="{x:Bind ViewModel.RequestDeleteListCommand, Mode=OneTime}"

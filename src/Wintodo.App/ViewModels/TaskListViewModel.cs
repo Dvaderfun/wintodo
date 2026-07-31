@@ -52,6 +52,8 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     internal event Action<ShellListItemViewModel>? DeleteListRequested;
 
+    internal event Action<ShellListItemViewModel>? ExportListRequested;
+
     internal event Action<TaskItemViewModel>? TaskCompletionChanged;
 
     public ObservableCollection<TaskListEntryViewModel> VisibleItems { get; } = [];
@@ -73,7 +75,12 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial int ActiveCount { get; set; }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RequestExportListCommand))]
     public partial bool IsUserListSelected { get; set; }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(RequestExportListCommand))]
+    public partial bool IsTransferBusy { get; set; }
 
     [ObservableProperty]
     public partial bool IsTaskListVisible { get; set; } = true;
@@ -568,6 +575,20 @@ public sealed partial class TaskListViewModel : ObservableObject
         if (_selectedList is not null)
         {
             DeleteListRequested?.Invoke(_selectedList);
+        }
+    }
+
+    private bool CanRequestExportList()
+    {
+        return _selectedList is not null && IsUserListSelected && !IsTransferBusy;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanRequestExportList))]
+    private void RequestExportList()
+    {
+        if (_selectedList is not null)
+        {
+            ExportListRequested?.Invoke(_selectedList);
         }
     }
 

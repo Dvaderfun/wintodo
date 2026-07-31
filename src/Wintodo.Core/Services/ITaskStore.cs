@@ -1,3 +1,4 @@
+using Wintodo.Core.Ical;
 using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
 
@@ -91,6 +92,18 @@ public interface ITaskStore : IAsyncDisposable
     Task<IReadOnlyList<TodoTask>> SearchAsync(
         string text,
         int limit = 100,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TodoTask>> GetTasksForExportAsync(
+        long listId,
+        CancellationToken cancellationToken = default);
+
+    Task<IcalImportPreview> PreviewIcalImportAsync(
+        IReadOnlyList<IcalCalendar> calendars,
+        CancellationToken cancellationToken = default);
+
+    Task<IcalImportResult> ImportIcalAsync(
+        IReadOnlyList<IcalCalendar> calendars,
         CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<TaskAlarm>> GetPendingAlarmsAsync(

@@ -140,7 +140,7 @@
             IsBackButtonVisible="Collapsed"
             IsPaneToggleButtonVisible="False"
             IsPaneOpen="False"
-            IsSettingsVisible="True"
+            IsSettingsVisible="False"
             OpenPaneLength="300"
             PaneDisplayMode="LeftMinimal"
             SelectionChanged="OnNavigationSelectionChanged">
@@ -204,6 +204,18 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.MenuItems>
+
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem
+                    x:Name="SettingsNavigationItem"
+                    x:Uid="NavSettings"
+                    AutomationProperties.AutomationId="Todo.Nav.Settings"
+                    Tag="settings">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Setting" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
 
             <NavigationView.PaneFooter>
                 <Grid ColumnSpacing="8" RowSpacing="4">
@@ -284,7 +296,12 @@
                             x:Name="TaskList"
                             Loaded="OnTaskListLoaded"
                             x:Load="{x:Bind ViewModel.IsTaskListLoaded, Mode=OneWay}"
-                            ViewModel="{x:Bind ViewModel.TaskList, Mode=OneWay}" />
+                            ViewModel="{x:Bind ViewModel.TaskList, Mode=OneWay}"
+                            Visibility="{x:Bind controls:TaskListView.InverseBoolToVisibility(ViewModel.IsSettingsVisible), Mode=OneWay}" />
+                        <controls:SettingsView
+                            x:Name="SettingsContent"
+                            ViewModel="{x:Bind ViewModel, Mode=OneWay}"
+                            x:Load="{x:Bind ViewModel.IsSettingsVisible, Mode=OneWay}" />
                     </Grid>
                 </Border>
 
@@ -333,6 +350,47 @@
                 Style="{StaticResource BodyTextBlockStyle}"
                 TextWrapping="Wrap" />
         </ContentDialog>
+
+        <ContentDialog
+            x:Name="ImportPreviewDialog"
+            x:Uid="ImportPreviewDialog"
+            AutomationProperties.AutomationId="Todo.Dialog.ImportPreview"
+            DefaultButton="Primary"
+            Opened="OnImportPreviewDialogOpened"
+            x:Load="{x:Bind ViewModel.IsImportPreviewDialogLoaded, Mode=OneWay}">
+            <TextBlock
+                x:Name="ImportPreviewMessage"
+                AutomationProperties.AutomationId="Todo.Dialog.ImportPreview.Message"
+                Style="{StaticResource BodyTextBlockStyle}"
+                TextWrapping="Wrap" />
+        </ContentDialog>
+
+        <ContentDialog
+            x:Name="ImportErrorDialog"
+            x:Uid="ImportErrorDialog"
+            AutomationProperties.AutomationId="Todo.Dialog.ImportError"
+            DefaultButton="Close"
+            Opened="OnImportErrorDialogOpened"
+            x:Load="{x:Bind ViewModel.IsImportErrorDialogLoaded, Mode=OneWay}">
+            <TextBlock
+                x:Name="ImportErrorMessage"
+                AutomationProperties.AutomationId="Todo.Dialog.ImportError.Message"
+                Style="{StaticResource BodyTextBlockStyle}"
+                TextWrapping="Wrap" />
+        </ContentDialog>
+
+        <InfoBar
+            x:Name="TransferStatusBar"
+            MaxWidth="480"
+            Margin="16"
+            HorizontalAlignment="Right"
+            VerticalAlignment="Bottom"
+            AutomationProperties.AutomationId="Todo.Transfer.Status"
+            IsClosable="False"
+            IsOpen="{x:Bind ViewModel.IsTransferStatusOpen, Mode=OneWay}"
+            Message="{x:Bind ViewModel.TransferStatusMessage, Mode=OneWay}"
+            Severity="{x:Bind ToInfoBarSeverity(ViewModel.TransferStatusIsError), Mode=OneWay}"
+            Title="{x:Bind ViewModel.TransferStatusTitle, Mode=OneWay}" />
 
         <TextBlock
             Width="1"
