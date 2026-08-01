@@ -50,7 +50,7 @@
                         <StateTrigger IsActive="{x:Bind local:TaskRow.Not(ViewModel.IsCompleted), Mode=OneWay}" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="RowRoot.Opacity" Value="1" />
+                        <Setter Target="TaskContent.Opacity" Value="1" />
                         <Setter Target="TaskTitle.TextDecorations" Value="None" />
                         <Setter Target="MetadataText.Visibility" Value="Visible" />
                         <Setter Target="CompletionText.Visibility" Value="Collapsed" />
@@ -61,11 +61,10 @@
                         <StateTrigger IsActive="{x:Bind ViewModel.IsCompleted, Mode=OneWay}" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="RowRoot.Opacity" Value="0.6" />
+                        <Setter Target="TaskContent.Opacity" Value="0.6" />
                         <Setter Target="TaskTitle.TextDecorations" Value="Strikethrough" />
                         <Setter Target="MetadataText.Visibility" Value="Collapsed" />
                         <Setter Target="CompletionText.Visibility" Value="Visible" />
-                        <Setter Target="ImportanceButton.Opacity" Value="1" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -119,10 +118,6 @@
                 </VisualState>
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
-
-        <Grid.OpacityTransition>
-            <ScalarTransition Duration="0:0:0.2" />
-        </Grid.OpacityTransition>
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="32" />
@@ -193,9 +188,13 @@
         </Grid>
 
         <StackPanel
+            x:Name="TaskContent"
             Grid.Column="2"
             VerticalAlignment="Center"
             Spacing="0">
+            <StackPanel.OpacityTransition>
+                <ScalarTransition Duration="0:0:0.2" />
+            </StackPanel.OpacityTransition>
             <TextBlock
                 x:Name="TaskTitle"
                 Foreground="{ThemeResource TextFillColorPrimaryBrush}"
@@ -243,6 +242,12 @@
             IsChecked="{x:Bind ViewModel.IsImportant, Mode=OneWay}"
             Opacity="{x:Bind local:TaskRow.StarOpacity(ViewModel.IsImportant, ViewModel.IsSelected), Mode=OneWay}"
             Style="{StaticResource TaskSubtleToggleButtonStyle}">
+            <ToggleButton.Resources>
+                <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="{ThemeResource SubtleFillColorTransparent}" />
+                <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{ThemeResource SubtleFillColorSecondary}" />
+                <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="{ThemeResource SubtleFillColorTertiary}" />
+                <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedDisabled" Color="{ThemeResource SubtleFillColorDisabled}" />
+            </ToggleButton.Resources>
             <FontIcon
                 x:Name="ImportanceIcon"
                 FontFamily="{ThemeResource SymbolThemeFontFamily}"

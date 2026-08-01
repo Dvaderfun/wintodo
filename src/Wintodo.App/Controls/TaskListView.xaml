@@ -180,31 +180,49 @@
                         Text="{x:Bind HeaderCount, Mode=OneWay}" />
                 </Grid>
                 <ToggleButton
-                    Margin="0,16,0,0"
-                    MinHeight="32"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Stretch"
+                    Margin="0,16,0,8"
+                    MinHeight="40"
+                    Padding="12,0"
+                    HorizontalAlignment="Left"
+                    HorizontalContentAlignment="Left"
+                    VerticalContentAlignment="Center"
                     AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneWay}"
                     AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     Command="{x:Bind ToggleCommand, Mode=OneTime}"
+                    Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                     IsChecked="{x:Bind IsExpanded, Mode=OneWay}"
                     Style="{StaticResource TaskSubtleToggleButtonStyle}"
                     Visibility="{x:Bind local:TaskListView.CompletedGroupVisibility(Kind), Mode=OneWay}">
+                    <ToggleButton.Resources>
+                        <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="CardBackgroundFillColorSecondaryBrush" />
+                        <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="SubtleFillColorTertiaryBrush" />
+                        <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="CardBackgroundFillColorDefaultBrush" />
+                        <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="CardBackgroundFillColorSecondaryBrush" />
+                        <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="SubtleFillColorTertiaryBrush" />
+                        <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="TextFillColorPrimaryBrush" />
+                        <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="TextFillColorPrimaryBrush" />
+                        <StaticResource x:Key="ToggleButtonForegroundCheckedPressed" ResourceKey="TextFillColorSecondaryBrush" />
+                    </ToggleButton.Resources>
                     <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="16" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <FontIcon
                             Grid.Column="0"
+                            FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                            FontSize="{ThemeResource ControlContentThemeFontSize}"
                             Glyph="{x:Bind local:TaskListView.CompletedChevron(IsExpanded), Mode=OneWay}" />
                         <TextBlock
                             Grid.Column="1"
+                            VerticalAlignment="Center"
                             Style="{StaticResource BodyStrongTextBlockStyle}"
                             Text="{x:Bind Title, Mode=OneWay}" />
                         <TextBlock
                             Grid.Column="2"
+                            VerticalAlignment="Center"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Style="{StaticResource CaptionTextBlockStyle}"
                             Text="{x:Bind HeaderCount, Mode=OneWay}" />
@@ -593,7 +611,7 @@
                 ItemTemplate="{StaticResource TaskRowTemplate}"
                 PreviewKeyDown="OnTasksListPreviewKeyDown"
                 SelectionChanged="OnTaskSelectionChanged"
-                SelectionMode="Single">
+                SelectionMode="Multiple">
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <ItemsStackPanel AreStickyGroupHeadersEnabled="True" />

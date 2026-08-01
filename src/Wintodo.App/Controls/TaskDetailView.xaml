@@ -269,6 +269,12 @@
                 Command="{x:Bind ViewModel.ToggleImportanceCommand, Mode=OneWay}"
                 IsChecked="{x:Bind ViewModel.IsImportant, Mode=OneWay}"
                 Style="{StaticResource TaskSubtleToggleButtonStyle}">
+                <ToggleButton.Resources>
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="{ThemeResource SubtleFillColorTransparent}" />
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{ThemeResource SubtleFillColorSecondary}" />
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="{ThemeResource SubtleFillColorTertiary}" />
+                    <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedDisabled" Color="{ThemeResource SubtleFillColorDisabled}" />
+                </ToggleButton.Resources>
                 <FontIcon
                     Foreground="{ThemeResource ListAccentBrush}"
                     Glyph="{x:Bind local:TaskDetailView.ImportanceGlyph(ViewModel.IsImportant), Mode=OneWay}" />

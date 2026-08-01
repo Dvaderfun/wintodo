@@ -111,19 +111,22 @@
                 <VisualState x:Name="DetailClosed">
                     <VisualState.Setters>
                         <Setter Target="DetailHost.Visibility" Value="Collapsed" />
-                        <Setter Target="DetailHost.Opacity" Value="0" />
+                        <Setter Target="DetailContent.Opacity" Value="0" />
+                        <Setter Target="DetailContentTranslate.X" Value="32" />
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="DetailClosing">
                     <VisualState.Setters>
                         <Setter Target="DetailHost.Visibility" Value="Visible" />
-                        <Setter Target="DetailHost.Opacity" Value="0" />
+                        <Setter Target="DetailContent.Opacity" Value="0" />
+                        <Setter Target="DetailContentTranslate.X" Value="32" />
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="DetailOpen">
                     <VisualState.Setters>
                         <Setter Target="DetailHost.Visibility" Value="Visible" />
-                        <Setter Target="DetailHost.Opacity" Value="1" />
+                        <Setter Target="DetailContent.Opacity" Value="1" />
+                        <Setter Target="DetailContentTranslate.X" Value="0" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -323,17 +326,8 @@
                     MaxWidth="720"
                     Margin="8"
                     HorizontalAlignment="Right"
-                    Opacity="0"
                     Visibility="Collapsed"
                     Width="{x:Bind ViewModel.DetailPaneWidth, Mode=TwoWay}">
-                    <Grid.OpacityTransition>
-                        <ScalarTransition Duration="0:0:0.2" />
-                    </Grid.OpacityTransition>
-                    <Grid.ChildrenTransitions>
-                        <TransitionCollection>
-                            <EntranceThemeTransition FromHorizontalOffset="32" />
-                        </TransitionCollection>
-                    </Grid.ChildrenTransitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="12" />
                         <ColumnDefinition Width="*" />
@@ -355,12 +349,21 @@
                         <Border.Shadow>
                             <ThemeShadow />
                         </Border.Shadow>
-                        <controls:TaskDetailView
-                            x:Name="TaskDetail"
-                            AutomationProperties.AutomationId="Todo.Detail.View"
-                            Loaded="OnTaskDetailLoaded"
-                            ViewModel="{x:Bind ViewModel.Detail, Mode=OneWay}"
-                            x:Load="{x:Bind ViewModel.IsDetailPaneLoaded, Mode=OneWay}" />
+                        <Grid
+                            x:Name="DetailContent"
+                            Opacity="0">
+                            <Grid.RenderTransform>
+                                <TranslateTransform
+                                    x:Name="DetailContentTranslate"
+                                    X="32" />
+                            </Grid.RenderTransform>
+                            <controls:TaskDetailView
+                                x:Name="TaskDetail"
+                                AutomationProperties.AutomationId="Todo.Detail.View"
+                                Loaded="OnTaskDetailLoaded"
+                                ViewModel="{x:Bind ViewModel.Detail, Mode=OneWay}"
+                                x:Load="{x:Bind ViewModel.IsDetailPaneLoaded, Mode=OneWay}" />
+                        </Grid>
                     </Border>
                 </Grid>
             </Grid>

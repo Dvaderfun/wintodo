@@ -7,7 +7,7 @@
         <ResourceDictionary x:Key="Light">
             <StaticResource
                 x:Key="ShellDetailBackgroundBrush"
-                ResourceKey="LayerFillColorDefaultBrush" />
+                ResourceKey="SolidBackgroundFillColorTertiaryBrush" />
             <StaticResource
                 x:Key="ShellDetailBorderBrush"
                 ResourceKey="CardStrokeColorDefaultBrush" />
@@ -38,7 +38,7 @@
         <ResourceDictionary x:Key="Dark">
             <StaticResource
                 x:Key="ShellDetailBackgroundBrush"
-                ResourceKey="LayerFillColorDefaultBrush" />
+                ResourceKey="SolidBackgroundFillColorTertiaryBrush" />
             <StaticResource
                 x:Key="ShellDetailBorderBrush"
                 ResourceKey="CardStrokeColorDefaultBrush" />

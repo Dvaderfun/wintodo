@@ -501,3 +501,104 @@ every change was verified manually with `winapp ui` and pixel crops.
 **Known issues carried forward**
 - Everything from the previous entries stands: the Narrator listening check, M7,
   and the Native AOT startup/working-set gate.
+
+## Post-M8 — Importance star checked appearance          2026-08-01
+
+**Gate:** Not run at the owner's request. Debug x64 built with zero warnings,
+and the active row star was verified in a targeted runtime screenshot.
+
+**Shipped**
+- Removed the stock blue checked-state fill from the row and detail importance
+  buttons. An important task now shows only the filled `FavoriteStarFill` glyph
+  in `ListAccentBrush`; pointer-over and pressed states retain subtle feedback.
+
+**Deviations from PLAN.md**
+- None. The change brings the implementation back in line with DESIGN §3.5.
+
+**Known issues carried forward**
+- Everything from the previous entries stands: the Narrator listening check, M7,
+  and the Native AOT startup/working-set gate.
+
+## Post-M8 — Completed-section visual polish          2026-08-01
+
+**Gate:** Not run at the owner's request. A focused Debug x64 build and manual
+collapsed/expanded screenshot review were used for validation only.
+
+**Shipped**
+- Reworked the completed disclosure into a compact, content-width 40 px card
+  with balanced horizontal padding, neutral checked/hover/pressed states, and
+  vertically aligned label and count.
+- Corrected the collapsed disclosure glyph from `ChevronLeft` (`E76B`) to
+  `ChevronRight` (`E76C`) and reduced it to the platform control-content size.
+- Completed rows now mute and strike only their text content, leaving the
+  completion and importance controls crisp and independently interactive.
+
+**Deviations from PLAN.md**
+- None. This is post-M8 visual polish within the approved Microsoft To Do parity
+  surface.
+
+**Known issues carried forward**
+- Everything from the previous entries stands: the Narrator listening check, M7,
+  and the Native AOT startup/working-set gate.
+
+## Post-M8 — Opaque detail-pane overlay          2026-08-01
+
+**Gate:** Not run at the owner's request. A focused Debug x64 build was used
+for compile validation only.
+
+**Shipped**
+- Replaced the translucent detail-pane layer fill with
+  `SolidBackgroundFillColorTertiaryBrush` in Light and Dark. This is the opaque
+  Fluent surface matching the layer's composited colour, so compact and overlay
+  layouts no longer show task-list content through the detail pane.
+- Kept the High Contrast pane background on `SystemColorWindowColorBrush`.
+
+**Deviations from PLAN.md**
+- None. The existing overlay layout remains unchanged; only its persistent
+  surface is now opaque.
+
+**Known issues carried forward**
+- Everything from the previous entries stands: the Narrator listening check, M7,
+  and the Native AOT startup/working-set gate.
+
+## Post-M8 — Opaque detail-pane transitions          2026-08-01
+
+**Gate:** Not run at the owner's request. A focused Debug x64 build and a
+targeted open-pane screenshot were used for validation only.
+
+**Shipped**
+- Kept the detail pane's bordered background at full opacity whenever the pane
+  is visible. Open and close visual states now animate only an inner content
+  layer, so the task list cannot bleed through during either transition.
+- Preserved the 32 px content translation and the existing 200 ms open / 150 ms
+  close durations.
+
+**Deviations from PLAN.md**
+- None. This corrects the motion implementation to preserve the specified
+  opaque persistent surface.
+
+**Known issues carried forward**
+- Everything from the previous entries stands: the Narrator listening check, M7,
+  and the Native AOT startup/working-set gate.
+
+## Post-M8 — Task-row detail toggle          2026-08-01
+
+**Gate:** Not run at the owner's request. A focused Debug x64 build and
+targeted row-click checks were used for validation only.
+
+**Shipped**
+- Task rows now toggle their active state on every row click. Clicking an
+  inactive row selects it and opens detail; clicking that row again deselects
+  it and closes detail.
+- Selecting another row transfers the single active state directly, despite the
+  toggle-capable `ListView` selection mode.
+- Closing detail through another route also clears the active row so the next
+  row click opens it consistently.
+
+**Deviations from PLAN.md**
+- None. This makes the implemented pointer interaction match the selected-row
+  and detail-pane state model.
+
+**Known issues carried forward**
+- Everything from the previous entries stands: the Narrator listening check, M7,
+  and the Native AOT startup/working-set gate.
