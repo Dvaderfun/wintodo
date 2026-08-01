@@ -225,6 +225,51 @@
   <data name="ComposerRepeatClear.Text" xml:space="preserve">
     <value>Clear</value>
   </data>
+  <data name="ComposerListButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Add to list</value>
+  </data>
+  <data name="ComposerListButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Add to list</value>
+  </data>
+  <data name="ComposerDueButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Due date</value>
+  </data>
+  <data name="ComposerDueButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Due date</value>
+  </data>
+  <data name="ComposerReminderButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Remind me</value>
+  </data>
+  <data name="ComposerReminderButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Remind me</value>
+  </data>
+  <data name="ComposerRepeatButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="ComposerRepeatButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
+  <data name="DefaultList_Name" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="DeleteTaskDialog.Title" xml:space="preserve">
+    <value>Delete task?</value>
+  </data>
+  <data name="DeleteTaskDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="DeleteTaskDialog.CloseButtonText" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="DeleteTaskDialog_Message" xml:space="preserve">
+    <value>"{0}" and its steps will be deleted.</value>
+  </data>
+  <data name="DetailPaneSizer.AutomationProperties.Name" xml:space="preserve">
+    <value>Resize the detail pane</value>
+  </data>
+  <data name="DetailPaneSizer.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Drag to resize</value>
+  </data>
   <data name="Composer_DueDate" xml:space="preserve">
     <value>Due date</value>
   </data>

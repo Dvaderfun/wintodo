@@ -8,100 +8,157 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewModels="using:Wintodo.ViewModels"
     x:Name="Root"
-    d:DesignHeight="88"
+    d:DesignHeight="48"
     d:DesignWidth="560"
     mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <Style
+            x:Key="ComposerChipStyle"
+            BasedOn="{StaticResource SubtleButtonStyle}"
+            TargetType="DropDownButton">
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Padding" Value="8,4" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Resources>
 
     <Border
         Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
         BorderThickness="1"
         CornerRadius="{StaticResource ControlCornerRadius}">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="ComposerStates">
+                <VisualState x:Name="Collapsed">
+                    <VisualState.StateTriggers>
+                        <StateTrigger IsActive="{x:Bind local:AddTaskComposer.Not(ViewModel.IsComposerExpanded), Mode=OneWay}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="AddGlyph.Opacity" Value="1" />
+                        <Setter Target="ComposerCircle.Opacity" Value="0" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Expanded">
+                    <VisualState.StateTriggers>
+                        <StateTrigger IsActive="{x:Bind ViewModel.IsComposerExpanded, Mode=OneWay}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="AddGlyph.Opacity" Value="0" />
+                        <Setter Target="ComposerCircle.Opacity" Value="1" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <Grid
             x:Name="ComposerGrid"
             MinHeight="48"
-            Padding="12,0">
-            <VisualStateManager.VisualStateGroups>
-                <VisualStateGroup x:Name="ComposerStates">
-                    <VisualStateGroup.Transitions>
-                        <VisualTransition GeneratedDuration="0:0:0.15" />
-                    </VisualStateGroup.Transitions>
-                    <VisualState x:Name="Collapsed">
-                        <VisualState.StateTriggers>
-                            <StateTrigger IsActive="{x:Bind local:AddTaskComposer.Not(ViewModel.IsComposerExpanded), Mode=OneWay}" />
-                        </VisualState.StateTriggers>
-                        <VisualState.Setters>
-                            <Setter Target="ComposerGrid.MinHeight" Value="48" />
-                        </VisualState.Setters>
-                    </VisualState>
-                    <VisualState x:Name="Expanded">
-                        <VisualState.StateTriggers>
-                            <StateTrigger IsActive="{x:Bind ViewModel.IsComposerExpanded, Mode=OneWay}" />
-                        </VisualState.StateTriggers>
-                        <VisualState.Setters>
-                            <Setter Target="ComposerGrid.MinHeight" Value="88" />
-                        </VisualState.Setters>
-                    </VisualState>
-                </VisualStateGroup>
-            </VisualStateManager.VisualStateGroups>
-
-            <Grid.RowDefinitions>
-                <RowDefinition Height="48" />
-                <RowDefinition Height="Auto" />
-            </Grid.RowDefinitions>
-
-            <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="20" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <FontIcon
-                    Grid.Column="0"
-                    Foreground="{ThemeResource ListAccentBrush}"
-                    Glyph="&#xE710;" />
-                <TextBox
-                    x:Name="TaskTitleBox"
-                    x:Uid="AddTaskBox"
-                    Grid.Column="1"
-                    AutomationProperties.AutomationId="Todo.List.AddTaskBox"
-                    AcceptsReturn="False"
-                    Background="{ThemeResource SubtleFillColorTransparentBrush}"
-                    BorderThickness="0"
-                    GotFocus="OnTaskTitleBoxGotFocus"
-                    IsEnabled="{x:Bind ViewModel.CanCreateTask, Mode=OneWay}"
-                    KeyDown="OnTaskTitleBoxKeyDown"
-                    Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            </Grid>
+            Padding="8,0"
+            ColumnSpacing="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="32" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
             <Grid
+                Grid.Column="0"
+                Width="32"
+                Height="32"
+                VerticalAlignment="Center"
+                AutomationProperties.AccessibilityView="Raw"
+                IsHitTestVisible="False">
+                <FontIcon
+                    x:Name="AddGlyph"
+                    Foreground="{ThemeResource ListAccentBrush}"
+                    Glyph="&#xE710;">
+                    <FontIcon.OpacityTransition>
+                        <ScalarTransition Duration="0:0:0.12" />
+                    </FontIcon.OpacityTransition>
+                </FontIcon>
+                <Ellipse
+                    x:Name="ComposerCircle"
+                    Width="20"
+                    Height="20"
+                    Fill="{ThemeResource ControlFillColorDefaultBrush}"
+                    Opacity="0"
+                    Stroke="{ThemeResource ListAccentBrush}"
+                    StrokeThickness="1.5">
+                    <Ellipse.OpacityTransition>
+                        <ScalarTransition Duration="0:0:0.12" />
+                    </Ellipse.OpacityTransition>
+                </Ellipse>
+            </Grid>
+
+            <TextBox
+                x:Name="TaskTitleBox"
+                x:Uid="AddTaskBox"
+                Grid.Column="1"
+                MinHeight="0"
+                Padding="4"
+                VerticalAlignment="Center"
+                AutomationProperties.AutomationId="Todo.List.AddTaskBox"
+                AcceptsReturn="False"
+                Background="{ThemeResource SubtleFillColorTransparentBrush}"
+                BorderThickness="0"
+                CornerRadius="{StaticResource ControlCornerRadius}"
+                GotFocus="OnTaskTitleBoxGotFocus"
+                IsEnabled="{x:Bind ViewModel.CanCreateTask, Mode=OneWay}"
+                KeyDown="OnTaskTitleBoxKeyDown"
+                Text="{x:Bind ViewModel.NewTaskTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                <TextBox.Resources>
+                    <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                    <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="SubtleFillColorTransparentBrush" />
+                    <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="SubtleFillColorTransparentBrush" />
+                    <StaticResource x:Key="TextControlBackgroundDisabled" ResourceKey="SubtleFillColorTransparentBrush" />
+                </TextBox.Resources>
+            </TextBox>
+
+            <StackPanel
                 x:Name="ComposerActions"
-                Grid.Row="1"
-                Margin="32,0,0,8"
-                ColumnSpacing="8"
+                Grid.Column="2"
+                VerticalAlignment="Center"
+                Orientation="Horizontal"
+                Spacing="4"
                 x:Load="{x:Bind ViewModel.IsComposerExpanded, Mode=OneWay}">
-                <Grid.ChildrenTransitions>
+                <StackPanel.ChildrenTransitions>
                     <TransitionCollection>
-                        <EntranceThemeTransition FromVerticalOffset="8" />
+                        <EntranceThemeTransition FromHorizontalOffset="12" FromVerticalOffset="0" />
                     </TransitionCollection>
-                </Grid.ChildrenTransitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
+                </StackPanel.ChildrenTransitions>
+
+                <DropDownButton
+                    x:Name="TargetListButton"
+                    x:Uid="ComposerListButton"
+                    AutomationProperties.AutomationId="Todo.Composer.ListButton"
+                    Style="{StaticResource ComposerChipStyle}"
+                    Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.IsComposerTargetVisible), Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE8FD;" />
+                        <TextBlock
+                            MaxWidth="120"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.ComposerTargetLabel, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <DropDownButton.Flyout>
+                        <MenuFlyout
+                            x:Name="TargetListFlyout"
+                            Opening="OnTargetListFlyoutOpening" />
+                    </DropDownButton.Flyout>
+                </DropDownButton>
 
                 <DropDownButton
                     x:Name="DueDateButton"
-                    Grid.Column="0"
+                    x:Uid="ComposerDueButton"
                     AutomationProperties.AutomationId="Todo.Composer.DueDateButton"
-                    Style="{StaticResource SubtleButtonStyle}">
+                    Style="{StaticResource ComposerChipStyle}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE787;" />
                         <TextBlock
                             Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ComposerDueLabel, Mode=OneWay}" />
+                            Text="{x:Bind ViewModel.ComposerDueLabel, Mode=OneWay}"
+                            Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.HasComposerDue), Mode=OneWay}" />
                     </StackPanel>
                     <DropDownButton.Flyout>
                         <MenuFlyout>
@@ -127,14 +184,15 @@
 
                 <DropDownButton
                     x:Name="ReminderButton"
-                    Grid.Column="1"
+                    x:Uid="ComposerReminderButton"
                     AutomationProperties.AutomationId="Todo.Composer.ReminderButton"
-                    Style="{StaticResource SubtleButtonStyle}">
+                    Style="{StaticResource ComposerChipStyle}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE7ED;" />
                         <TextBlock
                             Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ComposerReminderLabel, Mode=OneWay}" />
+                            Text="{x:Bind ViewModel.ComposerReminderLabel, Mode=OneWay}"
+                            Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.HasComposerReminder), Mode=OneWay}" />
                     </StackPanel>
                     <DropDownButton.Flyout>
                         <MenuFlyout>
@@ -160,14 +218,15 @@
 
                 <DropDownButton
                     x:Name="RepeatButton"
-                    Grid.Column="2"
+                    x:Uid="ComposerRepeatButton"
                     AutomationProperties.AutomationId="Todo.Composer.RepeatButton"
-                    Style="{StaticResource SubtleButtonStyle}">
+                    Style="{StaticResource ComposerChipStyle}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="&#xE8EE;" />
                         <TextBlock
                             Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ComposerRepeatLabel, Mode=OneWay}" />
+                            Text="{x:Bind ViewModel.ComposerRepeatLabel, Mode=OneWay}"
+                            Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.HasComposerRepeat), Mode=OneWay}" />
                     </StackPanel>
                     <DropDownButton.Flyout>
                         <MenuFlyout>
@@ -191,14 +250,23 @@
                     </DropDownButton.Flyout>
                 </DropDownButton>
 
+                <Rectangle
+                    Width="1"
+                    Height="20"
+                    Margin="4,0"
+                    VerticalAlignment="Center"
+                    Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+
                 <Button
                     x:Name="AddTaskButton"
                     x:Uid="AddTaskButton"
-                    Grid.Column="4"
+                    MinWidth="0"
+                    Padding="12,4"
+                    VerticalAlignment="Center"
                     AutomationProperties.AutomationId="Todo.Composer.AddButton"
                     Command="{x:Bind ViewModel.AddTaskCommand, Mode=OneTime}"
                     Style="{StaticResource AccentButtonStyle}" />
-            </Grid>
+            </StackPanel>
         </Grid>
     </Border>
 </UserControl>

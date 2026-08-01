@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Windows.System;
@@ -37,6 +38,11 @@ public sealed partial class AddTaskComposer : UserControl
         return !value;
     }
 
+    public static Visibility BoolToVisibility(bool value)
+    {
+        return value ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     private void OnTaskTitleBoxGotFocus(object sender, RoutedEventArgs args)
     {
         ViewModel.BeginComposerCommand.Execute(null);
@@ -53,6 +59,23 @@ public sealed partial class AddTaskComposer : UserControl
         {
             ViewModel.CancelComposerCommand.Execute(null);
             args.Handled = true;
+        }
+    }
+
+    private void OnTargetListFlyoutOpening(object? sender, object args)
+    {
+        TargetListFlyout.Items.Clear();
+        foreach (MoveTargetViewModel target in ViewModel.MoveTargets)
+        {
+            var item = new ToggleMenuFlyoutItem
+            {
+                Text = target.DisplayName,
+                IsChecked = ViewModel.ComposerTargetListId == target.ListId,
+                Command = ViewModel.SetComposerListCommand,
+                CommandParameter = target.ListId,
+            };
+            AutomationProperties.SetAutomationId(item, target.ComposerAutomationId);
+            TargetListFlyout.Items.Add(item);
         }
     }
 }

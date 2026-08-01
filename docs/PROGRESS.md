@@ -360,3 +360,144 @@ reported as fully complete.
   full-suite run measured My Day at 7.559 ms, while the isolated rerun passed.
 - M7 remains deferred, and the framework-dependent startup/working-set misses
   remain assigned to the Native AOT performance gate in M9.
+
+## Post-M8 — Smart-list task creation and composer rework          2026-08-01
+
+**Gate:** PARTIAL — M8 gate passed 14/14 and the M5 gate passed 6/6 with the
+change in place. The M3 suite passed 9/10 and the M4 gate passed 4/7; both
+failures reproduce identically on the unmodified `a864b98` build (the M3
+drag-reorder assertion and the M4 file-picker trio), so neither is a regression
+from this work. Manual `winapp ui` verification covered My Day, Important,
+Planned, All, Completed, the list picker, and a first-run database.
+
+**Shipped**
+- The add-task composer now works on every smart list, not only user lists. The
+  task is created in a real user list — the composer's target-list picker
+  chooses which, defaulting to the first list and remembering an explicit choice
+  for the session — and the current smart list prefills the attribute that makes
+  the task belong there: My Day sets `MyDayDate`, Important sets
+  `Priority = High`, Planned preselects a due date of today. Completed hides the
+  composer.
+- A first-run database is seeded with one list named `Tasks`, and deleting the
+  last remaining list recreates it, so the smart-list composer always has a
+  target.
+- Reworked the composer to a single 48 px row (DESIGN §3.2 updated). Chips moved
+  inline to the right, show icon-only until a value is set, and are preceded by
+  the list picker; a divider separates them from `Add`. The leading `+` glyph
+  cross-fades to the task-row completion ring while composing.
+- Fixed the composer text baseline. `VerticalContentAlignment` is inert on a
+  `TextBox` — the template top-aligns text and only binds `Padding` — so the box
+  now uses `MinHeight="0"` with symmetric `Padding="4"` and
+  `VerticalAlignment="Center"`. The focused border/background overrides make the
+  field read as part of the card instead of a nested control.
+- Removed the `ListViewHeaderItem` divider rule, which drew a stray line above
+  the first task row in ungrouped lists and under every Planned/Completed group
+  header. The task list now uses its own header container template.
+
+**Deviations from PLAN.md**
+- DESIGN §3.2 previously specified an 88 px two-row focused composer. The
+  single-row layout replaces it after a direct comparison with Microsoft To Do;
+  §3.2 and the motion table were rewritten to match what ships.
+
+**Known issues carried forward**
+- Everything carried into M8 remains open (Narrator listening check, M7, and the
+  Native AOT startup/working-set gate).
+- The WinUI `TextBox` clear button is template-scoped (`DeleteButtonStyle` is an
+  `x:Name` inside the control template) and cannot be suppressed per instance,
+  so the composer keeps the standard `×` affordance while text is present.
+
+## Post-M8 — Detail pane sizing and clipped icon buttons          2026-08-01
+
+**Gate:** M8 gate passed 14/14 after the change (the responsive, High Contrast,
+and accessibility scenarios are the ones this work could break). Other gates
+were skipped at the owner's request for this session.
+
+**Shipped**
+- The detail pane is user-resizable. A 12 px `ContentSizer` from
+  `CommunityToolkit.WinUI.Controls.Sizers` sits on its left edge (pointer drag or
+  keyboard arrows), the width is clamped to 320–720 and further capped per
+  responsive state, and the value persists in `appearance.detail_pane_width`
+  behind a 500 ms debounce.
+- Fixed the detail pane collapsing to roughly 200 px in the wide layout. The
+  `Wide` state set `DetailHost.Width="Auto"` inside an `Auto` column, so the pane
+  shrank to its content. Width is now one two-way `x:Bind` on `DetailHost` and no
+  responsive state sets it.
+- Fixed a whole class of clipped icons: a 32 × 32 `Button` with
+  `SubtleButtonStyle` keeps the theme's 11 px horizontal padding, leaving a 10 px
+  content box that slices a 20 px glyph. `Padding="0"` added to the new-group
+  button (the reported clip), the list `⋯` menu button (rendering as a single
+  dot in every screenshot so far), the compact title-bar search button, the
+  detail importance star, and the seven custom-recurrence weekday toggles.
+  DESIGN §0 now carries this as rule 9.
+- Aligned the nav pane footer with the nav items (`Margin="4,0,4,4"`); it was
+  4 px wider on each side, which pushed the new-group button past the pane clip.
+- The detail title `TextBox` is now transparent and borderless in every state,
+  matching the composer, so it no longer reads as a nested white box crowding the
+  star and close buttons.
+
+**Deviations from PLAN.md**
+- New dependency: `CommunityToolkit.WinUI.Controls.Sizers` 8.2.251219. PLAN §3
+  permits individual `CommunityToolkit.WinUI.Controls.*` packages at 8.2+; the
+  alternative was a hand-rolled pointer-manipulation splitter with no keyboard
+  or cursor support.
+
+**Known issues carried forward**
+- Everything from the previous entry stands, including the Narrator listening
+  check, M7, and the Native AOT startup/working-set gate.
+
+## Post-M8 — Detail pane chrome and icon columns          2026-08-01
+
+**Gate:** Not run this round at the owner's request. Debug x64 builds with zero
+warnings and the surfaces were verified manually with `winapp ui`.
+
+**Shipped**
+- Removed the list pane's 1 px right border. It drew a full-height rule
+  immediately left of the detail card, so the pane read as a container inside a
+  container. DESIGN §2 already forbade a rule there; the code disagreed.
+  `ShellDividerBrush` is now unused but stays defined in all three theme
+  dictionaries.
+- Widened every detail-pane icon column from 16 to 20. `FontIcon`/`SymbolIcon`
+  render at 20 px, so the My Day, reminder, due-date, repeat, attachment, and
+  footer glyphs were sliced on both sides. DESIGN §0 rule 9 records this.
+- Made the "Next step" field transparent and borderless like the detail title, so
+  the card has no nested filled boxes other than the multi-line note field.
+
+## Post-M8 — Row cards, pane limits, option states, delete confirmation          2026-08-01
+
+**Gate:** Not run at the owner's request. Debug x64 builds with zero warnings;
+every change was verified manually with `winapp ui` and pixel crops.
+
+**Shipped**
+- Task rows are rounded again and match the composer. `ListViewItemPresenter`
+  draws its background, border, and selection fill square no matter what the
+  item's `CornerRadius` says, and overriding `ListViewItemCornerRadius` at app
+  level does not reach it either (verified with a 12 px probe). The row card is
+  now a custom `ListViewItem` `ControlTemplate` — card `Border` + state overlay +
+  `ContentPresenter`, with `CommonStates`, `DisabledStates`, and `DragStates`.
+  The selection accent bar moved 4 px inward so it no longer straddles the
+  rounded edge.
+- The detail pane's drag limit is now `min(content width - 320, 960)`, recomputed
+  on `ContentGrid` size changes, replacing the fixed 400/520/720 per-state caps.
+  It grows with the window and always leaves 320 px of task list.
+- Detail option rows are 4 px apart and colour-coded: glyph and label are
+  `TextFillColorSecondaryBrush` when unset and `ListAccentBrush` when set, driven
+  by a `VisualStateGroup` per row so the brushes survive a theme change. Added
+  `HasDue`, `HasReminder`, and `HasRepeat` to the detail view model for the
+  triggers.
+- Deleting a task now confirms first, from all three entry points (row context
+  menu, `Delete` key, detail footer). `TaskListViewModel.DeleteTaskAsync` and the
+  detail delete command raise a request; `ShellViewModel` holds the pending
+  target and `ShellPage` shows `Todo.Dialog.DeleteTask`. The undo snackbar still
+  follows the confirmed delete. Both delete dialogs now default to **Cancel**.
+
+**Deviations from PLAN.md**
+- Second custom `ControlTemplate` for a standard control (DESIGN §0 rule 7). A
+  `Style` cannot round `ListViewItemPresenter`; the alternative was leaving rows
+  visibly inconsistent with the composer.
+- The detail pane's `MaxWidth` is set from code-behind on size changes rather
+  than by a visual state, because the limit depends on available width rather
+  than on which state is active.
+
+**Known issues carried forward**
+- Everything from the previous entries stands: the Narrator listening check, M7,
+  and the Native AOT startup/working-set gate.

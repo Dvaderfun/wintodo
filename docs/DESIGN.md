@@ -29,6 +29,12 @@
    The completion circle (§3.4) is the one sanctioned template override.
 8. Three theme dictionaries always: `x:Key="Light"`, `x:Key="Dark"`,
    `x:Key="HighContrast"`. Never `x:Key="Default"`.
+9. **An icon column is 20 px, not 16.** `FontIcon`/`SymbolIcon` render at 20 px;
+   a 16 px `ColumnDefinition` slices them on both sides.
+10. **A 32 × 32 icon button needs `Padding="0"`.** `SubtleButtonStyle` inherits
+   the 11 px horizontal control padding, which leaves 10 px of content box and
+   slices the glyph. `TaskSubtleToggleButtonStyle` already zeroes it; every
+   plain `Button`/`ToggleButton` sized 32 × 32 must set it explicitly.
 
 ---
 
@@ -99,9 +105,10 @@ The detail pane is a **layer**, not acrylic. Acrylic is for transient surfaces
 (flyouts, menus); a persistent side pane on acrylic looks wrong and costs more
 to composite.
 
-A 1 px `DividerStrokeColorDefaultBrush` vertical rule separates nav pane from
-list pane. No rule between list pane and detail pane — the detail pane's own
-border and margin do that job.
+No rule between list pane and detail pane — the detail pane's own card border
+and 8 px margin do that job. A rule there reads as a second container wrapping
+the card. The nav pane is separated by the `NavigationView` content frame, not
+by an authored border, so `ShellDividerBrush` is currently unused.
 
 ---
 
@@ -141,33 +148,72 @@ Pinned directly under the header. Never inside the scrolling `ListView`.
 └──────────────────────────────────────────────────────────────┘
 ```
 
-Focused state expands to 88:
+Focused state stays **one row of 48** — the chips appear inline on the right,
+never on a second line:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  ⊕   Buy tickets                                              │
-│      [📅 Due date ▾] [🔔 Remind me ▾] [🔁 Repeat ▾]      [Add] │
+│  ○   Buy tickets      [☰ Tasks ▾] [📅] [🔔] [🔁] │ [Add]      │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 - Container: `CardBackgroundFillColorDefaultBrush`, 1 px
-  `CardStrokeColorDefaultBrush`, `ControlCornerRadius`, padding `12,0`.
-- Leading glyph: `Add` (`E710`) 16 px, in the list theme colour, 12 px from
-  container left, 12 px gap to the text.
-- `TextBox`: `BorderThickness="0"`, transparent background,
-  `PlaceholderText="Add a task"`, `AcceptsReturn="False"`.
+  `CardStrokeColorDefaultBrush`, `ControlCornerRadius`, padding `8,0`,
+  4 px column spacing.
+- Leading slot is 32 × 32: the `Add` glyph (`E710`) in the list theme colour when
+  collapsed, cross-fading to an empty completion circle (the same 20 px ring the
+  task row uses) when the composer is focused. Driven by
+  `VisualStateManager` states on the container plus `ScalarTransition` (120 ms).
+- `TextBox`: `BorderThickness="0"`, transparent background in every state
+  (`TextControlBorderThemeThicknessFocused` and the focused/pointer-over
+  background brushes are overridden locally), `PlaceholderText="Add a task"`,
+  `AcceptsReturn="False"`.
+- Centring the composer text needs `MinHeight="0"`, symmetric `Padding="4"`, and
+  `VerticalAlignment="Center"`. `VerticalContentAlignment` does **nothing** on a
+  `TextBox`: the template's `ContentElement` and placeholder only bind `Padding`,
+  and text is top-aligned inside the control, so any `MinHeight` slack pushes the
+  glyphs above the row centre.
 - `Enter` commits and **keeps focus** in the box for rapid entry. `Esc` collapses
   and clears.
-- Chips row: `DropDownButton`s with `Subtle` style, `CaptionTextBlockStyle`
-  labels, 8 px spacing. A set chip shows its value and gains an `×` to clear.
+- Chips are `DropDownButton`s with `Subtle` style, 8 px padding, 4 px spacing.
+  A chip shows its glyph only; when its value is set it also shows a
+  `CaptionTextBlockStyle` label ("Today", "Daily", the reminder time). Each
+  flyout carries a `Clear` item.
+- The first chip is the **target list picker**, shown only on smart lists. It
+  names the list the new task will be filed under and lets the user change it;
+  the choice sticks for the session. On a user list the picker is hidden — the
+  target is that list.
+- A 1 px `DividerStrokeColorDefaultBrush` rule separates the chips from `Add`.
 - The `Add` button is `AccentButtonStyle`, right-aligned, enabled only when the
   text is non-empty.
-- Expansion is animated: height `ScalarTransition` 150 ms, chips fade in 100 ms.
+- Chips are `x:Load`-deferred and slide in 12 px from the right on focus.
 - Composer to first row spacing: **12**.
+
+Smart lists prefill the new task so it lands where it was typed:
+
+| List | Prefill |
+|---|---|
+| My Day | `MyDayDate = today` |
+| Important | `Priority = High` |
+| Planned | Due chip preset to **Today** |
+| All / user list | Nothing |
+| Completed | Composer hidden — a completed task cannot be composed |
+
+The task itself is always created in a real user list (the picker target), never
+in a smart list. A first-run database is seeded with one list, `Tasks`, and the
+last list can never be deleted away — deleting it recreates `Tasks`.
 
 ### 3.3 Task row
 
 The single most important control in the app. Get it exactly right.
+
+The row card comes from a custom `ListViewItem` `ControlTemplate`, not from the
+default `ListViewItemPresenter`: the presenter draws its background, border, and
+selection fill square whatever `CornerRadius` or `ListViewItemCornerRadius` say,
+which left rows visibly squarer than the composer directly above them. The
+template is a `Border` (card chrome) + overlay `Border` (hover/pressed/selected
+fill) + `ContentPresenter`, with `CommonStates`, `DisabledStates`, and
+`DragStates`. This is the second sanctioned template override, alongside §3.4.
 
 ```
 ┌────────────────────────────────────────────────────────────────┐
@@ -310,9 +356,18 @@ before use — names are authoritative, codes are the starting point):
 
 ## 5. Detail pane (right)
 
-360 px wide, `x:Load`-deferred, `LayerFillColorDefaultBrush`, 8 px radius,
-1 px `CardStrokeColorDefaultBrush`, 8 px margin from the window edges,
-internal padding 16.
+User-resizable, **360 px by default**, `x:Load`-deferred,
+`LayerFillColorDefaultBrush`, 8 px radius, 1 px `CardStrokeColorDefaultBrush`,
+8 px margin from the window edges, internal padding 16.
+
+A 12 px `ContentSizer` (`CommunityToolkit.WinUI.Controls.Sizers`) sits on the
+pane's left edge: drag it, or focus it and use the arrow keys. The width is
+clamped to a **320 px minimum** and an upper limit of
+`min(content width - 320, 960)` recomputed on every `ContentGrid` resize, so the
+drag always leaves the list usable and grows with the window. The width persists
+in `appearance.detail_pane_width` with a 500 ms debounce. The responsive states must **not** set
+`DetailHost.Width` — that value is a two-way `x:Bind` to the shell view model
+and a `Setter` would fight the binding.
 
 ```
 ┌──────────────────────────────────────┐
@@ -340,11 +395,16 @@ internal padding 16.
 |---|---|
 | Title block | Completion circle (24 px here, larger than in rows) + multi-line `TextBox`, `BodyLargeTextBlockStyle`, borderless, transparent, `AcceptsReturn="True"`, `TextWrapping="Wrap"`, **`UpdateSourceTrigger=PropertyChanged`**; importance star at the right of the title row; close `✕` (`Cancel` `E711`) 32 × 32 top-right |
 | Steps | Each: 20 px circle + borderless `TextBox` + `✕` on hover. Height 36. Drag-reorder. Completed steps: 0.6 opacity + strikethrough. "Next step" row has an `Add` glyph and creates a step on `Enter`, keeping focus for the next one |
-| Action rows | Height 40, `Subtle` `Button`, full width, `[16px glyph][12 gap][label *][trailing]`. Unset: label is the action ("Remind me"), foreground `TextFillColorSecondaryBrush`. Set: label is the value ("Due Tomorrow"), foreground `TextFillColorPrimaryBrush`, trailing `✕` clears it |
+| Action rows | Height 40, `Subtle` `Button`, full width, `[20px glyph][12 gap][label *][trailing]`, **4 px apart** so each hover fill reads as its own button. Unset: label is the action ("Remind me"), glyph **and** label `TextFillColorSecondaryBrush`. Set: label is the value ("Due Tomorrow"), glyph and label `ListAccentBrush`, trailing `✕` clears it. Driven by one `VisualStateGroup` per row (`StateTrigger` on `IsMyDay` / `HasReminder` / `HasDue` / `HasRepeat`) so the brushes re-resolve on theme change |
 | Separators | 1 px `DividerStrokeColorDefaultBrush`, 12 px vertical margins |
 | Note | `TextBox`, `MinHeight="88"`, `AcceptsReturn`, `TextWrapping="Wrap"`, `ControlFillColorDefaultBrush`, autosaves 500 ms after the last keystroke |
 | Attachments | Row per file: 16 px glyph + name (ellipsised) + size in caption + remove. Click opens with the shell |
 | Footer | Pinned to the bottom, `CaptionTextBlockStyle` / `TextFillColorSecondaryBrush` created-date on the left, `Delete` (`E74D`) 32 × 32 icon button on the right |
+
+Deleting a task always confirms first — from the row context menu, the `Delete`
+key, or the detail footer. One `ContentDialog` (`Todo.Dialog.DeleteTask`) names
+the task, defaults to **Cancel**, and only then runs the delete plus its undo
+snackbar. `Todo.Dialog.DeleteList` defaults to Cancel for the same reason.
 
 Date/time picking uses a `DropDownButton` → `MenuFlyout` with quick options
 (Today · Tomorrow · Next week · **Pick a date**), where "Pick a date" swaps in a
@@ -389,7 +449,7 @@ setting automatically. For explicit animations, check
 | Complete a task | Circle scales 0.8 → 1.0 with a spring (damping 0.6, period 40 ms); check glyph fades in over 100 ms; row opacity 1 → 0.6 and strikethrough over 200 ms; **250 ms later** the row animates into the Completed section |
 | Uncomplete | Reverse, no delay |
 | Star toggle | Glyph scales 1 → 1.25 → 1 over 200 ms |
-| Composer expand | Height `ScalarTransition` 150 ms; chips fade in 100 ms, staggered 30 ms |
+| Composer focus | Leading glyph cross-fades to the completion ring over 120 ms; chips enter 12 px from the right |
 | Nav pane selection | WinUI's built-in indicator animation — do not override |
 | Hover on rows | `PointerOverThemeAnimation` defaults; no custom timing |
 | Undo snackbar | Slides up 24 px + fades in over 200 ms; auto-dismisses at 5 s with a 200 ms fade |
@@ -421,7 +481,7 @@ reachable from the list menu and from `Ctrl+?`.
 | `Ctrl+Shift+D` | Open the due-date picker |
 | `Ctrl+Shift+R` | Open the reminder picker |
 | `F2` | Rename the selected list, or edit the selected task title inline |
-| `Delete` | Delete the selected task (undo snackbar) |
+| `Delete` | Delete the selected task (confirmation dialog, then undo snackbar) |
 | `Ctrl+Z` | Undo the last destructive action |
 | `Alt+↑` / `Alt+↓` | Move the selected task up/down in manual sort order |
 | `Tab` / `Shift+Tab` | *(M11)* Demote / promote a task in the tree |
