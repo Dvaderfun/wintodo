@@ -9,6 +9,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:viewModels="using:Wintodo.ViewModels"
     x:Name="RootPage"
+    RequestedTheme="{x:Bind local:ShellPage.ThemeForIndex(ViewModel.AppearanceThemeIndex), Mode=OneWay}"
     mc:Ignorable="d">
 
     <Page.KeyboardAccelerators>
@@ -21,6 +22,8 @@
         <KeyboardAccelerator Key="Number3" Modifiers="Control" Invoked="OnSmartListAccelerator" />
         <KeyboardAccelerator Key="Number4" Modifiers="Control" Invoked="OnSmartListAccelerator" />
         <KeyboardAccelerator Key="Number5" Modifiers="Control" Invoked="OnSmartListAccelerator" />
+        <KeyboardAccelerator Key="D" Modifiers="Control,Shift" Invoked="OnDueDateAccelerator" />
+        <KeyboardAccelerator Key="R" Modifiers="Control,Shift" Invoked="OnReminderAccelerator" />
         <KeyboardAccelerator Key="Escape" Invoked="OnEscapeAccelerator" />
     </Page.KeyboardAccelerators>
 
@@ -288,20 +291,30 @@
                     x:Name="ListPane"
                     Grid.Column="0"
                     BorderBrush="{ThemeResource ShellDividerBrush}"
-                    BorderThickness="0,0,1,0">
+                    BorderThickness="0,0,1,0"
+                    SizeChanged="OnListPaneSizeChanged">
                     <Grid
-                        x:Name="ListContentGrid"
-                        Padding="24,16,24,0">
-                        <controls:TaskListView
-                            x:Name="TaskList"
-                            Loaded="OnTaskListLoaded"
-                            x:Load="{x:Bind ViewModel.IsTaskListLoaded, Mode=OneWay}"
-                            ViewModel="{x:Bind ViewModel.TaskList, Mode=OneWay}"
-                            Visibility="{x:Bind controls:TaskListView.InverseBoolToVisibility(ViewModel.IsSettingsVisible), Mode=OneWay}" />
-                        <controls:SettingsView
-                            x:Name="SettingsContent"
-                            ViewModel="{x:Bind ViewModel, Mode=OneWay}"
-                            x:Load="{x:Bind ViewModel.IsSettingsVisible, Mode=OneWay}" />
+                        x:Name="ListPaneLayers">
+                        <Image
+                            x:Name="ListBackgroundImage"
+                            AutomationProperties.AccessibilityView="Raw"
+                            IsHitTestVisible="False"
+                            Opacity="{ThemeResource ListBackgroundOpacity}"
+                            Stretch="UniformToFill" />
+                        <Grid
+                            x:Name="ListContentGrid"
+                            Padding="24,16,24,0">
+                            <controls:TaskListView
+                                x:Name="TaskList"
+                                Loaded="OnTaskListLoaded"
+                                x:Load="{x:Bind ViewModel.IsTaskListLoaded, Mode=OneWay}"
+                                ViewModel="{x:Bind ViewModel.TaskList, Mode=OneWay}"
+                                Visibility="{x:Bind controls:TaskListView.InverseBoolToVisibility(ViewModel.IsSettingsVisible), Mode=OneWay}" />
+                            <controls:SettingsView
+                                x:Name="SettingsContent"
+                                ViewModel="{x:Bind ViewModel, Mode=OneWay}"
+                                x:Load="{x:Bind ViewModel.IsSettingsVisible, Mode=OneWay}" />
+                        </Grid>
                     </Grid>
                 </Border>
 
@@ -338,6 +351,41 @@
                 </Grid>
             </Grid>
         </NavigationView>
+
+        <ContentDialog
+            x:Name="ShortcutsDialog"
+            x:Uid="ShortcutsDialog"
+            AutomationProperties.AutomationId="Todo.Dialog.Shortcuts"
+            Opened="OnShortcutsDialogOpened">
+            <ScrollViewer
+                MaxHeight="520"
+                AutomationProperties.AutomationId="Todo.Dialog.Shortcuts.Scroll">
+                <ItemsRepeater ItemsSource="{x:Bind KeyboardShortcuts, Mode=OneTime}">
+                    <ItemsRepeater.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:ShortcutEntryViewModel">
+                            <Grid
+                                MinHeight="40"
+                                Padding="0,8"
+                                ColumnSpacing="24">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock
+                                    Grid.Column="0"
+                                    Style="{StaticResource BodyStrongTextBlockStyle}"
+                                    Text="{x:Bind Shortcut, Mode=OneTime}" />
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Style="{StaticResource BodyTextBlockStyle}"
+                                    Text="{x:Bind Action, Mode=OneTime}"
+                                    TextWrapping="Wrap" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsRepeater.ItemTemplate>
+                </ItemsRepeater>
+            </ScrollViewer>
+        </ContentDialog>
 
         <ContentDialog
             x:Name="DeleteListDialog"

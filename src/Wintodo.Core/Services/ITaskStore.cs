@@ -4,7 +4,7 @@ using Wintodo.Core.Queries;
 
 namespace Wintodo.Core.Services;
 
-public interface ITaskStore : IAsyncDisposable
+public interface ITaskStore : ISettingsStore, IAsyncDisposable
 {
     event EventHandler<StoreChangedEventArgs>? StoreChanged;
 
@@ -21,6 +21,11 @@ public interface ITaskStore : IAsyncDisposable
     Task RenameListAsync(long listId, string displayName, CancellationToken cancellationToken = default);
 
     Task SetListColorAsync(long listId, ListColor color, CancellationToken cancellationToken = default);
+
+    Task SetListBackgroundThemeAsync(
+        long listId,
+        string? backgroundTheme,
+        CancellationToken cancellationToken = default);
 
     Task SetListSortAsync(
         long listId,

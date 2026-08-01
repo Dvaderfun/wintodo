@@ -1,9 +1,14 @@
+using System.Numerics;
+using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Hosting;
 using Microsoft.Windows.ApplicationModel.Resources;
+using Windows.System;
+using Windows.UI.ViewManagement;
 using Wintodo.ViewModels;
 
 namespace Wintodo.Controls;
@@ -11,6 +16,7 @@ namespace Wintodo.Controls;
 public sealed partial class TaskRow : UserControl
 {
     private static readonly ResourceLoader StringResources = new();
+    private readonly UISettings _uiSettings = new();
 
     public static readonly DependencyProperty ViewModelProperty =
         DependencyProperty.Register(
@@ -50,9 +56,34 @@ public sealed partial class TaskRow : UserControl
         return value ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    public static double StarOpacity(bool isImportant)
+    public static Visibility InverseBoolToVisibility(bool value)
     {
-        return isImportant ? 1 : 0;
+        return value ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    public static double StarOpacity(bool isImportant, bool isSelected)
+    {
+        return isImportant || isSelected ? 1 : 0;
+    }
+
+    public static double BoolToOpacity(bool value)
+    {
+        return value ? 1 : 0;
+    }
+
+    public static double HoverMarkOpacity(bool isCompleted, bool isPointerOver)
+    {
+        return !isCompleted && isPointerOver ? 0.4 : 0;
+    }
+
+    public static double RowMinHeight(bool isCompact)
+    {
+        return isCompact ? 36 : 44;
+    }
+
+    public static Thickness RowPadding(bool isCompact)
+    {
+        return isCompact ? new Thickness(8, 4, 8, 4) : new Thickness(12, 8, 12, 8);
     }
 
     public static string ImportanceGlyph(bool isImportant)
@@ -99,6 +130,23 @@ public sealed partial class TaskRow : UserControl
             or nameof(TaskItemViewModel.HighlightText))
         {
             DispatcherQueue.TryEnqueue(ApplySearchHighlight);
+        }
+        else if (args.PropertyName == nameof(TaskItemViewModel.IsEditingTitle)
+                 && ViewModel.IsEditingTitle)
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                TaskTitleEditBox.Focus(FocusState.Programmatic);
+                TaskTitleEditBox.SelectAll();
+            });
+        }
+        else if (args.PropertyName == nameof(TaskItemViewModel.IsCompleted))
+        {
+            AnimateCompletion();
+        }
+        else if (args.PropertyName == nameof(TaskItemViewModel.IsImportant))
+        {
+            AnimateImportance();
         }
     }
 
@@ -162,6 +210,64 @@ public sealed partial class TaskRow : UserControl
     private void OnPointerExited(object sender, PointerRoutedEventArgs args)
     {
         VisualStateManager.GoToState(this, "PointerNormal", useTransitions: true);
+    }
+
+    private void OnTaskTitleEditBoxKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key == VirtualKey.Enter
+            && ViewModel.CommitTitleEditCommand.CanExecute(null))
+        {
+            ViewModel.CommitTitleEditCommand.Execute(null);
+            args.Handled = true;
+        }
+        else if (args.Key == VirtualKey.Escape)
+        {
+            ViewModel.CancelTitleEditCommand.Execute(null);
+            args.Handled = true;
+        }
+    }
+
+    private void OnTaskTitleEditBoxLostFocus(object sender, RoutedEventArgs args)
+    {
+        if (ViewModel.IsEditingTitle
+            && ViewModel.CommitTitleEditCommand.CanExecute(null))
+        {
+            ViewModel.CommitTitleEditCommand.Execute(null);
+        }
+    }
+
+    private void AnimateCompletion()
+    {
+        if (!_uiSettings.AnimationsEnabled)
+        {
+            return;
+        }
+
+        Visual visual = ElementCompositionPreview.GetElementVisual(CompletionHost);
+        visual.CenterPoint = new Vector3(16, 16, 0);
+        SpringVector3NaturalMotionAnimation animation = visual.Compositor.CreateSpringVector3Animation();
+        animation.InitialValue = new Vector3(0.8f, 0.8f, 1);
+        animation.FinalValue = Vector3.One;
+        animation.DampingRatio = 0.6f;
+        animation.Period = TimeSpan.FromMilliseconds(40);
+        visual.StartAnimation("Scale", animation);
+    }
+
+    private void AnimateImportance()
+    {
+        if (!_uiSettings.AnimationsEnabled)
+        {
+            return;
+        }
+
+        Visual visual = ElementCompositionPreview.GetElementVisual(ImportanceButton);
+        visual.CenterPoint = new Vector3(16, 16, 0);
+        Vector3KeyFrameAnimation animation = visual.Compositor.CreateVector3KeyFrameAnimation();
+        animation.Duration = TimeSpan.FromMilliseconds(200);
+        animation.InsertKeyFrame(0, Vector3.One);
+        animation.InsertKeyFrame(0.5f, new Vector3(1.25f, 1.25f, 1));
+        animation.InsertKeyFrame(1, Vector3.One);
+        visual.StartAnimation("Scale", animation);
     }
 
     private void OnContextFlyoutOpening(object? sender, object args)

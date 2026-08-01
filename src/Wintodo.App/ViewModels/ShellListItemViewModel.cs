@@ -11,6 +11,7 @@ public sealed partial class ShellListItemViewModel : ObservableObject
         Uid = list.Uid;
         DisplayName = list.DisplayName;
         Color = list.Color;
+        BackgroundTheme = list.BackgroundTheme;
         GroupId = list.GroupId;
         SortOrder = list.SortOrder;
         SortMode = list.SortMode;
@@ -28,6 +29,9 @@ public sealed partial class ShellListItemViewModel : ObservableObject
 
     [ObservableProperty]
     public partial ListColor Color { get; set; }
+
+    [ObservableProperty]
+    public partial string? BackgroundTheme { get; set; }
 
     [ObservableProperty]
     public partial long? GroupId { get; set; }

@@ -1,5 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.Windows.ApplicationModel.Resources;
+using System.Globalization;
+using Windows.ApplicationModel;
 using Wintodo.ViewModels;
 
 namespace Wintodo.Controls;
@@ -15,8 +18,18 @@ public sealed partial class SettingsView : UserControl
 
     public SettingsView()
     {
+        PackageVersion version = Package.Current.Id.Version;
+        VersionText = string.Format(
+            CultureInfo.CurrentCulture,
+            new ResourceLoader().GetString("Settings_VersionFormat"),
+            version.Major,
+            version.Minor,
+            version.Build,
+            version.Revision);
         InitializeComponent();
     }
+
+    public string VersionText { get; }
 
     public ShellViewModel ViewModel
     {

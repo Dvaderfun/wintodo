@@ -19,11 +19,14 @@
         <KeyboardAccelerator Key="Enter" Invoked="OnOpenDetailAccelerator" />
         <KeyboardAccelerator Key="Space" Invoked="OnToggleCompletionAccelerator" />
         <KeyboardAccelerator Key="I" Modifiers="Control" Invoked="OnToggleImportanceAccelerator" />
+        <KeyboardAccelerator Key="T" Modifiers="Control" Invoked="OnToggleMyDayAccelerator" />
         <KeyboardAccelerator Key="Delete" Invoked="OnDeleteAccelerator" />
         <KeyboardAccelerator Key="Z" Modifiers="Control" Invoked="OnUndoAccelerator" />
         <KeyboardAccelerator Key="F2" Invoked="OnRenameAccelerator" />
         <KeyboardAccelerator Key="Up" Modifiers="Menu" Invoked="OnMoveUpAccelerator" />
         <KeyboardAccelerator Key="Down" Modifiers="Menu" Invoked="OnMoveDownAccelerator" />
+        <KeyboardAccelerator Key="Up" Invoked="OnSelectPreviousAccelerator" />
+        <KeyboardAccelerator Key="Down" Invoked="OnSelectNextAccelerator" />
     </UserControl.KeyboardAccelerators>
 
     <UserControl.Resources>
@@ -32,7 +35,7 @@
             IsSourceGrouped="True" />
 
         <Style x:Key="TaskListViewItemStyle" TargetType="ListViewItem">
-            <Setter Property="MinHeight" Value="44" />
+            <Setter Property="MinHeight" Value="0" />
             <Setter Property="Margin" Value="0,0,0,4" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -362,6 +365,59 @@
                                 </MenuFlyoutItem.Icon>
                             </MenuFlyoutItem>
                         </MenuFlyoutSubItem>
+                        <MenuFlyoutSubItem
+                            x:Uid="ChangeBackgroundMenu"
+                            AutomationProperties.AutomationId="Todo.List.Menu.ChangeBackground"
+                            IsEnabled="{x:Bind ViewModel.IsUserListSelected, Mode=OneWay}">
+                            <MenuFlyoutSubItem.Icon>
+                                <FontIcon Glyph="&#xEB9F;" />
+                            </MenuFlyoutSubItem.Icon>
+                            <MenuFlyoutItem
+                                x:Uid="BackgroundNone"
+                                AutomationProperties.AutomationId="Todo.List.Background.None"
+                                Command="{x:Bind ViewModel.ChangeListBackgroundCommand, Mode=OneTime}"
+                                CommandParameter="None" />
+                            <MenuFlyoutItem
+                                x:Uid="BackgroundCoast"
+                                AutomationProperties.AutomationId="Todo.List.Background.Coast"
+                                Command="{x:Bind ViewModel.ChangeListBackgroundCommand, Mode=OneTime}"
+                                CommandParameter="Coast" />
+                            <MenuFlyoutItem
+                                x:Uid="BackgroundForest"
+                                AutomationProperties.AutomationId="Todo.List.Background.Forest"
+                                Command="{x:Bind ViewModel.ChangeListBackgroundCommand, Mode=OneTime}"
+                                CommandParameter="Forest" />
+                            <MenuFlyoutItem
+                                x:Uid="BackgroundMist"
+                                AutomationProperties.AutomationId="Todo.List.Background.Mist"
+                                Command="{x:Bind ViewModel.ChangeListBackgroundCommand, Mode=OneTime}"
+                                CommandParameter="Mist" />
+                            <MenuFlyoutItem
+                                x:Uid="BackgroundSunrise"
+                                AutomationProperties.AutomationId="Todo.List.Background.Sunrise"
+                                Command="{x:Bind ViewModel.ChangeListBackgroundCommand, Mode=OneTime}"
+                                CommandParameter="Sunrise" />
+                            <MenuFlyoutItem
+                                x:Uid="BackgroundIndigo"
+                                AutomationProperties.AutomationId="Todo.List.Background.Indigo"
+                                Command="{x:Bind ViewModel.ChangeListBackgroundCommand, Mode=OneTime}"
+                                CommandParameter="Indigo" />
+                            <MenuFlyoutItem
+                                x:Uid="BackgroundPetals"
+                                AutomationProperties.AutomationId="Todo.List.Background.Petals"
+                                Command="{x:Bind ViewModel.ChangeListBackgroundCommand, Mode=OneTime}"
+                                CommandParameter="Petals" />
+                            <MenuFlyoutItem
+                                x:Uid="BackgroundGraphite"
+                                AutomationProperties.AutomationId="Todo.List.Background.Graphite"
+                                Command="{x:Bind ViewModel.ChangeListBackgroundCommand, Mode=OneTime}"
+                                CommandParameter="Graphite" />
+                            <MenuFlyoutItem
+                                x:Uid="BackgroundField"
+                                AutomationProperties.AutomationId="Todo.List.Background.Field"
+                                Command="{x:Bind ViewModel.ChangeListBackgroundCommand, Mode=OneTime}"
+                                CommandParameter="Field" />
+                        </MenuFlyoutSubItem>
                         <MenuFlyoutItem
                             AutomationProperties.AutomationId="Todo.List.Menu.ShowCompleted"
                             Command="{x:Bind ViewModel.ToggleShowCompletedCommand, Mode=OneTime}"
@@ -372,6 +428,14 @@
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
                         <MenuFlyoutSeparator />
+                        <MenuFlyoutItem
+                            x:Uid="ShortcutsMenu"
+                            AutomationProperties.AutomationId="Todo.List.Menu.Shortcuts"
+                            Command="{x:Bind ViewModel.RequestShortcutsCommand, Mode=OneTime}">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE765;" />
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
                         <MenuFlyoutItem
                             x:Uid="ExportListMenu"
                             AutomationProperties.AutomationId="Todo.List.Menu.Export"
@@ -404,8 +468,14 @@
             x:Name="TaskContent"
             Grid.Row="3"
             Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="3*" />
+                <RowDefinition Height="2*" />
+                <RowDefinition Height="5*" />
+            </Grid.RowDefinitions>
             <ListView
                 x:Name="TasksList"
+                Grid.RowSpan="3"
                 AutomationProperties.AutomationId="Todo.List.Tasks"
                 AllowDrop="{x:Bind ViewModel.CanReorderTasks, Mode=OneWay}"
                 CanDragItems="{x:Bind ViewModel.CanReorderTasks, Mode=OneWay}"
@@ -417,6 +487,7 @@
                 ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                 ItemsSource="{x:Bind TasksCollectionViewSource.View, Mode=OneWay}"
                 ItemTemplate="{StaticResource TaskRowTemplate}"
+                PreviewKeyDown="OnTasksListPreviewKeyDown"
                 SelectionChanged="OnTaskSelectionChanged"
                 SelectionMode="Single">
                 <ListView.ItemsPanel>
@@ -439,6 +510,7 @@
 
             <StackPanel
                 x:Name="EmptyState"
+                Grid.Row="1"
                 Width="320"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center"
@@ -446,6 +518,7 @@
                 x:Load="{x:Bind ViewModel.IsEmpty, Mode=OneWay}">
                 <FontIcon
                     Margin="0,0,0,12"
+                    FontSize="{StaticResource EmptyStateIconSize}"
                     Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                     Glyph="{x:Bind ViewModel.EmptyGlyph, Mode=OneWay}" />
                 <TextBlock
@@ -477,6 +550,11 @@
             CornerRadius="{StaticResource OverlayCornerRadius}"
             Translation="0,0,32"
             x:Load="{x:Bind ViewModel.IsUndoVisible, Mode=OneWay}">
+            <Border.Transitions>
+                <TransitionCollection>
+                    <EntranceThemeTransition FromVerticalOffset="24" />
+                </TransitionCollection>
+            </Border.Transitions>
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />

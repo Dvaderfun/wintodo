@@ -70,6 +70,7 @@ public sealed class MigrationAndListTests
         await fixture.Store.RenameGroupAsync(group.Id, "Projects");
         await fixture.Store.RenameListAsync(list.Id, "Priority");
         await fixture.Store.SetListColorAsync(list.Id, ListColor.Green);
+        await fixture.Store.SetListBackgroundThemeAsync(list.Id, "Forest");
         await fixture.Store.SetListSortAsync(list.Id, SortMode.DueDate, descending: true);
         await fixture.Store.SetListShowCompletedAsync(list.Id, showCompleted: false);
         await fixture.Store.SetListCompletedExpandedAsync(list.Id, completedExpanded: true);
@@ -81,6 +82,7 @@ public sealed class MigrationAndListTests
         Assert.Equal("Projects", storedGroup.Name);
         Assert.Equal("Priority", storedList.DisplayName);
         Assert.Equal(ListColor.Green, storedList.Color);
+        Assert.Equal("Forest", storedList.BackgroundTheme);
         Assert.Equal(SortMode.DueDate, storedList.SortMode);
         Assert.True(storedList.SortDescending);
         Assert.False(storedList.ShowCompleted);

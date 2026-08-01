@@ -3,11 +3,14 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Shapes;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Microsoft.Windows.Storage.Pickers;
@@ -30,7 +33,10 @@ public sealed partial class ShellPage : Page
     private const string ListDragFormat = "application/x-wintodo-list-uid";
     private const long MaximumImportFileBytes = 32 * 1024 * 1024;
     private const long MaximumImportBatchBytes = 128 * 1024 * 1024;
+    private const uint SpiGetHighContrast = 0x0042;
+    private const uint HighContrastOn = 0x0001;
     private readonly ResourceLoader _resources = new();
+    private readonly UISettings _uiSettings = new();
     private readonly Dictionary<string, NavigationViewItem> _navigationItems =
         new(StringComparer.Ordinal);
     private readonly IClock _clock;
@@ -38,7 +44,11 @@ public sealed partial class ShellPage : Page
     private CancellationTokenSource? _transferStatusCancellation;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _midnightTimer;
     private bool _isNavigationInitialized;
+    private bool _isHighContrast;
+    private bool _isShortcutsDialogOpen;
     private bool _taskListEventsAttached;
+    private ShellListItemViewModel? _selectedList;
+    private int _backgroundDecodeWidth;
 
     internal ShellPage(
         ITaskStore taskStore,
@@ -47,8 +57,12 @@ public sealed partial class ShellPage : Page
     {
         _clock = clock;
         _taskStore = taskStore;
+        _isHighContrast = IsSystemHighContrastEnabled();
         ViewModel = new ShellViewModel(taskStore, clock, stateService);
+        KeyboardShortcuts = CreateKeyboardShortcuts();
         InitializeComponent();
+        AddPunctuationAccelerators();
+        AddHandler(KeyDownEvent, new KeyEventHandler(OnShellKeyDown), handledEventsToo: true);
 
         ViewModel.NavigationStructureChanged += OnNavigationStructureChanged;
         ViewModel.NavigationRequested += OnNavigationRequested;
@@ -56,6 +70,8 @@ public sealed partial class ShellPage : Page
         ViewModel.ImportIcalRequested += OnImportIcalRequested;
         ViewModel.ExportAllRequested += OnExportAllRequested;
         ViewModel.ExportListRequested += OnExportListRequested;
+        ViewModel.KeyboardShortcutsRequested += OnKeyboardShortcutsRequested;
+        ViewModel.AppearanceSettingsChanged += OnAppearanceSettingsChanged;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ShellRoot.ActualThemeChanged += OnActualThemeChanged;
 
@@ -68,6 +84,8 @@ public sealed partial class ShellPage : Page
     public ShellViewModel ViewModel { get; }
 
     public ObservableCollection<NavigationViewItem> UserListNavigationItems { get; } = [];
+
+    public IReadOnlyList<ShortcutEntryViewModel> KeyboardShortcuts { get; }
 
     internal event Action? SearchFocusRequested;
 
@@ -82,6 +100,7 @@ public sealed partial class ShellPage : Page
         ShellNavigation.SelectedItem = selectedItem;
         await ApplySelectionAsync(selectedItem, isSettingsSelected: false, cancellationToken);
         _isNavigationInitialized = true;
+        _uiSettings.ColorValuesChanged += OnColorValuesChanged;
         ScheduleMidnightRefresh();
     }
 
@@ -116,6 +135,16 @@ public sealed partial class ShellPage : Page
         return value ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    public static ElementTheme ThemeForIndex(int index)
+    {
+        return index switch
+        {
+            1 => ElementTheme.Light,
+            2 => ElementTheme.Dark,
+            _ => ElementTheme.Default,
+        };
+    }
+
     public InfoBarSeverity ToInfoBarSeverity(bool isError)
     {
         return isError ? InfoBarSeverity.Error : InfoBarSeverity.Success;
@@ -142,7 +171,9 @@ public sealed partial class ShellPage : Page
             || selectedItem is NavigationViewItem { Tag: "settings" })
         {
             ViewModel.SelectSettings();
+            _selectedList = null;
             ApplyListAccent(list: null);
+            ApplyListBackground();
             return;
         }
 
@@ -157,11 +188,14 @@ public sealed partial class ShellPage : Page
             navigationItem.Content?.ToString() ?? string.Empty,
             ReferenceEquals(navigationItem, MyDayNavigationItem),
             cancellationToken);
-        ApplyListAccent(
-            navigationKey.StartsWith(UserListNavigationPrefix, StringComparison.Ordinal)
-                ? ViewModel.UserLists.FirstOrDefault(
-                    list => list.NavigationKey == navigationKey)
-                : null);
+        _selectedList = navigationKey.StartsWith(
+                UserListNavigationPrefix,
+                StringComparison.Ordinal)
+            ? ViewModel.UserLists.FirstOrDefault(
+                list => list.NavigationKey == navigationKey)
+            : null;
+        ApplyListAccent(_selectedList);
+        ApplyListBackground();
     }
 
     private void PopulateUserListNavigationItems()
@@ -355,6 +389,10 @@ public sealed partial class ShellPage : Page
         if (selectedKey is not null)
         {
             ShellNavigation.SelectedItem = ResolveNavigationItem(selectedKey);
+            _selectedList = ViewModel.UserLists.FirstOrDefault(
+                list => list.NavigationKey == selectedKey);
+            ApplyListAccent(_selectedList);
+            ApplyListBackground();
         }
     }
 
@@ -918,6 +956,65 @@ public sealed partial class ShellPage : Page
         }
     }
 
+    private IReadOnlyList<ShortcutEntryViewModel> CreateKeyboardShortcuts()
+    {
+        var shortcuts = new List<ShortcutEntryViewModel>(19);
+        for (int index = 1; index <= 19; index++)
+        {
+            string key = index.ToString("00", CultureInfo.InvariantCulture);
+            shortcuts.Add(new ShortcutEntryViewModel(
+                _resources.GetString($"Shortcut{key}_Key"),
+                _resources.GetString($"Shortcut{key}_Action")));
+        }
+
+        return shortcuts;
+    }
+
+    private void AddPunctuationAccelerators()
+    {
+        var settings = new KeyboardAccelerator
+        {
+            Key = (VirtualKey)188,
+            Modifiers = VirtualKeyModifiers.Control,
+        };
+        settings.Invoked += OnSettingsAccelerator;
+        KeyboardAccelerators.Add(settings);
+
+        var shortcuts = new KeyboardAccelerator
+        {
+            Key = (VirtualKey)191,
+            Modifiers = VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift,
+        };
+        shortcuts.Invoked += OnShowShortcutsAccelerator;
+        KeyboardAccelerators.Add(shortcuts);
+    }
+
+    private async void OnKeyboardShortcutsRequested()
+    {
+        if (_isShortcutsDialogOpen)
+        {
+            return;
+        }
+
+        _isShortcutsDialogOpen = true;
+        try
+        {
+            await ShortcutsDialog.ShowAsync();
+        }
+        finally
+        {
+            _isShortcutsDialogOpen = false;
+        }
+    }
+
+    private void OnShortcutsDialogOpened(ContentDialog sender, ContentDialogOpenedEventArgs args)
+    {
+        SetOpenDialogButtonAutomationId(
+            sender,
+            generatedId: "CloseButton",
+            automationId: "Todo.Dialog.Shortcuts.Close");
+    }
+
     private void OnNewListAccelerator(
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
@@ -939,6 +1036,107 @@ public sealed partial class ShellPage : Page
         KeyboardAcceleratorInvokedEventArgs args)
     {
         SearchFocusRequested?.Invoke();
+        args.Handled = true;
+    }
+
+    private void OnSettingsAccelerator(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        ShellNavigation.SelectedItem = SettingsNavigationItem;
+        args.Handled = true;
+    }
+
+    private void OnShellKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        const int virtualKeyControl = 0x11;
+        if ((GetKeyState(virtualKeyControl) & 0x8000) == 0)
+        {
+            return;
+        }
+
+        if (args.Key == (VirtualKey)188)
+        {
+            ShellNavigation.SelectedItem = SettingsNavigationItem;
+            args.Handled = true;
+        }
+        else if (args.Key == (VirtualKey)191)
+        {
+            OnKeyboardShortcutsRequested();
+            args.Handled = true;
+        }
+    }
+
+    [DllImport("user32.dll")]
+    private static extern short GetKeyState(int virtualKey);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SystemParametersInfo(
+        uint action,
+        uint parameter,
+        ref HighContrastState state,
+        uint updateFlags);
+
+    private static bool IsSystemHighContrastEnabled()
+    {
+        var state = new HighContrastState
+        {
+            Size = checked((uint)Unsafe.SizeOf<HighContrastState>()),
+        };
+        return SystemParametersInfo(
+                SpiGetHighContrast,
+                state.Size,
+                ref state,
+                updateFlags: 0)
+            && (state.Flags & HighContrastOn) != 0;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct HighContrastState
+    {
+        public uint Size;
+
+        public uint Flags;
+
+        public nint DefaultScheme;
+    }
+
+    private void OnShowShortcutsAccelerator(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        OnKeyboardShortcutsRequested();
+        args.Handled = true;
+    }
+
+    private async void OnDueDateAccelerator(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        TaskItemViewModel? selected = ViewModel.TaskList.SelectedTask;
+        if (selected is null)
+        {
+            return;
+        }
+
+        await ViewModel.OpenDetailAsync(selected);
+        DispatcherQueue.TryEnqueue(TaskDetail.OpenDuePicker);
+        args.Handled = true;
+    }
+
+    private async void OnReminderAccelerator(
+        KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        TaskItemViewModel? selected = ViewModel.TaskList.SelectedTask;
+        if (selected is null)
+        {
+            return;
+        }
+
+        await ViewModel.OpenDetailAsync(selected);
+        DispatcherQueue.TryEnqueue(TaskDetail.OpenReminderPicker);
         args.Handled = true;
     }
 
@@ -1014,15 +1212,113 @@ public sealed partial class ShellPage : Page
         string? selectedKey =
             (ShellNavigation.SelectedItem as NavigationViewItem)?.Tag as string;
         PopulateUserListNavigationItems();
-        ApplyListAccent(
-            ViewModel.UserLists.FirstOrDefault(
-                list => list.NavigationKey == selectedKey));
+        _selectedList = ViewModel.UserLists.FirstOrDefault(
+            list => list.NavigationKey == selectedKey);
+        ApplyListAccent(_selectedList);
+        ApplyListBackground();
     }
 
-    private void ApplyListAccent(ShellListItemViewModel? list)
+    private void OnColorValuesChanged(UISettings sender, object args)
+    {
+        bool isHighContrast = IsSystemHighContrastEnabled();
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            _isHighContrast = isHighContrast;
+            ApplyListAccent(_selectedList, isHighContrast);
+            RefreshUserListAccentBrushes(isHighContrast);
+            ApplyListBackground(isHighContrast);
+        });
+    }
+
+    private void ApplyListAccent(
+        ShellListItemViewModel? list,
+        bool? isHighContrast = null)
     {
         string resourceKey = list?.AccentResourceKey ?? "ListAccentBrush";
-        TaskList.Resources["ListAccentBrush"] = ResolveBrush(resourceKey);
+        Brush brush = (isHighContrast ?? _isHighContrast)
+            ? ResolveBrush("SystemColorHighlightColorBrush")
+            : ResolveBrush(resourceKey);
+        TaskList.Resources["ListAccentBrush"] = brush;
+        DetailPane.Resources["ListAccentBrush"] = brush;
+        ShellNavigation.Resources["NavigationViewSelectionIndicatorForeground"] = brush;
+    }
+
+    private void RefreshUserListAccentBrushes(bool isHighContrast)
+    {
+        Brush? highContrastBrush = isHighContrast
+            ? ResolveBrush("SystemColorHighlightColorBrush")
+            : null;
+        foreach (ShellListItemViewModel list in ViewModel.UserLists)
+        {
+            if (_navigationItems.TryGetValue(list.NavigationKey, out NavigationViewItem? item)
+                && item.Content is Grid { Children.Count: > 0 } content
+                && content.Children[0] is Ellipse dot)
+            {
+                dot.Fill = highContrastBrush ?? ResolveBrush(list.AccentResourceKey);
+            }
+        }
+    }
+
+    private void OnAppearanceSettingsChanged()
+    {
+        DispatcherQueue.TryEnqueue(() => ApplyListBackground());
+    }
+
+    private void OnListPaneSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        int decodeWidth = GetBackgroundDecodeWidth();
+        if (ListBackgroundImage.Source is not null
+            && Math.Abs(decodeWidth - _backgroundDecodeWidth) >= 64)
+        {
+            ApplyListBackground();
+        }
+    }
+
+    private void ApplyListBackground(bool? isHighContrast = null)
+    {
+        ListBackgroundImage.Source = null;
+        _backgroundDecodeWidth = 0;
+        string? assetName = ResolveBackgroundAsset(_selectedList?.BackgroundTheme);
+        if (!ViewModel.ShowListBackgrounds
+            || assetName is null
+            || (isHighContrast ?? _isHighContrast))
+        {
+            return;
+        }
+
+        int decodeWidth = GetBackgroundDecodeWidth();
+        if (decodeWidth <= 0)
+        {
+            return;
+        }
+
+        var bitmap = new BitmapImage
+        {
+            DecodePixelWidth = decodeWidth,
+            UriSource = new Uri($"ms-appx:///Assets/ListBackgrounds/{assetName}.jpg"),
+        };
+        _backgroundDecodeWidth = decodeWidth;
+        ListBackgroundImage.Source = bitmap;
+    }
+
+    private int GetBackgroundDecodeWidth()
+    {
+        double scale = XamlRoot?.RasterizationScale ?? 1;
+        return checked((int)Math.Ceiling(ListPane.ActualWidth * scale));
+    }
+
+    private static string? ResolveBackgroundAsset(string? theme)
+    {
+        return theme is "Coast"
+            or "Forest"
+            or "Mist"
+            or "Sunrise"
+            or "Indigo"
+            or "Petals"
+            or "Graphite"
+            or "Field"
+            ? theme
+            : null;
     }
 
     private Brush ResolveBrush(string resourceKey)

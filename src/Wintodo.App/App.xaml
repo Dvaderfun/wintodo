@@ -10,6 +10,7 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
                 <ResourceDictionary Source="Themes/Colors.xaml" />
             </ResourceDictionary.MergedDictionaries>
+            <x:Double x:Key="EmptyStateIconSize">48</x:Double>
             <Style x:Key="TaskSubtleToggleButtonStyle" TargetType="ToggleButton">
                 <Setter Property="Background" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
                 <Setter Property="BorderThickness" Value="0" />
