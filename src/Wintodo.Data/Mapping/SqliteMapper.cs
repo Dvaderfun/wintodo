@@ -71,13 +71,14 @@ internal static class SqliteMapper
             SortDescending = reader.GetBoolean(8),
             ShowCompleted = reader.GetBoolean(9),
             CompletedExpanded = reader.GetBoolean(10),
-            IsDeleted = reader.GetBoolean(11),
-            Created = ReadRequiredInstant(reader, 12),
-            Modified = ReadRequiredInstant(reader, 13),
-            AccountId = GetNullableInt64(reader, 14),
-            RemoteUrl = GetNullableString(reader, 15),
-            RemoteCTag = GetNullableString(reader, 16),
-            SyncToken = GetNullableString(reader, 17),
+            IsDefault = reader.GetBoolean(11),
+            IsDeleted = reader.GetBoolean(12),
+            Created = ReadRequiredInstant(reader, 13),
+            Modified = ReadRequiredInstant(reader, 14),
+            AccountId = GetNullableInt64(reader, 15),
+            RemoteUrl = GetNullableString(reader, 16),
+            RemoteCTag = GetNullableString(reader, 17),
+            SyncToken = GetNullableString(reader, 18),
         };
     }
 

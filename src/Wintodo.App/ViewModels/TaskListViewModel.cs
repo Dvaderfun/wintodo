@@ -32,7 +32,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     private string? _composerRecurrence;
     private bool _composerImportant;
     private bool _composerMyDay;
-    private long? _pinnedComposerListId;
+    private long? _composerListOverrideId;
     private ListQueryKind _composerKind = ListQueryKind.MyDay;
 
     internal TaskListViewModel(ITaskStore taskStore, IClock clock)
@@ -85,6 +85,9 @@ public sealed partial class TaskListViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RequestExportListCommand))]
     public partial bool IsUserListSelected { get; set; }
+
+    [ObservableProperty]
+    public partial bool CanDeleteSelectedList { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RequestExportListCommand))]
@@ -185,6 +188,11 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     internal ListColor SelectedColor => _selectedList?.Color ?? ListColor.Blue;
 
+    internal TaskItemViewModel? FindTask(string uid)
+    {
+        return _itemCache.GetValueOrDefault(uid);
+    }
+
     internal void SetLists(IReadOnlyList<ShellListItemViewModel> lists)
     {
         _lists = lists;
@@ -246,6 +254,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         _selectedList = list;
         IsUserListSelected = true;
+        CanDeleteSelectedList = !list.IsDefault;
         IsTaskListVisible = true;
         IsComposerVisible = true;
         AreListCommandsVisible = true;
@@ -528,7 +537,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             return;
         }
 
-        _pinnedComposerListId = target.Id;
+        _composerListOverrideId = target.Id;
         ComposerTargetListId = target.Id;
         ComposerTargetLabel = target.DisplayName;
         CanCreateTask = IsComposerVisible;
@@ -616,10 +625,18 @@ public sealed partial class TaskListViewModel : ObservableObject
         IsRenamingList = false;
     }
 
+    partial void OnIsUserListSelectedChanged(bool value)
+    {
+        if (!value)
+        {
+            CanDeleteSelectedList = false;
+        }
+    }
+
     [RelayCommand]
     private void RequestDeleteList()
     {
-        if (_selectedList is not null)
+        if (_selectedList is { IsDefault: false })
         {
             DeleteListRequested?.Invoke(_selectedList);
         }
@@ -902,7 +919,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         }
     }
 
-    private Task ReloadAsync(CancellationToken cancellationToken = default)
+    internal Task ReloadAsync(CancellationToken cancellationToken = default)
     {
         return _currentQuery is null
             ? Task.CompletedTask
@@ -1438,6 +1455,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             : null;
         _composerImportant = _composerKind == ListQueryKind.Important;
         _composerMyDay = _composerKind == ListQueryKind.MyDay;
+        _composerListOverrideId = null;
         if (collapse)
         {
             IsComposerExpanded = false;
@@ -1465,7 +1483,8 @@ public sealed partial class TaskListViewModel : ObservableObject
         else
         {
             ShellListItemViewModel? target =
-                _lists.FirstOrDefault(list => list.Id == _pinnedComposerListId)
+                _lists.FirstOrDefault(list => list.Id == _composerListOverrideId)
+                ?? _lists.FirstOrDefault(list => list.IsDefault)
                 ?? _lists.FirstOrDefault();
             ComposerTargetListId = target?.Id;
             ComposerTargetLabel = target?.DisplayName ?? string.Empty;

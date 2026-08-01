@@ -602,3 +602,145 @@ targeted row-click checks were used for validation only.
 **Known issues carried forward**
 - Everything from the previous entries stands: the Narrator listening check, M7,
   and the Native AOT startup/working-set gate.
+
+## M7 resumed — Reminders and Windows integration          2026-08-01
+
+**Gate:** AUTOMATED PASS; REBOOT AND VISIBLE BADGE CHECKS PENDING — Debug and
+Release x64 built with zero warnings. Core passed 40/40 and Data passed 36/36.
+The isolated M7 gate seeded disposable databases, launched with `winapp run`,
+verified the Settings surface, persisted reminder schedule identity, and
+validated the overdue-plus-today badge input. With the app closed, real
+two-minute Windows toasts fired; UI Automation chose **Complete** and **Snooze**
+in separate runs, the broker-launched processes exited without showing a
+window, and both resulting database states passed verification. A visible
+taskbar badge and reminder survival across a reboot have not been observed, so
+M7 is not reported as fully complete.
+
+**Shipped**
+- Added OS-scheduled reminder toasts with open, Complete, and Snooze actions;
+  snooze supports 10 minutes, 1 hour, and tomorrow at 09:00. Scheduling is
+  reconciled on launch, activation/resume, and store changes, including missed
+  reminders and recurring-task advancement.
+- Added packaged app-notification activation and COM manifest declarations so
+  toast actions can update SQLite when the app is not already running.
+- Added overdue-plus-today taskbar badge updates, a jump list with New task and
+  the three most recent lists, an off-by-default launch-at-login setting, and a
+  text share target that creates a task.
+- Added task-aware pending-reminder and due-count store queries, focused data
+  tests, and `tests/ui/run-m7-gate.ps1` with reproducible artifacts. The latest
+  Settings and Snooze artifacts are under
+  `tests/ui/artifacts/m7/run-20260801-194155`; the verified Complete run is
+  under `tests/ui/artifacts/m7/run-20260801-193814`.
+
+**Deviations from PLAN.md**
+- Scheduled toasts use the alarm UID as `Tag` and the task UID as `Group`,
+  rather than using the task UID for both. This preserves independent identity
+  for multiple alarms while retaining task-wide cancellation.
+- Scheduling uses the legacy `Windows.UI.Notifications` API because Windows App
+  SDK app notifications still provide payload construction and activation but
+  no scheduling API. The Windows integration service contains that deliberate
+  UWP-era exception.
+- Share-target activation necessarily uses
+  `Windows.ApplicationModel.Activation.ShareTargetActivatedEventArgs`; it is
+  the platform activation contract rather than a XAML namespace leak.
+- Debug builds add a guarded `m7-gate.db` path to toast action arguments so a
+  broker-launched gate process reopens the disposable database. The code is
+  excluded from Release builds and cannot redirect production activation.
+
+**Known issues carried forward**
+- The visible taskbar badge and reboot reminder-persistence checks remain
+  outstanding. The M8 Narrator listening check and M9 Native AOT
+  startup/working-set gate also remain open.
+
+## Post-M8 — Completed-section pointer crash          2026-08-01
+
+**Gate:** FOCUSED PASS — Debug x64 built with zero warnings. Twelve consecutive
+pointer expand/collapse cycles kept the packaged process alive, and the visible
+row count returned 1 collapsed, 2 expanded, 1 collapsed again. Milestone gate
+scripts were not re-run this session.
+
+**Root cause.** The fail-fast was never a collection-mutation problem. The
+completed-group header `ToggleButton` overrode its `ToggleButtonForeground*`
+and `ToggleButtonBackground*` state keys with `<StaticResource ResourceKey=…/>`
+alias entries. A header container is recycled on every re-expansion, and the
+`ThemeResource` update pass cannot dereference an alias: it resolves to
+`Unknown` and XAML raises `COMException 0x800F1001`, "Invalid attribute value
+Unknown for property Foreground", which surfaces as the `0xC000027B` stowed
+exception. The app had no `UnhandledException` handler, so the managed message
+was never visible — only the native fail-fast stack. Two expansions were needed
+to reproduce; a single expand/collapse always survived.
+
+**Shipped**
+- The group-header `ToggleButton` state overrides are concrete `SolidColorBrush`
+  elements with `Color="{ThemeResource …}"`, matching the pattern already used
+  in `TaskRow.xaml` and `TaskDetailView.xaml` — the two override sites that
+  never crashed.
+- `App` now traces unhandled exceptions as `WINTODO_UNHANDLED_EXCEPTION=…` and,
+  in Debug, enables binding tracing with a `WINTODO_BINDING_FAILED=…` trace.
+  The handler does not mark the error handled, so fail-fast behavior is
+  unchanged.
+- The earlier incremental-group-mutation workaround was reverted: it targeted
+  the wrong cause and crashed identically. `ToggleCompletedAsync` calls
+  `RebuildVisibleItems()` directly again, and the
+  `CompletedExpansionChangeRequested` event, its deferred `DispatcherQueue`
+  callback, and `ApplyCompletedExpansion` are gone.
+- The M3 Completed regression keeps the real pointer click instead of
+  `TogglePattern`, covering the input route that produced the fail-fast.
+
+**Deviations from PLAN.md**
+- None. The grouped `ListView`, sticky headers, built-in transitions, and the
+  completed-section visual and persistence behavior remain unchanged.
+
+**Known issues carried forward**
+- The existing M3 harness still assumes expanded navigation and retains its
+  coordinate-sensitive drag assertion.
+- Milestone gates were not re-run after this fix, so the M3/M5/M8 suites remain
+  unverified against the current tree.
+- The visible taskbar badge and reboot reminder-persistence checks, the M8
+  Narrator listening check, and the M9 Native AOT startup/working-set gate
+  remain open.
+
+## Post-M8 — Default "Tasks" list                      2026-08-02
+
+**Gate:** PARTIAL — Debug x64 solution build with zero warnings, and the
+`Wintodo.Data.Tests` suite passes at 39/39 (three new default-list tests).
+Milestone UI gate scripts were not re-run this session; the local development
+database was wiped so the next gate run starts on the new schema.
+
+**Why.** Adding a task from a smart list targeted whichever list happened to
+sort first, so a throwaway gate list ("M3 Gate") captured new tasks. The
+requested model — tasks that belong to no list — is not expressible: `VTODO`
+only exists inside a collection, so a listless task could never sync over
+CalDAV. Microsoft To Do solves this the same way we now do, with a real default
+list named "Tasks".
+
+**Shipped**
+- `lists.is_default` plus `ux_lists_default`, a unique partial index keyed on
+  `COALESCE(account_id, 0)`, so each account has exactly one default list. The
+  schema was edited in place rather than migrated; the app is pre-release and no
+  installed database needs preserving.
+- `ITaskStore.EnsureDefaultListAsync` creates or returns the default list and is
+  idempotent. `GetListsAsync` orders `is_default DESC, sort_order, id`.
+  `DeleteListAsync` throws for the default list, so import and future sync paths
+  cannot remove it either.
+- The composer resolves its target as session override, then default list, then
+  first list. Choosing another list from the composer flyout now applies to that
+  one task only and resets afterwards, matching Microsoft To Do.
+- The default list renders as a pinned navigation entry below Completed and
+  above the list separator, outside "Lists". It cannot be deleted, dragged, or
+  used as a list-reorder drop target; it still accepts task drops and can be
+  renamed, which maps cleanly to a CalDAV collection `DISPLAYNAME`.
+- Share-target activation and the jump-list "new task" verb use the default list
+  instead of the first list, and the recreate-a-list-after-deleting-the-last-one
+  workaround in `ShellViewModel` is gone.
+
+**Deviations from PLAN.md**
+- PLAN.md described lists without a default; the default-list concept is new.
+  `tasks.list_id` stays `NOT NULL` exactly as planned.
+
+**Known issues carried forward**
+- Milestone gates remain unverified against the current tree, and their
+  navigation snapshots now contain the extra pinned item.
+- The visible taskbar badge and reboot reminder-persistence checks, the M8
+  Narrator listening check, and the M9 Native AOT startup/working-set gate
+  remain open.

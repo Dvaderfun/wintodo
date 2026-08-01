@@ -67,7 +67,7 @@
                     <ComboBox
                         x:Name="ThemeComboBox"
                         x:Uid="SettingsThemeCombo"
-                        Width="160"
+                        Width="200"
                         AutomationProperties.AutomationId="Todo.Settings.Theme"
                         SelectedIndex="{x:Bind ViewModel.AppearanceThemeIndex, Mode=TwoWay}">
                         <ComboBoxItem
@@ -106,6 +106,22 @@
                         x:Uid="SettingsBackgroundsToggle"
                         AutomationProperties.AutomationId="Todo.Settings.ShowBackgrounds"
                         IsOn="{x:Bind ViewModel.ShowListBackgrounds, Mode=TwoWay}" />
+                </settings:SettingsCard>
+            </StackPanel>
+
+            <StackPanel Spacing="12">
+                <TextBlock
+                    x:Uid="SettingsWindowsHeader"
+                    Style="{StaticResource SubtitleTextBlockStyle}" />
+
+                <settings:SettingsCard
+                    x:Uid="SettingsLaunchAtLoginCard"
+                    ContentAlignment="Vertical">
+                    <ToggleSwitch
+                        x:Uid="SettingsLaunchAtLoginToggle"
+                        AutomationProperties.AutomationId="Todo.Settings.LaunchAtLogin"
+                        IsEnabled="{x:Bind ViewModel.CanChangeLaunchAtLogin, Mode=OneWay}"
+                        IsOn="{x:Bind ViewModel.LaunchAtLogin, Mode=TwoWay}" />
                 </settings:SettingsCard>
             </StackPanel>
 

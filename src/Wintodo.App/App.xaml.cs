@@ -1,6 +1,12 @@
 using Microsoft.UI.Xaml;
+using Microsoft.Windows.AppLifecycle;
+using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.ApplicationModel.Resources;
 using System.Diagnostics;
+using Windows.ApplicationModel.Activation;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
+using Wintodo.Core.Models;
 using Wintodo.Core.Services;
 using Wintodo.Data;
 using Wintodo.Services;
@@ -12,6 +18,10 @@ namespace Wintodo;
 /// </summary>
 public partial class App : Application
 {
+    private readonly TaskCompletionSource<WindowsIntegrationService> _integrationReady =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private bool _notificationsRegistered;
+
     public static Window Window { get; private set; } = null!;
 
     public static Microsoft.UI.Dispatching.DispatcherQueue DispatcherQueue { get; private set; } = null!;
@@ -25,6 +35,13 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
+        UnhandledException += (_, args) =>
+            Trace.WriteLine($"WINTODO_UNHANDLED_EXCEPTION={args.Exception}");
+#if DEBUG
+        DebugSettings.IsBindingTracingEnabled = true;
+        DebugSettings.BindingFailed += (_, args) =>
+            Trace.WriteLine($"WINTODO_BINDING_FAILED={args.Message}");
+#endif
     }
 
     protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
@@ -33,45 +50,275 @@ public partial class App : Application
         {
             long launchStartTimestamp = Stopwatch.GetTimestamp();
             DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            RegisterAppNotifications();
+            AppActivationArguments activation =
+                AppInstance.GetCurrent().GetActivatedEventArgs();
             IClock clock = ResolveClock();
-            string databasePath = ResolveDatabasePath();
+            string? commandLineDatabasePath = GetCommandLineOption("--database-path");
+            string databasePath = ResolveDatabasePath(
+                activation,
+                commandLineDatabasePath);
             var store = new SqliteTaskStore(databasePath, clock);
-            var window = new MainWindow(store, clock);
-            Window = window;
-            var firstFrameCompletion = new TaskCompletionSource(
-                TaskCreationOptions.RunContinuationsAsynchronously);
-            EventHandler<object>? firstFrameHandler = null;
-            firstFrameHandler = (_, _) =>
+            var windowsIntegration = new WindowsIntegrationService(
+                store,
+                clock
+#if DEBUG
+                , IsM7GateDatabasePath(commandLineDatabasePath)
+                    ? databasePath
+                    : null
+#endif
+            );
+            var startupTaskService = new StartupTaskService();
+
+            if (activation.Kind == ExtendedActivationKind.StartupTask)
             {
-                Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= firstFrameHandler;
-                double elapsedMilliseconds =
-                    Stopwatch.GetElapsedTime(launchStartTimestamp).TotalMilliseconds;
-                Trace.WriteLine(string.Create(
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    $"WINTODO_PERF_FIRST_FRAME_MS={elapsedMilliseconds:F3}"));
-                firstFrameCompletion.TrySetResult();
-            };
-            Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += firstFrameHandler;
+                await InitializeBackgroundAsync(store, windowsIntegration);
+                return;
+            }
+
+            NotificationActivationResult? notificationResult = null;
+            if (activation.Kind == ExtendedActivationKind.AppNotification
+                && activation.Data is AppNotificationActivatedEventArgs notificationArgs)
+            {
+                await store.InitializeAsync();
+                await windowsIntegration.InitializeAsync();
+                _integrationReady.TrySetResult(windowsIntegration);
+                notificationResult = await windowsIntegration.HandleNotificationAsync(
+                    notificationArgs.Arguments);
+                if (!notificationResult.Value.ShowWindow)
+                {
+                    await windowsIntegration.DisposeAsync();
+                    await store.DisposeAsync();
+                    UnregisterAppNotifications();
+                    Current.Exit();
+                    return;
+                }
+            }
+
+            var window = new MainWindow(
+                store,
+                clock,
+                windowsIntegration,
+                startupTaskService);
+            Window = window;
+            Task firstFrame = ObserveFirstFrameAsync(launchStartTimestamp);
             Window.Activate();
-            await firstFrameCompletion.Task;
+            await firstFrame;
             await store.InitializeAsync();
+            await windowsIntegration.InitializeAsync();
+            _integrationReady.TrySetResult(windowsIntegration);
             await window.InitializeAsync();
+
+            if (activation.Kind == ExtendedActivationKind.ShareTarget
+                && activation.Data is ShareTargetActivatedEventArgs shareArgs)
+            {
+                string? sharedTaskUid = await CreateTaskFromShareAsync(store, shareArgs);
+                if (sharedTaskUid is not null)
+                {
+                    await window.RefreshForExternalChangeAsync();
+                    await window.OpenTaskAsync(sharedTaskUid);
+                }
+            }
+            else if (activation.Kind == ExtendedActivationKind.Launch
+                     && !string.IsNullOrWhiteSpace(args.Arguments))
+            {
+                await window.HandleJumpListArgumentAsync(args.Arguments);
+            }
+            else if (notificationResult is { TaskUid: not null } result)
+            {
+                await window.OpenTaskAsync(result.TaskUid);
+            }
+
             window.ApplyDeferredPresenterState();
         }
         catch (Exception exception)
         {
+            _integrationReady.TrySetException(exception);
             Trace.WriteLine($"WINTODO_STARTUP_EXCEPTION={exception}");
             throw;
         }
     }
 
-    private static string ResolveDatabasePath()
+    internal static void UnregisterAppNotifications()
     {
-        string? commandLinePath = GetCommandLineOption("--database-path");
+        if (Current is not App app || !app._notificationsRegistered)
+        {
+            return;
+        }
+
+        AppNotificationManager.Default.NotificationInvoked -= app.OnNotificationInvoked;
+        AppNotificationManager.Default.Unregister();
+        app._notificationsRegistered = false;
+    }
+
+    private void RegisterAppNotifications()
+    {
+        if (_notificationsRegistered)
+        {
+            return;
+        }
+
+        try
+        {
+            AppNotificationManager.Default.NotificationInvoked += OnNotificationInvoked;
+            AppNotificationManager.Default.Register();
+            _notificationsRegistered = true;
+        }
+        catch (Exception exception)
+        {
+            AppNotificationManager.Default.NotificationInvoked -= OnNotificationInvoked;
+            Trace.WriteLine($"WINTODO_NOTIFICATION_REGISTRATION_EXCEPTION={exception}");
+        }
+    }
+
+    private async void OnNotificationInvoked(
+        AppNotificationManager sender,
+        AppNotificationActivatedEventArgs args)
+    {
+        try
+        {
+            WindowsIntegrationService integration = await _integrationReady.Task;
+            NotificationActivationResult result =
+                await integration.HandleNotificationAsync(args.Arguments);
+            if (Window is not MainWindow window)
+            {
+                if (!result.ShowWindow)
+                {
+                    Current.Exit();
+                }
+
+                return;
+            }
+
+            DispatcherQueue.TryEnqueue(async () =>
+            {
+                await window.RefreshForExternalChangeAsync();
+                if (result.ShowWindow)
+                {
+                    window.Activate();
+                    if (result.TaskUid is not null)
+                    {
+                        await window.OpenTaskAsync(result.TaskUid);
+                    }
+                }
+            });
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_NOTIFICATION_ACTIVATION_EXCEPTION={exception}");
+        }
+    }
+
+    private async Task InitializeBackgroundAsync(
+        SqliteTaskStore store,
+        WindowsIntegrationService windowsIntegration)
+    {
+        await store.InitializeAsync();
+        await windowsIntegration.InitializeAsync();
+        _integrationReady.TrySetResult(windowsIntegration);
+        await windowsIntegration.DisposeAsync();
+        await store.DisposeAsync();
+        UnregisterAppNotifications();
+        Current.Exit();
+    }
+
+    private static Task ObserveFirstFrameAsync(long launchStartTimestamp)
+    {
+        var completion = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        EventHandler<object>? handler = null;
+        handler = (_, _) =>
+        {
+            Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= handler;
+            double elapsedMilliseconds =
+                Stopwatch.GetElapsedTime(launchStartTimestamp).TotalMilliseconds;
+            Trace.WriteLine(string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"WINTODO_PERF_FIRST_FRAME_MS={elapsedMilliseconds:F3}"));
+            completion.TrySetResult();
+        };
+        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += handler;
+        return completion.Task;
+    }
+
+    private static async Task<string?> CreateTaskFromShareAsync(
+        SqliteTaskStore store,
+        ShareTargetActivatedEventArgs args)
+    {
+        ResourceLoader resources = new();
+        Windows.ApplicationModel.DataTransfer.ShareTarget.ShareOperation operation =
+            args.ShareOperation;
+        operation.ReportStarted();
+        try
+        {
+            if (!operation.Data.Contains(StandardDataFormats.Text))
+            {
+                operation.ReportError(resources.GetString("Share_NoText"));
+                return null;
+            }
+
+            string text = (await operation.Data.GetTextAsync()).Trim();
+            if (text.Length == 0)
+            {
+                operation.ReportError(resources.GetString("Share_NoText"));
+                return null;
+            }
+
+            TodoList list = await store.EnsureDefaultListAsync(
+                resources.GetString("DefaultList_Name"));
+            string normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal);
+            int lineBreak = normalized.IndexOf('\n', StringComparison.Ordinal);
+            string summary = lineBreak < 0
+                ? normalized
+                : normalized[..lineBreak].Trim();
+            string? description = lineBreak < 0
+                ? null
+                : normalized[(lineBreak + 1)..].Trim();
+            if (summary.Length == 0)
+            {
+                summary = normalized;
+                description = null;
+            }
+
+            TodoTask task = await store.CreateTaskAsync(new TodoTask
+            {
+                ListId = list.Id,
+                Summary = summary,
+                Description = string.IsNullOrWhiteSpace(description)
+                    ? null
+                    : description,
+            });
+            operation.ReportCompleted();
+            return task.Uid;
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_SHARE_TARGET_EXCEPTION={exception}");
+            operation.ReportError(resources.GetString("Share_CreateFailed"));
+            return null;
+        }
+    }
+
+    private static string ResolveDatabasePath(
+        AppActivationArguments activation,
+        string? commandLinePath)
+    {
         if (!string.IsNullOrWhiteSpace(commandLinePath))
         {
             return Path.GetFullPath(commandLinePath);
         }
+
+#if DEBUG
+        if (activation.Kind == ExtendedActivationKind.AppNotification
+            && activation.Data is AppNotificationActivatedEventArgs notificationArgs
+            && notificationArgs.Arguments.TryGetValue(
+                WindowsIntegrationService.DebugDatabasePathArgument,
+                out string? notificationDatabasePath)
+            && IsM7GateDatabasePath(notificationDatabasePath))
+        {
+            return Path.GetFullPath(notificationDatabasePath);
+        }
+#endif
 
         string? overridePath =
             Environment.GetEnvironmentVariable("WINTODO_DATABASE_PATH");
@@ -79,6 +326,18 @@ public partial class App : Application
             ? Path.Combine(ApplicationData.Current.LocalFolder.Path, "wintodo.db")
             : Path.GetFullPath(overridePath);
     }
+
+#if DEBUG
+    private static bool IsM7GateDatabasePath(string? path)
+    {
+        return !string.IsNullOrWhiteSpace(path)
+            && string.Equals(
+                Path.GetFileName(path),
+                "m7-gate.db",
+                StringComparison.OrdinalIgnoreCase)
+            && File.Exists(Path.GetFullPath(path));
+    }
+#endif
 
     private static IClock ResolveClock()
     {

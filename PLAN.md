@@ -46,7 +46,7 @@ After parity, we iterate beyond To Do.
 
 | Area | Must have in v1 |
 |---|---|
-| Lists | Create, rename, delete, reorder, per-list theme colour, list groups |
+| Lists | Create, rename, delete, reorder, per-list theme colour, list groups, one undeletable default list ("Tasks") per account |
 | Smart lists | My Day, Important, Planned, All, Completed |
 | Tasks | Create, complete, uncomplete, delete, reorder, move to another list |
 | Task fields | Title, steps (subtasks), note, due date, reminder, repeat, importance (star), "Added to My Day" |
@@ -572,6 +572,11 @@ IDs; then write XAML from those samples.
 - List CRUD: create (inline-editable new row in the pane), rename (F2 / context
   menu), delete (`ContentDialog` confirm), reorder (drag within the pane),
   per-list theme colour picker, list groups (create, drag lists into/out of).
+- A default list ("Tasks", `lists.is_default`) created on first run: pinned
+  below the smart lists and outside "Lists", renameable, never deletable, and
+  never reorderable. It is the composer target on every smart list, because
+  `tasks.list_id` is `NOT NULL` and a listless task has no CalDAV collection to
+  live in. Picking another list in the composer applies to that one task.
 - `TaskListView`: header (title + count + list menu), `AddTaskComposer`,
   `ListView` of `TaskRow`, completed section.
 - `TaskRow` exactly per `docs/DESIGN.md` §3: completion circle, title,
@@ -679,9 +684,11 @@ de-risking milestone for M13.
 
 ### M7 — Reminders and Windows integration
 
-**Status:** DEFERRED FOR THE CURRENT MVP (owner decision, 2026-07-31). This
-milestone was deliberately skipped after M6 and remains available for later
-implementation; none of its gate results are claimed.
+**Status:** IMPLEMENTED; GATE PARTIAL (resumed 2026-08-01). Debug and Release
+x64 builds, the full Core/Data suite, and the isolated Windows-integration
+preflight pass. Real app-closed Complete and Snooze toast actions also pass.
+Reboot persistence and visible taskbar-badge confirmation remain, so the
+milestone is not reported as fully complete.
 
 **Goal:** the app behaves like a first-class Windows citizen.
 

@@ -886,4 +886,20 @@
   <data name="Shortcut18_Action" xml:space="preserve"><value>Undo the last task deletion</value></data>
   <data name="Shortcut19_Key" xml:space="preserve"><value>Alt+Up / Alt+Down</value></data>
   <data name="Shortcut19_Action" xml:space="preserve"><value>Move the selected task</value></data>
+  <data name="SettingsWindowsHeader.Text" xml:space="preserve"><value>Windows</value></data>
+  <data name="SettingsLaunchAtLoginCard.Header" xml:space="preserve"><value>Launch at login</value></data>
+  <data name="SettingsLaunchAtLoginCard.Description" xml:space="preserve"><value>Start Wintodo after you sign in to keep Windows integration current.</value></data>
+  <data name="SettingsLaunchAtLoginToggle.AutomationProperties.Name" xml:space="preserve"><value>Launch Wintodo at login</value></data>
+  <data name="Notification_ReminderBody" xml:space="preserve"><value>Task reminder</value></data>
+  <data name="Notification_Complete" xml:space="preserve"><value>Complete</value></data>
+  <data name="Notification_Snooze" xml:space="preserve"><value>Snooze</value></data>
+  <data name="Notification_Snooze10Minutes" xml:space="preserve"><value>10 minutes</value></data>
+  <data name="Notification_SnoozeOneHour" xml:space="preserve"><value>1 hour</value></data>
+  <data name="Notification_SnoozeTomorrow" xml:space="preserve"><value>Tomorrow at 9:00</value></data>
+  <data name="JumpList_NewTask" xml:space="preserve"><value>New task</value></data>
+  <data name="JumpList_NewTaskDescription" xml:space="preserve"><value>Create a task in Wintodo.</value></data>
+  <data name="JumpList_RecentLists" xml:space="preserve"><value>Recent lists</value></data>
+  <data name="JumpList_OpenListDescription" xml:space="preserve"><value>Open {0} in Wintodo.</value></data>
+  <data name="Share_NoText" xml:space="preserve"><value>The shared item does not contain text.</value></data>
+  <data name="Share_CreateFailed" xml:space="preserve"><value>Wintodo could not create a task from the shared text.</value></data>
 </root>

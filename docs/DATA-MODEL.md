@@ -30,6 +30,14 @@
 6. **All local time arithmetic goes through `IClock`.** Nothing calls
    `DateTimeOffset.Now` outside its implementation, or My Day, recurrence, and
    reminders become untestable.
+7. **Every task lives in a list; one list per account is the default.**
+   `tasks.list_id` is `NOT NULL` because a `VTODO` has no meaning outside a
+   collection — a listless task could never be synced. The "no list" bucket users
+   expect is `lists.is_default = 1` ("Tasks"), the same shape Microsoft To Do
+   uses. `ux_lists_default` enforces exactly one per account (local account keys
+   as `COALESCE(account_id, 0)`), `ITaskStore.EnsureDefaultListAsync` creates it
+   on first run, and `DeleteListAsync` refuses to delete it. On CalDAV sync each
+   account's default maps to its own remote collection.
 
 ---
 
@@ -150,6 +158,7 @@ CREATE TABLE lists (
     sort_descending    INTEGER NOT NULL DEFAULT 0,
     show_completed     INTEGER NOT NULL DEFAULT 1,
     completed_expanded INTEGER NOT NULL DEFAULT 0,
+    is_default         INTEGER NOT NULL DEFAULT 0,     -- the account's "Tasks" list
     is_deleted         INTEGER NOT NULL DEFAULT 0,
     created_utc        TEXT    NOT NULL,
     modified_utc       TEXT    NOT NULL,
@@ -291,6 +300,7 @@ CREATE INDEX ix_tasks_dirty            ON tasks(is_dirty)     WHERE is_dirty = 1
 CREATE INDEX ix_alarms_trigger         ON alarms(trigger_utc) WHERE is_acknowledged = 0;
 CREATE INDEX ix_changelog_unsynced     ON change_log(synced)  WHERE synced = 0;
 CREATE INDEX ix_lists_group_sort       ON lists(group_id, sort_order) WHERE is_deleted = 0;
+CREATE UNIQUE INDEX ux_lists_default   ON lists(COALESCE(account_id, 0)) WHERE is_default = 1 AND is_deleted = 0;
 ```
 
 Partial indexes are deliberate — they keep the index small and let SQLite skip

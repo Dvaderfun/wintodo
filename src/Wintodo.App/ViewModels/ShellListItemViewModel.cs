@@ -18,9 +18,12 @@ public sealed partial class ShellListItemViewModel : ObservableObject
         SortDescending = list.SortDescending;
         ShowCompleted = list.ShowCompleted;
         CompletedExpanded = list.CompletedExpanded;
+        IsDefault = list.IsDefault;
     }
 
     public long Id { get; }
+
+    public bool IsDefault { get; }
 
     public string Uid { get; }
 

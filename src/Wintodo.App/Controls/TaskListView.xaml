@@ -194,15 +194,23 @@
                     IsChecked="{x:Bind IsExpanded, Mode=OneWay}"
                     Style="{StaticResource TaskSubtleToggleButtonStyle}"
                     Visibility="{x:Bind local:TaskListView.CompletedGroupVisibility(Kind), Mode=OneWay}">
+                    <!--
+                        These must be real brushes, not StaticResource aliases.
+                        A header container is recycled every time the group is
+                        expanded again, and the ThemeResource update pass cannot
+                        dereference an alias entry: it resolves to Unknown and
+                        XAML fail-fasts with "Invalid attribute value Unknown
+                        for property Foreground" (0x800F1001).
+                    -->
                     <ToggleButton.Resources>
-                        <StaticResource x:Key="ToggleButtonBackgroundPointerOver" ResourceKey="CardBackgroundFillColorSecondaryBrush" />
-                        <StaticResource x:Key="ToggleButtonBackgroundPressed" ResourceKey="SubtleFillColorTertiaryBrush" />
-                        <StaticResource x:Key="ToggleButtonBackgroundChecked" ResourceKey="CardBackgroundFillColorDefaultBrush" />
-                        <StaticResource x:Key="ToggleButtonBackgroundCheckedPointerOver" ResourceKey="CardBackgroundFillColorSecondaryBrush" />
-                        <StaticResource x:Key="ToggleButtonBackgroundCheckedPressed" ResourceKey="SubtleFillColorTertiaryBrush" />
-                        <StaticResource x:Key="ToggleButtonForegroundChecked" ResourceKey="TextFillColorPrimaryBrush" />
-                        <StaticResource x:Key="ToggleButtonForegroundCheckedPointerOver" ResourceKey="TextFillColorPrimaryBrush" />
-                        <StaticResource x:Key="ToggleButtonForegroundCheckedPressed" ResourceKey="TextFillColorSecondaryBrush" />
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundPointerOver" Color="{ThemeResource CardBackgroundFillColorSecondary}" />
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundPressed" Color="{ThemeResource SubtleFillColorTertiary}" />
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="{ThemeResource CardBackgroundFillColorDefault}" />
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{ThemeResource CardBackgroundFillColorSecondary}" />
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="{ThemeResource SubtleFillColorTertiary}" />
+                        <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="{ThemeResource TextFillColorPrimary}" />
+                        <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="{ThemeResource TextFillColorPrimary}" />
+                        <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="{ThemeResource TextFillColorSecondary}" />
                     </ToggleButton.Resources>
                     <Grid ColumnSpacing="8">
                         <Grid.ColumnDefinitions>
@@ -570,7 +578,7 @@
                             x:Uid="DeleteListMenu"
                             AutomationProperties.AutomationId="Todo.List.Menu.Delete"
                             Command="{x:Bind ViewModel.RequestDeleteListCommand, Mode=OneTime}"
-                            IsEnabled="{x:Bind ViewModel.IsUserListSelected, Mode=OneWay}">
+                            IsEnabled="{x:Bind ViewModel.CanDeleteSelectedList, Mode=OneWay}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE74D;" />
                             </MenuFlyoutItem.Icon>

@@ -18,6 +18,10 @@ public interface ITaskStore : ISettingsStore, IAsyncDisposable
         long? groupId = null,
         CancellationToken cancellationToken = default);
 
+    Task<TodoList> EnsureDefaultListAsync(
+        string displayName,
+        CancellationToken cancellationToken = default);
+
     Task RenameListAsync(long listId, string displayName, CancellationToken cancellationToken = default);
 
     Task SetListColorAsync(long listId, ListColor color, CancellationToken cancellationToken = default);
@@ -115,6 +119,10 @@ public interface ITaskStore : ISettingsStore, IAsyncDisposable
         DateTimeOffset throughUtc,
         CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<PendingReminder>> GetPendingRemindersAsync(
+        DateTimeOffset throughUtc,
+        CancellationToken cancellationToken = default);
+
     Task<TaskAlarm> SetAlarmAsync(
         string taskUid,
         TaskAlarm alarm,
@@ -126,6 +134,15 @@ public interface ITaskStore : ISettingsStore, IAsyncDisposable
         CancellationToken cancellationToken = default);
 
     Task AcknowledgeAlarmAsync(string alarmUid, CancellationToken cancellationToken = default);
+
+    Task SetAlarmScheduledToastTagAsync(
+        string alarmUid,
+        string? scheduledToastTag,
+        CancellationToken cancellationToken = default);
+
+    Task<int> GetActiveDueTaskCountAsync(
+        DateTimeOffset throughUtc,
+        CancellationToken cancellationToken = default);
 
     Task VacuumAsync(CancellationToken cancellationToken = default);
 
