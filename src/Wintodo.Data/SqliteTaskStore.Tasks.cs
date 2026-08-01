@@ -390,6 +390,35 @@ public sealed partial class SqliteTaskStore
             cancellationToken);
     }
 
+    public Task<int> GetActiveDueTaskCountAsync(
+        DateTimeOffset throughUtc,
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteReadAsync(
+            connection =>
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = """
+                    SELECT COUNT(*)
+                    FROM tasks t
+                    JOIN lists l ON l.id = t.list_id
+                    WHERE t.parent_uid IS NULL
+                      AND t.is_deleted = 0
+                      AND t.status IN (0, 1)
+                      AND t.due_utc IS NOT NULL
+                      AND t.due_utc < @throughUtc
+                      AND l.is_deleted = 0;
+                    """;
+                command.Parameters.AddWithValue(
+                    "@throughUtc",
+                    SqliteMapper.FormatInstant(throughUtc));
+                return Convert.ToInt32(
+                    command.ExecuteScalar(),
+                    System.Globalization.CultureInfo.InvariantCulture);
+            },
+            cancellationToken);
+    }
+
     private void AppendListPredicate(
         StringBuilder sql,
         SqliteCommand command,

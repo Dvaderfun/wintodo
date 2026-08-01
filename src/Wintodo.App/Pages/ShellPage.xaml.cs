@@ -41,6 +41,7 @@ public sealed partial class ShellPage : Page
         new(StringComparer.Ordinal);
     private readonly IClock _clock;
     private readonly ITaskStore _taskStore;
+    private readonly WindowsIntegrationService _windowsIntegration;
     private CancellationTokenSource? _transferStatusCancellation;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _midnightTimer;
     private bool _isNavigationInitialized;
@@ -53,12 +54,19 @@ public sealed partial class ShellPage : Page
     internal ShellPage(
         ITaskStore taskStore,
         IClock clock,
-        ShellStateService stateService)
+        ShellStateService stateService,
+        WindowsIntegrationService windowsIntegration,
+        IStartupTaskService startupTaskService)
     {
         _clock = clock;
         _taskStore = taskStore;
+        _windowsIntegration = windowsIntegration;
         _isHighContrast = IsSystemHighContrastEnabled();
-        ViewModel = new ShellViewModel(taskStore, clock, stateService);
+        ViewModel = new ShellViewModel(
+            taskStore,
+            clock,
+            stateService,
+            startupTaskService);
         KeyboardShortcuts = CreateKeyboardShortcuts();
         InitializeComponent();
         AddPunctuationAccelerators();
@@ -73,12 +81,16 @@ public sealed partial class ShellPage : Page
         ViewModel.ExportListRequested += OnExportListRequested;
         ViewModel.KeyboardShortcutsRequested += OnKeyboardShortcutsRequested;
         ViewModel.AppearanceSettingsChanged += OnAppearanceSettingsChanged;
+        ViewModel.UserListVisited += OnUserListVisited;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ShellRoot.ActualThemeChanged += OnActualThemeChanged;
 
         UserListsNavigationItem.AllowDrop = true;
         UserListsNavigationItem.DragOver += OnNavigationDragOver;
         UserListsNavigationItem.Drop += OnUngroupedDrop;
+        DefaultListNavigationItem.AllowDrop = true;
+        DefaultListNavigationItem.DragOver += OnNavigationDragOver;
+        DefaultListNavigationItem.Drop += OnListDrop;
 
     }
 
@@ -116,11 +128,118 @@ public sealed partial class ShellPage : Page
         CancellationToken cancellationToken = default)
     {
         await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken);
+        await _windowsIntegration.RefreshAsync(cancellationToken);
         ScheduleMidnightRefresh();
+    }
+
+    internal Task RefreshForExternalChangeAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return ViewModel.TaskList.ReloadAsync(cancellationToken);
+    }
+
+    internal async Task HandleJumpListArgumentAsync(
+        string argument,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.Equals(
+            argument,
+            WindowsIntegrationService.JumpListNewTaskArgument,
+            StringComparison.Ordinal))
+        {
+            if (!ViewModel.TaskList.CanCreateTask)
+            {
+                ShellListItemViewModel? fallback = ViewModel.DefaultList
+                    ?? ViewModel.UserLists
+                        .OrderBy(list => list.SortOrder)
+                        .FirstOrDefault();
+                if (fallback is not null)
+                {
+                    await SelectNavigationAsync(
+                        ResolveNavigationItem(fallback.NavigationKey),
+                        cancellationToken);
+                }
+            }
+
+            TaskList.FocusComposer();
+            return;
+        }
+
+        if (!argument.StartsWith(
+            WindowsIntegrationService.JumpListOpenListPrefix,
+            StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        string uid = argument[WindowsIntegrationService.JumpListOpenListPrefix.Length..];
+        ShellListItemViewModel? list = ViewModel.UserLists.FirstOrDefault(
+            candidate => string.Equals(candidate.Uid, uid, StringComparison.Ordinal));
+        if (list is not null)
+        {
+            await SelectNavigationAsync(
+                ResolveNavigationItem(list.NavigationKey),
+                cancellationToken);
+        }
+    }
+
+    internal async Task OpenTaskAsync(
+        string uid,
+        CancellationToken cancellationToken = default)
+    {
+        TodoTask? task = await _taskStore.GetTaskAsync(uid, cancellationToken);
+        if (task is null)
+        {
+            return;
+        }
+
+        ShellListItemViewModel? list = ViewModel.UserLists.FirstOrDefault(
+            candidate => candidate.Id == task.ListId);
+        if (list is null)
+        {
+            return;
+        }
+
+        await SelectNavigationAsync(
+            ResolveNavigationItem(list.NavigationKey),
+            cancellationToken);
+        TaskItemViewModel? item = ViewModel.TaskList.FindTask(uid);
+        if (item is not null)
+        {
+            await ViewModel.OpenDetailAsync(item, cancellationToken);
+            TaskList.SelectTask(item);
+        }
+    }
+
+    private async Task SelectNavigationAsync(
+        object selectedItem,
+        CancellationToken cancellationToken)
+    {
+        bool wasInitialized = _isNavigationInitialized;
+        _isNavigationInitialized = false;
+        ShellNavigation.SelectedItem = selectedItem;
+        await ApplySelectionAsync(
+            selectedItem,
+            isSettingsSelected: false,
+            cancellationToken);
+        _isNavigationInitialized = wasInitialized;
+    }
+
+    private async void OnUserListVisited(string uid)
+    {
+        try
+        {
+            await _windowsIntegration.RecordRecentListAsync(uid);
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_RECENT_LIST_EXCEPTION={exception}");
+        }
     }
 
     internal void StopMidnightRefresh()
     {
+        ViewModel.UserListVisited -= OnUserListVisited;
         if (_midnightTimer is null)
         {
             return;
@@ -203,9 +322,10 @@ public sealed partial class ShellPage : Page
     {
         UserListNavigationItems.Clear();
         _navigationItems.Clear();
+        ConfigureDefaultListNavigationItem();
 
         foreach (ShellListItemViewModel list in ViewModel.UserLists
-                     .Where(item => item.GroupId is null)
+                     .Where(item => item.GroupId is null && !item.IsDefault)
                      .OrderBy(item => item.SortOrder))
         {
             UserListNavigationItems.Add(CreateListNavigationItem(list));
@@ -236,7 +356,43 @@ public sealed partial class ShellPage : Page
         }
     }
 
+    private void ConfigureDefaultListNavigationItem()
+    {
+        ShellListItemViewModel? list = ViewModel.DefaultList;
+        if (list is null)
+        {
+            DefaultListNavigationItem.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        DefaultListNavigationItem.Visibility = Visibility.Visible;
+        DefaultListNavigationItem.Content = BuildListContent(list);
+        DefaultListNavigationItem.Tag = list.NavigationKey;
+        DefaultListNavigationItem.ContextFlyout = CreateListContextFlyout(list);
+        AutomationProperties.SetName(DefaultListNavigationItem, list.DisplayName);
+        _navigationItems[list.NavigationKey] = DefaultListNavigationItem;
+    }
+
     private NavigationViewItem CreateListNavigationItem(ShellListItemViewModel list)
+    {
+        var navigationItem = new NavigationViewItem
+        {
+            Content = BuildListContent(list),
+            Tag = list.NavigationKey,
+            CanDrag = true,
+            AllowDrop = true,
+            ContextFlyout = CreateListContextFlyout(list),
+        };
+        AutomationProperties.SetAutomationId(navigationItem, list.AutomationId);
+        AutomationProperties.SetName(navigationItem, list.DisplayName);
+        navigationItem.DragStarting += OnListDragStarting;
+        navigationItem.DragOver += OnNavigationDragOver;
+        navigationItem.Drop += OnListDrop;
+        _navigationItems[list.NavigationKey] = navigationItem;
+        return navigationItem;
+    }
+
+    private Grid BuildListContent(ShellListItemViewModel list)
     {
         var dot = new Ellipse
         {
@@ -260,22 +416,7 @@ public sealed partial class ShellPage : Page
         Grid.SetColumn(label, 1);
         content.Children.Add(dot);
         content.Children.Add(label);
-
-        var navigationItem = new NavigationViewItem
-        {
-            Content = content,
-            Tag = list.NavigationKey,
-            CanDrag = true,
-            AllowDrop = true,
-            ContextFlyout = CreateListContextFlyout(list),
-        };
-        AutomationProperties.SetAutomationId(navigationItem, list.AutomationId);
-        AutomationProperties.SetName(navigationItem, list.DisplayName);
-        navigationItem.DragStarting += OnListDragStarting;
-        navigationItem.DragOver += OnNavigationDragOver;
-        navigationItem.Drop += OnListDrop;
-        _navigationItems[list.NavigationKey] = navigationItem;
-        return navigationItem;
+        return content;
     }
 
     private MenuFlyout CreateListContextFlyout(ShellListItemViewModel list)
@@ -290,6 +431,10 @@ public sealed partial class ShellPage : Page
         };
         AutomationProperties.SetAutomationId(rename, $"Todo.Nav.Rename.{list.Uid}");
         flyout.Items.Add(rename);
+        if (list.IsDefault)
+        {
+            return flyout;
+        }
 
         var delete = new MenuFlyoutItem
         {
@@ -336,6 +481,11 @@ public sealed partial class ShellPage : Page
         string targetUid = targetKey[UserListNavigationPrefix.Length..];
         if (args.DataView.Contains(ListDragFormat))
         {
+            if (ReferenceEquals(sender, DefaultListNavigationItem))
+            {
+                return;
+            }
+
             object value = await args.DataView.GetDataAsync(ListDragFormat);
             if (value is string draggedUid)
             {

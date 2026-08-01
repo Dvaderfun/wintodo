@@ -87,6 +87,11 @@ public sealed partial class TaskListView : UserControl
         Composer.FocusComposer();
     }
 
+    internal void SelectTask(TaskItemViewModel item)
+    {
+        TasksList.SelectedItem = item;
+    }
+
     internal void FocusRenameBox()
     {
         RenameListBox.Focus(FocusState.Programmatic);

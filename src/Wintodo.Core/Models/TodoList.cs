@@ -24,6 +24,8 @@ public sealed class TodoList
 
     public bool CompletedExpanded { get; set; }
 
+    public bool IsDefault { get; set; }
+
     public bool IsDeleted { get; set; }
 
     public DateTimeOffset Created { get; set; }

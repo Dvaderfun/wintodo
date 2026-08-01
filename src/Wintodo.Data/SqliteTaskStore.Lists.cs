@@ -6,6 +6,13 @@ namespace Wintodo.Data;
 
 public sealed partial class SqliteTaskStore
 {
+    private const string ListColumns = """
+        id, uid, display_name, color, background_theme, group_id,
+        sort_order, sort_mode, sort_descending, show_completed,
+        completed_expanded, is_default, is_deleted, created_utc,
+        modified_utc, account_id, remote_url, remote_ctag, sync_token
+        """;
+
     public Task<IReadOnlyList<TodoList>> GetListsAsync(CancellationToken cancellationToken = default)
     {
         return ExecuteReadAsync<IReadOnlyList<TodoList>>(
@@ -15,11 +22,11 @@ public sealed partial class SqliteTaskStore
                 command.CommandText = """
                     SELECT id, uid, display_name, color, background_theme, group_id,
                            sort_order, sort_mode, sort_descending, show_completed,
-                           completed_expanded, is_deleted, created_utc, modified_utc,
-                           account_id, remote_url, remote_ctag, sync_token
+                           completed_expanded, is_default, is_deleted, created_utc,
+                           modified_utc, account_id, remote_url, remote_ctag, sync_token
                     FROM lists
                     WHERE is_deleted = 0
-                    ORDER BY sort_order, id;
+                    ORDER BY is_default DESC, sort_order, id;
                     """;
                 using SqliteDataReader reader = command.ExecuteReader();
                 var lists = new List<TodoList>();
@@ -80,6 +87,74 @@ public sealed partial class SqliteTaskStore
                     GroupId = groupId,
                     SortOrder = sortOrder,
                     ShowCompleted = true,
+                    Created = now,
+                    Modified = now,
+                };
+            },
+            cancellationToken);
+    }
+
+    public Task<TodoList> EnsureDefaultListAsync(
+        string displayName,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateName(displayName, nameof(displayName));
+        return ExecuteWriteAsync(
+            (connection, transaction, context) =>
+            {
+                using (SqliteCommand query = connection.CreateCommand())
+                {
+                    query.Transaction = transaction;
+                    query.CommandText = $"""
+                        SELECT {ListColumns}
+                        FROM lists
+                        WHERE is_default = 1 AND is_deleted = 0
+                        ORDER BY id
+                        LIMIT 1;
+                        """;
+                    using SqliteDataReader reader = query.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        return SqliteMapper.ReadList(reader);
+                    }
+                }
+
+                string uid = Guid.NewGuid().ToString("D");
+                DateTimeOffset now = _clock.UtcNow;
+                double sortOrder = GetNextSortOrder(connection, transaction, "lists");
+
+                using SqliteCommand insert = connection.CreateCommand();
+                insert.Transaction = transaction;
+                insert.CommandText = """
+                    INSERT INTO lists(
+                        uid, display_name, color, background_theme, group_id,
+                        sort_order, sort_mode, sort_descending, show_completed,
+                        completed_expanded, is_default, is_deleted, created_utc, modified_utc)
+                    VALUES(
+                        @uid, @displayName, @color, NULL, NULL,
+                        @sortOrder, 0, 0, 1, 0, 1, 0, @createdUtc, @modifiedUtc)
+                    RETURNING id;
+                    """;
+                insert.Parameters.AddWithValue("@uid", uid);
+                insert.Parameters.AddWithValue("@displayName", displayName.Trim());
+                insert.Parameters.AddWithValue("@color", (int)ListColor.Blue);
+                insert.Parameters.AddWithValue("@sortOrder", sortOrder);
+                insert.Parameters.AddWithValue("@createdUtc", SqliteMapper.FormatInstant(now));
+                insert.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(now));
+                long id = (long)(insert.ExecuteScalar()
+                    ?? throw new InvalidOperationException("Default list insert did not return an id."));
+
+                LogChange(connection, transaction, ListEntityType, uid, ChangeOperation.Create);
+                context.AddList(id);
+                return new TodoList
+                {
+                    Id = id,
+                    Uid = uid,
+                    DisplayName = displayName.Trim(),
+                    Color = ListColor.Blue,
+                    SortOrder = sortOrder,
+                    ShowCompleted = true,
+                    IsDefault = true,
                     Created = now,
                     Modified = now,
                 };
@@ -192,6 +267,19 @@ public sealed partial class SqliteTaskStore
             (connection, transaction, context) =>
             {
                 string listUid = GetListUid(connection, transaction, listId);
+                using (SqliteCommand guard = connection.CreateCommand())
+                {
+                    guard.Transaction = transaction;
+                    guard.CommandText = "SELECT is_default FROM lists WHERE id = @listId;";
+                    guard.Parameters.AddWithValue("@listId", listId);
+                    if (Convert.ToInt64(
+                        guard.ExecuteScalar() ?? 0L,
+                        System.Globalization.CultureInfo.InvariantCulture) == 1)
+                    {
+                        throw new InvalidOperationException("The default list cannot be deleted.");
+                    }
+                }
+
                 var taskUids = new List<string>();
                 using (SqliteCommand selectTasks = connection.CreateCommand())
                 {

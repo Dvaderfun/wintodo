@@ -21,16 +21,24 @@ public sealed partial class MainWindow : Window
     private readonly SqliteTaskStore _store;
     private readonly IClock _clock;
     private readonly ShellStateService _stateService;
+    private readonly WindowsIntegrationService _windowsIntegration;
+    private readonly IStartupTaskService _startupTaskService;
     private ShellPage? _shellPage;
     private PointInt32 _restoredPosition;
     private SizeInt32 _restoredSize;
     private bool _maximizeAfterActivation;
 
-    public MainWindow(SqliteTaskStore store, IClock clock)
+    internal MainWindow(
+        SqliteTaskStore store,
+        IClock clock,
+        WindowsIntegrationService windowsIntegration,
+        IStartupTaskService startupTaskService)
     {
         _store = store;
         _clock = clock;
         _stateService = new ShellStateService(store);
+        _windowsIntegration = windowsIntegration;
+        _startupTaskService = startupTaskService;
 
         InitializeComponent();
         Title = new ResourceLoader().GetString("MainWindowTitle");
@@ -50,7 +58,12 @@ public sealed partial class MainWindow : Window
 
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        _shellPage = new ShellPage(_store, _clock, _stateService);
+        _shellPage = new ShellPage(
+            _store,
+            _clock,
+            _stateService,
+            _windowsIntegration,
+            _startupTaskService);
         _shellPage.SearchFocusRequested += TitleSearch.FocusSearch;
         _shellPage.SearchClearRequested += TitleSearch.TryClear;
         RootFrame.Content = _shellPage;
@@ -132,6 +145,29 @@ public sealed partial class MainWindow : Window
         TitleSearch.UpdateWindowWidth(args.NewSize.Width);
     }
 
+    internal Task HandleJumpListArgumentAsync(
+        string argument,
+        CancellationToken cancellationToken = default)
+    {
+        return _shellPage?.HandleJumpListArgumentAsync(argument, cancellationToken)
+            ?? Task.CompletedTask;
+    }
+
+    internal Task OpenTaskAsync(
+        string uid,
+        CancellationToken cancellationToken = default)
+    {
+        return _shellPage?.OpenTaskAsync(uid, cancellationToken)
+            ?? Task.CompletedTask;
+    }
+
+    internal Task RefreshForExternalChangeAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return _shellPage?.RefreshForExternalChangeAsync(cancellationToken)
+            ?? Task.CompletedTask;
+    }
+
     private async void OnSearchRequested(string text)
     {
         if (_shellPage is not null)
@@ -185,7 +221,9 @@ public sealed partial class MainWindow : Window
         }
         finally
         {
+            await _windowsIntegration.DisposeAsync();
             await _store.DisposeAsync();
+            App.UnregisterAppNotifications();
         }
     }
 

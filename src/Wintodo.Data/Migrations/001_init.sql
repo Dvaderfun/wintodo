@@ -28,6 +28,7 @@ CREATE TABLE lists (
     sort_descending    INTEGER NOT NULL DEFAULT 0,
     show_completed     INTEGER NOT NULL DEFAULT 1,
     completed_expanded INTEGER NOT NULL DEFAULT 0,
+    is_default         INTEGER NOT NULL DEFAULT 0,
     is_deleted         INTEGER NOT NULL DEFAULT 0,
     created_utc        TEXT    NOT NULL,
     modified_utc       TEXT    NOT NULL,
@@ -151,6 +152,7 @@ CREATE INDEX ix_tasks_dirty            ON tasks(is_dirty)     WHERE is_dirty = 1
 CREATE INDEX ix_alarms_trigger         ON alarms(trigger_utc) WHERE is_acknowledged = 0;
 CREATE INDEX ix_changelog_unsynced     ON change_log(synced)  WHERE synced = 0;
 CREATE INDEX ix_lists_group_sort       ON lists(group_id, sort_order) WHERE is_deleted = 0;
+CREATE UNIQUE INDEX ux_lists_default   ON lists(COALESCE(account_id, 0)) WHERE is_default = 1 AND is_deleted = 0;
 
 CREATE VIRTUAL TABLE tasks_fts USING fts5(
     summary,

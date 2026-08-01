@@ -7,11 +7,20 @@ namespace Wintodo.Data;
 
 public sealed partial class SqliteTaskStore
 {
-    public Task<IReadOnlyList<TaskAlarm>> GetPendingAlarmsAsync(
+    public async Task<IReadOnlyList<TaskAlarm>> GetPendingAlarmsAsync(
         DateTimeOffset throughUtc,
         CancellationToken cancellationToken = default)
     {
-        return ExecuteReadAsync<IReadOnlyList<TaskAlarm>>(
+        IReadOnlyList<PendingReminder> reminders =
+            await GetPendingRemindersAsync(throughUtc, cancellationToken);
+        return reminders.Select(reminder => reminder.Alarm).ToArray();
+    }
+
+    public Task<IReadOnlyList<PendingReminder>> GetPendingRemindersAsync(
+        DateTimeOffset throughUtc,
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteReadAsync<IReadOnlyList<PendingReminder>>(
             connection =>
             {
                 using SqliteCommand command = connection.CreateCommand();
@@ -19,16 +28,17 @@ public sealed partial class SqliteTaskStore
                     SELECT a.id, a.task_id, a.uid, a.action, a.trigger_utc,
                            a.trigger_offset_seconds, a.trigger_related, a.description,
                            a.snoozed_until_utc, a.is_acknowledged, a.scheduled_toast_tag,
-                           t.start_utc, t.due_utc
+                           t.start_utc, t.due_utc, t.uid, t.summary
                     FROM alarms a
                     JOIN tasks t ON t.id = a.task_id
                     JOIN lists l ON l.id = t.list_id
                     WHERE a.is_acknowledged = 0
                       AND t.is_deleted = 0
+                      AND t.status IN (0, 1)
                       AND l.is_deleted = 0;
                     """;
                 using SqliteDataReader reader = command.ExecuteReader();
-                var pending = new List<(TaskAlarm Alarm, DateTimeOffset EffectiveTrigger)>();
+                var pending = new List<PendingReminder>();
                 while (reader.Read())
                 {
                     TaskAlarm alarm = SqliteMapper.ReadAlarm(reader);
@@ -43,14 +53,19 @@ public sealed partial class SqliteTaskStore
 
                     if (effectiveTrigger is not null && effectiveTrigger.Value <= throughUtc)
                     {
-                        pending.Add((alarm, effectiveTrigger.Value));
+                        pending.Add(new PendingReminder
+                        {
+                            TaskUid = reader.GetString(13),
+                            TaskSummary = reader.GetString(14),
+                            Alarm = alarm,
+                            EffectiveTrigger = effectiveTrigger.Value,
+                        });
                     }
                 }
 
                 return pending
-                    .OrderBy(item => item.EffectiveTrigger)
-                    .ThenBy(item => item.Alarm.Id)
-                    .Select(item => item.Alarm)
+                    .OrderBy(reminder => reminder.EffectiveTrigger)
+                    .ThenBy(reminder => reminder.Alarm.Id)
                     .ToArray();
             },
             cancellationToken);
@@ -129,6 +144,32 @@ public sealed partial class SqliteTaskStore
             scheduled_toast_tag = NULL
             """,
             configure: null,
+            cancellationToken);
+    }
+
+    public Task SetAlarmScheduledToastTagAsync(
+        string alarmUid,
+        string? scheduledToastTag,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(alarmUid);
+        return ExecuteWriteAsync(
+            (connection, transaction, _) =>
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = """
+                    UPDATE alarms
+                    SET scheduled_toast_tag = @scheduledToastTag
+                    WHERE uid = @uid;
+                    """;
+                AddParameter(command, "@scheduledToastTag", scheduledToastTag);
+                command.Parameters.AddWithValue("@uid", alarmUid);
+                if (command.ExecuteNonQuery() == 0)
+                {
+                    throw new KeyNotFoundException($"Alarm '{alarmUid}' was not found.");
+                }
+            },
             cancellationToken);
     }
 

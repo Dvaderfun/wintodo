@@ -23,11 +23,14 @@ public sealed partial class ShellViewModel : ObservableObject
     private const double DefaultDetailPaneWidth = 360;
     private readonly ITaskStore _taskStore;
     private readonly ShellStateService _stateService;
+    private readonly IStartupTaskService _startupTaskService;
     private readonly ResourceLoader _resources = new();
     private string _selectedNavigationKey = MyDayNavigationKey;
     private string _selectedNavigationTitle = string.Empty;
     private bool _selectedNavigationIsMyDay = true;
     private bool _areAppearanceSettingsLoaded;
+    private bool _areWindowsSettingsLoaded;
+    private bool _isApplyingStartupTaskState;
     private TaskItemViewModel? _pendingRowDelete;
     private bool _isDetailDeletePending;
     private CancellationTokenSource? _detailPaneWidthDebounce;
@@ -35,10 +38,12 @@ public sealed partial class ShellViewModel : ObservableObject
     internal ShellViewModel(
         ITaskStore taskStore,
         IClock clock,
-        ShellStateService stateService)
+        ShellStateService stateService,
+        IStartupTaskService startupTaskService)
     {
         _taskStore = taskStore;
         _stateService = stateService;
+        _startupTaskService = startupTaskService;
         TaskList = new TaskListViewModel(taskStore, clock);
         TaskList.NavigationDataChanged += OnNavigationDataChanged;
         TaskList.DeleteListRequested += OnDeleteListRequested;
@@ -70,9 +75,14 @@ public sealed partial class ShellViewModel : ObservableObject
 
     internal event Action? AppearanceSettingsChanged;
 
+    internal event Action<string>? UserListVisited;
+
     public ObservableCollection<ShellListItemViewModel> UserLists { get; } = [];
 
     public ObservableCollection<ShellGroupViewModel> Groups { get; } = [];
+
+    [ObservableProperty]
+    public partial ShellListItemViewModel? DefaultList { get; set; }
 
     public TaskListViewModel TaskList { get; }
 
@@ -142,6 +152,12 @@ public sealed partial class ShellViewModel : ObservableObject
     public partial bool ShowListBackgrounds { get; set; }
 
     [ObservableProperty]
+    public partial bool LaunchAtLogin { get; set; }
+
+    [ObservableProperty]
+    public partial bool CanChangeLaunchAtLogin { get; set; }
+
+    [ObservableProperty]
     public partial double DetailPaneWidth { get; set; } = DefaultDetailPaneWidth;
 
     [ObservableProperty]
@@ -150,6 +166,9 @@ public sealed partial class ShellViewModel : ObservableObject
 
     internal async Task<string> InitializeAsync(CancellationToken cancellationToken = default)
     {
+        await _taskStore.EnsureDefaultListAsync(
+            _resources.GetString("DefaultList_Name"),
+            cancellationToken);
         Task<IReadOnlyList<TodoList>> listsTask = _taskStore.GetListsAsync(cancellationToken);
         Task<IReadOnlyList<ListGroup>> groupsTask = _taskStore.GetGroupsAsync(cancellationToken);
         Task<string?> themeTask = _taskStore.GetSettingAsync(
@@ -164,20 +183,16 @@ public sealed partial class ShellViewModel : ObservableObject
         Task<string?> detailWidthTask = _taskStore.GetSettingAsync(
             DetailPaneWidthSetting,
             cancellationToken);
+        Task<StartupTaskSettingState> startupTask = LoadStartupTaskStateAsync();
         await Task.WhenAll(
             listsTask,
             groupsTask,
             themeTask,
             densityTask,
             backgroundsTask,
-            detailWidthTask);
-        IReadOnlyList<TodoList> lists = await listsTask;
-        if (lists.Count == 0)
-        {
-            lists = [await CreateDefaultListAsync(cancellationToken)];
-        }
-
-        LoadNavigationData(lists, await groupsTask);
+            detailWidthTask,
+            startupTask);
+        LoadNavigationData(await listsTask, await groupsTask);
 
         AppearanceThemeIndex = ParseChoice(await themeTask, maximum: 2);
         DensityIndex = ParseChoice(await densityTask, maximum: 1);
@@ -187,6 +202,13 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList.IsCompactDensity = DensityIndex == 1;
         _areAppearanceSettingsLoaded = true;
         AppearanceSettingsChanged?.Invoke();
+
+        StartupTaskSettingState startupState = await startupTask;
+        _isApplyingStartupTaskState = true;
+        LaunchAtLogin = startupState.IsEnabled;
+        CanChangeLaunchAtLogin = startupState.CanChange;
+        _isApplyingStartupTaskState = false;
+        _areWindowsSettingsLoaded = true;
 
         return await _stateService.LoadSelectedNavigationAsync(cancellationToken)
             ?? MyDayNavigationKey;
@@ -205,6 +227,10 @@ public sealed partial class ShellViewModel : ObservableObject
         _selectedNavigationIsMyDay = isMyDay;
         await LoadSelectedTaskListAsync(cancellationToken);
         await _stateService.SaveSelectedNavigationAsync(navigationKey, cancellationToken);
+        if (navigationKey.StartsWith(UserListNavigationPrefix, StringComparison.Ordinal))
+        {
+            UserListVisited?.Invoke(navigationKey[UserListNavigationPrefix.Length..]);
+        }
     }
 
     internal async Task SearchAsync(
@@ -319,14 +345,13 @@ public sealed partial class ShellViewModel : ObservableObject
         ShellListItemViewModel list,
         CancellationToken cancellationToken = default)
     {
-        await TaskList.DeleteListAsync(list, cancellationToken);
-        UserLists.Remove(list);
-        if (UserLists.Count == 0)
+        if (list.IsDefault)
         {
-            UserLists.Add(new ShellListItemViewModel(
-                await CreateDefaultListAsync(cancellationToken)));
+            return;
         }
 
+        await TaskList.DeleteListAsync(list, cancellationToken);
+        UserLists.Remove(list);
         RebuildGroups();
         TaskList.SetLists(UserLists);
         NavigationStructureChanged?.Invoke();
@@ -479,6 +504,11 @@ public sealed partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private void RequestDeleteList(ShellListItemViewModel list)
     {
+        if (list.IsDefault)
+        {
+            return;
+        }
+
         DeleteListRequested?.Invoke(list);
     }
 
@@ -499,13 +529,6 @@ public sealed partial class ShellViewModel : ObservableObject
         ExportAllRequested?.Invoke();
     }
 
-    private Task<TodoList> CreateDefaultListAsync(CancellationToken cancellationToken)
-    {
-        return _taskStore.CreateListAsync(
-            _resources.GetString("DefaultList_Name"),
-            cancellationToken: cancellationToken);
-    }
-
     private void LoadNavigationData(
         IReadOnlyList<TodoList> lists,
         IReadOnlyList<ListGroup> groups)
@@ -516,6 +539,7 @@ public sealed partial class ShellViewModel : ObservableObject
             UserLists.Add(new ShellListItemViewModel(list));
         }
 
+        DefaultList = UserLists.FirstOrDefault(list => list.IsDefault);
         Groups.Clear();
         foreach (ListGroup group in groups)
         {
@@ -627,6 +651,50 @@ public sealed partial class ShellViewModel : ObservableObject
     partial void OnShowListBackgroundsChanged(bool value)
     {
         SaveAppearanceSetting(ShowListBackgroundsSetting, value.ToString());
+    }
+
+    partial void OnLaunchAtLoginChanged(bool value)
+    {
+        if (_areWindowsSettingsLoaded && !_isApplyingStartupTaskState)
+        {
+            _ = UpdateStartupTaskAsync(value);
+        }
+    }
+
+    private async Task<StartupTaskSettingState> LoadStartupTaskStateAsync()
+    {
+        try
+        {
+            return await _startupTaskService.GetStateAsync();
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_STARTUP_TASK_READ_ERROR={exception}");
+            return new StartupTaskSettingState(false, false);
+        }
+    }
+
+    private async Task UpdateStartupTaskAsync(bool enabled)
+    {
+        try
+        {
+            StartupTaskSettingState state =
+                await _startupTaskService.SetEnabledAsync(enabled);
+            ApplyStartupTaskState(state);
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_STARTUP_TASK_WRITE_ERROR={exception}");
+            ApplyStartupTaskState(await LoadStartupTaskStateAsync());
+        }
+    }
+
+    private void ApplyStartupTaskState(StartupTaskSettingState state)
+    {
+        _isApplyingStartupTaskState = true;
+        LaunchAtLogin = state.IsEnabled;
+        CanChangeLaunchAtLogin = state.CanChange;
+        _isApplyingStartupTaskState = false;
     }
 
     partial void OnDetailPaneWidthChanged(double value)

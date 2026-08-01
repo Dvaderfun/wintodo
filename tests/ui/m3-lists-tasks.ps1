@@ -104,7 +104,9 @@ Test-UI "Complete two tasks" {
 }
 
 Test-UI "Completed section expands" {
-    winapp ui invoke "Todo.List.CompletedHeader" -a $AppPid
+    # Exercise the pointer route: rebuilding the group from this click used to
+    # destroy the live header and fail-fast inside Microsoft.UI.Xaml.
+    winapp ui click "Todo.List.CompletedHeader" -a $AppPid
     Start-Sleep -Milliseconds 400
     if (-not (Get-TaskRow "Gate task 1")) {
         throw "Completed task was not revealed."

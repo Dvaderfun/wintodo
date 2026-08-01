@@ -191,6 +191,14 @@
                         <FontIcon Glyph="&#xE930;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
+                <NavigationViewItem
+                    x:Name="DefaultListNavigationItem"
+                    AutomationProperties.AutomationId="Todo.Nav.DefaultList"
+                    Visibility="Collapsed">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItemSeparator />
                 <NavigationViewItem
                     x:Name="UserListsNavigationItem"
