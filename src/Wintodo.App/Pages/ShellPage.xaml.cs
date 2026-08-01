@@ -907,6 +907,11 @@ public sealed partial class ShellPage : Page
             }
             else
             {
+                if (_taskListEventsAttached)
+                {
+                    TaskList.ClearTaskSelection();
+                }
+
                 _ = CloseDetailVisualAsync();
             }
         }
@@ -917,6 +922,11 @@ public sealed partial class ShellPage : Page
         await ViewModel.OpenDetailAsync(task);
     }
 
+    private void OnTaskCloseRequested()
+    {
+        ViewModel.CloseDetail();
+    }
+
     private void OnTaskListLoaded(object sender, RoutedEventArgs args)
     {
         if (_taskListEventsAttached)
@@ -925,6 +935,7 @@ public sealed partial class ShellPage : Page
         }
 
         TaskList.TaskOpenRequested += OnTaskOpenRequested;
+        TaskList.TaskCloseRequested += OnTaskCloseRequested;
         _taskListEventsAttached = true;
     }
 

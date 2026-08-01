@@ -96,7 +96,7 @@ Surfaces, back to front:
 | Window | Mica Base | Wallpaper shows through |
 | Nav pane | **Transparent** | Mica reads through — this is the whole point of Mica |
 | List pane | **Transparent** | Same |
-| Detail pane | `LayerFillColorDefaultBrush` | Opaque-ish layer, 8 px radius, 1 px `CardStrokeColorDefaultBrush`, 8 px margin from window edges |
+| Detail pane | `SolidBackgroundFillColorTertiaryBrush` | Opaque layer, 8 px radius, 1 px `CardStrokeColorDefaultBrush`, 8 px margin from window edges |
 | Task rows | `CardBackgroundFillColorDefaultBrush` | See §3.3 |
 | Flyouts / menus | `AcrylicBackgroundFillColorDefaultBrush` + `SurfaceStrokeColorFlyoutBrush` | Transient surfaces only |
 | Dialogs | WinUI default `ContentDialog` + `SmokeFillColorDefaultBrush` scrim | |
@@ -234,6 +234,7 @@ fill) + `ContentPresenter`, with `CommonStates`, `DisabledStates`, and
 | Hover | Background → `CardBackgroundFillColorSecondaryBrush` |
 | Pressed | Background → `SubtleFillColorTertiaryBrush` |
 | Selected | Background → `SubtleFillColorSecondaryBrush` + a 3 px × 20 px rounded accent bar at the left edge in the list theme colour |
+| Activation | Clicking an inactive row selects it and opens detail; clicking the active row again clears selection and closes detail |
 | Drag-over | 2 px accent insertion line, 4 px inset |
 
 **Element budget: 12 or fewer visual elements.** Every element costs working set
@@ -286,11 +287,16 @@ Below the incomplete rows, separated by **16**.
   ▾  Completed   4
 ```
 
-- A `ToggleButton` header: chevron (`ChevronDown` `E70D` / `ChevronRight` `E76B`,
-  rotating 90° over 150 ms), label `BodyStrongTextBlockStyle`, count in
+- A content-width `ToggleButton` header: 40 px tall, 12 px horizontal padding,
+  `CardBackgroundFillColorDefaultBrush`, `ControlCornerRadius`, and 8 px between
+  chevron, label, and count. Checked state stays neutral rather than using an
+  accent fill; hover uses `CardBackgroundFillColorSecondaryBrush`.
+- Chevron: `ChevronDown` (`E70D`) / `ChevronRight` (`E76C`) at
+  `ControlContentThemeFontSize`; label `BodyStrongTextBlockStyle`; count in
   `TextFillColorSecondaryBrush`.
-- Completed rows: opacity **0.6**, title `TextDecorations="Strikethrough"`,
-  metadata hidden except the completion date.
+- Completed row text content: opacity **0.6**, title
+  `TextDecorations="Strikethrough"`, metadata hidden except the completion
+  date. The completion circle and importance control stay at full opacity.
 - Section collapsed state persists per list.
 - The section itself is `x:Load`-deferred until first expansion.
 
@@ -357,7 +363,7 @@ before use — names are authoritative, codes are the starting point):
 ## 5. Detail pane (right)
 
 User-resizable, **360 px by default**, `x:Load`-deferred,
-`LayerFillColorDefaultBrush`, 8 px radius, 1 px `CardStrokeColorDefaultBrush`,
+`SolidBackgroundFillColorTertiaryBrush`, 8 px radius, 1 px `CardStrokeColorDefaultBrush`,
 8 px margin from the window edges, internal padding 16.
 
 A 12 px `ContentSizer` (`CommunityToolkit.WinUI.Controls.Sizers`) sits on the
@@ -442,8 +448,8 @@ setting automatically. For explicit animations, check
 | Interaction | Animation |
 |---|---|
 | Switch list | Content fade 0 → 1 over **150 ms** + 8 px upward translate, `CubicBezier(0.1, 0.9, 0.2, 1)`. **Not** `NavigationThemeTransition` — no `Frame` involved |
-| Detail pane open | Translate X +32 → 0 and opacity 0 → 1 over **200 ms**, same easing |
-| Detail pane close | Reverse, **150 ms** |
+| Detail pane open | Opaque surface appears immediately; content translates X +32 → 0 and fades 0 → 1 over **200 ms**, same easing |
+| Detail pane close | Content reverses over **150 ms** while the surface stays opaque, then the pane collapses |
 | Row added | `AddDeleteThemeTransition` on the `ListView` |
 | Row removed | Same, plus a 5 s undo snackbar |
 | Complete a task | Circle scales 0.8 → 1.0 with a spring (damping 0.6, period 40 ms); check glyph fades in over 100 ms; row opacity 1 → 0.6 and strikethrough over 200 ms; **250 ms later** the row animates into the Completed section |
@@ -509,7 +515,7 @@ Use only these. Anything not on this list needs a justification in
 | Row hover | `CardBackgroundFillColorSecondaryBrush` |
 | Row selected | `SubtleFillColorSecondaryBrush` |
 | Row pressed | `SubtleFillColorTertiaryBrush` |
-| Detail pane surface | `LayerFillColorDefaultBrush` |
+| Detail pane surface | `SolidBackgroundFillColorTertiaryBrush` |
 | Input field fill | `ControlFillColorDefaultBrush` |
 | Focused input fill | `ControlFillColorInputActiveBrush` |
 | Card / pane border | `CardStrokeColorDefaultBrush` |

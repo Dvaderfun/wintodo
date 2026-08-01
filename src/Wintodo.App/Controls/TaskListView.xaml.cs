@@ -17,6 +17,7 @@ public sealed partial class TaskListView : UserControl
     internal const string TaskDragFormat = "application/x-wintodo-task-uid";
     private readonly UISettings _uiSettings = new();
     private readonly HashSet<TaskItemViewModel> _observedTaskItems = [];
+    private bool _isSynchronizingSelection;
 
     public static readonly DependencyProperty ViewModelProperty =
         DependencyProperty.Register(
@@ -37,6 +38,7 @@ public sealed partial class TaskListView : UserControl
     }
 
     internal event Action<TaskItemViewModel>? TaskOpenRequested;
+    internal event Action? TaskCloseRequested;
 
     public static Visibility BoolToVisibility(bool value)
     {
@@ -50,7 +52,7 @@ public sealed partial class TaskListView : UserControl
 
     public static string CompletedChevron(bool isExpanded)
     {
-        return isExpanded ? "\uE70D" : "\uE76B";
+        return isExpanded ? "\uE70D" : "\uE76C";
     }
 
     public static Visibility NamedGroupVisibility(TaskListGroupKind kind)
@@ -89,6 +91,26 @@ public sealed partial class TaskListView : UserControl
     {
         RenameListBox.Focus(FocusState.Programmatic);
         RenameListBox.SelectAll();
+    }
+
+    internal void ClearTaskSelection()
+    {
+        _isSynchronizingSelection = true;
+        try
+        {
+            foreach (TaskItemViewModel task in
+                     TasksList.SelectedItems.OfType<TaskItemViewModel>())
+            {
+                task.IsSelected = false;
+            }
+
+            TasksList.SelectedItems.Clear();
+            ViewModel.SelectedTask = null;
+        }
+        finally
+        {
+            _isSynchronizingSelection = false;
+        }
     }
 
     private static void OnViewModelChanged(
@@ -191,17 +213,50 @@ public sealed partial class TaskListView : UserControl
         object sender,
         SelectionChangedEventArgs args)
     {
+        if (_isSynchronizingSelection)
+        {
+            return;
+        }
+
         foreach (TaskItemViewModel removed in args.RemovedItems.OfType<TaskItemViewModel>())
         {
             removed.IsSelected = false;
         }
 
-        ViewModel.SelectedTask = TasksList.SelectedItem as TaskItemViewModel;
-        if (ViewModel.SelectedTask is not null)
+        TaskItemViewModel? selectedTask =
+            args.AddedItems.OfType<TaskItemViewModel>().LastOrDefault();
+        if (selectedTask is null)
         {
-            ViewModel.SelectedTask.IsSelected = true;
-            TaskOpenRequested?.Invoke(ViewModel.SelectedTask);
+            if (TasksList.SelectedItems.Count == 0)
+            {
+                ViewModel.SelectedTask = null;
+                TaskCloseRequested?.Invoke();
+            }
+
+            return;
         }
+
+        _isSynchronizingSelection = true;
+        try
+        {
+            foreach (TaskItemViewModel task in
+                     TasksList.SelectedItems
+                         .OfType<TaskItemViewModel>()
+                         .Where(task => !ReferenceEquals(task, selectedTask))
+                         .ToArray())
+            {
+                task.IsSelected = false;
+                TasksList.SelectedItems.Remove(task);
+            }
+        }
+        finally
+        {
+            _isSynchronizingSelection = false;
+        }
+
+        ViewModel.SelectedTask = selectedTask;
+        selectedTask.IsSelected = true;
+        TaskOpenRequested?.Invoke(selectedTask);
     }
 
     private void OnContainerContentChanging(
