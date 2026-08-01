@@ -30,6 +30,10 @@ public sealed partial class TaskListViewModel : ObservableObject
     private DateTimeOffset? _composerDue;
     private DateTimeOffset? _composerReminder;
     private string? _composerRecurrence;
+    private bool _composerImportant;
+    private bool _composerMyDay;
+    private long? _pinnedComposerListId;
+    private ListQueryKind _composerKind = ListQueryKind.MyDay;
 
     internal TaskListViewModel(ITaskStore taskStore, IClock clock)
     {
@@ -55,6 +59,8 @@ public sealed partial class TaskListViewModel : ObservableObject
     internal event Action<ShellListItemViewModel>? ExportListRequested;
 
     internal event Action<TaskItemViewModel>? TaskCompletionChanged;
+
+    internal event Action<TaskItemViewModel>? DeleteTaskRequested;
 
     internal event Action? ShortcutsRequested;
 
@@ -117,6 +123,24 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial string ComposerRepeatLabel { get; set; }
 
     [ObservableProperty]
+    public partial string ComposerTargetLabel { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial long? ComposerTargetListId { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsComposerTargetVisible { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasComposerDue { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasComposerReminder { get; set; }
+
+    [ObservableProperty]
+    public partial bool HasComposerRepeat { get; set; }
+
+    [ObservableProperty]
     public partial bool IsEmpty { get; set; } = true;
 
     [ObservableProperty]
@@ -169,9 +193,11 @@ public sealed partial class TaskListViewModel : ObservableObject
         {
             MoveTargets.Add(new MoveTargetViewModel(
                 list.Id,
-                list.DisplayName,
-                $"Todo.Row.MoveTo.{list.Uid}"));
+                list.Uid,
+                list.DisplayName));
         }
+
+        ResolveComposerTarget();
     }
 
     internal Task LoadSmartListAsync(
@@ -182,15 +208,16 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         _selectedList = null;
         IsUserListSelected = false;
-        CanCreateTask = false;
         IsTaskListVisible = true;
-        IsComposerVisible = true;
+        IsComposerVisible = kind != ListQueryKind.Completed;
         AreListCommandsVisible = true;
         CanReorderTasks = false;
         Title = title;
         Subtitle = isMyDay ? FormatToday() : string.Empty;
         HasSubtitle = isMyDay;
         ConfigureEmptyState(kind);
+        _composerKind = kind;
+        ResetComposer();
 
         SortMode sortMode = kind switch
         {
@@ -219,7 +246,6 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         _selectedList = list;
         IsUserListSelected = true;
-        CanCreateTask = true;
         IsTaskListVisible = true;
         IsComposerVisible = true;
         AreListCommandsVisible = true;
@@ -236,6 +262,8 @@ public sealed partial class TaskListViewModel : ObservableObject
             : _resources.GetString("TaskList_ShowCompleted");
         _completedExpanded = list.CompletedExpanded;
         _searchText = string.Empty;
+        _composerKind = ListQueryKind.UserList;
+        ResetComposer();
 
         return LoadAsync(
             new ListQuery
@@ -255,11 +283,11 @@ public sealed partial class TaskListViewModel : ObservableObject
         _selectedList = null;
         _currentQuery = null;
         IsUserListSelected = false;
-        CanCreateTask = false;
         IsTaskListVisible = false;
         IsComposerVisible = false;
         AreListCommandsVisible = false;
         CanReorderTasks = false;
+        ResetComposer();
         Title = title;
         Subtitle = string.Empty;
         HasSubtitle = false;
@@ -278,11 +306,11 @@ public sealed partial class TaskListViewModel : ObservableObject
         _currentQuery = null;
         _searchText = text.Trim();
         IsUserListSelected = false;
-        CanCreateTask = false;
         IsTaskListVisible = true;
         IsComposerVisible = false;
         AreListCommandsVisible = false;
         CanReorderTasks = false;
+        ResetComposer();
         Title = _resources.GetString("Search_Title");
         Subtitle = string.Empty;
         HasSubtitle = false;
@@ -439,12 +467,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     [RelayCommand]
     private void CancelComposer()
     {
-        NewTaskTitle = string.Empty;
-        _composerDue = null;
-        _composerReminder = null;
-        _composerRecurrence = null;
-        UpdateComposerLabels();
-        IsComposerExpanded = false;
+        ResetComposer();
     }
 
     private bool CanAddTask()
@@ -456,42 +479,59 @@ public sealed partial class TaskListViewModel : ObservableObject
     private async Task AddTaskAsync()
     {
         await Task.Yield();
-        ShellListItemViewModel? list = _selectedList;
-        if (list is null)
+        long? listId = ComposerTargetListId;
+        if (listId is null)
         {
             return;
         }
 
+        DateTimeOffset? reminder = _composerReminder;
         var task = new TodoTask
         {
-            ListId = list.Id,
+            ListId = listId.Value,
             Summary = NewTaskTitle.Trim(),
             Due = _composerDue,
             DueIsDateOnly = _composerDue is not null,
             RRule = _composerRecurrence,
+            Priority = _composerImportant
+                ? (int)TaskPriority.High
+                : (int)TaskPriority.Undefined,
+            MyDayDate = _composerMyDay ? _clock.Today : null,
         };
         TodoTask created = await _taskStore.CreateTaskAsync(task);
-        if (_composerReminder is not null)
+        if (reminder is not null)
         {
             await _taskStore.SetAlarmAsync(
                 created.Uid,
                 new TaskAlarm
                 {
                     Action = AlarmAction.Display,
-                    Trigger = _composerReminder,
+                    Trigger = reminder,
                     Description = created.Summary,
                 });
         }
 
-        NewTaskTitle = string.Empty;
-        _composerDue = null;
-        _composerReminder = null;
-        _composerRecurrence = null;
-        UpdateComposerLabels();
+        ResetComposer(collapse: false);
         TaskItemViewModel item = GetOrCreateItem(created);
         UpdateItemDisplay(item);
         _activeTasks.Add(item);
         RebuildVisibleItems();
+    }
+
+    [RelayCommand]
+    private void SetComposerList(long listId)
+    {
+        ShellListItemViewModel? target =
+            _lists.FirstOrDefault(list => list.Id == listId);
+        if (target is null)
+        {
+            return;
+        }
+
+        _pinnedComposerListId = target.Id;
+        ComposerTargetListId = target.Id;
+        ComposerTargetLabel = target.DisplayName;
+        CanCreateTask = IsComposerVisible;
     }
 
     [RelayCommand]
@@ -968,7 +1008,14 @@ public sealed partial class TaskListViewModel : ObservableObject
     private async Task DeleteTaskAsync(TaskItemViewModel item)
     {
         await Task.Yield();
-        await _taskStore.DeleteTaskAsync(item.Uid);
+        DeleteTaskRequested?.Invoke(item);
+    }
+
+    internal async Task ConfirmDeleteTaskAsync(
+        TaskItemViewModel item,
+        CancellationToken cancellationToken = default)
+    {
+        await _taskStore.DeleteTaskAsync(item.Uid, cancellationToken);
         _activeTasks.Remove(item);
         _completedTasks.Remove(item);
         RebuildVisibleItems();
@@ -1381,20 +1428,80 @@ public sealed partial class TaskListViewModel : ObservableObject
         };
     }
 
+    private void ResetComposer(bool collapse = true)
+    {
+        NewTaskTitle = string.Empty;
+        _composerReminder = null;
+        _composerRecurrence = null;
+        _composerDue = _composerKind == ListQueryKind.Planned
+            ? StartOfLocalDay(_clock.Today)
+            : null;
+        _composerImportant = _composerKind == ListQueryKind.Important;
+        _composerMyDay = _composerKind == ListQueryKind.MyDay;
+        if (collapse)
+        {
+            IsComposerExpanded = false;
+        }
+
+        UpdateComposerLabels();
+        ResolveComposerTarget();
+    }
+
+    private void ResolveComposerTarget()
+    {
+        if (!IsComposerVisible)
+        {
+            IsComposerTargetVisible = false;
+            CanCreateTask = false;
+            return;
+        }
+
+        if (_composerKind == ListQueryKind.UserList)
+        {
+            ComposerTargetListId = _selectedList?.Id;
+            ComposerTargetLabel = _selectedList?.DisplayName ?? string.Empty;
+            IsComposerTargetVisible = false;
+        }
+        else
+        {
+            ShellListItemViewModel? target =
+                _lists.FirstOrDefault(list => list.Id == _pinnedComposerListId)
+                ?? _lists.FirstOrDefault();
+            ComposerTargetListId = target?.Id;
+            ComposerTargetLabel = target?.DisplayName ?? string.Empty;
+            IsComposerTargetVisible = target is not null;
+        }
+
+        CanCreateTask = ComposerTargetListId is not null;
+    }
+
     private void UpdateComposerLabels()
     {
+        HasComposerDue = _composerDue is not null;
+        HasComposerReminder = _composerReminder is not null;
+        HasComposerRepeat = _composerRecurrence is not null;
         ComposerDueLabel = _composerDue is null
             ? _resources.GetString("Composer_DueDate")
             : FormatDueDate(_composerDue.Value);
         ComposerReminderLabel = _composerReminder is null
             ? _resources.GetString("Composer_RemindMe")
-            : _composerReminder.Value.ToString("g", CultureInfo.CurrentCulture);
+            : FormatReminder(_composerReminder.Value);
         ComposerRepeatLabel = _composerRecurrence switch
         {
             "FREQ=DAILY" => _resources.GetString("Composer_Daily"),
             "FREQ=WEEKLY" => _resources.GetString("Composer_Weekly"),
             _ => _resources.GetString("Composer_Repeat"),
         };
+    }
+
+    private string FormatReminder(DateTimeOffset reminder)
+    {
+        DateTime local =
+            TimeZoneInfo.ConvertTime(reminder, _clock.LocalTimeZone).DateTime;
+        string time = local.ToString("t", CultureInfo.CurrentCulture);
+        return DateOnly.FromDateTime(local) == _clock.Today
+            ? time
+            : $"{FormatDueDate(reminder)} {time}";
     }
 
     private string FormatDueDate(DateTimeOffset due)

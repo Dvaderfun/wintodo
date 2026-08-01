@@ -17,6 +17,10 @@ public sealed partial class ShellViewModel : ObservableObject
     private const string AppearanceThemeSetting = "appearance.theme";
     private const string DensitySetting = "appearance.density";
     private const string ShowListBackgroundsSetting = "appearance.show_list_backgrounds";
+    private const string DetailPaneWidthSetting = "appearance.detail_pane_width";
+    private const double MinimumDetailPaneWidth = 320;
+    private const double MaximumDetailPaneWidth = 720;
+    private const double DefaultDetailPaneWidth = 360;
     private readonly ITaskStore _taskStore;
     private readonly ShellStateService _stateService;
     private readonly ResourceLoader _resources = new();
@@ -24,6 +28,9 @@ public sealed partial class ShellViewModel : ObservableObject
     private string _selectedNavigationTitle = string.Empty;
     private bool _selectedNavigationIsMyDay = true;
     private bool _areAppearanceSettingsLoaded;
+    private TaskItemViewModel? _pendingRowDelete;
+    private bool _isDetailDeletePending;
+    private CancellationTokenSource? _detailPaneWidthDebounce;
 
     internal ShellViewModel(
         ITaskStore taskStore,
@@ -37,10 +44,12 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList.DeleteListRequested += OnDeleteListRequested;
         TaskList.ExportListRequested += OnExportListRequested;
         TaskList.ShortcutsRequested += OnShortcutsRequested;
+        TaskList.DeleteTaskRequested += OnRowDeleteRequested;
         Detail = new TaskDetailViewModel(taskStore, clock);
         Detail.CloseRequested += CloseDetail;
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
         Detail.TaskDeleted += TaskList.ApplyDetailTaskDeleted;
+        Detail.DeleteRequested += OnDetailDeleteRequested;
     }
 
     internal event Action? NavigationStructureChanged;
@@ -56,6 +65,8 @@ public sealed partial class ShellViewModel : ObservableObject
     internal event Action<ShellListItemViewModel>? ExportListRequested;
 
     internal event Action? KeyboardShortcutsRequested;
+
+    internal event Action<string>? DeleteTaskRequested;
 
     internal event Action? AppearanceSettingsChanged;
 
@@ -79,6 +90,9 @@ public sealed partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsDeleteListDialogLoaded { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsDeleteTaskDialogLoaded { get; set; }
 
     [ObservableProperty]
     public partial bool IsImportPreviewDialogLoaded { get; set; }
@@ -128,6 +142,9 @@ public sealed partial class ShellViewModel : ObservableObject
     public partial bool ShowListBackgrounds { get; set; }
 
     [ObservableProperty]
+    public partial double DetailPaneWidth { get; set; } = DefaultDetailPaneWidth;
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateGroupCommand))]
     public partial string NewGroupName { get; set; } = string.Empty;
 
@@ -144,18 +161,29 @@ public sealed partial class ShellViewModel : ObservableObject
         Task<string?> backgroundsTask = _taskStore.GetSettingAsync(
             ShowListBackgroundsSetting,
             cancellationToken);
+        Task<string?> detailWidthTask = _taskStore.GetSettingAsync(
+            DetailPaneWidthSetting,
+            cancellationToken);
         await Task.WhenAll(
             listsTask,
             groupsTask,
             themeTask,
             densityTask,
-            backgroundsTask);
-        LoadNavigationData(await listsTask, await groupsTask);
+            backgroundsTask,
+            detailWidthTask);
+        IReadOnlyList<TodoList> lists = await listsTask;
+        if (lists.Count == 0)
+        {
+            lists = [await CreateDefaultListAsync(cancellationToken)];
+        }
+
+        LoadNavigationData(lists, await groupsTask);
 
         AppearanceThemeIndex = ParseChoice(await themeTask, maximum: 2);
         DensityIndex = ParseChoice(await densityTask, maximum: 1);
         ShowListBackgrounds = bool.TryParse(await backgroundsTask, out bool show)
             && show;
+        DetailPaneWidth = ParseDetailPaneWidth(await detailWidthTask);
         TaskList.IsCompactDensity = DensityIndex == 1;
         _areAppearanceSettingsLoaded = true;
         AppearanceSettingsChanged?.Invoke();
@@ -293,6 +321,12 @@ public sealed partial class ShellViewModel : ObservableObject
     {
         await TaskList.DeleteListAsync(list, cancellationToken);
         UserLists.Remove(list);
+        if (UserLists.Count == 0)
+        {
+            UserLists.Add(new ShellListItemViewModel(
+                await CreateDefaultListAsync(cancellationToken)));
+        }
+
         RebuildGroups();
         TaskList.SetLists(UserLists);
         NavigationStructureChanged?.Invoke();
@@ -465,6 +499,13 @@ public sealed partial class ShellViewModel : ObservableObject
         ExportAllRequested?.Invoke();
     }
 
+    private Task<TodoList> CreateDefaultListAsync(CancellationToken cancellationToken)
+    {
+        return _taskStore.CreateListAsync(
+            _resources.GetString("DefaultList_Name"),
+            cancellationToken: cancellationToken);
+    }
+
     private void LoadNavigationData(
         IReadOnlyList<TodoList> lists,
         IReadOnlyList<ListGroup> groups)
@@ -532,6 +573,44 @@ public sealed partial class ShellViewModel : ObservableObject
         KeyboardShortcutsRequested?.Invoke();
     }
 
+    private void OnRowDeleteRequested(TaskItemViewModel item)
+    {
+        _pendingRowDelete = item;
+        _isDetailDeletePending = false;
+        DeleteTaskRequested?.Invoke(item.Summary);
+    }
+
+    private void OnDetailDeleteRequested(string summary)
+    {
+        _pendingRowDelete = null;
+        _isDetailDeletePending = true;
+        DeleteTaskRequested?.Invoke(summary);
+    }
+
+    internal async Task ConfirmDeleteTaskAsync(
+        CancellationToken cancellationToken = default)
+    {
+        TaskItemViewModel? row = _pendingRowDelete;
+        bool isDetail = _isDetailDeletePending;
+        CancelDeleteTask();
+        if (row is not null)
+        {
+            await TaskList.ConfirmDeleteTaskAsync(row, cancellationToken);
+            return;
+        }
+
+        if (isDetail)
+        {
+            await Detail.ConfirmDeleteAsync(cancellationToken);
+        }
+    }
+
+    internal void CancelDeleteTask()
+    {
+        _pendingRowDelete = null;
+        _isDetailDeletePending = false;
+    }
+
     partial void OnAppearanceThemeIndexChanged(int value)
     {
         SaveAppearanceSetting(AppearanceThemeSetting, value.ToString(
@@ -548,6 +627,52 @@ public sealed partial class ShellViewModel : ObservableObject
     partial void OnShowListBackgroundsChanged(bool value)
     {
         SaveAppearanceSetting(ShowListBackgroundsSetting, value.ToString());
+    }
+
+    partial void OnDetailPaneWidthChanged(double value)
+    {
+        if (!_areAppearanceSettingsLoaded)
+        {
+            return;
+        }
+
+        _detailPaneWidthDebounce?.Cancel();
+        _detailPaneWidthDebounce?.Dispose();
+        _detailPaneWidthDebounce = new CancellationTokenSource();
+        _ = PersistDetailPaneWidthAsync(value, _detailPaneWidthDebounce.Token);
+    }
+
+    private async Task PersistDetailPaneWidthAsync(
+        double value,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
+            await _taskStore.SetSettingAsync(
+                DetailPaneWidthSetting,
+                value.ToString(
+                    System.Globalization.CultureInfo.InvariantCulture),
+                cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_DETAIL_WIDTH_SETTING_ERROR={exception}");
+        }
+    }
+
+    private static double ParseDetailPaneWidth(string? value)
+    {
+        return double.TryParse(
+                value,
+                System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out double width)
+            ? Math.Clamp(width, MinimumDetailPaneWidth, MaximumDetailPaneWidth)
+            : DefaultDetailPaneWidth;
     }
 
     private void SaveAppearanceSetting(string key, string value)

@@ -59,6 +59,8 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
     internal event Action<string>? TaskDeleted;
 
+    internal event Action<string>? DeleteRequested;
+
     internal event Action? ShowDuePickerRequested;
 
     internal event Action? ShowReminderPickerRequested;
@@ -105,23 +107,32 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     [ObservableProperty]
     public partial string CreatedText { get; set; } = string.Empty;
 
+    public bool HasDue => PendingDueDate is not null;
+
+    public bool HasReminder => PendingReminderDate is not null;
+
+    public bool HasRepeat => RepeatModeIndex > 0;
+
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddStepCommand))]
     public partial string NewStepTitle { get; set; } = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasDue))]
     public partial DateTimeOffset? PendingDueDate { get; set; }
 
     [ObservableProperty]
     public partial TimeSpan PendingDueTime { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasReminder))]
     public partial DateTimeOffset? PendingReminderDate { get; set; }
 
     [ObservableProperty]
     public partial TimeSpan PendingReminderTime { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasRepeat))]
     public partial int RepeatModeIndex { get; set; }
 
     [ObservableProperty]
@@ -562,13 +573,23 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteTaskAsync()
     {
+        await Task.Yield();
+        if (_model is not null)
+        {
+            DeleteRequested?.Invoke(Summary);
+        }
+    }
+
+    internal async Task ConfirmDeleteAsync(
+        CancellationToken cancellationToken = default)
+    {
         if (_model is null)
         {
             return;
         }
 
         string uid = _model.Uid;
-        await _taskStore.DeleteTaskAsync(uid);
+        await _taskStore.DeleteTaskAsync(uid, cancellationToken);
         TaskDeleted?.Invoke(uid);
         CloseRequested?.Invoke();
     }

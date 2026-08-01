@@ -7,6 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:Wintodo.Pages"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:sizers="using:CommunityToolkit.WinUI.Controls"
     xmlns:viewModels="using:Wintodo.ViewModels"
     x:Name="RootPage"
     RequestedTheme="{x:Bind local:ShellPage.ThemeForIndex(ViewModel.AppearanceThemeIndex), Mode=OneWay}"
@@ -43,8 +44,6 @@
                         <Setter Target="ListContentGrid.Padding" Value="64,16,24,0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="0" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="2" />
-                        <Setter Target="DetailHost.HorizontalAlignment" Value="Stretch" />
-                        <Setter Target="DetailHost.Width" Value="Auto" />
                         <Setter Target="DetailHost.Margin" Value="48,8,8,8" />
                     </VisualState.Setters>
                 </VisualState>
@@ -62,8 +61,6 @@
                         <Setter Target="ListContentGrid.Padding" Value="24,16,24,0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="0" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="2" />
-                        <Setter Target="DetailHost.HorizontalAlignment" Value="Right" />
-                        <Setter Target="DetailHost.Width" Value="360" />
                         <Setter Target="DetailHost.Margin" Value="8" />
                     </VisualState.Setters>
                 </VisualState>
@@ -81,8 +78,6 @@
                         <Setter Target="ListContentGrid.Padding" Value="24,16,24,0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="0" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="2" />
-                        <Setter Target="DetailHost.HorizontalAlignment" Value="Right" />
-                        <Setter Target="DetailHost.Width" Value="360" />
                         <Setter Target="DetailHost.Margin" Value="8" />
                     </VisualState.Setters>
                 </VisualState>
@@ -100,8 +95,6 @@
                         <Setter Target="ListContentGrid.Padding" Value="24,16,24,0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="1" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="1" />
-                        <Setter Target="DetailHost.HorizontalAlignment" Value="Stretch" />
-                        <Setter Target="DetailHost.Width" Value="Auto" />
                         <Setter Target="DetailHost.Margin" Value="8" />
                     </VisualState.Setters>
                 </VisualState>
@@ -221,7 +214,10 @@
             </NavigationView.FooterMenuItems>
 
             <NavigationView.PaneFooter>
-                <Grid ColumnSpacing="8" RowSpacing="4">
+                <Grid
+                    Margin="4,0,4,4"
+                    ColumnSpacing="8"
+                    RowSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="32" />
@@ -273,6 +269,7 @@
                         Grid.Column="1"
                         Width="32"
                         Height="32"
+                        Padding="0"
                         AutomationProperties.AutomationId="Todo.Nav.NewGroupButton"
                         Command="{x:Bind ViewModel.BeginCreateGroupCommand, Mode=OneTime}"
                         Style="{StaticResource SubtleButtonStyle}">
@@ -281,7 +278,10 @@
                 </Grid>
             </NavigationView.PaneFooter>
 
-            <Grid x:Name="ContentGrid" MinWidth="400">
+            <Grid
+                x:Name="ContentGrid"
+                MinWidth="400"
+                SizeChanged="OnContentGridSizeChanged">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition x:Name="DetailColumn" Width="Auto" />
@@ -290,8 +290,6 @@
                 <Border
                     x:Name="ListPane"
                     Grid.Column="0"
-                    BorderBrush="{ThemeResource ShellDividerBrush}"
-                    BorderThickness="0,0,1,0"
                     SizeChanged="OnListPaneSizeChanged">
                     <Grid
                         x:Name="ListPaneLayers">
@@ -321,9 +319,13 @@
                 <Grid
                     x:Name="DetailHost"
                     Grid.Column="1"
+                    MinWidth="320"
+                    MaxWidth="720"
                     Margin="8"
+                    HorizontalAlignment="Right"
                     Opacity="0"
-                    Visibility="Collapsed">
+                    Visibility="Collapsed"
+                    Width="{x:Bind ViewModel.DetailPaneWidth, Mode=TwoWay}">
                     <Grid.OpacityTransition>
                         <ScalarTransition Duration="0:0:0.2" />
                     </Grid.OpacityTransition>
@@ -332,8 +334,20 @@
                             <EntranceThemeTransition FromHorizontalOffset="32" />
                         </TransitionCollection>
                     </Grid.ChildrenTransitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <sizers:ContentSizer
+                        x:Uid="DetailPaneSizer"
+                        Grid.Column="0"
+                        AutomationProperties.AutomationId="Todo.Detail.Sizer"
+                        IsDragInverted="True"
+                        Orientation="Vertical"
+                        TargetControl="{x:Bind DetailHost}" />
                     <Border
                         x:Name="DetailPane"
+                        Grid.Column="1"
                         Background="{ThemeResource ShellDetailBackgroundBrush}"
                         BorderBrush="{ThemeResource ShellDetailBorderBrush}"
                         BorderThickness="1"
@@ -391,10 +405,22 @@
             x:Name="DeleteListDialog"
             x:Uid="DeleteListDialog"
             AutomationProperties.AutomationId="Todo.Dialog.DeleteList"
-            DefaultButton="Primary"
+            DefaultButton="Close"
             x:Load="{x:Bind ViewModel.IsDeleteListDialogLoaded, Mode=OneWay}">
             <TextBlock
                 x:Name="DeleteListMessage"
+                Style="{StaticResource BodyTextBlockStyle}"
+                TextWrapping="Wrap" />
+        </ContentDialog>
+
+        <ContentDialog
+            x:Name="DeleteTaskDialog"
+            x:Uid="DeleteTaskDialog"
+            AutomationProperties.AutomationId="Todo.Dialog.DeleteTask"
+            DefaultButton="Close"
+            x:Load="{x:Bind ViewModel.IsDeleteTaskDialogLoaded, Mode=OneWay}">
+            <TextBlock
+                x:Name="DeleteTaskMessage"
                 Style="{StaticResource BodyTextBlockStyle}"
                 TextWrapping="Wrap" />
         </ContentDialog>

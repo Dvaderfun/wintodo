@@ -67,6 +67,7 @@ public sealed partial class ShellPage : Page
         ViewModel.NavigationStructureChanged += OnNavigationStructureChanged;
         ViewModel.NavigationRequested += OnNavigationRequested;
         ViewModel.DeleteListRequested += OnDeleteListRequested;
+        ViewModel.DeleteTaskRequested += OnDeleteTaskRequested;
         ViewModel.ImportIcalRequested += OnImportIcalRequested;
         ViewModel.ExportAllRequested += OnExportAllRequested;
         ViewModel.ExportListRequested += OnExportListRequested;
@@ -414,6 +415,26 @@ public sealed partial class ShellPage : Page
         if (result == ContentDialogResult.Primary)
         {
             await ViewModel.ConfirmDeleteListAsync(list);
+        }
+    }
+
+    private async void OnDeleteTaskRequested(string summary)
+    {
+        ViewModel.IsDeleteTaskDialogLoaded = true;
+        await Task.Yield();
+        DeleteTaskDialog.XamlRoot = XamlRoot;
+        DeleteTaskMessage.Text = string.Format(
+            CultureInfo.CurrentCulture,
+            _resources.GetString("DeleteTaskDialog_Message"),
+            summary);
+        ContentDialogResult result = await DeleteTaskDialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            await ViewModel.ConfirmDeleteTaskAsync();
+        }
+        else
+        {
+            ViewModel.CancelDeleteTask();
         }
     }
 
@@ -1262,6 +1283,18 @@ public sealed partial class ShellPage : Page
     private void OnAppearanceSettingsChanged()
     {
         DispatcherQueue.TryEnqueue(() => ApplyListBackground());
+    }
+
+    // The detail pane's upper drag limit depends on how much room the window has,
+    // so it cannot come from a visual state the way its column and margin do.
+    private void OnContentGridSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        const double listReserve = 320;
+        const double hardMaximum = 960;
+        DetailHost.MaxWidth = Math.Clamp(
+            args.NewSize.Width - listReserve,
+            DetailHost.MinWidth,
+            hardMaximum);
     }
 
     private void OnListPaneSizeChanged(object sender, SizeChangedEventArgs args)
