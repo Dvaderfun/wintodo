@@ -41,6 +41,16 @@ public sealed partial class TaskDetailView : UserControl
         set => SetValue(ViewModelProperty, value);
     }
 
+    internal void OpenDuePicker()
+    {
+        FlyoutBase.ShowAttachedFlyout(DueButton);
+    }
+
+    internal void OpenReminderPicker()
+    {
+        FlyoutBase.ShowAttachedFlyout(ReminderButton);
+    }
+
     public static bool Not(bool value)
     {
         return !value;

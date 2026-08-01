@@ -16,77 +16,15 @@
         <Style x:Key="CompletionCheckBoxStyle" TargetType="CheckBox">
             <Setter Property="Width" Value="32" />
             <Setter Property="Height" Value="32" />
+            <Setter Property="Background" Value="{ThemeResource SubtleFillColorTransparentBrush}" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="UseSystemFocusVisuals" Value="True" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="CheckBox">
-                        <Grid>
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal" />
-                                    <VisualState x:Name="PointerOver">
-                                        <VisualState.Setters>
-                                            <Setter Target="Circle.Stroke" Value="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <Setter Target="HoverMark.Opacity" Value="0.4" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                    <VisualState x:Name="Pressed">
-                                        <VisualState.Setters>
-                                            <Setter Target="Circle.Stroke" Value="{ThemeResource TextFillColorTertiaryBrush}" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                    <VisualState x:Name="Disabled">
-                                        <VisualState.Setters>
-                                            <Setter Target="CompletionVisual.Opacity" Value="0.4" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                </VisualStateGroup>
-                                <VisualStateGroup x:Name="CheckStates">
-                                    <VisualState x:Name="Unchecked" />
-                                    <VisualState x:Name="Checked">
-                                        <VisualState.Setters>
-                                            <Setter Target="Circle.Fill" Value="{ThemeResource ListAccentBrush}" />
-                                            <Setter Target="Circle.Stroke" Value="{ThemeResource ListAccentBrush}" />
-                                            <Setter Target="CheckMark.Opacity" Value="1" />
-                                            <Setter Target="HoverMark.Opacity" Value="0" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                    <VisualState x:Name="Indeterminate" />
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-                            <Grid
-                                x:Name="CompletionVisual"
-                                Width="20"
-                                Height="20"
-                                HorizontalAlignment="Center"
-                                VerticalAlignment="Center">
-                                <Ellipse
-                                    x:Name="Circle"
-                                    Fill="{ThemeResource SubtleFillColorTransparentBrush}"
-                                    Stroke="{ThemeResource ControlStrokeColorDefaultBrush}"
-                                    StrokeThickness="1" />
-                                <TextBlock
-                                    x:Name="HoverMark"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                    Opacity="0"
-                                    Style="{StaticResource CaptionTextBlockStyle}"
-                                    Text="&#xE73E;" />
-                                <TextBlock
-                                    x:Name="CheckMark"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                                    Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                                    Opacity="0"
-                                    Style="{StaticResource CaptionTextBlockStyle}"
-                                    Text="&#xE73E;" />
-                            </Grid>
-                        </Grid>
+                        <Grid Background="{TemplateBinding Background}" />
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
@@ -95,8 +33,8 @@
 
     <Grid
         x:Name="RowRoot"
-        MinHeight="44"
-        Padding="8,4"
+        MinHeight="{x:Bind local:TaskRow.RowMinHeight(ViewModel.IsCompactDensity), Mode=OneWay}"
+        Padding="{x:Bind local:TaskRow.RowPadding(ViewModel.IsCompactDensity), Mode=OneWay}"
         AutomationProperties.AutomationId="{x:Bind ViewModel.AutomationId, Mode=OneWay}"
         AutomationProperties.Name="{x:Bind ViewModel.AccessibleName, Mode=OneWay}"
         ContextFlyout="{x:Bind RowContextFlyout, Mode=OneTime}"
@@ -104,6 +42,9 @@
         PointerExited="OnPointerExited">
         <VisualStateManager.VisualStateGroups>
             <VisualStateGroup x:Name="CompletionStates">
+                <VisualStateGroup.Transitions>
+                    <VisualTransition GeneratedDuration="0:0:0.2" />
+                </VisualStateGroup.Transitions>
                 <VisualState x:Name="Active">
                     <VisualState.StateTriggers>
                         <StateTrigger IsActive="{x:Bind local:TaskRow.Not(ViewModel.IsCompleted), Mode=OneWay}" />
@@ -131,7 +72,7 @@
             <VisualStateGroup x:Name="PointerStates">
                 <VisualState x:Name="PointerNormal">
                     <VisualState.Setters>
-                        <Setter Target="ImportanceButton.Opacity" Value="{x:Bind local:TaskRow.StarOpacity(ViewModel.IsImportant), Mode=OneWay}" />
+                        <Setter Target="ImportanceButton.Opacity" Value="{x:Bind local:TaskRow.StarOpacity(ViewModel.IsImportant, ViewModel.IsSelected), Mode=OneWay}" />
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="PointerOver">
@@ -159,7 +100,29 @@
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
+            <VisualStateGroup x:Name="ImportanceStates">
+                <VisualState x:Name="NotImportant">
+                    <VisualState.StateTriggers>
+                        <StateTrigger IsActive="{x:Bind local:TaskRow.Not(ViewModel.IsImportant), Mode=OneWay}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="ImportanceIcon.Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Important">
+                    <VisualState.StateTriggers>
+                        <StateTrigger IsActive="{x:Bind ViewModel.IsImportant, Mode=OneWay}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="ImportanceIcon.Foreground" Value="{ThemeResource ListAccentBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
+
+        <Grid.OpacityTransition>
+            <ScalarTransition Duration="0:0:0.2" />
+        </Grid.OpacityTransition>
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="32" />
@@ -170,27 +133,64 @@
         </Grid.ColumnDefinitions>
 
         <Border
-            Width="4"
+            Width="3"
             Height="20"
-            Margin="-8,0,0,0"
+            Margin="-12,0,0,0"
             HorizontalAlignment="Left"
             VerticalAlignment="Center"
             Background="{ThemeResource ListAccentBrush}"
             CornerRadius="{StaticResource ControlCornerRadius}"
             Visibility="{x:Bind local:TaskRow.BoolToVisibility(ViewModel.IsSelected), Mode=OneWay}" />
 
-        <CheckBox
-            x:Name="CompletionToggle"
+        <Grid
+            x:Name="CompletionHost"
             Grid.Column="0"
             Width="32"
             Height="32"
             HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            AutomationProperties.AutomationId="{x:Bind ViewModel.CompleteAutomationId, Mode=OneWay}"
-            AutomationProperties.Name="{x:Bind local:TaskRow.CompletionName(ViewModel.IsCompleted), Mode=OneWay}"
-            Command="{x:Bind ViewModel.ToggleCompletionCommand, Mode=OneWay}"
-            IsChecked="{x:Bind ViewModel.IsCompleted, Mode=OneWay}"
-            Style="{StaticResource CompletionCheckBoxStyle}" />
+            VerticalAlignment="Center">
+            <Grid
+                Width="20"
+                Height="20"
+                IsHitTestVisible="False">
+                <Ellipse
+                    Fill="{ThemeResource ControlFillColorDefaultBrush}"
+                    Stroke="{ThemeResource ListAccentBrush}"
+                    StrokeThickness="1.5" />
+                <Ellipse
+                    Fill="{ThemeResource ListAccentBrush}"
+                    Opacity="{x:Bind local:TaskRow.BoolToOpacity(ViewModel.IsCompleted), Mode=OneWay}" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Opacity="{x:Bind local:TaskRow.HoverMarkOpacity(ViewModel.IsCompleted, CompletionToggle.IsPointerOver), Mode=OneWay}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="&#xE73E;" />
+                <TextBlock
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                    Foreground="{ThemeResource CompletionCheckForegroundBrush}"
+                    Opacity="{x:Bind local:TaskRow.BoolToOpacity(ViewModel.IsCompleted), Mode=OneWay}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="&#xE73E;">
+                    <TextBlock.OpacityTransition>
+                        <ScalarTransition Duration="0:0:0.1" />
+                    </TextBlock.OpacityTransition>
+                </TextBlock>
+            </Grid>
+            <CheckBox
+                x:Name="CompletionToggle"
+                Width="32"
+                Height="32"
+                AutomationProperties.AutomationId="{x:Bind ViewModel.CompleteAutomationId, Mode=OneWay}"
+                AutomationProperties.Name="{x:Bind local:TaskRow.CompletionName(ViewModel.IsCompleted), Mode=OneWay}"
+                Command="{x:Bind ViewModel.ToggleCompletionCommand, Mode=OneWay}"
+                IsChecked="{x:Bind ViewModel.IsCompleted, Mode=OneWay}"
+                Style="{StaticResource CompletionCheckBoxStyle}" />
+        </Grid>
 
         <StackPanel
             Grid.Column="2"
@@ -203,7 +203,17 @@
                 Style="{StaticResource BodyTextBlockStyle}"
                 Text="{x:Bind ViewModel.Summary, Mode=OneWay}"
                 TextTrimming="CharacterEllipsis"
-                TextWrapping="Wrap" />
+                TextWrapping="Wrap"
+                Visibility="{x:Bind local:TaskRow.InverseBoolToVisibility(ViewModel.IsEditingTitle), Mode=OneWay}" />
+            <TextBox
+                x:Name="TaskTitleEditBox"
+                x:Uid="TaskEditTitleBox"
+                AutomationProperties.AutomationId="{x:Bind ViewModel.EditAutomationId, Mode=OneWay}"
+                BorderThickness="0"
+                KeyDown="OnTaskTitleEditBoxKeyDown"
+                LostFocus="OnTaskTitleEditBoxLostFocus"
+                Text="{x:Bind ViewModel.EditTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                Visibility="{x:Bind local:TaskRow.BoolToVisibility(ViewModel.IsEditingTitle), Mode=OneWay}" />
             <TextBlock
                 x:Name="MetadataText"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -231,11 +241,11 @@
             AutomationProperties.Name="{x:Bind local:TaskRow.ImportanceName(ViewModel.IsImportant), Mode=OneWay}"
             Command="{x:Bind ViewModel.ToggleImportanceCommand, Mode=OneWay}"
             IsChecked="{x:Bind ViewModel.IsImportant, Mode=OneWay}"
-            Opacity="{x:Bind local:TaskRow.StarOpacity(ViewModel.IsImportant), Mode=OneWay}"
+            Opacity="{x:Bind local:TaskRow.StarOpacity(ViewModel.IsImportant, ViewModel.IsSelected), Mode=OneWay}"
             Style="{StaticResource TaskSubtleToggleButtonStyle}">
             <FontIcon
+                x:Name="ImportanceIcon"
                 FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                Foreground="{ThemeResource ListAccentBrush}"
                 Glyph="{x:Bind local:TaskRow.ImportanceGlyph(ViewModel.IsImportant), Mode=OneWay}" />
         </ToggleButton>
     </Grid>

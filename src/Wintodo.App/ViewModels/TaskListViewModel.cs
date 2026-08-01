@@ -56,6 +56,8 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     internal event Action<TaskItemViewModel>? TaskCompletionChanged;
 
+    internal event Action? ShortcutsRequested;
+
     public ObservableCollection<TaskListEntryViewModel> VisibleItems { get; } = [];
 
     public ObservableCollection<TaskListGroupViewModel> TaskGroups { get; } = [];
@@ -151,6 +153,11 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     [ObservableProperty]
     public partial string CompletionAnnouncement { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial bool IsCompactDensity { get; set; }
+
+    internal bool AnimationsEnabled { get; set; } = true;
 
     internal ListColor SelectedColor => _selectedList?.Color ?? ListColor.Blue;
 
@@ -610,6 +617,30 @@ public sealed partial class TaskListViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task ChangeListBackgroundAsync(string value)
+    {
+        await Task.Yield();
+        ShellListItemViewModel? list = _selectedList;
+        string? theme = string.Equals(value, "None", StringComparison.Ordinal)
+            ? null
+            : value;
+        if (list is null || !IsKnownBackgroundTheme(theme))
+        {
+            return;
+        }
+
+        await _taskStore.SetListBackgroundThemeAsync(list.Id, theme);
+        list.BackgroundTheme = theme;
+        NavigationDataChanged?.Invoke();
+    }
+
+    [RelayCommand]
+    private void RequestShortcuts()
+    {
+        ShortcutsRequested?.Invoke();
+    }
+
+    [RelayCommand]
     private async Task SortByAsync(string value)
     {
         await Task.Yield();
@@ -731,6 +762,34 @@ public sealed partial class TaskListViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task ToggleSelectedMyDayAsync()
+    {
+        await Task.Yield();
+        TaskItemViewModel? item = SelectedTask;
+        if (item is null)
+        {
+            return;
+        }
+
+        bool isInMyDay = item.Model.MyDayDate == _clock.Today;
+        item.Model.MyDayDate = isInMyDay ? null : _clock.Today;
+        await _taskStore.UpdateTaskAsync(item.Model);
+        UpdateItemDisplay(item);
+        if (isInMyDay && _currentQuery?.Kind == ListQueryKind.MyDay)
+        {
+            _activeTasks.Remove(item);
+            _completedTasks.Remove(item);
+            RebuildVisibleItems();
+        }
+    }
+
+    [RelayCommand]
+    private void BeginEditSelectedTask()
+    {
+        SelectedTask?.BeginTitleEditCommand.Execute(null);
+    }
+
+    [RelayCommand]
     private async Task MoveSelectedUpAsync()
     {
         await MoveSelectedByAsync(-1);
@@ -827,7 +886,11 @@ public sealed partial class TaskListViewModel : ObservableObject
             ToggleTaskCompletionAsync,
             ToggleTaskImportanceAsync,
             DeleteTaskAsync,
-            MoveTaskAsync);
+            MoveTaskAsync,
+            RenameTaskAsync)
+        {
+            IsCompactDensity = IsCompactDensity,
+        };
         _itemCache.Add(task.Uid, item);
         return item;
     }
@@ -874,7 +937,11 @@ public sealed partial class TaskListViewModel : ObservableObject
             return;
         }
 
-        await Task.Delay(TimeSpan.FromMilliseconds(250));
+        if (AnimationsEnabled)
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(250));
+        }
+
         _activeTasks.Remove(item);
         InsertBySortOrder(_completedTasks, item);
         RebuildVisibleItems();
@@ -913,6 +980,15 @@ public sealed partial class TaskListViewModel : ObservableObject
         await Task.Yield();
         await _taskStore.MoveTaskAsync(item.Uid, destinationListId);
         await ReloadAsync();
+    }
+
+    private async Task RenameTaskAsync(TaskItemViewModel item)
+    {
+        await Task.Yield();
+        item.Model.Summary = item.EditTitle;
+        await _taskStore.UpdateTaskAsync(item.Model);
+        UpdateItemDisplay(item);
+        RebuildVisibleItems();
     }
 
     private async Task MoveSelectedByAsync(int offset)
@@ -1222,10 +1298,13 @@ public sealed partial class TaskListViewModel : ObservableObject
                 _resources.GetString("Task_Metadata_Completed"),
                 task.CompletedAt.Value.ToLocalTime());
 
-        var accessibleParts = new List<string>(4) { task.Summary };
-        if (!string.IsNullOrEmpty(item.Metadata))
+        var accessibleParts = new List<string>(5) { task.Summary };
+        if (task.Due is not null)
         {
-            accessibleParts.Add(item.Metadata);
+            accessibleParts.Add(string.Format(
+                CultureInfo.CurrentCulture,
+                _resources.GetString("Task_Accessible_Due"),
+                FormatDueDate(task.Due.Value)));
         }
 
         if (item.IsImportant)
@@ -1233,12 +1312,46 @@ public sealed partial class TaskListViewModel : ObservableObject
             accessibleParts.Add(_resources.GetString("Task_Accessible_Important"));
         }
 
+        string? accessibleListName = FindListName(task.ListId);
+        if (!string.IsNullOrEmpty(accessibleListName))
+        {
+            accessibleParts.Add(string.Format(
+                CultureInfo.CurrentCulture,
+                _resources.GetString("Task_Accessible_InList"),
+                accessibleListName));
+        }
+
         if (item.IsCompleted)
         {
             accessibleParts.Add(_resources.GetString("Task_Accessible_Completed"));
         }
+        else
+        {
+            accessibleParts.Add(_resources.GetString("Task_Accessible_NotCompleted"));
+        }
 
         item.AccessibleName = string.Join(", ", accessibleParts);
+    }
+
+    partial void OnIsCompactDensityChanged(bool value)
+    {
+        foreach (TaskItemViewModel item in _itemCache.Values)
+        {
+            item.IsCompactDensity = value;
+        }
+    }
+
+    private static bool IsKnownBackgroundTheme(string? value)
+    {
+        return value is null
+            or "Coast"
+            or "Forest"
+            or "Mist"
+            or "Sunrise"
+            or "Indigo"
+            or "Petals"
+            or "Graphite"
+            or "Field";
     }
 
     private void ConfigureEmptyState(ListQueryKind kind)

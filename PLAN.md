@@ -679,6 +679,10 @@ de-risking milestone for M13.
 
 ### M7 — Reminders and Windows integration
 
+**Status:** DEFERRED FOR THE CURRENT MVP (owner decision, 2026-07-31). This
+milestone was deliberately skipped after M6 and remains available for later
+implementation; none of its gate results are claimed.
+
 **Goal:** the app behaves like a first-class Windows citizen.
 
 **Deliverables**

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Windows.ApplicationModel.Resources;
@@ -13,12 +14,16 @@ public sealed partial class ShellViewModel : ObservableObject
 {
     internal const string MyDayNavigationKey = "smart:my-day";
     private const string UserListNavigationPrefix = "list:";
+    private const string AppearanceThemeSetting = "appearance.theme";
+    private const string DensitySetting = "appearance.density";
+    private const string ShowListBackgroundsSetting = "appearance.show_list_backgrounds";
     private readonly ITaskStore _taskStore;
     private readonly ShellStateService _stateService;
     private readonly ResourceLoader _resources = new();
     private string _selectedNavigationKey = MyDayNavigationKey;
     private string _selectedNavigationTitle = string.Empty;
     private bool _selectedNavigationIsMyDay = true;
+    private bool _areAppearanceSettingsLoaded;
 
     internal ShellViewModel(
         ITaskStore taskStore,
@@ -31,6 +36,7 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList.NavigationDataChanged += OnNavigationDataChanged;
         TaskList.DeleteListRequested += OnDeleteListRequested;
         TaskList.ExportListRequested += OnExportListRequested;
+        TaskList.ShortcutsRequested += OnShortcutsRequested;
         Detail = new TaskDetailViewModel(taskStore, clock);
         Detail.CloseRequested += CloseDetail;
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
@@ -48,6 +54,10 @@ public sealed partial class ShellViewModel : ObservableObject
     internal event Action? ExportAllRequested;
 
     internal event Action<ShellListItemViewModel>? ExportListRequested;
+
+    internal event Action? KeyboardShortcutsRequested;
+
+    internal event Action? AppearanceSettingsChanged;
 
     public ObservableCollection<ShellListItemViewModel> UserLists { get; } = [];
 
@@ -109,6 +119,15 @@ public sealed partial class ShellViewModel : ObservableObject
     public partial int DetailInstanceCount { get; set; }
 
     [ObservableProperty]
+    public partial int AppearanceThemeIndex { get; set; }
+
+    [ObservableProperty]
+    public partial int DensityIndex { get; set; }
+
+    [ObservableProperty]
+    public partial bool ShowListBackgrounds { get; set; }
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(CreateGroupCommand))]
     public partial string NewGroupName { get; set; } = string.Empty;
 
@@ -116,8 +135,30 @@ public sealed partial class ShellViewModel : ObservableObject
     {
         Task<IReadOnlyList<TodoList>> listsTask = _taskStore.GetListsAsync(cancellationToken);
         Task<IReadOnlyList<ListGroup>> groupsTask = _taskStore.GetGroupsAsync(cancellationToken);
-        await Task.WhenAll(listsTask, groupsTask);
+        Task<string?> themeTask = _taskStore.GetSettingAsync(
+            AppearanceThemeSetting,
+            cancellationToken);
+        Task<string?> densityTask = _taskStore.GetSettingAsync(
+            DensitySetting,
+            cancellationToken);
+        Task<string?> backgroundsTask = _taskStore.GetSettingAsync(
+            ShowListBackgroundsSetting,
+            cancellationToken);
+        await Task.WhenAll(
+            listsTask,
+            groupsTask,
+            themeTask,
+            densityTask,
+            backgroundsTask);
         LoadNavigationData(await listsTask, await groupsTask);
+
+        AppearanceThemeIndex = ParseChoice(await themeTask, maximum: 2);
+        DensityIndex = ParseChoice(await densityTask, maximum: 1);
+        ShowListBackgrounds = bool.TryParse(await backgroundsTask, out bool show)
+            && show;
+        TaskList.IsCompactDensity = DensityIndex == 1;
+        _areAppearanceSettingsLoaded = true;
+        AppearanceSettingsChanged?.Invoke();
 
         return await _stateService.LoadSelectedNavigationAsync(cancellationToken)
             ?? MyDayNavigationKey;
@@ -484,5 +525,60 @@ public sealed partial class ShellViewModel : ObservableObject
     private void OnExportListRequested(ShellListItemViewModel list)
     {
         ExportListRequested?.Invoke(list);
+    }
+
+    private void OnShortcutsRequested()
+    {
+        KeyboardShortcutsRequested?.Invoke();
+    }
+
+    partial void OnAppearanceThemeIndexChanged(int value)
+    {
+        SaveAppearanceSetting(AppearanceThemeSetting, value.ToString(
+            System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    partial void OnDensityIndexChanged(int value)
+    {
+        TaskList.IsCompactDensity = value == 1;
+        SaveAppearanceSetting(DensitySetting, value.ToString(
+            System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    partial void OnShowListBackgroundsChanged(bool value)
+    {
+        SaveAppearanceSetting(ShowListBackgroundsSetting, value.ToString());
+    }
+
+    private void SaveAppearanceSetting(string key, string value)
+    {
+        AppearanceSettingsChanged?.Invoke();
+        if (_areAppearanceSettingsLoaded)
+        {
+            _ = PersistAppearanceSettingAsync(key, value);
+        }
+    }
+
+    private async Task PersistAppearanceSettingAsync(string key, string value)
+    {
+        try
+        {
+            await _taskStore.SetSettingAsync(key, value);
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_APPEARANCE_SETTING_ERROR={exception}");
+        }
+    }
+
+    private static int ParseChoice(string? value, int maximum)
+    {
+        return int.TryParse(
+                value,
+                System.Globalization.NumberStyles.Integer,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out int choice)
+            ? Math.Clamp(choice, 0, maximum)
+            : 0;
     }
 }

@@ -23,6 +23,9 @@
             Padding="12,0">
             <VisualStateManager.VisualStateGroups>
                 <VisualStateGroup x:Name="ComposerStates">
+                    <VisualStateGroup.Transitions>
+                        <VisualTransition GeneratedDuration="0:0:0.15" />
+                    </VisualStateGroup.Transitions>
                     <VisualState x:Name="Collapsed">
                         <VisualState.StateTriggers>
                             <StateTrigger IsActive="{x:Bind local:AddTaskComposer.Not(ViewModel.IsComposerExpanded), Mode=OneWay}" />
@@ -76,6 +79,11 @@
                 Margin="32,0,0,8"
                 ColumnSpacing="8"
                 x:Load="{x:Bind ViewModel.IsComposerExpanded, Mode=OneWay}">
+                <Grid.ChildrenTransitions>
+                    <TransitionCollection>
+                        <EntranceThemeTransition FromVerticalOffset="8" />
+                    </TransitionCollection>
+                </Grid.ChildrenTransitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />

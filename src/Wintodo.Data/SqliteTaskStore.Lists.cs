@@ -108,6 +108,25 @@ public sealed partial class SqliteTaskStore
         return UpdateListAsync(listId, "color = @value", (int)color, cancellationToken);
     }
 
+    public Task SetListBackgroundThemeAsync(
+        long listId,
+        string? backgroundTheme,
+        CancellationToken cancellationToken = default)
+    {
+        if (backgroundTheme is { Length: > 32 })
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(backgroundTheme),
+                "List background theme identifiers cannot exceed 32 characters.");
+        }
+
+        return UpdateListAsync(
+            listId,
+            "background_theme = @value",
+            string.IsNullOrWhiteSpace(backgroundTheme) ? null : backgroundTheme,
+            cancellationToken);
+    }
+
     public Task SetListSortAsync(
         long listId,
         SortMode sortMode,

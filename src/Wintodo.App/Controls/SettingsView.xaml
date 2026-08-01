@@ -6,18 +6,108 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="using:Wintodo.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:settings="using:CommunityToolkit.WinUI.Controls"
     xmlns:viewModels="using:Wintodo.ViewModels"
     mc:Ignorable="d">
 
-    <ScrollViewer AutomationProperties.AutomationId="Todo.Settings.ScrollViewer">
+    <ScrollViewer
+        x:Name="SettingsScrollViewer"
+        HorizontalContentAlignment="Stretch"
+        HorizontalScrollBarVisibility="Disabled"
+        HorizontalScrollMode="Disabled"
+        AutomationProperties.AutomationId="Todo.Settings.ScrollViewer">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="CompactSettings" />
+                <VisualState x:Name="MediumSettings">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="900" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="SettingsPanel.Width" Value="480" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="LargeSettings">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1050" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="SettingsPanel.Width" Value="600" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="WideSettings">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1200" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="SettingsPanel.Width" Value="760" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <StackPanel
-            MaxWidth="720"
-            Margin="12"
-            HorizontalAlignment="Left"
+            x:Name="SettingsPanel"
+            Width="360"
+            MaxWidth="760"
+            Padding="36"
+            HorizontalAlignment="Stretch"
             Spacing="24">
             <TextBlock
                 x:Uid="SettingsTitle"
                 Style="{StaticResource TitleTextBlockStyle}" />
+
+            <StackPanel Spacing="12">
+                <TextBlock
+                    x:Uid="SettingsAppearanceHeader"
+                    Style="{StaticResource SubtitleTextBlockStyle}" />
+
+                <settings:SettingsCard
+                    x:Uid="SettingsThemeCard"
+                    ContentAlignment="Vertical">
+                    <ComboBox
+                        x:Name="ThemeComboBox"
+                        x:Uid="SettingsThemeCombo"
+                        Width="160"
+                        AutomationProperties.AutomationId="Todo.Settings.Theme"
+                        SelectedIndex="{x:Bind ViewModel.AppearanceThemeIndex, Mode=TwoWay}">
+                        <ComboBoxItem
+                            x:Uid="SettingsThemeSystem"
+                            AutomationProperties.AutomationId="Todo.Settings.Theme.System" />
+                        <ComboBoxItem
+                            x:Uid="SettingsThemeLight"
+                            AutomationProperties.AutomationId="Todo.Settings.Theme.Light" />
+                        <ComboBoxItem
+                            x:Uid="SettingsThemeDark"
+                            AutomationProperties.AutomationId="Todo.Settings.Theme.Dark" />
+                    </ComboBox>
+                </settings:SettingsCard>
+
+                <settings:SettingsCard
+                    x:Uid="SettingsDensityCard"
+                    ContentAlignment="Vertical">
+                    <ComboBox
+                        x:Uid="SettingsDensityCombo"
+                        Width="160"
+                        AutomationProperties.AutomationId="Todo.Settings.Density"
+                        SelectedIndex="{x:Bind ViewModel.DensityIndex, Mode=TwoWay}">
+                        <ComboBoxItem
+                            x:Uid="SettingsDensityComfortable"
+                            AutomationProperties.AutomationId="Todo.Settings.Density.Comfortable" />
+                        <ComboBoxItem
+                            x:Uid="SettingsDensityCompact"
+                            AutomationProperties.AutomationId="Todo.Settings.Density.Compact" />
+                    </ComboBox>
+                </settings:SettingsCard>
+
+                <settings:SettingsCard
+                    x:Uid="SettingsBackgroundsCard"
+                    ContentAlignment="Vertical">
+                    <ToggleSwitch
+                        x:Uid="SettingsBackgroundsToggle"
+                        AutomationProperties.AutomationId="Todo.Settings.ShowBackgrounds"
+                        IsOn="{x:Bind ViewModel.ShowListBackgrounds, Mode=TwoWay}" />
+                </settings:SettingsCard>
+            </StackPanel>
 
             <StackPanel Spacing="12">
                 <Grid ColumnSpacing="12">
@@ -39,31 +129,45 @@
                         Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsTransferBusy), Mode=OneWay}" />
                 </Grid>
 
-                <Button
-                    x:Uid="SettingsImportButton"
-                    HorizontalAlignment="Left"
-                    AutomationProperties.AutomationId="Todo.Settings.ImportIcal"
-                    Command="{x:Bind ViewModel.ImportIcalCommand, Mode=OneTime}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE8B5;" />
-                        <TextBlock
-                            x:Uid="SettingsImportLabel"
-                            Style="{StaticResource BodyTextBlockStyle}" />
-                    </StackPanel>
-                </Button>
+                <settings:SettingsCard
+                    x:Uid="SettingsDataCard"
+                    ContentAlignment="Vertical">
+                    <StackPanel Spacing="8">
+                        <Button
+                            x:Uid="SettingsImportButton"
+                            AutomationProperties.AutomationId="Todo.Settings.ImportIcal"
+                            Command="{x:Bind ViewModel.ImportIcalCommand, Mode=OneTime}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE8B5;" />
+                                <TextBlock
+                                    x:Uid="SettingsImportLabel"
+                                    Style="{StaticResource BodyTextBlockStyle}" />
+                            </StackPanel>
+                        </Button>
 
-                <Button
-                    x:Uid="SettingsExportAllButton"
-                    HorizontalAlignment="Left"
-                    AutomationProperties.AutomationId="Todo.Settings.ExportAll"
-                    Command="{x:Bind ViewModel.ExportAllCommand, Mode=OneTime}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE898;" />
-                        <TextBlock
-                            x:Uid="SettingsExportAllLabel"
-                            Style="{StaticResource BodyTextBlockStyle}" />
+                        <Button
+                            x:Uid="SettingsExportAllButton"
+                            AutomationProperties.AutomationId="Todo.Settings.ExportAll"
+                            Command="{x:Bind ViewModel.ExportAllCommand, Mode=OneTime}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE898;" />
+                                <TextBlock
+                                    x:Uid="SettingsExportAllLabel"
+                                    Style="{StaticResource BodyTextBlockStyle}" />
+                            </StackPanel>
+                        </Button>
                     </StackPanel>
-                </Button>
+                </settings:SettingsCard>
+            </StackPanel>
+
+            <StackPanel Spacing="12">
+                <TextBlock
+                    x:Uid="SettingsAboutHeader"
+                    Style="{StaticResource SubtitleTextBlockStyle}" />
+                <settings:SettingsCard
+                    x:Uid="SettingsVersionCard"
+                    ContentAlignment="Vertical"
+                    Description="{x:Bind VersionText, Mode=OneTime}" />
             </StackPanel>
         </StackPanel>
     </ScrollViewer>

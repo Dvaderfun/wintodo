@@ -298,3 +298,65 @@ reported as fully complete.
   be marked fully complete.
 - The framework-dependent startup and loaded-working-set misses recorded in M4
   remain open for profiling and the Native AOT gate in M9.
+
+## M7 — Reminders and Windows integration          2026-07-31
+
+**Gate:** SKIPPED — not attempted. The owner deferred this milestone because
+reminder delivery and the broader Windows integration set are not required for
+the current MVP.
+
+**Shipped**
+- No M7 functionality was implemented in this milestone slot.
+
+**Deviations from PLAN.md**
+- M8 began before M7. This is an explicit sequencing decision, not a claim that
+M7 passed; M7 remains available for implementation after the MVP priorities.
+
+**Known issues carried forward**
+- Reminder toasts, toast actions, rescheduling, taskbar badges, jump lists,
+launch at login, and the share target remain unavailable until M7 is resumed.
+
+## M8 — Design polish and accessibility          2026-07-31
+
+**Gate:** AUTOMATED PASS; MANUAL NARRATOR LISTENING CHECK PENDING — the single
+disposable-database `winapp ui` batch passed 14/14, including the zero-error
+authored-control accessibility audit, keyboard-only create/complete/delete and
+undo flow, every smart-list empty state, adaptive Settings layout, keyboard
+map, list themes, and an OS High Contrast transition with state restoration.
+The reviewed High Contrast screenshot hides raster backgrounds and uses system
+colours for authored controls. Debug x64 and Release x64/ARM64 builds completed
+with zero warnings. Core passed 40/40 and Data passed 30/30 in isolated runs.
+An audible Narrator session was not run in this environment, so M8 is not
+reported as fully complete.
+
+**Shipped**
+- Applied the DESIGN spacing, typography, resource-brush, hit-target, adaptive
+  layout, Light/Dark/HighContrast, and reduced-motion rules across the shell,
+  task rows, task detail, composer, dialogs, and Settings surface.
+- Added Normal/Compact density and System/Light/Dark appearance settings, plus
+  eight per-list raster themes decoded at the displayed physical-pixel width;
+  appearance and background choices persist in SQLite.
+- Added list-switch, row, importance, and completion motion; complete empty
+  states; inline task rename; selection/task/list keyboard commands; and a
+  localized, scrollable shortcuts dialog reachable from the keyboard and menu.
+- Added explicit row accessibility sentences, live UI Automation Name updates,
+  completion notifications through `AutomationPeer.RaiseNotificationEvent`,
+  stable AutomationIds, 32x32 row actions, and deterministic High Contrast
+  colour/background refresh behavior.
+- Added `tests/ui/run-m8-gate.ps1` and its one-pass M8 scenario. Final artifacts
+  are under `tests/ui/artifacts/m8/run-20260731-212054` (ignored by Git).
+
+**Deviations from PLAN.md**
+- M7-dependent notification and default-reminder settings remain absent because
+  M7 was explicitly deferred for the current MVP.
+- The screen-reader workflow is covered by keyboard-only UI Automation,
+  accessible names, property-change events, and notification events, but the
+  required human Narrator listening check still must be completed.
+
+**Known issues carried forward**
+- A human must run Narrator and confirm the create, complete, and delete flow is
+  understandable without a mouse before M8 can be marked fully complete.
+- The existing 5 ms smart-list microbenchmark is timing-sensitive: one loaded
+  full-suite run measured My Day at 7.559 ms, while the isolated rerun passed.
+- M7 remains deferred, and the framework-dependent startup/working-set misses
+  remain assigned to the Native AOT performance gate in M9.

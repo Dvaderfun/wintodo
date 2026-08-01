@@ -756,4 +756,89 @@
   <data name="SettingsTransferProgress.AutomationProperties.Name" xml:space="preserve">
     <value>Data transfer in progress</value>
   </data>
+  <data name="Task_Accessible_NotCompleted" xml:space="preserve">
+    <value>not completed</value>
+  </data>
+  <data name="Task_Accessible_Due" xml:space="preserve">
+    <value>due {0}</value>
+  </data>
+  <data name="Task_Accessible_InList" xml:space="preserve">
+    <value>in {0}</value>
+  </data>
+  <data name="TaskEditTitleBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Edit task title</value>
+  </data>
+  <data name="ChangeBackgroundMenu.Text" xml:space="preserve">
+    <value>Change background</value>
+  </data>
+  <data name="BackgroundNone.Text" xml:space="preserve"><value>None</value></data>
+  <data name="BackgroundCoast.Text" xml:space="preserve"><value>Coast</value></data>
+  <data name="BackgroundForest.Text" xml:space="preserve"><value>Forest</value></data>
+  <data name="BackgroundMist.Text" xml:space="preserve"><value>Mist</value></data>
+  <data name="BackgroundSunrise.Text" xml:space="preserve"><value>Sunrise</value></data>
+  <data name="BackgroundIndigo.Text" xml:space="preserve"><value>Indigo</value></data>
+  <data name="BackgroundPetals.Text" xml:space="preserve"><value>Petals</value></data>
+  <data name="BackgroundGraphite.Text" xml:space="preserve"><value>Graphite</value></data>
+  <data name="BackgroundField.Text" xml:space="preserve"><value>Field</value></data>
+  <data name="ShortcutsMenu.Text" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="ShortcutsDialog.Title" xml:space="preserve"><value>Keyboard shortcuts</value></data>
+  <data name="ShortcutsDialog.CloseButtonText" xml:space="preserve"><value>Close</value></data>
+  <data name="SettingsAppearanceHeader.Text" xml:space="preserve"><value>Appearance</value></data>
+  <data name="SettingsThemeCard.Header" xml:space="preserve"><value>App theme</value></data>
+  <data name="SettingsThemeCard.Description" xml:space="preserve"><value>Choose how Wintodo looks.</value></data>
+  <data name="SettingsThemeCombo.AutomationProperties.Name" xml:space="preserve"><value>App theme</value></data>
+  <data name="SettingsThemeSystem.Content" xml:space="preserve"><value>Use system setting</value></data>
+  <data name="SettingsThemeLight.Content" xml:space="preserve"><value>Light</value></data>
+  <data name="SettingsThemeDark.Content" xml:space="preserve"><value>Dark</value></data>
+  <data name="SettingsDensityCard.Header" xml:space="preserve"><value>Density</value></data>
+  <data name="SettingsDensityCard.Description" xml:space="preserve"><value>Adjust task row spacing.</value></data>
+  <data name="SettingsDensityCombo.AutomationProperties.Name" xml:space="preserve"><value>Task list density</value></data>
+  <data name="SettingsDensityComfortable.Content" xml:space="preserve"><value>Comfortable</value></data>
+  <data name="SettingsDensityCompact.Content" xml:space="preserve"><value>Compact</value></data>
+  <data name="SettingsBackgroundsCard.Header" xml:space="preserve"><value>List backgrounds</value></data>
+  <data name="SettingsBackgroundsCard.Description" xml:space="preserve"><value>Show the selected image behind each list.</value></data>
+  <data name="SettingsBackgroundsToggle.AutomationProperties.Name" xml:space="preserve"><value>Show list backgrounds</value></data>
+  <data name="SettingsDataCard.Header" xml:space="preserve"><value>Import and export</value></data>
+  <data name="SettingsDataCard.Description" xml:space="preserve"><value>Move task data with iCalendar files.</value></data>
+  <data name="SettingsAboutHeader.Text" xml:space="preserve"><value>About</value></data>
+  <data name="SettingsVersionCard.Header" xml:space="preserve"><value>Wintodo</value></data>
+  <data name="Settings_VersionFormat" xml:space="preserve"><value>Version {0}.{1}.{2}.{3}</value></data>
+  <data name="Shortcut01_Key" xml:space="preserve"><value>Ctrl+N</value></data>
+  <data name="Shortcut01_Action" xml:space="preserve"><value>Add a task</value></data>
+  <data name="Shortcut02_Key" xml:space="preserve"><value>Ctrl+L</value></data>
+  <data name="Shortcut02_Action" xml:space="preserve"><value>Create a list</value></data>
+  <data name="Shortcut03_Key" xml:space="preserve"><value>Ctrl+Shift+L</value></data>
+  <data name="Shortcut03_Action" xml:space="preserve"><value>Create a list group</value></data>
+  <data name="Shortcut04_Key" xml:space="preserve"><value>Ctrl+F / Ctrl+E</value></data>
+  <data name="Shortcut04_Action" xml:space="preserve"><value>Search tasks</value></data>
+  <data name="Shortcut05_Key" xml:space="preserve"><value>Ctrl+1 ... Ctrl+5</value></data>
+  <data name="Shortcut05_Action" xml:space="preserve"><value>Open a smart list</value></data>
+  <data name="Shortcut06_Key" xml:space="preserve"><value>Ctrl+,</value></data>
+  <data name="Shortcut06_Action" xml:space="preserve"><value>Open Settings</value></data>
+  <data name="Shortcut07_Key" xml:space="preserve"><value>Ctrl+?</value></data>
+  <data name="Shortcut07_Action" xml:space="preserve"><value>Show keyboard shortcuts</value></data>
+  <data name="Shortcut08_Key" xml:space="preserve"><value>Up / Down</value></data>
+  <data name="Shortcut08_Action" xml:space="preserve"><value>Select the previous or next task</value></data>
+  <data name="Shortcut09_Key" xml:space="preserve"><value>Space</value></data>
+  <data name="Shortcut09_Action" xml:space="preserve"><value>Toggle task completion</value></data>
+  <data name="Shortcut10_Key" xml:space="preserve"><value>Enter</value></data>
+  <data name="Shortcut10_Action" xml:space="preserve"><value>Open task details</value></data>
+  <data name="Shortcut11_Key" xml:space="preserve"><value>Esc</value></data>
+  <data name="Shortcut11_Action" xml:space="preserve"><value>Close the current surface</value></data>
+  <data name="Shortcut12_Key" xml:space="preserve"><value>Ctrl+I</value></data>
+  <data name="Shortcut12_Action" xml:space="preserve"><value>Toggle importance</value></data>
+  <data name="Shortcut13_Key" xml:space="preserve"><value>Ctrl+T</value></data>
+  <data name="Shortcut13_Action" xml:space="preserve"><value>Toggle My Day</value></data>
+  <data name="Shortcut14_Key" xml:space="preserve"><value>Ctrl+Shift+D</value></data>
+  <data name="Shortcut14_Action" xml:space="preserve"><value>Open due date choices</value></data>
+  <data name="Shortcut15_Key" xml:space="preserve"><value>Ctrl+Shift+R</value></data>
+  <data name="Shortcut15_Action" xml:space="preserve"><value>Open reminder choices</value></data>
+  <data name="Shortcut16_Key" xml:space="preserve"><value>F2</value></data>
+  <data name="Shortcut16_Action" xml:space="preserve"><value>Rename the selected item</value></data>
+  <data name="Shortcut17_Key" xml:space="preserve"><value>Delete</value></data>
+  <data name="Shortcut17_Action" xml:space="preserve"><value>Delete the selected task</value></data>
+  <data name="Shortcut18_Key" xml:space="preserve"><value>Ctrl+Z</value></data>
+  <data name="Shortcut18_Action" xml:space="preserve"><value>Undo the last task deletion</value></data>
+  <data name="Shortcut19_Key" xml:space="preserve"><value>Alt+Up / Alt+Down</value></data>
+  <data name="Shortcut19_Action" xml:space="preserve"><value>Move the selected task</value></data>
 </root>
