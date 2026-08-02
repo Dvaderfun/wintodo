@@ -52,8 +52,6 @@
                     <VisualState.Setters>
                         <Setter Target="TaskContent.Opacity" Value="1" />
                         <Setter Target="TaskTitle.TextDecorations" Value="None" />
-                        <Setter Target="MetadataText.Visibility" Value="Visible" />
-                        <Setter Target="CompletionText.Visibility" Value="Collapsed" />
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="Completed">
@@ -63,8 +61,6 @@
                     <VisualState.Setters>
                         <Setter Target="TaskContent.Opacity" Value="0.6" />
                         <Setter Target="TaskTitle.TextDecorations" Value="Strikethrough" />
-                        <Setter Target="MetadataText.Visibility" Value="Collapsed" />
-                        <Setter Target="CompletionText.Visibility" Value="Visible" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -220,7 +216,7 @@
                 Style="{StaticResource CaptionTextBlockStyle}"
                 Text="{x:Bind ViewModel.Metadata, Mode=OneWay}"
                 TextTrimming="CharacterEllipsis"
-                Visibility="{x:Bind local:TaskRow.HasText(ViewModel.Metadata), Mode=OneWay}" />
+                Visibility="{x:Bind local:TaskRow.SecondLineVisibility(ViewModel.Metadata, ViewModel.IsCompleted), Mode=OneWay}" />
             <TextBlock
                 x:Name="CompletionText"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -228,7 +224,7 @@
                 Style="{StaticResource CaptionTextBlockStyle}"
                 Text="{x:Bind ViewModel.CompletionDateText, Mode=OneWay}"
                 TextTrimming="CharacterEllipsis"
-                Visibility="Collapsed" />
+                Visibility="{x:Bind local:TaskRow.CompletionLineVisibility(ViewModel.CompletionDateText, ViewModel.IsCompleted), Mode=OneWay}" />
         </StackPanel>
 
         <ToggleButton

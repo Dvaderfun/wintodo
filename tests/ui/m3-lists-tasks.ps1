@@ -195,7 +195,6 @@ Test-UI "Create list group" {
         -a $AppPid `
         --via send-input
     Start-Sleep -Milliseconds 500
-    winapp ui invoke "Todo.Nav.UserLists" -a $AppPid
     Start-Sleep -Milliseconds 500
     $groups = Get-SearchMatches "Todo.Nav.Group."
     if ($groups.Count -eq 0) {

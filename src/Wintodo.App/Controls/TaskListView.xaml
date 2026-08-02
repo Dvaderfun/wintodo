@@ -268,7 +268,7 @@
                         Style="{StaticResource TitleTextBlockStyle}"
                         Text="{x:Bind ViewModel.Title, Mode=OneWay}"
                         TextTrimming="CharacterEllipsis"
-                        Visibility="{x:Bind local:TaskListView.InverseBoolToVisibility(ViewModel.IsUserListSelected), Mode=OneWay}" />
+                        Visibility="{x:Bind local:TaskListView.InverseBoolToVisibility(ViewModel.CanEditSelectedList), Mode=OneWay}" />
                     <Button
                         x:Name="UserListTitleButton"
                         Grid.Column="0"
@@ -276,20 +276,29 @@
                         AutomationProperties.AutomationId="Todo.List.TitleButton"
                         Command="{x:Bind ViewModel.BeginRenameListCommand, Mode=OneTime}"
                         Style="{StaticResource SubtleButtonStyle}"
-                        Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsUserListSelected), Mode=OneWay}">
+                        Visibility="{x:Bind local:TaskListView.TitleButtonVisibility(ViewModel.CanEditSelectedList, ViewModel.IsRenamingList), Mode=OneWay}">
                         <TextBlock
                             Foreground="{ThemeResource ListAccentBrush}"
                             Style="{StaticResource TitleTextBlockStyle}"
                             Text="{x:Bind ViewModel.Title, Mode=OneWay}"
                             TextTrimming="CharacterEllipsis" />
                     </Button>
-                    <TextBox
+                    <!--
+                        The editor keeps the title's own type ramp so the name does not
+                        change size or jump when it turns editable.
+                    -->
+                    <local:TitleEditBox
                         x:Name="RenameListBox"
                         Grid.Column="0"
                         MinWidth="240"
+                        Padding="11,5,11,6"
+                        VerticalAlignment="Center"
                         AutomationProperties.AutomationId="Todo.List.RenameBox"
-                        BorderThickness="0"
+                        FontSize="28"
+                        FontWeight="SemiBold"
+                        Foreground="{ThemeResource ListAccentBrush}"
                         KeyDown="OnRenameListBoxKeyDown"
+                        LostFocus="OnRenameListBoxLostFocus"
                         Text="{x:Bind ViewModel.RenameListName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsRenamingList), Mode=OneWay}" />
                     <TextBlock
@@ -374,7 +383,7 @@
                             x:Uid="RenameListMenu"
                             AutomationProperties.AutomationId="Todo.List.Menu.Rename"
                             Command="{x:Bind ViewModel.BeginRenameListCommand, Mode=OneTime}"
-                            IsEnabled="{x:Bind ViewModel.IsUserListSelected, Mode=OneWay}">
+                            IsEnabled="{x:Bind ViewModel.CanEditSelectedList, Mode=OneWay}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE70F;" />
                             </MenuFlyoutItem.Icon>
@@ -578,7 +587,7 @@
                             x:Uid="DeleteListMenu"
                             AutomationProperties.AutomationId="Todo.List.Menu.Delete"
                             Command="{x:Bind ViewModel.RequestDeleteListCommand, Mode=OneTime}"
-                            IsEnabled="{x:Bind ViewModel.CanDeleteSelectedList, Mode=OneWay}">
+                            IsEnabled="{x:Bind ViewModel.CanEditSelectedList, Mode=OneWay}">
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE74D;" />
                             </MenuFlyoutItem.Icon>

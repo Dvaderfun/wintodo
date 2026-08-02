@@ -85,9 +85,6 @@ public sealed partial class ShellPage : Page
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ShellRoot.ActualThemeChanged += OnActualThemeChanged;
 
-        UserListsNavigationItem.AllowDrop = true;
-        UserListsNavigationItem.DragOver += OnNavigationDragOver;
-        UserListsNavigationItem.Drop += OnUngroupedDrop;
         DefaultListNavigationItem.AllowDrop = true;
         DefaultListNavigationItem.DragOver += OnNavigationDragOver;
         DefaultListNavigationItem.Drop += OnListDrop;
@@ -95,8 +92,6 @@ public sealed partial class ShellPage : Page
     }
 
     public ShellViewModel ViewModel { get; }
-
-    public ObservableCollection<NavigationViewItem> UserListNavigationItems { get; } = [];
 
     public IReadOnlyList<ShortcutEntryViewModel> KeyboardShortcuts { get; }
 
@@ -318,17 +313,58 @@ public sealed partial class ShellPage : Page
         ApplyListBackground();
     }
 
+    // NavigationView caps its menu ScrollViewer with a MaxHeight computed from the
+    // pane footer. Showing the inline name box grows the footer and shrinks that cap,
+    // and the cap survives after the box unloads — a stretched element clamped by
+    // MaxHeight centers itself, so the whole menu drifts down by half the difference.
+    private void PinMenuItemsToPaneTop()
+    {
+        if (FindTemplateChild(ShellNavigation, "MenuItemsScrollViewer") is not FrameworkElement menuItems)
+        {
+            return;
+        }
+
+        menuItems.VerticalAlignment = VerticalAlignment.Top;
+        menuItems.ClearValue(FrameworkElement.MaxHeightProperty);
+    }
+
+    private static FrameworkElement? FindTemplateChild(DependencyObject root, string name)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(root);
+        for (int index = 0; index < count; index++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, index);
+            if (child is FrameworkElement element
+                && string.Equals(element.Name, name, StringComparison.Ordinal))
+            {
+                return element;
+            }
+
+            if (FindTemplateChild(child, name) is FrameworkElement match)
+            {
+                return match;
+            }
+        }
+
+        return null;
+    }
+
     private void PopulateUserListNavigationItems()
     {
-        UserListNavigationItems.Clear();
         _navigationItems.Clear();
         ConfigureDefaultListNavigationItem();
+
+        int firstListIndex = ShellNavigation.MenuItems.IndexOf(ListsSeparator) + 1;
+        while (ShellNavigation.MenuItems.Count > firstListIndex)
+        {
+            ShellNavigation.MenuItems.RemoveAt(ShellNavigation.MenuItems.Count - 1);
+        }
 
         foreach (ShellListItemViewModel list in ViewModel.UserLists
                      .Where(item => item.GroupId is null && !item.IsDefault)
                      .OrderBy(item => item.SortOrder))
         {
-            UserListNavigationItems.Add(CreateListNavigationItem(list));
+            ShellNavigation.MenuItems.Add(CreateListNavigationItem(list));
         }
 
         foreach (ShellGroupViewModel group in ViewModel.Groups.OrderBy(item => item.SortOrder))
@@ -352,7 +388,7 @@ public sealed partial class ShellPage : Page
                 groupItem.MenuItems.Add(CreateListNavigationItem(list));
             }
 
-            UserListNavigationItems.Add(groupItem);
+            ShellNavigation.MenuItems.Add(groupItem);
         }
     }
 
@@ -366,9 +402,13 @@ public sealed partial class ShellPage : Page
         }
 
         DefaultListNavigationItem.Visibility = Visibility.Visible;
-        DefaultListNavigationItem.Content = BuildListContent(list);
+        DefaultListNavigationItem.Content = new TextBlock
+        {
+            Text = list.DisplayName,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
         DefaultListNavigationItem.Tag = list.NavigationKey;
-        DefaultListNavigationItem.ContextFlyout = CreateListContextFlyout(list);
         AutomationProperties.SetName(DefaultListNavigationItem, list.DisplayName);
         _navigationItems[list.NavigationKey] = DefaultListNavigationItem;
     }
@@ -431,9 +471,17 @@ public sealed partial class ShellPage : Page
         };
         AutomationProperties.SetAutomationId(rename, $"Todo.Nav.Rename.{list.Uid}");
         flyout.Items.Add(rename);
-        if (list.IsDefault)
+        if (list.GroupId is not null)
         {
-            return flyout;
+            var ungroup = new MenuFlyoutItem
+            {
+                Text = _resources.GetString("List_RemoveFromGroup"),
+                Icon = new FontIcon { Glyph = "" },
+                Command = ViewModel.RemoveListFromGroupCommand,
+                CommandParameter = list,
+            };
+            AutomationProperties.SetAutomationId(ungroup, $"Todo.Nav.Ungroup.{list.Uid}");
+            flyout.Items.Add(ungroup);
         }
 
         var delete = new MenuFlyoutItem
@@ -516,20 +564,6 @@ public sealed partial class ShellPage : Page
         if (value is string listUid)
         {
             await ViewModel.MoveListToGroupAsync(listUid, group.Id);
-        }
-    }
-
-    private async void OnUngroupedDrop(object sender, DragEventArgs args)
-    {
-        if (!args.DataView.Contains(ListDragFormat))
-        {
-            return;
-        }
-
-        object value = await args.DataView.GetDataAsync(ListDragFormat);
-        if (value is string listUid)
-        {
-            await ViewModel.MoveListToGroupAsync(listUid, groupId: null);
         }
     }
 
@@ -1048,6 +1082,11 @@ public sealed partial class ShellPage : Page
                 NewGroupNameBox.Focus(FocusState.Programmatic);
                 NewGroupNameBox.SelectAll();
             });
+        }
+        else if (args.PropertyName is nameof(ShellViewModel.IsCreatingList)
+                 or nameof(ShellViewModel.IsCreatingGroup))
+        {
+            DispatcherQueue.TryEnqueue(PinMenuItemsToPaneTop);
         }
         else if (args.PropertyName == nameof(ShellViewModel.IsDetailPaneOpen))
         {

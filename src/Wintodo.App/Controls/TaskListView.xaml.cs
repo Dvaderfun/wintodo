@@ -45,6 +45,11 @@ public sealed partial class TaskListView : UserControl
         return value ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    public static Visibility TitleButtonVisibility(bool canEdit, bool isRenaming)
+    {
+        return canEdit && !isRenaming ? Visibility.Visible : Visibility.Collapsed;
+    }
+
     public static Visibility InverseBoolToVisibility(bool value)
     {
         return value ? Visibility.Collapsed : Visibility.Visible;
@@ -349,6 +354,24 @@ public sealed partial class TaskListView : UserControl
         }
     }
 
+    // Clicking anywhere outside leaves the editor, the same way the inline task title
+    // editor behaves. A blank name has nothing to commit, so it reverts instead.
+    private void OnRenameListBoxLostFocus(object sender, RoutedEventArgs args)
+    {
+        if (!ViewModel.IsRenamingList)
+        {
+            return;
+        }
+
+        if (ViewModel.CommitRenameListCommand.CanExecute(null))
+        {
+            ViewModel.CommitRenameListCommand.Execute(null);
+            return;
+        }
+
+        ViewModel.CancelRenameListCommand.Execute(null);
+    }
+
     private void OnRenameListBoxKeyDown(object sender, KeyRoutedEventArgs args)
     {
         if (args.Key == VirtualKey.Enter
@@ -448,7 +471,7 @@ public sealed partial class TaskListView : UserControl
             ViewModel.BeginEditSelectedTaskCommand.Execute(null);
             args.Handled = true;
         }
-        else if (ViewModel.IsUserListSelected)
+        else if (ViewModel.CanEditSelectedList)
         {
             ViewModel.BeginRenameListCommand.Execute(null);
             args.Handled = true;

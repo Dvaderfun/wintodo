@@ -51,6 +51,18 @@ public sealed partial class TaskRow : UserControl
             : Visibility.Visible;
     }
 
+    public static Visibility SecondLineVisibility(string metadata, bool isCompleted)
+    {
+        return isCompleted ? Visibility.Collapsed : HasText(metadata);
+    }
+
+    public static Visibility CompletionLineVisibility(
+        string completionDateText,
+        bool isCompleted)
+    {
+        return isCompleted ? HasText(completionDateText) : Visibility.Collapsed;
+    }
+
     public static Visibility BoolToVisibility(bool value)
     {
         return value ? Visibility.Visible : Visibility.Collapsed;

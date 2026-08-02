@@ -198,7 +198,6 @@ function Get-UserListItem {
         } |
         Select-Object -First 1
     if (-not $item) {
-        Invoke-AppElement "Todo.Nav.UserLists"
         Start-Sleep -Milliseconds 300
         $item = Get-SearchMatches $Name |
             Where-Object {
