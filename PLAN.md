@@ -46,7 +46,7 @@ After parity, we iterate beyond To Do.
 
 | Area | Must have in v1 |
 |---|---|
-| Lists | Create, rename, delete, reorder, per-list theme colour, list groups, one undeletable default list ("Tasks") per account |
+| Lists | Create, rename, delete, reorder, per-list theme colour, list groups, one fixed default list ("Tasks") per account |
 | Smart lists | My Day, Important, Planned, All, Completed |
 | Tasks | Create, complete, uncomplete, delete, reorder, move to another list |
 | Task fields | Title, steps (subtasks), note, due date, reminder, repeat, importance (star), "Added to My Day" |
@@ -537,9 +537,9 @@ in place.
   `AppWindow.Resize` takes **physical pixels**, so scale by
   `GetDpiForWindow(hwnd) / 96.0`. There is no `SizeToContent` in WinUI.
 - `ShellPage` 3-column grid, `NavigationView` (`PaneDisplayMode="Left"`,
-  `OpenPaneLength="300"`), smart lists as `MenuItems`, user lists via
-  `MenuItemsSource`, "New list" in `PaneFooter`, Settings via
-  `IsSettingsVisible`.
+  `OpenPaneLength="300"`), smart lists, the default list, and every user list as
+  flat `MenuItems` separated by a `NavigationViewItemSeparator` — no "Lists"
+  parent node — "New list" in `PaneFooter`, Settings via `IsSettingsVisible`.
 - `Themes/Colors.xaml` with `Light`, `Dark`, **and** `HighContrast` dictionaries
   — never `x:Key="Default"`.
 - Window size/position and last-selected list persisted to the settings table.
@@ -573,8 +573,8 @@ IDs; then write XAML from those samples.
   menu), delete (`ContentDialog` confirm), reorder (drag within the pane),
   per-list theme colour picker, list groups (create, drag lists into/out of).
 - A default list ("Tasks", `lists.is_default`) created on first run: pinned
-  below the smart lists and outside "Lists", renameable, never deletable, and
-  never reorderable. It is the composer target on every smart list, because
+  directly below the smart lists and above the divider, never renameable,
+  deletable, groupable, or reorderable. It is the composer target on every smart list, because
   `tasks.list_id` is `NOT NULL` and a listless task has no CalDAV collection to
   live in. Picking another list in the composer applies to that one task.
 - `TaskListView`: header (title + count + list menu), `AddTaskComposer`,

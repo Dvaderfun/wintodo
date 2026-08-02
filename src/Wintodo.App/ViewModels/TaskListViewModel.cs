@@ -87,7 +87,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial bool IsUserListSelected { get; set; }
 
     [ObservableProperty]
-    public partial bool CanDeleteSelectedList { get; set; }
+    public partial bool CanEditSelectedList { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RequestExportListCommand))]
@@ -254,7 +254,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         _selectedList = list;
         IsUserListSelected = true;
-        CanDeleteSelectedList = !list.IsDefault;
+        CanEditSelectedList = !list.IsDefault;
         IsTaskListVisible = true;
         IsComposerVisible = true;
         AreListCommandsVisible = true;
@@ -586,7 +586,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     [RelayCommand]
     private void BeginRenameList()
     {
-        if (_selectedList is null)
+        if (_selectedList is null or { IsDefault: true })
         {
             return;
         }
@@ -597,7 +597,8 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     private bool CanCommitRenameList()
     {
-        return _selectedList is not null && !string.IsNullOrWhiteSpace(RenameListName);
+        return _selectedList is { IsDefault: false }
+            && !string.IsNullOrWhiteSpace(RenameListName);
     }
 
     [RelayCommand(CanExecute = nameof(CanCommitRenameList))]
@@ -629,7 +630,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         if (!value)
         {
-            CanDeleteSelectedList = false;
+            CanEditSelectedList = false;
         }
     }
 

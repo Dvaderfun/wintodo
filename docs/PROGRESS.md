@@ -744,3 +744,74 @@ list named "Tasks".
 - The visible taskbar badge and reboot reminder-persistence checks, the M8
   Narrator listening check, and the M9 Native AOT startup/working-set gate
   remain open.
+
+## Post-M8 — Flat navigation pane                      2026-08-02
+
+**Gate:** FOCUSED PASS — Debug x64 built with zero warnings and deployed. On a
+wiped database the pane renders My Day / Important / Planned / All / Completed,
+then the pinned "Tasks" row, then the divider, then each user list as its own
+top-level row. Creating "Groceries" placed it at the top level, and the My Day
+composer still targeted "Tasks" with that second list present. Milestone gate
+scripts were not re-run.
+
+**Shipped**
+- The "Lists" parent `NavigationViewItem` is gone. `PopulateUserListNavigationItems`
+  now appends list and group items straight into `ShellNavigation.MenuItems`
+  after a named `ListsSeparator`, which is what `docs/DESIGN.md` §5 always
+  described.
+- The default list renders with the `Home` glyph and no colour dot, matching the
+  way Microsoft To Do presents its own "Tasks" entry.
+- Dragging a list out of a group used the "Lists" header as its drop target.
+  That path is replaced by dropping the list onto any ungrouped list — which
+  already adopts the target's group — plus a "Remove from group" context item on
+  grouped lists.
+- The five gate scripts that invoked `Todo.Nav.UserLists` to expand the pane no
+  longer do; every list is visible without expanding.
+- The default list is no longer renameable. `CanDeleteSelectedList` became
+  `CanEditSelectedList` and now gates the header title button, the rename and
+  delete menu items, and F2; the pinned pane entry has no context menu at all.
+  `BeginRenameList`, `CanCommitRenameList`, and `SelectListAndBeginRenameAsync`
+  refuse it as well. `ITaskStore.RenameListAsync` deliberately still allows it,
+  because a CalDAV server may rename the collection remotely.
+- The detail-pane completion toggle and the step-row toggle no longer paint the
+  default accent-filled `ToggleButton` box when checked. Both now carry the same
+  transparent `ToggleButtonBackgroundChecked*` overrides the importance toggle
+  already used, leaving just the filled circle and check.
+- The list-title editor matches the title it replaces: same 28 px SemiBold ramp
+  and accent foreground, so the name no longer shrinks to body text mid-rename.
+  The title button now hides while `IsRenamingList` is set — both shared column 0
+  and drew on top of each other before. `TitleEditBox` is a `TextBox` subclass
+  that neutralises the built-in clear button in `OnApplyTemplate`; the control
+  exposes no property for it, and at title size the glyph landed mid-header.
+  Clicking outside the editor now leaves it — committing the new name, or
+  reverting when the field was cleared — matching the inline task title editor.
+  Enter and Escape are unchanged.
+- The Important pane glyph is the outlined `FavoriteStar` (`E734`). The filled
+  star stays reserved for a task row whose importance is set.
+- "New group" uses a drawn list-card-with-plus mark instead of `NewFolder`;
+  Segoe Fluent has no add-group glyph, and the folder and circled-plus
+  alternatives both read wrong.
+- Creating a list or group no longer pushes the whole pane down. NavigationView
+  caps its menu `ScrollViewer` with a `MaxHeight` derived from the pane footer;
+  showing the inline name box shrinks that cap, and the cap outlives the box. A
+  stretched element clamped by `MaxHeight` centers in its slot, so the menu
+  drifted down by half the difference. `PinMenuItemsToPaneTop` clears the cap and
+  pins the ScrollViewer to the top once the inline editor closes.
+- Task titles are vertically centered again. The `Active` and `Completed` visual
+  states set `MetadataText.Visibility` and `CompletionText.Visibility`
+  directly, and a visual-state setter outranks the `x:Bind` local value — so an
+  active task with no metadata still reserved an empty 24 px caption line and
+  pushed its title above center. Both setters are gone; the two captions now
+  bind to `SecondLineVisibility` and `CompletionLineVisibility`, which check the
+  completion state and the string together.
+
+**Deviations from PLAN.md**
+- None. PLAN.md and `docs/DESIGN.md` are updated to describe the flat pane and
+  the pinned default list.
+
+**Known issues carried forward**
+- Per-list task counts in the pane are still not implemented.
+- Milestone gates remain unverified against the current tree.
+- The visible taskbar badge and reboot reminder-persistence checks, the M8
+  Narrator listening check, and the M9 Native AOT startup/working-set gate
+  remain open.

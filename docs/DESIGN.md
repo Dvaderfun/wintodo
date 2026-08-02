@@ -180,8 +180,9 @@ never on a second line:
   `CaptionTextBlockStyle` label ("Today", "Daily", the reminder time). Each
   flyout carries a `Clear` item.
 - The first chip is the **target list picker**, shown only on smart lists. It
-  names the list the new task will be filed under and lets the user change it;
-  the choice sticks for the session. On a user list the picker is hidden — the
+  names the list the new task will be filed under and lets the user change it.
+  The default is always the default list ("Tasks"); a different choice applies
+  to that one task and then resets. On a user list the picker is hidden — the
   target is that list.
 - A 1 px `DividerStrokeColorDefaultBrush` rule separates the chips from `Add`.
 - The `Add` button is `AccentButtonStyle`, right-aligned, enabled only when the
@@ -325,6 +326,7 @@ Pane background transparent (Mica shows through). Item corner radius
 │  📅 Planned                5  │
 │  ≡  All                   42  │
 │  ✓  Completed             18  │
+│  ⌂  Tasks                 12  │   ← default list, pinned, never in a group
 │  ───────────────────────────  │   1px DividerStrokeColorDefaultBrush, 8px margin
 │  ▾ Work                       │   ← list group, collapsible
 │    ▪ Sprint 12             4  │
@@ -343,8 +345,10 @@ Pane background transparent (Mica shows through). Item corner radius
 | Item content | 16 px `FontIcon` + 12 px gap + `BodyTextBlockStyle` label + `*` + count in `CaptionTextBlockStyle` / `TextFillColorSecondaryBrush` |
 | User list icon | 16 px filled circle (`PathIcon` or a `Rectangle` with `RadiusX/Y`) in that list's theme colour — **not** a generic list glyph |
 | Count | Incomplete tasks only. Hidden when 0. Never shown for Completed |
-| Groups | `NavigationViewItem` with children, expander chevron, drag lists in/out |
-| Reorder | Drag within the user-lists section only; smart lists are fixed |
+| Default list | Pinned directly below Completed, above the divider, with the `Home` glyph instead of a colour dot. Never renameable, deletable, draggable, groupable, or reorderable — it has no pane context menu, and its title renders as static text rather than the rename button. Colour and background stay editable |
+| User lists | Top-level `MenuItems` below the divider — never nested under a "Lists" parent |
+| Groups | `NavigationViewItem` with children, expander chevron, drag lists in/out. Drop a grouped list onto an ungrouped one, or use its "Remove from group" context item, to take it out |
+| Reorder | Drag within the user-lists section only; smart lists and the default list are fixed |
 | Pane footer | "New list" `Button` with `Add` glyph, full width, `Subtle` style, height 40; plus a 32 × 32 "New group" icon button |
 
 Smart-list glyphs (verify each code against the Segoe Fluent Icons reference
@@ -353,10 +357,14 @@ before use — names are authoritative, codes are the starting point):
 | List | Glyph name | Code |
 |---|---|---|
 | My Day | Brightness | `E706` |
-| Important | FavoriteStarFill | `E735` |
+| Important | FavoriteStar | `E734` |
 | Planned | Calendar | `E787` |
 | All | List | `E8FD` |
 | Completed | Completed | `E930` |
+| Tasks (default list) | Home | `E80F` |
+
+The pane navigation glyphs are outlined, not filled — the filled star (`E735`)
+stays reserved for a task row whose importance is actually set.
 
 ---
 

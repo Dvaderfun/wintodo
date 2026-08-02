@@ -72,7 +72,6 @@ function Invoke-List {
         } |
         Select-Object -First 1
     if (-not $item) {
-        winapp ui invoke "Todo.Nav.UserLists" -a $AppPid
         Start-Sleep -Milliseconds 300
         $item = Get-SearchMatches $Name |
             Where-Object {

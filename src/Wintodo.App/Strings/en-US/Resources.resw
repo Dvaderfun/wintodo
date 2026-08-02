@@ -39,9 +39,6 @@
   <data name="NavImportant.Content" xml:space="preserve">
     <value>Important</value>
   </data>
-  <data name="NavLists.Content" xml:space="preserve">
-    <value>Lists</value>
-  </data>
   <data name="NavMyDay.Content" xml:space="preserve">
     <value>My Day</value>
   </data>
@@ -128,6 +125,9 @@
   </data>
   <data name="List_Delete" xml:space="preserve">
     <value>Delete list</value>
+  </data>
+  <data name="List_RemoveFromGroup" xml:space="preserve">
+    <value>Remove from group</value>
   </data>
   <data name="ThemeBlue.Text" xml:space="preserve">
     <value>Blue</value>

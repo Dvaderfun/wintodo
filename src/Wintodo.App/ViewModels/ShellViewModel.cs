@@ -378,6 +378,12 @@ public sealed partial class ShellViewModel : ObservableObject
         NavigationStructureChanged?.Invoke();
     }
 
+    [RelayCommand]
+    private Task RemoveListFromGroupAsync(ShellListItemViewModel list)
+    {
+        return MoveListToGroupAsync(list.Uid, groupId: null);
+    }
+
     internal async Task ReorderListAsync(
         string listUid,
         string targetUid,
@@ -492,6 +498,11 @@ public sealed partial class ShellViewModel : ObservableObject
     [RelayCommand]
     private async Task SelectListAndBeginRenameAsync(ShellListItemViewModel list)
     {
+        if (list.IsDefault)
+        {
+            return;
+        }
+
         await Task.Yield();
         await SelectAsync(
             list.NavigationKey,

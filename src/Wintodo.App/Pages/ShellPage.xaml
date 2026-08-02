@@ -161,7 +161,7 @@
                     AutomationProperties.AutomationId="Todo.Nav.Important"
                     Tag="smart:important">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE735;" />
+                        <FontIcon Glyph="&#xE734;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem
@@ -199,17 +199,9 @@
                         <FontIcon Glyph="&#xE80F;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItemSeparator />
-                <NavigationViewItem
-                    x:Name="UserListsNavigationItem"
-                    x:Uid="NavLists"
-                    AutomationProperties.AutomationId="Todo.Nav.UserLists"
-                    MenuItemsSource="{x:Bind UserListNavigationItems, Mode=OneWay}"
-                    SelectsOnInvoked="False">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8FD;" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
+                <NavigationViewItemSeparator
+                    x:Name="ListsSeparator"
+                    AutomationProperties.AutomationId="Todo.Nav.ListsSeparator" />
             </NavigationView.MenuItems>
 
             <NavigationView.FooterMenuItems>
@@ -226,6 +218,7 @@
 
             <NavigationView.PaneFooter>
                 <Grid
+                    x:Name="PaneFooterGrid"
                     Margin="4,0,4,4"
                     ColumnSpacing="8"
                     RowSpacing="4">
@@ -284,7 +277,42 @@
                         AutomationProperties.AutomationId="Todo.Nav.NewGroupButton"
                         Command="{x:Bind ViewModel.BeginCreateGroupCommand, Mode=OneTime}"
                         Style="{StaticResource SubtleButtonStyle}">
-                        <SymbolIcon Symbol="NewFolder" />
+                        <!--
+                            Segoe Fluent has no "add group" glyph: NewFolder reads as a
+                            folder and AddTo as a circled plus. This is the same mark
+                            Microsoft To Do uses — a list card with a plus on its corner.
+                        -->
+                        <Viewbox Width="16" Height="16">
+                            <Canvas Width="16" Height="16">
+                                <Rectangle
+                                    Canvas.Left="0.6"
+                                    Canvas.Top="5"
+                                    Width="11"
+                                    Height="10"
+                                    RadiusX="2"
+                                    RadiusY="2"
+                                    Stroke="{ThemeResource TextFillColorPrimaryBrush}"
+                                    StrokeThickness="1.2" />
+                                <Rectangle
+                                    Canvas.Left="3.6"
+                                    Canvas.Top="8"
+                                    Width="1.2"
+                                    Height="4"
+                                    Fill="{ThemeResource TextFillColorPrimaryBrush}" />
+                                <Rectangle
+                                    Canvas.Left="9.8"
+                                    Canvas.Top="2.4"
+                                    Width="6"
+                                    Height="1.2"
+                                    Fill="{ThemeResource TextFillColorPrimaryBrush}" />
+                                <Rectangle
+                                    Canvas.Left="12.2"
+                                    Canvas.Top="0"
+                                    Width="1.2"
+                                    Height="6"
+                                    Fill="{ThemeResource TextFillColorPrimaryBrush}" />
+                            </Canvas>
+                        </Viewbox>
                     </Button>
                 </Grid>
             </NavigationView.PaneFooter>
