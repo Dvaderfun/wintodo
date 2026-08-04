@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Wintodo.Core.Models;
+using Wintodo.Core.Queries;
 using Wintodo.Core.Services;
 using Wintodo.Data;
 
@@ -8,14 +9,14 @@ namespace Wintodo.Data.Tests;
 public sealed class MigrationAndListTests
 {
     [Fact]
-    public async Task Initialize_Twice_CreatesVersionOneSchemaAndIndexes()
+    public async Task Initialize_Twice_CreatesCurrentSchemaAndIndexes()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
 
         await fixture.Store.InitializeAsync();
         StoreStats stats = await fixture.Store.GetStatsAsync();
 
-        Assert.Equal(1, stats.SchemaVersion);
+        Assert.Equal(2, stats.SchemaVersion);
         Assert.Equal(0, stats.ListCount);
         Assert.Equal(0, stats.TaskCount);
         Assert.True(stats.DatabaseSizeBytes > 0);
@@ -55,7 +56,7 @@ public sealed class MigrationAndListTests
         await reopened.InitializeAsync();
 
         Assert.Equal(list.Uid, Assert.Single(await reopened.GetListsAsync()).Uid);
-        Assert.Equal(1, (await reopened.GetStatsAsync()).SchemaVersion);
+        Assert.Equal(2, (await reopened.GetStatsAsync()).SchemaVersion);
     }
 
     [Fact]
@@ -70,6 +71,7 @@ public sealed class MigrationAndListTests
         await fixture.Store.RenameGroupAsync(group.Id, "Projects");
         await fixture.Store.RenameListAsync(list.Id, "Priority");
         await fixture.Store.SetListColorAsync(list.Id, ListColor.Green);
+        await fixture.Store.SetListIconEmojiAsync(list.Id, "\U0001F680");
         await fixture.Store.SetListBackgroundThemeAsync(list.Id, "Forest");
         await fixture.Store.SetListSortAsync(list.Id, SortMode.DueDate, descending: true);
         await fixture.Store.SetListShowCompletedAsync(list.Id, showCompleted: false);
@@ -82,6 +84,7 @@ public sealed class MigrationAndListTests
         Assert.Equal("Projects", storedGroup.Name);
         Assert.Equal("Priority", storedList.DisplayName);
         Assert.Equal(ListColor.Green, storedList.Color);
+        Assert.Equal("\U0001F680", storedList.IconEmoji);
         Assert.Equal("Forest", storedList.BackgroundTheme);
         Assert.Equal(SortMode.DueDate, storedList.SortMode);
         Assert.True(storedList.SortDescending);
@@ -94,6 +97,169 @@ public sealed class MigrationAndListTests
         await fixture.Store.DeleteGroupAsync(group.Id);
         Assert.Empty(await fixture.Store.GetGroupsAsync());
         Assert.Null(Assert.Single(await fixture.Store.GetListsAsync()).GroupId);
+    }
+
+    [Fact]
+    public async Task IncompleteTaskCounts_ExcludeCompletedDeletedAndChildTasks()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TodoList firstList = await fixture.Store.CreateListAsync("First");
+        TodoList secondList = await fixture.Store.CreateListAsync("Second");
+        TodoTask firstActive = await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = firstList.Id,
+            Summary = "First active",
+        });
+        await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = firstList.Id,
+            Summary = "Second active",
+        });
+        await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = firstList.Id,
+            ParentUid = firstActive.Uid,
+            Summary = "Child step",
+        });
+        TodoTask completed = await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = firstList.Id,
+            Summary = "Completed",
+        });
+        await fixture.Store.CompleteTaskAsync(completed.Uid);
+        TodoTask deleted = await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = firstList.Id,
+            Summary = "Deleted",
+        });
+        await fixture.Store.DeleteTaskAsync(deleted.Uid);
+        await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = secondList.Id,
+            Summary = "Other list",
+        });
+
+        IReadOnlyDictionary<long, int> counts =
+            await fixture.Store.GetIncompleteTaskCountsAsync();
+        IReadOnlyList<TodoList> lists = await fixture.Store.GetListsAsync();
+
+        Assert.Equal(2, counts[firstList.Id]);
+        Assert.Equal(1, counts[secondList.Id]);
+        Assert.Equal(2, Assert.Single(lists, list => list.Id == firstList.Id).IncompleteTaskCount);
+        Assert.Equal(1, Assert.Single(lists, list => list.Id == secondList.Id).IncompleteTaskCount);
+    }
+
+    [Fact]
+    public async Task SmartListTaskCounts_ApplyEachPredicateAndExcludeChildrenAndDeletedTasks()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TodoList list = await fixture.Store.CreateListAsync("Inbox");
+        TodoTask matching = await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = list.Id,
+            Summary = "Matches every active smart list",
+            Priority = (int)TaskPriority.High,
+            Due = fixture.Clock.UtcNow.AddDays(1),
+            MyDayDate = fixture.Clock.Today,
+        });
+        await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = list.Id,
+            Summary = "All only",
+        });
+        await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = list.Id,
+            ParentUid = matching.Uid,
+            Summary = "Excluded child",
+            Priority = (int)TaskPriority.High,
+            Due = fixture.Clock.UtcNow.AddDays(1),
+            MyDayDate = fixture.Clock.Today,
+        });
+        TodoTask completed = await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = list.Id,
+            Summary = "Completed",
+            Priority = (int)TaskPriority.High,
+            Due = fixture.Clock.UtcNow.AddDays(1),
+            MyDayDate = fixture.Clock.Today,
+        });
+        await fixture.Store.CompleteTaskAsync(completed.Uid);
+        TodoTask deleted = await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = list.Id,
+            Summary = "Deleted",
+            Priority = (int)TaskPriority.High,
+            Due = fixture.Clock.UtcNow.AddDays(1),
+            MyDayDate = fixture.Clock.Today,
+        });
+        await fixture.Store.DeleteTaskAsync(deleted.Uid);
+
+        IReadOnlyDictionary<ListQueryKind, int> counts =
+            await fixture.Store.GetSmartListTaskCountsAsync();
+
+        Assert.Equal(1, counts[ListQueryKind.MyDay]);
+        Assert.Equal(1, counts[ListQueryKind.Important]);
+        Assert.Equal(1, counts[ListQueryKind.Planned]);
+        Assert.Equal(2, counts[ListQueryKind.All]);
+        Assert.Equal(1, counts[ListQueryKind.Completed]);
+    }
+
+    [Fact]
+    public async Task Initialize_VersionOneDatabase_AddsListIconAndCreatesBackup()
+    {
+        string directory = Path.Combine(
+            Path.GetTempPath(),
+            "Wintodo.Tests",
+            Guid.NewGuid().ToString("N"));
+        string databasePath = Path.Combine(directory, "wintodo.db");
+        Directory.CreateDirectory(directory);
+
+        try
+        {
+            await using (var connection = new SqliteConnection($"Data Source={databasePath}"))
+            {
+                await connection.OpenAsync();
+                await using Stream stream = typeof(SqliteTaskStore).Assembly.GetManifestResourceStream(
+                        "Wintodo.Data.Migrations.001_init.sql")
+                    ?? throw new InvalidOperationException("Version one migration is missing.");
+                using var reader = new StreamReader(stream);
+                await using SqliteCommand migration = connection.CreateCommand();
+                migration.CommandText = await reader.ReadToEndAsync();
+                await migration.ExecuteNonQueryAsync();
+
+                await using SqliteCommand seed = connection.CreateCommand();
+                seed.CommandText = """
+                    INSERT INTO lists(
+                        uid, display_name, color, background_theme, group_id,
+                        sort_order, sort_mode, sort_descending, show_completed,
+                        completed_expanded, is_default, is_deleted, created_utc, modified_utc)
+                    VALUES(
+                        'legacy-list', 'Legacy', 0, NULL, NULL,
+                        1024, 0, 0, 1, 0, 0, 0,
+                        '2026-01-05T12:00:00.0000000Z', '2026-01-05T12:00:00.0000000Z');
+                    """;
+                await seed.ExecuteNonQueryAsync();
+            }
+
+            await using (var store = new SqliteTaskStore(databasePath, new FakeClock()))
+            {
+                await store.InitializeAsync();
+                StoreStats stats = await store.GetStatsAsync();
+                TodoList list = Assert.Single(await store.GetListsAsync());
+
+                Assert.Equal(2, stats.SchemaVersion);
+                Assert.Equal("Legacy", list.DisplayName);
+                Assert.Null(list.IconEmoji);
+            }
+
+            Assert.True(File.Exists(databasePath + ".bak-2"));
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            Directory.Delete(directory, recursive: true);
+        }
     }
 
     [Fact]

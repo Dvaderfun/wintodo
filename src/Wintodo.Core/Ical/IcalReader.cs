@@ -188,6 +188,13 @@ public sealed class IcalReader
                 }
 
                 break;
+            case "X-WINTODO-LIST-ICON":
+                if (ListEmoji.TryNormalize(UnescapeText(property.Value), out string? iconEmoji))
+                {
+                    calendar.IconEmoji = iconEmoji;
+                }
+
+                break;
         }
     }
 

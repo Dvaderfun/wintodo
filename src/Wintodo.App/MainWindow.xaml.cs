@@ -74,6 +74,7 @@ public sealed partial class MainWindow : Window
             _syncService);
         _shellPage.SearchFocusRequested += TitleSearch.FocusSearch;
         _shellPage.SearchClearRequested += TitleSearch.TryClear;
+        _shellPage.ThemeChanged += OnShellThemeChanged;
         RootFrame.Content = _shellPage;
         Task<WindowPlacementState?> placementTask =
             _stateService.LoadWindowPlacementAsync(cancellationToken);
@@ -154,6 +155,13 @@ public sealed partial class MainWindow : Window
         TitleSearch.UpdateWindowWidth(args.NewSize.Width);
     }
 
+    // WindowRoot is the window content root, so this also drives the title bar,
+    // its search box, and the colors the framework picks for the caption buttons.
+    private void OnShellThemeChanged(ElementTheme theme)
+    {
+        WindowRoot.RequestedTheme = theme;
+    }
+
     internal Task HandleJumpListArgumentAsync(
         string argument,
         CancellationToken cancellationToken = default)
@@ -210,6 +218,7 @@ public sealed partial class MainWindow : Window
         {
             _shellPage.SearchFocusRequested -= TitleSearch.FocusSearch;
             _shellPage.SearchClearRequested -= TitleSearch.TryClear;
+            _shellPage.ThemeChanged -= OnShellThemeChanged;
             _shellPage.StopMidnightRefresh();
         }
 

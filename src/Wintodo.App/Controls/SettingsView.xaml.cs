@@ -1,8 +1,10 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.Windows.ApplicationModel.Resources;
 using System.Globalization;
 using Windows.ApplicationModel;
+using Windows.System;
 using Wintodo.ViewModels;
 
 namespace Wintodo.Controls;
@@ -45,5 +47,22 @@ public sealed partial class SettingsView : UserControl
     public static Visibility InvertBoolToVisibility(bool value)
     {
         return value ? Visibility.Collapsed : Visibility.Visible;
+    }
+
+    // Enter anywhere in the credential form submits it, the way every other
+    // sign-in surface in Windows behaves.
+    private void OnCredentialKeyDown(object sender, KeyRoutedEventArgs args)
+    {
+        if (args.Key != VirtualKey.Enter)
+        {
+            return;
+        }
+
+        if (ViewModel?.ConnectCalDavCommand.CanExecute(null) == true)
+        {
+            ViewModel.ConnectCalDavCommand.Execute(null);
+        }
+
+        args.Handled = true;
     }
 }

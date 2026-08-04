@@ -114,6 +114,36 @@
   <data name="RenameListMenu.Text" xml:space="preserve">
     <value>Rename list</value>
   </data>
+  <data name="ChangeIconMenu.Text" xml:space="preserve">
+    <value>Change icon</value>
+  </data>
+  <data name="CustomListIconMenu.Text" xml:space="preserve">
+    <value>Custom emoji</value>
+  </data>
+  <data name="RemoveListIconMenu.Text" xml:space="preserve">
+    <value>Remove icon</value>
+  </data>
+  <data name="ListIconDialog.Title" xml:space="preserve">
+    <value>Choose a list icon</value>
+  </data>
+  <data name="ListIconDialog.PrimaryButtonText" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="ListIconDialog.CloseButtonText" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ListIconInput.Header" xml:space="preserve">
+    <value>Emoji</value>
+  </data>
+  <data name="ListIconInput.PlaceholderText" xml:space="preserve">
+    <value>😀</value>
+  </data>
+  <data name="ListIconInput.AutomationProperties.Name" xml:space="preserve">
+    <value>List icon emoji</value>
+  </data>
+  <data name="ListIcon_Invalid" xml:space="preserve">
+    <value>Enter a single emoji.</value>
+  </data>
   <data name="ChangeThemeMenu.Text" xml:space="preserve">
     <value>Change theme</value>
   </data>
@@ -843,8 +873,13 @@
   <data name="SettingsBackgroundsCard.Header" xml:space="preserve"><value>List backgrounds</value></data>
   <data name="SettingsBackgroundsCard.Description" xml:space="preserve"><value>Show the selected image behind each list.</value></data>
   <data name="SettingsBackgroundsToggle.AutomationProperties.Name" xml:space="preserve"><value>Show list backgrounds</value></data>
-  <data name="SettingsDataCard.Header" xml:space="preserve"><value>Import and export</value></data>
-  <data name="SettingsDataCard.Description" xml:space="preserve"><value>Move task data with iCalendar files.</value></data>
+  <data name="SettingsFixedCategoryIconTintCard.Header" xml:space="preserve"><value>Color fixed category icons</value></data>
+  <data name="SettingsFixedCategoryIconTintCard.Description" xml:space="preserve"><value>Tint pinned category icons to match their selected backgrounds.</value></data>
+  <data name="SettingsFixedCategoryIconTintToggle.AutomationProperties.Name" xml:space="preserve"><value>Color fixed category icons</value></data>
+  <data name="SettingsImportCard.Header" xml:space="preserve"><value>Import</value></data>
+  <data name="SettingsImportCard.Description" xml:space="preserve"><value>Add tasks from iCalendar (.ics) files.</value></data>
+  <data name="SettingsExportCard.Header" xml:space="preserve"><value>Export</value></data>
+  <data name="SettingsExportCard.Description" xml:space="preserve"><value>Save every list as iCalendar (.ics) files.</value></data>
   <data name="SettingsAboutHeader.Text" xml:space="preserve"><value>About</value></data>
   <data name="SettingsVersionCard.Header" xml:space="preserve"><value>Wintodo</value></data>
   <data name="Settings_VersionFormat" xml:space="preserve"><value>Version {0}.{1}.{2}.{3}</value></data>
@@ -916,6 +951,7 @@
   <data name="SettingsSyncDisconnectLabel.Text" xml:space="preserve"><value>Disconnect</value></data>
   <data name="SettingsSyncListsCard.Header" xml:space="preserve"><value>Synced lists</value></data>
   <data name="SettingsSyncListsCard.Description" xml:space="preserve"><value>Choose which lists synchronize with this account.</value></data>
+  <data name="SettingsSyncErrorBar.Title" xml:space="preserve"><value>Sync problem</value></data>
   <data name="Sync_StatusNotConnected" xml:space="preserve"><value>Not connected</value></data>
   <data name="Sync_StatusSyncing" xml:space="preserve"><value>Syncing</value></data>
   <data name="Sync_StatusUpToDate" xml:space="preserve"><value>Up to date</value></data>
@@ -928,4 +964,45 @@
   <data name="SyncConflictDialog.CloseButtonText" xml:space="preserve"><value>Keep both</value></data>
   <data name="Sync_ConflictMessage" xml:space="preserve"><value>“{0}” in “{1}” changed both here and on the server.</value></data>
   <data name="Sync_ConflictDeletedMessage" xml:space="preserve"><value>“{0}” in “{1}” changed here but was deleted on the server.</value></data>
+  <data name="ListIconPickerButton.AutomationProperties.Name" xml:space="preserve"><value>Choose list icon</value></data>
+  <data name="ListIconPickerButton.ToolTipService.ToolTip" xml:space="preserve"><value>Choose list icon</value></data>
+  <data name="ListIconPickerClear.Content" xml:space="preserve"><value>Clear icon</value></data>
+  <data name="List_AccessibleNameWithCount" xml:space="preserve"><value>{0}, {1} incomplete tasks</value></data>
+  <data name="FixedCategory_AccessibleNameWithCount" xml:space="preserve"><value>{0}, {1} tasks</value></data>
+  <data name="ListIconChoice_Train" xml:space="preserve"><value>Train</value></data>
+  <data name="ListIconChoice_Office" xml:space="preserve"><value>Office</value></data>
+  <data name="ListIconChoice_Hospital" xml:space="preserve"><value>Hospital</value></data>
+  <data name="ListIconChoice_Tools" xml:space="preserve"><value>Tools</value></data>
+  <data name="ListIconChoice_Computer" xml:space="preserve"><value>Computer</value></data>
+  <data name="ListIconChoice_Briefcase" xml:space="preserve"><value>Briefcase</value></data>
+  <data name="ListIconChoice_Folder" xml:space="preserve"><value>Folder</value></data>
+  <data name="ListIconChoice_Phone" xml:space="preserve"><value>Phone</value></data>
+  <data name="ListIconChoice_Lock" xml:space="preserve"><value>Lock</value></data>
+  <data name="ListIconChoice_Popcorn" xml:space="preserve"><value>Popcorn</value></data>
+  <data name="ListIconChoice_Coffee" xml:space="preserve"><value>Coffee</value></data>
+  <data name="ListIconChoice_Wine" xml:space="preserve"><value>Wine</value></data>
+  <data name="ListIconChoice_Pizza" xml:space="preserve"><value>Pizza</value></data>
+  <data name="ListIconChoice_Package" xml:space="preserve"><value>Package</value></data>
+  <data name="ListIconChoice_Banana" xml:space="preserve"><value>Banana</value></data>
+  <data name="ListIconChoice_Books" xml:space="preserve"><value>Books</value></data>
+  <data name="ListIconChoice_Camera" xml:space="preserve"><value>Camera</value></data>
+  <data name="ListIconChoice_Balloon" xml:space="preserve"><value>Balloon</value></data>
+  <data name="ListIconChoice_LightBulb" xml:space="preserve"><value>Light bulb</value></data>
+  <data name="ListIconChoice_ShoppingCart" xml:space="preserve"><value>Shopping cart</value></data>
+  <data name="ListIconChoice_Backpack" xml:space="preserve"><value>Backpack</value></data>
+  <data name="ListIconChoice_Camping" xml:space="preserve"><value>Camping</value></data>
+  <data name="ListIconChoice_Fire" xml:space="preserve"><value>Fire</value></data>
+  <data name="ListIconChoice_Sun" xml:space="preserve"><value>Sun</value></data>
+  <data name="ListIconChoice_Celebration" xml:space="preserve"><value>Celebration</value></data>
+  <data name="ListIconChoice_Heart" xml:space="preserve"><value>Heart</value></data>
+  <data name="ListIconChoice_Hearts" xml:space="preserve"><value>Hearts</value></data>
+  <data name="ListIconChoice_Family" xml:space="preserve"><value>Family</value></data>
+  <data name="ListIconChoice_CallMe" xml:space="preserve"><value>Call me</value></data>
+  <data name="ListIconChoice_Airplane" xml:space="preserve"><value>Airplane</value></data>
+  <data name="ListIconChoice_Target" xml:space="preserve"><value>Target</value></data>
+  <data name="ListIconChoice_Game" xml:space="preserve"><value>Game</value></data>
+  <data name="ListIconChoice_Home" xml:space="preserve"><value>Home</value></data>
+  <data name="ListIconChoice_Note" xml:space="preserve"><value>Note</value></data>
+  <data name="ListIconChoice_Money" xml:space="preserve"><value>Money</value></data>
+  <data name="ListIconChoice_Gift" xml:space="preserve"><value>Gift</value></data>
 </root>

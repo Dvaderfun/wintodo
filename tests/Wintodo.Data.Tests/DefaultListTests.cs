@@ -39,6 +39,18 @@ public sealed class DefaultListTests
     }
 
     [Fact]
+    public async Task SetListIconEmojiAsync_RejectsDefaultList()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TodoList defaultList = await fixture.Store.EnsureDefaultListAsync("Tasks");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => fixture.Store.SetListIconEmojiAsync(defaultList.Id, "\U0001F3E0"));
+
+        Assert.Null(Assert.Single(await fixture.Store.GetListsAsync()).IconEmoji);
+    }
+
+    [Fact]
     public async Task EnsureDefaultListAsync_AfterExistingListsKeepsSingleDefault()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();

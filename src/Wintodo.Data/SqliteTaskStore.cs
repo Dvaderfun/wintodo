@@ -5,7 +5,11 @@ namespace Wintodo.Data;
 
 public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
 {
-    private const string MigrationResourceName = "Wintodo.Data.Migrations.001_init.sql";
+    private static readonly string[] MigrationResourceNames =
+    [
+        "Wintodo.Data.Migrations.001_init.sql",
+        "Wintodo.Data.Migrations.002_list_icon_emoji.sql",
+    ];
     private const string ConnectionPragmas = """
         PRAGMA journal_mode = WAL;
         PRAGMA synchronous = NORMAL;
@@ -211,29 +215,56 @@ public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
         command.ExecuteNonQuery();
     }
 
-    private static void ApplyMigrations(SqliteConnection connection)
+    private void ApplyMigrations(SqliteConnection connection)
     {
+        long version = 0;
         if (SchemaVersionTableExists(connection))
         {
             using SqliteCommand versionCommand = connection.CreateCommand();
             versionCommand.CommandText = "SELECT COALESCE(MAX(version), 0) FROM schema_version;";
-            long version = (long)(versionCommand.ExecuteScalar() ?? 0L);
-            if (version >= 1)
-            {
-                return;
-            }
+            version = (long)(versionCommand.ExecuteScalar() ?? 0L);
         }
 
-        using Stream stream = typeof(SqliteTaskStore).Assembly.GetManifestResourceStream(MigrationResourceName)
-            ?? throw new InvalidOperationException($"Embedded migration '{MigrationResourceName}' was not found.");
-        using var reader = new StreamReader(stream);
-        string migrationSql = reader.ReadToEnd();
-        using SqliteTransaction transaction = connection.BeginTransaction();
-        using SqliteCommand migration = connection.CreateCommand();
-        migration.Transaction = transaction;
-        migration.CommandText = migrationSql;
-        migration.ExecuteNonQuery();
-        transaction.Commit();
+        long initialVersion = version;
+        for (int index = checked((int)version); index < MigrationResourceNames.Length; index++)
+        {
+            int migrationVersion = index + 1;
+            if (initialVersion > 0 && migrationVersion > initialVersion)
+            {
+                BackupDatabase(connection, migrationVersion);
+            }
+
+            string resourceName = MigrationResourceNames[index];
+            using Stream stream = typeof(SqliteTaskStore).Assembly.GetManifestResourceStream(resourceName)
+                ?? throw new InvalidOperationException(
+                    $"Embedded migration '{resourceName}' was not found.");
+            using var reader = new StreamReader(stream);
+            string migrationSql = reader.ReadToEnd();
+            using SqliteTransaction transaction = connection.BeginTransaction();
+            using SqliteCommand migration = connection.CreateCommand();
+            migration.Transaction = transaction;
+            migration.CommandText = migrationSql;
+            migration.ExecuteNonQuery();
+            transaction.Commit();
+        }
+    }
+
+    private void BackupDatabase(SqliteConnection connection, int migrationVersion)
+    {
+        string backupPath = $"{_databasePath}.bak-{migrationVersion}";
+        if (File.Exists(backupPath))
+        {
+            return;
+        }
+
+        using var backup = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = backupPath,
+            Mode = SqliteOpenMode.ReadWriteCreate,
+            Pooling = false,
+        }.ToString());
+        backup.Open();
+        connection.BackupDatabase(backup);
     }
 
     private static bool SchemaVersionTableExists(SqliteConnection connection)

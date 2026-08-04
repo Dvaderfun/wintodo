@@ -79,6 +79,7 @@ internal static class SqliteMapper
             RemoteUrl = GetNullableString(reader, 16),
             RemoteCTag = GetNullableString(reader, 17),
             SyncToken = GetNullableString(reader, 18),
+            IconEmoji = GetNullableString(reader, 19),
         };
     }
 

@@ -12,6 +12,12 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IAsyncDisposable
 
     Task<IReadOnlyList<TodoList>> GetListsAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyDictionary<long, int>> GetIncompleteTaskCountsAsync(
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyDictionary<ListQueryKind, int>> GetSmartListTaskCountsAsync(
+        CancellationToken cancellationToken = default);
+
     Task<TodoList> CreateListAsync(
         string displayName,
         ListColor color = ListColor.Blue,
@@ -25,6 +31,11 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IAsyncDisposable
     Task RenameListAsync(long listId, string displayName, CancellationToken cancellationToken = default);
 
     Task SetListColorAsync(long listId, ListColor color, CancellationToken cancellationToken = default);
+
+    Task SetListIconEmojiAsync(
+        long listId,
+        string? iconEmoji,
+        CancellationToken cancellationToken = default);
 
     Task SetListBackgroundThemeAsync(
         long listId,

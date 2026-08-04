@@ -1009,3 +1009,232 @@ and M13 is not reported closed.
   Those are the remaining M13 gate rows.
 - Baikal and Fastmail remain optional interop targets if endpoints become
   available.
+
+## Post-M13 — Custom emoji list icons          2026-08-04
+
+**Gate:** PASS — 100/100 Core/Data/Sync tests passed; the focused list-icon UI
+gate passed 6/6 across a packaged restart; the analyzer-backed Debug x64 build
+completed with zero warnings; and x64 plus ARM64 Native AOT published cleanly.
+
+**Shipped**
+- Added optional custom emoji icons for non-default user lists. `Change icon`
+  opens a localized, keyboard-focusable editor; invalid text stays open with an
+  inline error; and `Remove icon` restores the existing theme-colour dot.
+- Added shared extended-grapheme validation for joined, skin-tone, flag, and
+  keycap emoji sequences. The fixed default Tasks list rejects icon changes at
+  both the UI and store boundaries and continues to render Home.
+- Added forward schema migration 002 with a pre-upgrade SQLite backup, nullable
+  `lists.icon_emoji` persistence, ViewModel propagation, stable 20 px nav icon
+  layout, and Segoe UI Emoji rendering.
+- Added `X-WINTODO-LIST-ICON` whole-list `.ics` import/export support. The list
+  colour remains independent and continues to tint the task surface.
+- Added ADR-009 and updated the plan, visual design, and data-model contracts to
+  make user-selected list emoji the sole exception to the product-icon emoji
+  prohibition.
+
+**Verification**
+- `dotnet test Wintodo.sln -p:Platform=x64 -warnaserror --no-restore`: 100 passed
+  (Core 50, Data 41, Sync 9).
+- `BuildAndRun.ps1 -SkipRun`: Debug x64 passed with zero warnings and errors.
+- `tests/ui/run-list-icon-gate.ps1`: 6/6 passed for create, edit, rendered icon,
+  invalid-input feedback, packaged restart persistence, and removal. Visual QA
+  found no clipping, overlap, or alignment issue. Artifacts:
+  `tests/ui/artifacts/list-icon/run-20260804-091103`.
+- `scripts/Publish-Aot.ps1 -OutputDirectory publish/aot-list-icon`: x64 is
+  16.49 MB executable / 210.82 MB layout; ARM64 is 17.07 MB / 215.78 MB. Both
+  completed without trim/AOT warnings; summary is
+  `publish/aot-list-icon/summary.json`.
+- `/winui-code-review` checks found no new legacy Binding, converter,
+  code-behind Click/Tapped handler, raw colour/radius/type value, missing
+  explicit x:Bind mode, or missing AutomationId on the new interactive surface.
+
+**Deviations from PLAN.md**
+- The owner explicitly added emoji list icons to the parity target. ADR-009
+  records that direction and narrows the earlier design-wide emoji ban because
+  it contradicted the requested Microsoft To Do behavior.
+- CalDAV collection metadata currently writes display names only. Emoji icons,
+  like list colours and backgrounds, remain local to this client; manual `.ics`
+  export/import preserves them through the open extension property.
+
+**Known issues carried forward**
+- M13 live Radicale/Nextcloud interop, the conflict dialog UI row, M9's open
+  10-minute idle sample, the visible taskbar badge/reboot reminder checks, the
+  M8 Narrator listening check, and ARM64 runtime verification remain unchanged.
+
+## Post-M13 — Title emoji picker and navigation counts          2026-08-04
+
+**Gate:** PASS — 101/101 Core/Data/Sync tests passed; the focused list-icon UI
+gate passed 10/10 across a packaged restart; the analyzer-backed Debug x64
+build completed with zero warnings; and x64 plus ARM64 Native AOT published
+cleanly.
+
+**Shipped**
+- Added a Microsoft To Do-style emoji button directly beside editable user-list
+  titles. Its localized flyout exposes 36 preset emoji in a stable six-column
+  grid, keeps rename mode active while open, updates the header and navigation
+  icon together, and includes a clear action. The existing custom-emoji dialog
+  remains available for emoji outside the preset catalog.
+- Added a derived incomplete-task count for every persisted list. Counts include
+  active root tasks only, exclude child steps, completed tasks, and soft-deleted
+  tasks, and appear in zero-hidden badges for both user lists and the fixed
+  default Tasks list.
+- Refreshes navigation counts after create, complete, uncomplete, delete, move,
+  import, sync, and restart paths. Stale overlapping refreshes are discarded.
+- Added localized picker names/tooltips, count-aware navigation accessibility
+  names, stable automation IDs, focused data coverage, and packaged UI coverage.
+- Updated PLAN.md, the visual and data-model contracts, and ADR-009 for the
+  title-adjacent picker and query-derived count semantics.
+
+**Verification**
+- `dotnet test Wintodo.sln -p:Platform=x64 -warnaserror --no-restore`: 101 passed
+  (Core 50, Data 42, Sync 9).
+- `BuildAndRun.ps1 -SkipRun`: Debug x64 passed with zero warnings and errors.
+- `tests/ui/run-list-icon-gate.ps1`: 10/10 passed, including the default Tasks
+  badge, user-list two/zero/one transitions, title picker selection, header/nav
+  propagation, custom validation, restart persistence, and removal. Visual QA
+  found no clipping or overlap. Artifacts:
+  `tests/ui/artifacts/list-icon/run-20260804-094855`.
+- `scripts/Publish-Aot.ps1 -OutputDirectory publish/aot-title-icon-counts`: x64
+  is 16.56 MB executable / 211.24 MB layout; ARM64 is 17.14 MB / 216.20 MB.
+  Both completed without trim/AOT warnings; summary is
+  `publish/aot-title-icon-counts/summary.json`.
+- Static review found no new legacy Binding, converter, reflection,
+  code-behind Click/Tapped handler, UWP XAML namespace, missing explicit x:Bind
+  mode, or missing AutomationId on the new interactive surface.
+
+**Deviations from PLAN.md**
+- None beyond the already accepted owner-directed emoji parity extension in
+  ADR-009. The picker and counts follow the existing Microsoft To Do navigation
+  and inline-title patterns.
+
+**Known issues carried forward**
+- M13 live Radicale/Nextcloud interop, the conflict dialog UI row, M9's open
+  10-minute idle sample, the visible taskbar badge/reboot reminder checks, the
+  M8 Narrator listening check, and ARM64 runtime verification remain unchanged.
+
+## Post-M13 — Startup navigation pane repair          2026-08-04
+
+**Gate:** PASS — the production-data startup reproduction renders the expanded
+pane correctly; the shell responsive gate passed 10/10; the list-icon restart
+gate passed 10/10; and the analyzer-backed Debug x64 build completed with zero
+warnings.
+
+**Shipped**
+- Replaced competing manual `PaneDisplayMode`/`IsPaneOpen` visual-state setters
+  with NavigationView's built-in `Auto` mode at the existing 640/900 DIP
+  thresholds. This prevents a restored list selection from leaving compact
+  item templates inside the 300 DIP expanded-pane reservation during startup.
+- Retained the existing visual states for shell padding, detail placement,
+  footer commands, and the minimal-mode toggle button.
+- Extended the persisted emoji-list restart gate to require a visible,
+  nonzero-sized navigation label, not merely a discoverable list item.
+
+**Verification**
+- `BuildAndRun.ps1 -SkipRun`: Debug x64 passed with zero warnings and errors.
+- `tests/ui/m2-shell.ps1`: 10/10 passed at wide, 656 DIP compact, and 640 DIP
+  minimum widths. Screenshots in `tests/ui/artifacts/m2` show correct content
+  bounds and pane behavior.
+- `tests/ui/run-list-icon-gate.ps1`: 10/10 passed across restart with the new
+  visible-label assertion. Artifacts:
+  `tests/ui/artifacts/list-icon/run-20260804-102531`.
+- Direct production-data startup capture confirms the original failure no
+  longer reproduces: `tests/ui/artifacts/m2/09-real-startup-auto-pane.png`.
+
+**Deviations from PLAN.md**
+- None. The repair uses NavigationView's supported adaptive display mode and
+  preserves the approved navigation structure and breakpoints.
+
+## Post-M13 — Fixed-category header icons          2026-08-04
+
+**Gate:** PASS — the analyzer-backed Debug x64 build completed with zero
+warnings, and the responsive shell UI gate passed 10/10.
+
+**Shipped**
+- Added the matching Fluent navigation glyph beside the page title for My Day,
+  Important, Planned, All, Completed, and the pinned default Tasks list.
+- Reused the existing 44 DIP header icon slot so fixed glyphs and editable-list
+  emoji align identically. Search and Settings remain text-only, and the task
+  count stays directly adjacent to the title.
+- Kept fixed glyphs decorative in the accessibility tree; the localized list
+  title remains the single accessible page heading.
+- Updated the header design contract with fixed-category icon behavior.
+
+**Verification**
+- `BuildAndRun.ps1 -SkipRun`: Debug x64 passed with zero warnings and errors.
+- `tests/ui/m2-shell.ps1`: 10/10 passed at wide, compact, and minimum widths.
+- Visual QA confirmed Home, Brightness, and FavoriteStar headers plus the
+  unchanged custom-emoji header/count layout. Artifacts:
+  `tests/ui/artifacts/m2/15-fixed-header-my-day.png` through
+  `tests/ui/artifacts/m2/18-custom-header-preserved.png`.
+
+**Deviations from PLAN.md**
+- None. The change makes the centre-pane header follow the fixed navigation
+  categories already specified by the Microsoft To Do parity design.
+
+## Post-M13 — Fixed-category counts and appearance          2026-08-04
+
+**Gate:** PASS — the full x64 test suite, analyzer-backed Debug build, clean
+restart persistence check, and responsive shell UI gate all passed.
+
+**Shipped**
+- Removed task counts from every page header and removed the My Day header
+  glyph. Navigation now shows zero-hidden counts for My Day, Important,
+  Planned, All, Completed, Tasks, and user lists.
+- Replaced the All list glyph with an infinity symbol in both navigation and
+  the page header.
+- Enabled the existing background picker for fixed categories and persisted
+  each selection in settings.
+- Tinted fixed-category navigation and header glyphs with their semantic or
+  selected background colour. Added an Appearance toggle to return these
+  glyphs to the neutral foreground.
+- Added a single aggregate smart-count query, refresh propagation, localized
+  count-aware accessibility names, automation IDs, and focused data coverage.
+
+**Verification**
+- Focused smart-list and persisted-list count tests: 2/2 passed.
+- `dotnet test Wintodo.sln -p:Platform=x64 -warnaserror --no-restore`: 102 passed
+  (Core 50, Data 43, Sync 9).
+- `BuildAndRun.ps1 -SkipRun`: Debug x64 passed with zero warnings and errors.
+- Clean packaged restart preserved the enabled icon-tint preference and restored
+  fixed-category counts and glyph colours.
+- `tests/ui/m2-shell.ps1`: 10/10 passed at wide, compact, and minimum widths.
+- Direct UI Automation verified My Day without a header glyph/count, zero-hidden
+  fixed-category badges, the All infinity glyph, background-driven tinting, and
+  the fixed-category tint preference. Screenshots:
+  `tests/ui/artifacts/m2/21-fixed-category-header-tint.png` through
+  `tests/ui/artifacts/m2/26-restart-my-day.png`.
+- `git diff --check`: passed.
+
+**Deviations from PLAN.md**
+- None. This extends the existing list-theme and navigation-count behavior to
+  the fixed categories requested by the owner.
+
+## Post-M13 — Unified navigation count badges          2026-08-04
+
+**Gate:** PASS — the analyzer-backed Debug build, full x64 test suite, list-icon
+interaction gate, and responsive shell gate all passed.
+
+**Shipped**
+- Replaced the smart-category default circular badges and the persisted-list
+  custom badge implementation with one shared neutral rectangular `InfoBadge`
+  style for every navigation count.
+- Reverted All to the original Fluent List glyph after visual review so its
+  weight, bounds, and rendering match the other fixed-category icons.
+- Applied one 8-DIP fixed-category end-inset token so smart, default, and user-list
+  count badges share the same right-edge alignment.
+- Updated the navigation design contract to require one count-badge treatment.
+
+**Verification**
+- `BuildAndRun.ps1 -SkipRun`: Debug x64 passed with zero warnings and errors.
+- `dotnet test Wintodo.sln -p:Platform=x64 -warnaserror --no-restore`: 102 passed
+  (Core 50, Data 43, Sync 9).
+- `tests/ui/run-list-icon-gate.ps1`: 10/10 passed, including default/user-list
+  count transitions and their preserved automation IDs.
+- `tests/ui/m2-shell.ps1`: 10/10 passed at wide, compact, and minimum widths.
+- Visual QA confirmed one aligned expanded-pane count column, no compact-pane
+  badge/icon overlap, and matching Fluent List glyphs in navigation and header.
+  Screenshots: `tests/ui/artifacts/m2/31-aligned-badges-final.png` and
+  `tests/ui/artifacts/m2/32-all-list-glyph.png`.
+
+**Deviations from PLAN.md**
+- None. This corrects visual inconsistency in the existing count presentation.

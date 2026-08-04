@@ -261,18 +261,105 @@
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock
-                        x:Name="SmartListTitle"
-                        AutomationProperties.AutomationId="Todo.Shell.PageTitle"
-                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                        Style="{StaticResource TitleTextBlockStyle}"
-                        Text="{x:Bind ViewModel.Title, Mode=OneWay}"
-                        TextTrimming="CharacterEllipsis"
-                        Visibility="{x:Bind local:TaskListView.InverseBoolToVisibility(ViewModel.CanEditSelectedList), Mode=OneWay}" />
+                    <StackPanel
+                        Grid.ColumnSpan="2"
+                        Height="44"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        Visibility="{x:Bind local:TaskListView.InverseBoolToVisibility(ViewModel.CanEditSelectedList), Mode=OneWay}">
+                        <FontIcon
+                            x:Name="FixedHeaderIcon"
+                            Width="44"
+                            Height="44"
+                            AutomationProperties.AccessibilityView="Raw"
+                            AutomationProperties.AutomationId="Todo.List.FixedHeaderIcon"
+                            FontSize="{StaticResource ListHeaderIconSize}"
+                            Foreground="{x:Bind ViewModel.FixedHeaderIconBrush, Mode=OneWay}"
+                            Glyph="{x:Bind ViewModel.FixedHeaderGlyph, Mode=OneWay}"
+                            Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.HasFixedHeaderGlyph), Mode=OneWay}" />
+                        <TextBlock
+                            x:Name="SmartListTitle"
+                            VerticalAlignment="Center"
+                            AutomationProperties.AutomationId="Todo.Shell.PageTitle"
+                            Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                            Style="{StaticResource TitleTextBlockStyle}"
+                            Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <Button
+                        x:Name="ListIconPickerButton"
+                        x:Uid="ListIconPickerButton"
+                        Grid.Column="0"
+                        Width="44"
+                        Height="44"
+                        MinWidth="0"
+                        Padding="0"
+                        AutomationProperties.AutomationId="Todo.List.IconPickerButton"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.CanEditSelectedList), Mode=OneWay}">
+                        <Grid>
+                            <SymbolIcon
+                                Symbol="Emoji"
+                                Visibility="{x:Bind local:TaskListView.InverseBoolToVisibility(ViewModel.HasSelectedIconEmoji), Mode=OneWay}" />
+                            <TextBlock
+                                AutomationProperties.AutomationId="Todo.List.HeaderIcon"
+                                FontFamily="Segoe UI Emoji"
+                                HorizontalAlignment="Center"
+                                Style="{StaticResource TitleTextBlockStyle}"
+                                Text="{x:Bind ViewModel.SelectedIconEmoji, Mode=OneWay}"
+                                TextAlignment="Center"
+                                VerticalAlignment="Center"
+                                Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.HasSelectedIconEmoji), Mode=OneWay}" />
+                        </Grid>
+                        <Button.Flyout>
+                            <Flyout
+                                x:Name="ListIconPickerFlyout"
+                                Closed="OnListIconPickerClosed"
+                                Placement="BottomEdgeAlignedLeft">
+                                <StackPanel Width="260" Spacing="8">
+                                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.ListIconChoices, Mode=OneWay}">
+                                        <ItemsRepeater.Layout>
+                                            <UniformGridLayout
+                                                MinColumnSpacing="4"
+                                                MinItemHeight="40"
+                                                MinItemWidth="40"
+                                                MinRowSpacing="4" />
+                                        </ItemsRepeater.Layout>
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate x:DataType="viewModels:ListEmojiChoiceViewModel">
+                                                <Button
+                                                    Width="40"
+                                                    Height="40"
+                                                    Padding="0"
+                                                    AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                                                    AutomationProperties.Name="{x:Bind Name, Mode=OneTime}"
+                                                    Command="{x:Bind SelectCommand, Mode=OneTime}"
+                                                    CommandParameter="{x:Bind Emoji, Mode=OneTime}"
+                                                    Style="{StaticResource SubtleButtonStyle}"
+                                                    ToolTipService.ToolTip="{x:Bind Name, Mode=OneTime}">
+                                                    <TextBlock
+                                                        FontFamily="Segoe UI Emoji"
+                                                        FontSize="{StaticResource ListEmojiPickerIconSize}"
+                                                        Text="{x:Bind Emoji, Mode=OneTime}" />
+                                                </Button>
+                                            </DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
+                                    <Button
+                                        x:Uid="ListIconPickerClear"
+                                        HorizontalAlignment="Stretch"
+                                        AutomationProperties.AutomationId="Todo.List.IconPicker.Clear"
+                                        Command="{x:Bind ViewModel.ChangeListIconCommand, Mode=OneTime}"
+                                        CommandParameter="" />
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
                     <Button
                         x:Name="UserListTitleButton"
-                        Grid.Column="0"
+                        Grid.Column="1"
                         HorizontalAlignment="Left"
+                        Padding="8,0"
                         AutomationProperties.AutomationId="Todo.List.TitleButton"
                         Command="{x:Bind ViewModel.BeginRenameListCommand, Mode=OneTime}"
                         Style="{StaticResource SubtleButtonStyle}"
@@ -289,9 +376,9 @@
                     -->
                     <local:TitleEditBox
                         x:Name="RenameListBox"
-                        Grid.Column="0"
-                        MinWidth="240"
-                        Padding="11,5,11,6"
+                        Grid.Column="1"
+                        MinWidth="160"
+                        Padding="8,4"
                         VerticalAlignment="Center"
                         AutomationProperties.AutomationId="Todo.List.RenameBox"
                         FontSize="28"
@@ -301,13 +388,6 @@
                         LostFocus="OnRenameListBoxLostFocus"
                         Text="{x:Bind ViewModel.RenameListName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsRenamingList), Mode=OneWay}" />
-                    <TextBlock
-                        Grid.Column="1"
-                        Margin="8,8,0,0"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind ViewModel.ActiveCount, Mode=OneWay}"
-                        Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}" />
                 </Grid>
                 <TextBlock
                     AutomationProperties.AutomationId="Todo.Shell.Subtitle"
@@ -388,6 +468,23 @@
                                 <FontIcon Glyph="&#xE70F;" />
                             </MenuFlyoutItem.Icon>
                         </MenuFlyoutItem>
+                        <MenuFlyoutSubItem
+                            x:Uid="ChangeIconMenu"
+                            AutomationProperties.AutomationId="Todo.List.Menu.ChangeIcon"
+                            IsEnabled="{x:Bind ViewModel.CanEditSelectedList, Mode=OneWay}">
+                            <MenuFlyoutSubItem.Icon>
+                                <SymbolIcon Symbol="Emoji" />
+                            </MenuFlyoutSubItem.Icon>
+                            <MenuFlyoutItem
+                                x:Uid="CustomListIconMenu"
+                                AutomationProperties.AutomationId="Todo.List.Icon.Custom"
+                                Command="{x:Bind ViewModel.RequestCustomListIconCommand, Mode=OneTime}" />
+                            <MenuFlyoutItem
+                                x:Uid="RemoveListIconMenu"
+                                AutomationProperties.AutomationId="Todo.List.Icon.Remove"
+                                Command="{x:Bind ViewModel.ChangeListIconCommand, Mode=OneTime}"
+                                CommandParameter="" />
+                        </MenuFlyoutSubItem>
                         <MenuFlyoutSubItem
                             x:Uid="ChangeThemeMenu"
                             AutomationProperties.AutomationId="Todo.List.Menu.ChangeTheme"
@@ -507,7 +604,7 @@
                         <MenuFlyoutSubItem
                             x:Uid="ChangeBackgroundMenu"
                             AutomationProperties.AutomationId="Todo.List.Menu.ChangeBackground"
-                            IsEnabled="{x:Bind ViewModel.IsUserListSelected, Mode=OneWay}">
+                            IsEnabled="{x:Bind ViewModel.CanChangeSelectedBackground, Mode=OneWay}">
                             <MenuFlyoutSubItem.Icon>
                                 <FontIcon Glyph="&#xEB9F;" />
                             </MenuFlyoutSubItem.Icon>

@@ -8,5 +8,7 @@ public sealed class IcalCalendar
 
     public ListColor? Color { get; set; }
 
+    public string? IconEmoji { get; set; }
+
     public List<TodoTask> Tasks { get; } = [];
 }

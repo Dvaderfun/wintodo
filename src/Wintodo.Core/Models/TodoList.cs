@@ -12,6 +12,8 @@ public sealed class TodoList
 
     public string? BackgroundTheme { get; set; }
 
+    public string? IconEmoji { get; set; }
+
     public long? GroupId { get; set; }
 
     public double SortOrder { get; set; }
@@ -41,4 +43,6 @@ public sealed class TodoList
     public string? SyncToken { get; set; }
 
     public bool IsSyncEnabled { get; set; }
+
+    public int IncompleteTaskCount { get; set; }
 }
