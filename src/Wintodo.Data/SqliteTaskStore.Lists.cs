@@ -23,7 +23,12 @@ public sealed partial class SqliteTaskStore
                     SELECT id, uid, display_name, color, background_theme, group_id,
                            sort_order, sort_mode, sort_descending, show_completed,
                            completed_expanded, is_default, is_deleted, created_utc,
-                           modified_utc, account_id, remote_url, remote_ctag, sync_token
+                           modified_utc, account_id, remote_url, remote_ctag, sync_token,
+                           account_id IS NOT NULL AND remote_url IS NOT NULL AND NOT EXISTS(
+                               SELECT 1 FROM settings
+                               WHERE key = 'sync.list.' || lists.uid || '.disabled'
+                                     AND value = 'true'
+                           )
                     FROM lists
                     WHERE is_deleted = 0
                     ORDER BY is_default DESC, sort_order, id;
@@ -32,7 +37,9 @@ public sealed partial class SqliteTaskStore
                 var lists = new List<TodoList>();
                 while (reader.Read())
                 {
-                    lists.Add(SqliteMapper.ReadList(reader));
+                    TodoList list = SqliteMapper.ReadList(reader);
+                    list.IsSyncEnabled = reader.GetBoolean(19);
+                    lists.Add(list);
                 }
 
                 return lists;

@@ -10,6 +10,7 @@ using Wintodo.Core.Models;
 using Wintodo.Core.Services;
 using Wintodo.Data;
 using Wintodo.Services;
+using Wintodo.Sync;
 
 namespace Wintodo;
 
@@ -96,11 +97,22 @@ public partial class App : Application
                 }
             }
 
+            var syncHttpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(30),
+            };
+            var syncService = new CalDavSyncService(
+                store,
+                new PasswordVaultCredentialStore(),
+                clock,
+                syncHttpClient);
             var window = new MainWindow(
                 store,
                 clock,
                 windowsIntegration,
-                startupTaskService);
+                startupTaskService,
+                syncService,
+                syncHttpClient);
             TraceStartupStage("window-created", launchStartTimestamp);
             Window = window;
             Task firstFrame = ObserveFirstFrameAsync(launchStartTimestamp);

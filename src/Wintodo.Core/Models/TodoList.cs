@@ -39,4 +39,6 @@ public sealed class TodoList
     public string? RemoteCTag { get; set; }
 
     public string? SyncToken { get; set; }
+
+    public bool IsSyncEnabled { get; set; }
 }

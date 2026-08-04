@@ -7,6 +7,7 @@ using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
 using Wintodo.Core.Services;
 using Wintodo.Services;
+using Wintodo.Sync;
 
 namespace Wintodo.ViewModels;
 
@@ -39,11 +40,13 @@ public sealed partial class ShellViewModel : ObservableObject
         ITaskStore taskStore,
         IClock clock,
         ShellStateService stateService,
-        IStartupTaskService startupTaskService)
+        IStartupTaskService startupTaskService,
+        CalDavSyncService syncService)
     {
         _taskStore = taskStore;
         _stateService = stateService;
         _startupTaskService = startupTaskService;
+        InitializeSync(syncService);
         TaskList = new TaskListViewModel(taskStore, clock);
         TaskList.NavigationDataChanged += OnNavigationDataChanged;
         TaskList.DeleteListRequested += OnDeleteListRequested;
@@ -207,6 +210,8 @@ public sealed partial class ShellViewModel : ObservableObject
 
         _ = ApplyStartupTaskStateWhenReadyAsync(startupTask);
 
+        await InitializeSyncAsync(cancellationToken);
+
         return await selectedNavigationTask ?? MyDayNavigationKey;
     }
 
@@ -298,6 +303,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Task<IReadOnlyList<ListGroup>> groupsTask = _taskStore.GetGroupsAsync(cancellationToken);
         await Task.WhenAll(listsTask, groupsTask);
         LoadNavigationData(await listsTask, await groupsTask);
+        await RefreshSyncOptionsAsync(cancellationToken);
         NavigationStructureChanged?.Invoke();
     }
 

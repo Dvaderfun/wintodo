@@ -206,6 +206,19 @@
 
             <NavigationView.FooterMenuItems>
                 <NavigationViewItem
+                    x:Name="SyncStatusNavigationItem"
+                    AutomationProperties.AutomationId="Todo.Nav.SyncStatus"
+                    IsEnabled="False"
+                    SelectsOnInvoked="False">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="{x:Bind ViewModel.SyncStatusGlyph, Mode=OneWay}" />
+                    </NavigationViewItem.Icon>
+                    <TextBlock
+                        AutomationProperties.AutomationId="Todo.Nav.SyncStatus.Text"
+                        Text="{x:Bind ViewModel.SyncStatusText, Mode=OneWay}"
+                        TextTrimming="CharacterEllipsis" />
+                </NavigationViewItem>
+                <NavigationViewItem
                     x:Name="SettingsNavigationItem"
                     x:Uid="NavSettings"
                     AutomationProperties.AutomationId="Todo.Nav.Settings"
@@ -403,6 +416,20 @@
                 </Grid>
             </Grid>
         </NavigationView>
+
+        <ContentDialog
+            x:Name="SyncConflictDialog"
+            x:Uid="SyncConflictDialog"
+            AutomationProperties.AutomationId="Todo.Dialog.SyncConflict"
+            DefaultButton="Primary"
+            Opened="OnSyncConflictDialogOpened"
+            x:Load="{x:Bind ViewModel.IsSyncConflictDialogLoaded, Mode=OneWay}">
+            <TextBlock
+                x:Name="SyncConflictMessage"
+                AutomationProperties.AutomationId="Todo.Dialog.SyncConflict.Message"
+                Style="{StaticResource BodyTextBlockStyle}"
+                TextWrapping="Wrap" />
+        </ContentDialog>
 
         <ContentDialog
             x:Name="ShortcutsDialog"
