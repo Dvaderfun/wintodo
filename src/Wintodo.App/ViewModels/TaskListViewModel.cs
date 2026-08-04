@@ -66,7 +66,8 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     public ObservableCollection<TaskListEntryViewModel> VisibleItems { get; } = [];
 
-    public ObservableCollection<TaskListGroupViewModel> TaskGroups { get; } = [];
+    [ObservableProperty]
+    public partial IList<object> TaskGroups { get; set; } = new List<object>();
 
     public ObservableCollection<MoveTargetViewModel> MoveTargets { get; } = [];
 
@@ -402,9 +403,9 @@ public sealed partial class TaskListViewModel : ObservableObject
         }
 
         _activeTasks.Clear();
-        foreach (TaskListGroupViewModel group in TaskGroups)
+        foreach (IList<object> group in TaskGroups.OfType<IList<object>>())
         {
-            foreach (TaskItemViewModel task in group)
+            foreach (TaskItemViewModel task in group.OfType<TaskItemViewModel>())
             {
                 if (!task.IsCompleted)
                 {
@@ -1155,8 +1156,9 @@ public sealed partial class TaskListViewModel : ObservableObject
                     AddItems(completedGroup, _completedTasks);
                 }
 
-                TaskGroups.Add(completedGroup);
-                foreach (TaskItemViewModel item in completedGroup)
+                TaskGroups.Add(completedGroup.Items);
+                foreach (TaskItemViewModel item in
+                         completedGroup.Items.OfType<TaskItemViewModel>())
                 {
                     VisibleItems.Add(item);
                 }
@@ -1173,6 +1175,8 @@ public sealed partial class TaskListViewModel : ObservableObject
         {
             SelectedTask = null;
         }
+
+        TaskGroups = new List<object>(TaskGroups);
     }
 
     private void BuildSearchGroups()
@@ -1247,13 +1251,14 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     private void AddTaskGroup(TaskListGroupViewModel group)
     {
-        if (group.Count == 0)
+        if (group.Items.Count == 0)
         {
             return;
         }
 
-        TaskGroups.Add(group);
-        foreach (TaskItemViewModel item in group)
+        TaskGroups.Add(group.Items);
+        foreach (TaskItemViewModel item in
+                 group.Items.OfType<TaskItemViewModel>())
         {
             VisibleItems.Add(item);
         }
@@ -1276,7 +1281,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         foreach (TaskItemViewModel item in items)
         {
-            group.Add(item);
+            group.Items.Add(item);
         }
     }
 

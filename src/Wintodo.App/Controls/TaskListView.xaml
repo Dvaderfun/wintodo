@@ -156,28 +156,28 @@
 
         <DataTemplate
             x:Key="GroupHeaderTemplate"
-            x:DataType="viewModels:TaskListGroupViewModel">
+            x:DataType="x:Object">
             <Grid
-                MinHeight="{x:Bind local:TaskListView.GroupHeaderMinHeight(Kind), Mode=OneWay}"
+                MinHeight="{x:Bind local:TaskListView.GroupHeaderMinHeightForItems((x:Object)), Mode=OneTime}"
                 AutomationProperties.AccessibilityView="Raw">
                 <Grid
                     Margin="0,8,0,0"
                     ColumnSpacing="8"
-                    Visibility="{x:Bind local:TaskListView.NamedGroupVisibility(Kind), Mode=OneWay}">
+                    Visibility="{x:Bind local:TaskListView.NamedGroupVisibilityForItems((x:Object)), Mode=OneTime}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <TextBlock
-                        AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneWay}"
-                        Foreground="{x:Bind local:TaskListView.GroupHeaderBrush(IsCritical), Mode=OneWay}"
+                        AutomationProperties.AutomationId="{x:Bind local:TaskListView.GroupAutomationId((x:Object)), Mode=OneTime}"
+                        Foreground="{x:Bind local:TaskListView.GroupHeaderBrushForItems((x:Object)), Mode=OneTime}"
                         Style="{StaticResource BodyStrongTextBlockStyle}"
-                        Text="{x:Bind Title, Mode=OneWay}" />
+                        Text="{x:Bind local:TaskListView.GroupTitle((x:Object)), Mode=OneTime}" />
                     <TextBlock
                         Grid.Column="1"
                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                         Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind HeaderCount, Mode=OneWay}" />
+                        Text="{x:Bind local:TaskListView.GroupHeaderCount((x:Object)), Mode=OneTime}" />
                 </Grid>
                 <ToggleButton
                     Margin="0,16,0,8"
@@ -186,14 +186,14 @@
                     HorizontalAlignment="Left"
                     HorizontalContentAlignment="Left"
                     VerticalContentAlignment="Center"
-                    AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneWay}"
-                    AutomationProperties.Name="{x:Bind AccessibleName, Mode=OneWay}"
+                    AutomationProperties.AutomationId="{x:Bind local:TaskListView.GroupAutomationId((x:Object)), Mode=OneTime}"
+                    AutomationProperties.Name="{x:Bind local:TaskListView.GroupAccessibleName((x:Object)), Mode=OneTime}"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    Command="{x:Bind ToggleCommand, Mode=OneTime}"
+                    Command="{x:Bind local:TaskListView.GroupToggleCommand((x:Object)), Mode=OneTime}"
                     Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                    IsChecked="{x:Bind IsExpanded, Mode=OneWay}"
+                    IsChecked="{x:Bind local:TaskListView.GroupIsExpanded((x:Object)), Mode=OneTime}"
                     Style="{StaticResource TaskSubtleToggleButtonStyle}"
-                    Visibility="{x:Bind local:TaskListView.CompletedGroupVisibility(Kind), Mode=OneWay}">
+                    Visibility="{x:Bind local:TaskListView.CompletedGroupVisibilityForItems((x:Object)), Mode=OneTime}">
                     <!--
                         These must be real brushes, not StaticResource aliases.
                         A header container is recycled every time the group is
@@ -222,18 +222,18 @@
                             Grid.Column="0"
                             FontFamily="{ThemeResource SymbolThemeFontFamily}"
                             FontSize="{ThemeResource ControlContentThemeFontSize}"
-                            Glyph="{x:Bind local:TaskListView.CompletedChevron(IsExpanded), Mode=OneWay}" />
+                            Glyph="{x:Bind local:TaskListView.GroupCompletedChevron((x:Object)), Mode=OneTime}" />
                         <TextBlock
                             Grid.Column="1"
                             VerticalAlignment="Center"
                             Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind Title, Mode=OneWay}" />
+                            Text="{x:Bind local:TaskListView.GroupTitle((x:Object)), Mode=OneTime}" />
                         <TextBlock
                             Grid.Column="2"
                             VerticalAlignment="Center"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind HeaderCount, Mode=OneWay}" />
+                            Text="{x:Bind local:TaskListView.GroupHeaderCount((x:Object)), Mode=OneTime}" />
                     </Grid>
                 </ToggleButton>
             </Grid>

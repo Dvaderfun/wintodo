@@ -1,5 +1,4 @@
-using System.Collections.ObjectModel;
-using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using CommunityToolkit.Mvvm.Input;
 
 namespace Wintodo.ViewModels;
@@ -11,10 +10,11 @@ public enum TaskListGroupKind
     Completed,
 }
 
-public sealed partial class TaskListGroupViewModel : ObservableCollection<TaskItemViewModel>
+public sealed partial class TaskListGroupViewModel
 {
+    private static readonly ConditionalWeakTable<object, TaskListGroupViewModel>
+        Metadata = new();
     private readonly Func<Task>? _toggle;
-    private bool _isExpanded;
 
     internal TaskListGroupViewModel(
         TaskListGroupKind kind,
@@ -30,7 +30,11 @@ public sealed partial class TaskListGroupViewModel : ObservableCollection<TaskIt
         IsCritical = isCritical;
         AccessibleName = accessibleName ?? title;
         _toggle = toggle;
+        Items = new List<object>();
+        Metadata.Add(Items, this);
     }
+
+    internal IList<object> Items { get; }
 
     public TaskListGroupKind Kind { get; }
 
@@ -42,23 +46,17 @@ public sealed partial class TaskListGroupViewModel : ObservableCollection<TaskIt
 
     public bool IsCritical { get; }
 
-    public int HeaderCount => CountOverride ?? Count;
+    public int HeaderCount => CountOverride ?? Items.Count;
 
     internal int? CountOverride { get; set; }
 
-    public bool IsExpanded
-    {
-        get => _isExpanded;
-        set
-        {
-            if (_isExpanded == value)
-            {
-                return;
-            }
+    public bool IsExpanded { get; set; }
 
-            _isExpanded = value;
-            OnPropertyChanged(new PropertyChangedEventArgs(nameof(IsExpanded)));
-        }
+    internal static TaskListGroupViewModel GetMetadata(object items)
+    {
+        return Metadata.TryGetValue(items, out TaskListGroupViewModel? group)
+            ? group
+            : throw new ArgumentException("Unknown task group collection.", nameof(items));
     }
 
     [RelayCommand]

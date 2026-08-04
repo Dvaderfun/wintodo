@@ -111,7 +111,7 @@ public sealed partial class ShellViewModel : ObservableObject
     public partial bool IsImportErrorDialogLoaded { get; set; }
 
     [ObservableProperty]
-    public partial bool IsTaskListLoaded { get; set; }
+    public partial bool IsShortcutsDialogLoaded { get; set; }
 
     [ObservableProperty]
     public partial bool IsDetailPaneLoaded { get; set; }
@@ -183,6 +183,8 @@ public sealed partial class ShellViewModel : ObservableObject
         Task<string?> detailWidthTask = _taskStore.GetSettingAsync(
             DetailPaneWidthSetting,
             cancellationToken);
+        Task<string?> selectedNavigationTask =
+            _stateService.LoadSelectedNavigationAsync(cancellationToken);
         Task<StartupTaskSettingState> startupTask = LoadStartupTaskStateAsync();
         await Task.WhenAll(
             listsTask,
@@ -191,7 +193,7 @@ public sealed partial class ShellViewModel : ObservableObject
             densityTask,
             backgroundsTask,
             detailWidthTask,
-            startupTask);
+            selectedNavigationTask);
         LoadNavigationData(await listsTask, await groupsTask);
 
         AppearanceThemeIndex = ParseChoice(await themeTask, maximum: 2);
@@ -203,15 +205,9 @@ public sealed partial class ShellViewModel : ObservableObject
         _areAppearanceSettingsLoaded = true;
         AppearanceSettingsChanged?.Invoke();
 
-        StartupTaskSettingState startupState = await startupTask;
-        _isApplyingStartupTaskState = true;
-        LaunchAtLogin = startupState.IsEnabled;
-        CanChangeLaunchAtLogin = startupState.CanChange;
-        _isApplyingStartupTaskState = false;
-        _areWindowsSettingsLoaded = true;
+        _ = ApplyStartupTaskStateWhenReadyAsync(startupTask);
 
-        return await _stateService.LoadSelectedNavigationAsync(cancellationToken)
-            ?? MyDayNavigationKey;
+        return await selectedNavigationTask ?? MyDayNavigationKey;
     }
 
     internal async Task SelectAsync(
@@ -683,6 +679,13 @@ public sealed partial class ShellViewModel : ObservableObject
             Trace.WriteLine($"WINTODO_STARTUP_TASK_READ_ERROR={exception}");
             return new StartupTaskSettingState(false, false);
         }
+    }
+
+    private async Task ApplyStartupTaskStateWhenReadyAsync(
+        Task<StartupTaskSettingState> startupTask)
+    {
+        ApplyStartupTaskState(await startupTask);
+        _areWindowsSettingsLoaded = true;
     }
 
     private async Task UpdateStartupTaskAsync(bool enabled)

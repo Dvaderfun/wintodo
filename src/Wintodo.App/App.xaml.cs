@@ -51,6 +51,7 @@ public partial class App : Application
             long launchStartTimestamp = Stopwatch.GetTimestamp();
             DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
             RegisterAppNotifications();
+            TraceStartupStage("notifications", launchStartTimestamp);
             AppActivationArguments activation =
                 AppInstance.GetCurrent().GetActivatedEventArgs();
             IClock clock = ResolveClock();
@@ -100,14 +101,23 @@ public partial class App : Application
                 clock,
                 windowsIntegration,
                 startupTaskService);
+            TraceStartupStage("window-created", launchStartTimestamp);
             Window = window;
             Task firstFrame = ObserveFirstFrameAsync(launchStartTimestamp);
             Window.Activate();
             await firstFrame;
+            TraceStartupStage("first-frame", launchStartTimestamp);
             await store.InitializeAsync();
-            await windowsIntegration.InitializeAsync();
-            _integrationReady.TrySetResult(windowsIntegration);
+            TraceStartupStage("store", launchStartTimestamp);
+            Task integrationTask = windowsIntegration.InitializeAsync();
             await window.InitializeAsync();
+            TraceStartupStage("window", launchStartTimestamp);
+            Trace.WriteLine(string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"WINTODO_PERF_INTERACTIVE_MS={Stopwatch.GetElapsedTime(launchStartTimestamp).TotalMilliseconds:F3}"));
+            await integrationTask;
+            TraceStartupStage("integration", launchStartTimestamp);
+            _integrationReady.TrySetResult(windowsIntegration);
 
             if (activation.Kind == ExtendedActivationKind.ShareTarget
                 && activation.Data is ShareTargetActivatedEventArgs shareArgs)
@@ -149,6 +159,13 @@ public partial class App : Application
         AppNotificationManager.Default.NotificationInvoked -= app.OnNotificationInvoked;
         AppNotificationManager.Default.Unregister();
         app._notificationsRegistered = false;
+    }
+
+    private static void TraceStartupStage(string stage, long launchStartTimestamp)
+    {
+        Trace.WriteLine(string.Create(
+            System.Globalization.CultureInfo.InvariantCulture,
+            $"WINTODO_STARTUP_STAGE={stage};MS={Stopwatch.GetElapsedTime(launchStartTimestamp).TotalMilliseconds:F3}"));
     }
 
     private void RegisterAppNotifications()
