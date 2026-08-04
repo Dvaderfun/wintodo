@@ -20,7 +20,8 @@ SELECT
     0,
     '2026-01-01T00:00:00.0000000Z',
     '2026-01-01T00:00:00.0000000Z'
-FROM sequence;
+FROM sequence
+WHERE @listCount > 0;
 
 WITH RECURSIVE sequence(value) AS (
     SELECT 1
@@ -34,15 +35,23 @@ INSERT INTO tasks(
     created_utc, modified_utc)
 SELECT
     printf('perf-task-%05d', value),
-    ((value - 1) % @listCount) + 1,
+    (
+        SELECT id
+        FROM lists
+        WHERE uid = printf(
+            'perf-list-%02d',
+            ((value - 1) % @listCount) + 1)
+    ),
     printf('Performance task %05d', value),
     0,
     CASE WHEN value % 10 = 0 THEN 1 ELSE 0 END,
     value * 1024,
     '2026-01-01T00:00:00.0000000Z',
     '2026-01-01T00:00:00.0000000Z'
-FROM sequence;
+FROM sequence
+WHERE @taskCount > 0;
 
 INSERT INTO settings(key, value)
-VALUES ('shell.navigation.selected', 'list:perf-list-01')
+SELECT 'shell.navigation.selected', 'list:perf-list-01'
+WHERE @listCount > 0
 ON CONFLICT(key) DO UPDATE SET value = excluded.value;

@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using System.Windows.Input;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.System;
 using Windows.UI.ViewManagement;
@@ -85,6 +86,65 @@ public sealed partial class TaskListView : UserControl
             ? "SystemFillColorCriticalBrush"
             : "TextFillColorPrimaryBrush";
         return (Brush)Application.Current.Resources[resourceKey];
+    }
+
+    public static double GroupHeaderMinHeightForItems(object items)
+    {
+        return GroupHeaderMinHeight(
+            TaskListGroupViewModel.GetMetadata(items).Kind);
+    }
+
+    public static Visibility NamedGroupVisibilityForItems(object items)
+    {
+        return NamedGroupVisibility(
+            TaskListGroupViewModel.GetMetadata(items).Kind);
+    }
+
+    public static Visibility CompletedGroupVisibilityForItems(object items)
+    {
+        return CompletedGroupVisibility(
+            TaskListGroupViewModel.GetMetadata(items).Kind);
+    }
+
+    public static Brush GroupHeaderBrushForItems(object items)
+    {
+        return GroupHeaderBrush(
+            TaskListGroupViewModel.GetMetadata(items).IsCritical);
+    }
+
+    public static string GroupAutomationId(object items)
+    {
+        return TaskListGroupViewModel.GetMetadata(items).AutomationId;
+    }
+
+    public static string GroupTitle(object items)
+    {
+        return TaskListGroupViewModel.GetMetadata(items).Title;
+    }
+
+    public static string GroupAccessibleName(object items)
+    {
+        return TaskListGroupViewModel.GetMetadata(items).AccessibleName;
+    }
+
+    public static int GroupHeaderCount(object items)
+    {
+        return TaskListGroupViewModel.GetMetadata(items).HeaderCount;
+    }
+
+    public static ICommand GroupToggleCommand(object items)
+    {
+        return TaskListGroupViewModel.GetMetadata(items).ToggleCommand;
+    }
+
+    public static bool GroupIsExpanded(object items)
+    {
+        return TaskListGroupViewModel.GetMetadata(items).IsExpanded;
+    }
+
+    public static string GroupCompletedChevron(object items)
+    {
+        return CompletedChevron(GroupIsExpanded(items));
     }
 
     internal void FocusComposer()
@@ -172,6 +232,11 @@ public sealed partial class TaskListView : UserControl
         else if (args.PropertyName == nameof(TaskListViewModel.Title))
         {
             AnimateListSwitch();
+        }
+        else if (args.PropertyName == nameof(TaskListViewModel.TaskGroups))
+        {
+            TasksCollectionViewSource.Source = null;
+            TasksCollectionViewSource.Source = ViewModel.TaskGroups;
         }
     }
 

@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -67,13 +66,15 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
     internal event Action? AddAttachmentRequested;
 
-    public ObservableCollection<StepItemViewModel> Steps { get; } = [];
+    [ObservableProperty]
+    public partial IList<object> Steps { get; set; } = new List<object>();
 
-    public ObservableCollection<AttachmentItemViewModel> Attachments { get; } = [];
+    [ObservableProperty]
+    public partial IList<object> Attachments { get; set; } = new List<object>();
 
-    public IReadOnlyList<string> CustomPeriodOptions { get; }
+    public IList<object> CustomPeriodOptions { get; }
 
-    public IReadOnlyList<string> RepeatOptions { get; }
+    public IList<object> RepeatOptions { get; }
 
     public string Uid => _model?.Uid ?? string.Empty;
 
@@ -246,11 +247,12 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         _model = task;
         ApplyModelToEditor(task);
 
-        Steps.Clear();
+        var steps = new List<object>();
         foreach (TodoTask step in await stepsRequest)
         {
-            Steps.Add(CreateStepViewModel(step));
+            steps.Add(CreateStepViewModel(step));
         }
+        Steps = steps;
 
         RebuildAttachments();
         OnPropertyChanged(nameof(Uid));
@@ -329,7 +331,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     {
         for (int index = 0; index < Steps.Count; index++)
         {
-            StepItemViewModel step = Steps[index];
+            var step = (StepItemViewModel)Steps[index];
             double sortOrder = (index + 1) * 1024d;
             step.Model.SortOrder = sortOrder;
             await _taskStore.ReorderStepAsync(step.Uid, sortOrder, cancellationToken);
@@ -559,7 +561,10 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         }
 
         TodoTask step = await _taskStore.AddStepAsync(_model.Uid, NewStepTitle.Trim());
-        Steps.Add(CreateStepViewModel(step));
+        Steps = new List<object>(Steps)
+        {
+            CreateStepViewModel(step),
+        };
         NewStepTitle = string.Empty;
         TaskChanged?.Invoke(CloneTask(_model));
     }
@@ -633,7 +638,9 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private async Task DeleteStepAsync(StepItemViewModel item)
     {
         await _taskStore.DeleteTaskAsync(item.Uid);
-        Steps.Remove(item);
+        var steps = new List<object>(Steps);
+        steps.Remove(item);
+        Steps = steps;
         TaskChanged?.Invoke(CloneTask(_model!));
     }
 
@@ -679,7 +686,9 @@ public sealed partial class TaskDetailViewModel : ObservableObject
             return;
         }
 
-        Attachments.Remove(item);
+        var attachments = new List<object>(Attachments);
+        attachments.Remove(item);
+        Attachments = attachments;
         if (!TryResolveAttachmentPath(item.Model.RelativePath, out string path))
         {
             return;
@@ -983,19 +992,21 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
     private void RebuildAttachments()
     {
-        Attachments.Clear();
         if (_model is null)
         {
+            Attachments = new List<object>();
             return;
         }
 
+        var attachments = new List<object>(_model.Attachments.Count);
         foreach (TaskAttachment attachment in _model.Attachments)
         {
-            Attachments.Add(new AttachmentItemViewModel(
+            attachments.Add(new AttachmentItemViewModel(
                 attachment,
                 OpenAttachmentAsync,
                 RemoveAttachmentAsync));
         }
+        Attachments = attachments;
     }
 
     private void ScheduleSave(TimeSpan delay)

@@ -815,3 +815,122 @@ scripts were not re-run.
 - The visible taskbar badge and reboot reminder-persistence checks, the M8
   Narrator listening check, and the M9 Native AOT startup/working-set gate
   remain open.
+
+## M9 — Performance gate: Native AOT          2026-08-04
+
+**Gate:** OPEN on one row. x64 and ARM64 Native AOT both publish with zero
+trim/AOT warnings, the x64 AOT build passes the complete M8 UI/accessibility
+script (14/14), and every gated §7 number passes as re-baselined by ADR-008.
+The +10-minute idle sample — the leak gate — has still never been measured on
+any build, so M9 does not close. ARM64 runtime performance is untestable on this
+x64 host and is not claimed.
+
+Against the originally locked budgets this gate read FAIL: every AOT startup row
+and both required working-set rows missed by 1.7×–5.2×. A startup stage trace
+attributed 76–78% of startup to reaching the first rendered frame, dominated by
+first-use XAML runtime and window construction, which app code cannot move. The
+owner reviewed the gap and chose an explicit re-baseline over further
+optimisation against numbers that were locked before any WinUI 3 code existed.
+`docs/adr/ADR-008-perf-budget-rebaseline.md` records the evidence, the revised
+budgets, the reference machine, and three follow-ups.
+
+**Shipped**
+- Release now enables Native AOT, trimming, self-contained .NET, and
+  self-contained Windows App SDK deployment. `scripts/Publish-Aot.ps1`
+  publishes a runnable package layout, reports executable/layout sizes, and
+  guards recursive output replacement. The x64 executable is 12.19 MB and the
+  full layout is 188.13 MB.
+- Native AOT exposed WinRT collection-marshalling failures that the managed
+  build hid. Task groups, shortcut rows, steps, attachments, and option lists
+  now expose exact `List<object>`-backed sources; mutable detail collections
+  publish fresh snapshots so compiled `x:Bind` receives change notification.
+  Group header metadata is kept separately and resolved by static x:Bind
+  functions without reflection or converters.
+- The M8 gate now matches the post-M8 row-toggle and delete-confirmation flows,
+  uses an automation-visible detail control as its pane marker, and confirms
+  deletion through authored AutomationIds. The shortcuts accelerator ignores
+  the documented WinUI "another ContentDialog is open" HRESULT instead of
+  terminating an AOT process. The shortcuts dialog is deferred with `x:Load`.
+- Startup tracing now records first frame, first interactive frame, and elapsed
+  stages. Windows integration overlaps shell hydration, placement loads in
+  parallel with the shell, selected-navigation state joins the initial store
+  reads, and the settings-only StartupTask state finishes after the list is
+  interactive.
+- `scripts/Measure-Perf.ps1` now supports FD/AOT builds and 0/5,000/20,000-task
+  datasets, first-frame/interactive timing, working/private memory at +2s,
+  +30s, and +10min, budget evaluation, query/search benchmarks, per-build
+  scrolling probes, structured JSON output, and full-run `docs/PERF.md` rows.
+  The seed fixture accepts a true empty DB and resolves list foreign keys by
+  UID so the default Tasks list cannot skew the dataset.
+
+**Shipped after the re-baseline decision**
+- `docs/adr/ADR-008-perf-budget-rebaseline.md`. The startup gate is split into a
+  total ceiling — which is dominated by framework cost and only catches gross
+  regressions — plus a gated app-owned segment measured from the first rendered
+  frame to the first interactive frame, which is where a real regression shows.
+  Working-set gates move from the +2 s sample to the settled +30 s sample,
+  because +2 s lands before the first list virtualisation pass and before the GC
+  heap settles. The +10-minute rule now compares against +30 s rather than
+  against launch, so it measures a leak instead of measuring startup. The
+  framework-dependent build stops being a gate; it is a development-loop build
+  from M9 onward and stays in `docs/PERF.md` for comparison. No budget that
+  passed was touched, and no §7 rule was relaxed.
+- `PLAN.md` §7 rewritten to the ADR-008 numbers, ADR-008 summarised in §2, and
+  the M9 gate wording updated to point at it.
+- `scripts/Measure-Perf.ps1` evaluates the ADR-008 budgets and emits
+  `ColdAppWorkMs` / `WarmAppWorkMs` into `docs/PERF.md`, the summary JSON, and
+  the console table.
+- `scripts/Publish-Aot.ps1` puts the Visual Studio Installer directory on PATH
+  before publishing. ILCompiler locates the MSVC linker by shelling out to
+  `vswhere.exe` and taking stdout verbatim; with `vswhere` off PATH the shell's
+  "not recognized" text landed in the linker command line and the ARM64 publish
+  died with MSB3073 / exit 123.
+
+**Measured result**
+- Matrix artifact: `tests/ui/artifacts/perf/20260803-232609/summary.json`.
+  All three AOT rows pass every gated ADR-008 number:
+
+  | Row | Cold (≤ 3,000 ms) | Warm (≤ 2,300 ms) | WS @30 s | Budget |
+  |---|---:|---:|---:|---:|
+  | 0 / 1 list | 2,509 ms | 1,486 ms | 142.70 MB | ≤ 165 MB |
+  | 5,000 / 20 | 1,809 ms | 1,306 ms | 175.88 MB | ≤ 200 MB |
+  | 20,000 / 20 | 2,224 ms | 1,993 ms | 180.47 MB | ≤ 205 MB |
+
+- App-owned startup work: 585.6 ms cold against 700 ms, 423.4 ms warm against
+  550 ms. Both from the focused profile runs, not from a matrix row — the
+  harness began emitting those columns after the matrix was measured.
+- Data access passed at 1.893 ms maximum query and 2.309 ms search. AOT scroll
+  passed at 119.37 fps, zero dropped frames, and zero callback allocations.
+- x64 AOT M8 artifact:
+  `tests/ui/artifacts/m9/m8-aot-exact-20260803-233642` (14 passed, 0 failed).
+- ARM64 Native AOT publishes clean under `-warnaserror`: 12.61 MB executable,
+  186.97 MB layout. x64 is 12.19 MB and 188.13 MB. Both are under the 260 MB
+  installed-size budget.
+
+**Deviations from PLAN.md**
+- The §7 startup and working-set budgets were re-baselined by ADR-008 with owner
+  approval. This is a real relaxation of those rows and is recorded as one.
+- The +10-minute idle samples are still unmeasured. A run was started and
+  stopped partway on 2026-08-04 at the owner's request, who chose to treat it as
+  optional later work. It is deferred, not waived: M9 does not close until it is
+  measured, and it is the only gate still without data.
+- ARM64 performance is unmeasured and unmeasurable on this machine, which is an
+  x64 host. Only ARM64 publishing is verified.
+- UI-facing collections that cross the AOT WinRT projection use replaceable
+  `IList<object>` snapshots instead of `ObservableCollection<T>`. This is
+  required because the projected controls rejected the typed/custom vectors at
+  runtime; the M8 AOT suite covers the resulting behavior.
+
+**Known issues carried forward**
+- M9 remains open on the +10-minute idle sample. Re-run with
+  `pwsh -File scripts/Measure-Perf.ps1 -Milestone M9 -Builds AOT -SkipBuild`
+  (~35 minutes, mostly idle); it also fills the two app-work columns.
+- ADR-008 follow-ups for M10: isolate the true framework floor with a bare
+  Native AOT WinUI window; fix cold-start measurement, which currently runs cold
+  and warm back-to-back so "cold" shares a warm file cache (visible in the M9
+  data as framework-dependent warm measuring slower than cold at both 5,000 and
+  20,000 tasks); and decide the self-contained versus framework-dependent
+  Windows App SDK trade deliberately.
+- ARM64 runtime verification needs ARM64 hardware.
+- The visible taskbar badge and reboot reminder-persistence checks, plus the M8
+  Narrator listening check, remain open from earlier milestones.

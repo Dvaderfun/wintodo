@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.Diagnostics;
@@ -93,7 +92,7 @@ public sealed partial class ShellPage : Page
 
     public ShellViewModel ViewModel { get; }
 
-    public IReadOnlyList<ShortcutEntryViewModel> KeyboardShortcuts { get; }
+    public IList<object> KeyboardShortcuts { get; }
 
     internal event Action? SearchFocusRequested;
 
@@ -101,7 +100,6 @@ public sealed partial class ShellPage : Page
 
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        ViewModel.IsTaskListLoaded = true;
         string selectedNavigation = await ViewModel.InitializeAsync(cancellationToken);
         PopulateUserListNavigationItems();
         object selectedItem = ResolveNavigationItem(selectedNavigation);
@@ -620,6 +618,34 @@ public sealed partial class ShellPage : Page
         {
             ViewModel.CancelDeleteTask();
         }
+    }
+
+    private void OnDeleteListDialogOpened(
+        ContentDialog sender,
+        ContentDialogOpenedEventArgs args)
+    {
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "PrimaryButton",
+            "Todo.Dialog.DeleteList.Confirm");
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "CloseButton",
+            "Todo.Dialog.DeleteList.Cancel");
+    }
+
+    private void OnDeleteTaskDialogOpened(
+        ContentDialog sender,
+        ContentDialogOpenedEventArgs args)
+    {
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "PrimaryButton",
+            "Todo.Dialog.DeleteTask.Confirm");
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "CloseButton",
+            "Todo.Dialog.DeleteTask.Cancel");
     }
 
     private async void OnImportIcalRequested()
@@ -1177,9 +1203,9 @@ public sealed partial class ShellPage : Page
         }
     }
 
-    private IReadOnlyList<ShortcutEntryViewModel> CreateKeyboardShortcuts()
+    private IList<object> CreateKeyboardShortcuts()
     {
-        var shortcuts = new List<ShortcutEntryViewModel>(19);
+        var shortcuts = new List<object>(19);
         for (int index = 1; index <= 19; index++)
         {
             string key = index.ToString("00", CultureInfo.InvariantCulture);
@@ -1220,7 +1246,14 @@ public sealed partial class ShellPage : Page
         _isShortcutsDialogOpen = true;
         try
         {
+            ViewModel.IsShortcutsDialogLoaded = true;
+            await Task.Yield();
             await ShortcutsDialog.ShowAsync();
+        }
+        catch (COMException exception)
+            when (exception.HResult == unchecked((int)0x80000019))
+        {
+            Trace.WriteLine($"WINTODO_SHORTCUTS_DIALOG_BUSY={exception.Message}");
         }
         finally
         {

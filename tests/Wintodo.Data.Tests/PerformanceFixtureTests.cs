@@ -16,10 +16,10 @@ public sealed class PerformanceFixtureTests
             : Path.Combine(
                 Path.GetTempPath(),
                 $"wintodo-perf-{Guid.NewGuid():N}.db");
-        int taskCount = ParsePositiveEnvironmentValue(
+        int taskCount = ParseNonNegativeEnvironmentValue(
             "WINTODO_PERF_TASK_COUNT",
             defaultValue: 100);
-        int listCount = ParsePositiveEnvironmentValue(
+        int listCount = ParseNonNegativeEnvironmentValue(
             "WINTODO_PERF_LIST_COUNT",
             defaultValue: 4);
 
@@ -56,6 +56,9 @@ public sealed class PerformanceFixtureTests
                 await using SqliteCommand verify = connection.CreateCommand();
                 verify.CommandText = "SELECT COUNT(*) FROM tasks;";
                 Assert.Equal(taskCount, Convert.ToInt32(await verify.ExecuteScalarAsync()));
+                verify.CommandText =
+                    "SELECT COUNT(*) FROM lists WHERE uid LIKE 'perf-list-%';";
+                Assert.Equal(listCount, Convert.ToInt32(await verify.ExecuteScalarAsync()));
             }
         }
         finally
@@ -68,7 +71,7 @@ public sealed class PerformanceFixtureTests
         }
     }
 
-    private static int ParsePositiveEnvironmentValue(
+    private static int ParseNonNegativeEnvironmentValue(
         string name,
         int defaultValue)
     {
@@ -78,7 +81,7 @@ public sealed class PerformanceFixtureTests
             System.Globalization.NumberStyles.Integer,
             System.Globalization.CultureInfo.InvariantCulture,
             out int value)
-            && value > 0
+            && value >= 0
                 ? value
                 : defaultValue;
     }

@@ -344,7 +344,6 @@
                             <controls:TaskListView
                                 x:Name="TaskList"
                                 Loaded="OnTaskListLoaded"
-                                x:Load="{x:Bind ViewModel.IsTaskListLoaded, Mode=OneWay}"
                                 ViewModel="{x:Bind ViewModel.TaskList, Mode=OneWay}"
                                 Visibility="{x:Bind controls:TaskListView.InverseBoolToVisibility(ViewModel.IsSettingsVisible), Mode=OneWay}" />
                             <controls:SettingsView
@@ -374,7 +373,7 @@
                         AutomationProperties.AutomationId="Todo.Detail.Sizer"
                         IsDragInverted="True"
                         Orientation="Vertical"
-                        TargetControl="{x:Bind DetailHost}" />
+                        TargetControl="{x:Bind DetailHost, Mode=OneTime}" />
                     <Border
                         x:Name="DetailPane"
                         Grid.Column="1"
@@ -409,7 +408,8 @@
             x:Name="ShortcutsDialog"
             x:Uid="ShortcutsDialog"
             AutomationProperties.AutomationId="Todo.Dialog.Shortcuts"
-            Opened="OnShortcutsDialogOpened">
+            Opened="OnShortcutsDialogOpened"
+            x:Load="{x:Bind ViewModel.IsShortcutsDialogLoaded, Mode=OneWay}">
             <ScrollViewer
                 MaxHeight="520"
                 AutomationProperties.AutomationId="Todo.Dialog.Shortcuts.Scroll">
@@ -445,6 +445,7 @@
             x:Uid="DeleteListDialog"
             AutomationProperties.AutomationId="Todo.Dialog.DeleteList"
             DefaultButton="Close"
+            Opened="OnDeleteListDialogOpened"
             x:Load="{x:Bind ViewModel.IsDeleteListDialogLoaded, Mode=OneWay}">
             <TextBlock
                 x:Name="DeleteListMessage"
@@ -457,6 +458,7 @@
             x:Uid="DeleteTaskDialog"
             AutomationProperties.AutomationId="Todo.Dialog.DeleteTask"
             DefaultButton="Close"
+            Opened="OnDeleteTaskDialogOpened"
             x:Load="{x:Bind ViewModel.IsDeleteTaskDialogLoaded, Mode=OneWay}">
             <TextBlock
                 x:Name="DeleteTaskMessage"

@@ -160,6 +160,17 @@ Budget: ~700 lines plus tests. Re-evaluate `Ical.Net` at M13 only if the
 hand-rolled parser proves inadequate; the criteria are (a) it passes the AOT
 publish gate warning-free and (b) it round-trips the fixture corpus losslessly.
 
+### ADR-008 — Performance budgets re-baselined to the measured WinUI 3 floor
+
+The §7 startup and working-set budgets were locked before any WinUI 3 code
+existed and missed the measured Native AOT result by 1.7×–5.2×. A startup stage
+trace attributes 76–78% of startup to reaching the first rendered frame, most of
+it inside first-use XAML runtime and window construction, which is not reachable
+by app-side work. §7 is re-baselined against that floor, the startup gate is
+split into a total ceiling plus a gated app-work segment, and working-set gates
+move to the settled +30 s sample. Full reasoning, measured evidence, reference
+machine, and follow-ups: [`docs/adr/ADR-008-perf-budget-rebaseline.md`](docs/adr/ADR-008-perf-budget-rebaseline.md).
+
 ---
 
 ## 3. Tech stack — locked
@@ -417,17 +428,32 @@ views. No global "reload everything" path.
 These are **gates**, not aspirations. M9 fails if they are not met, and every
 milestone from M3 onward appends a measurement row to `docs/PERF.md`.
 
-| Metric | Framework-dependent | Native AOT (M9+) | Hard fail |
-|---|---|---|---|
-| Cold start → first interactive frame | ≤ 900 ms | ≤ 500 ms | > 1500 ms |
-| Warm start | ≤ 400 ms | ≤ 250 ms | > 700 ms |
-| Idle working set, empty DB | ≤ 95 MB | ≤ 65 MB | > 150 MB |
-| Idle working set, 5 000 tasks / 20 lists | ≤ 120 MB | ≤ 85 MB | > 180 MB |
-| Working set after 10 min idle | must not exceed launch + 10 MB | same | any monotonic growth |
-| List query, 10 000 tasks | ≤ 5 ms | ≤ 5 ms | > 20 ms |
-| Search keystroke → results | ≤ 60 ms | ≤ 60 ms | > 150 ms |
-| Scroll 10 000 tasks | 60 fps, zero per-frame allocations | same | any dropped frames |
-| Installed size (framework pkg) | — | ≤ 260 MB self-contained | — |
+The startup and working-set rows were re-baselined by
+[ADR-008](docs/adr/ADR-008-perf-budget-rebaseline.md) against the measured
+WinUI 3 + self-contained Windows App SDK floor. Read that ADR before changing
+them again. The framework-dependent build is a development-loop build from M9
+onward: its numbers are recorded in `docs/PERF.md` but are not gated.
+
+| Metric | Native AOT (gated) | Hard fail |
+|---|---|---|
+| App startup work, first frame → first interactive frame, cold | ≤ 700 ms | > 1 000 ms |
+| App startup work, first frame → first interactive frame, warm | ≤ 550 ms | > 800 ms |
+| Cold start → first interactive frame (total) | ≤ 3 000 ms | > 3 500 ms |
+| Warm start → first interactive frame (total) | ≤ 2 300 ms | > 2 800 ms |
+| Idle working set at +30 s, empty DB | ≤ 165 MB | > 190 MB |
+| Idle working set at +30 s, 5 000 tasks / 20 lists | ≤ 200 MB | > 225 MB |
+| Idle working set at +30 s, 20 000 tasks / 20 lists | ≤ 205 MB | > 230 MB |
+| Working set at +10 min | ≤ the +30 s sample + 10 MB | any monotonic growth |
+| List query, 10 000 tasks | ≤ 5 ms | > 20 ms |
+| Search keystroke → results | ≤ 60 ms | > 150 ms |
+| Scroll 10 000 tasks | 60 fps, zero per-frame allocations | any dropped frames |
+| Installed size (framework pkg) | ≤ 260 MB self-contained | — |
+
+The two startup rows are separate gates on purpose. Total startup is dominated
+by first-use XAML runtime and window construction, which app code cannot move;
+it is kept only as a ceiling against gross regressions. The first-frame →
+interactive segment is the app's own work — store initialisation, shell
+hydration, initial query — and is the row that a real regression trips.
 
 ### Rules that produce those numbers
 
@@ -769,8 +795,8 @@ single pass), then `/winui-code-review`.
   framework-dependent and AOT builds, at 0 / 5 000 / 20 000 tasks.
 
 **Gate**
-- Every §7 AOT-column number met. If one is missed, profile and fix — do not
-  relax the budget without an ADR.
+- Every gated §7 number met, as re-baselined by ADR-008. If one is missed,
+  profile and fix — do not relax the budget without a further ADR.
 - The AOT build passes the entire `winapp ui` suite from M8 (AOT changes
   behaviour: anything reflective that survived will fail here, loudly).
 

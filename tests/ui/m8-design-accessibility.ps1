@@ -307,7 +307,12 @@ Test-UI "Keyboard creates a task with a complete accessible sentence" {
         $row.name -notmatch "not completed") {
         throw "The created task did not expose title, list, and completion state."
     }
-    winapp ui invoke $row.selector -w $mainHwnd | Out-Null
+    winapp ui focus $row.selector -w $mainHwnd | Out-Null
+    winapp ui send-keys "enter" -w $mainHwnd --via send-input | Out-Null
+    winapp ui wait-for "Todo.Detail.Title" -w $mainHwnd -t 5000 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Enter did not select and open the created task."
+    }
 }
 
 Test-UI "Importance, My Day, selection, and inline rename shortcuts work" {
@@ -336,8 +341,10 @@ Test-UI "Importance, My Day, selection, and inline rename shortcuts work" {
 Test-UI "Keyboard opens detail, due picker, and reminder picker" {
     $row = Get-TaskRow "Narrator task renamed"
     winapp ui invoke $row.selector -w $mainHwnd | Out-Null
-    winapp ui send-keys "enter" -w $mainHwnd --via send-input | Out-Null
-    winapp ui wait-for "Todo.Detail.Root" -w $mainHwnd -t 5000 | Out-Null
+    winapp ui wait-for "Todo.Detail.Title" -w $mainHwnd -t 5000 | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "The selected task detail pane was not available."
+    }
 
     winapp ui send-keys "ctrl+shift+vk=0x44" -w $mainHwnd --via send-input | Out-Null
     winapp ui wait-for "Todo.Detail.DueDatePicker" -a $AppPid -t 5000 | Out-Null
@@ -350,12 +357,12 @@ Test-UI "Keyboard opens detail, due picker, and reminder picker" {
     winapp ui invoke "Todo.Detail.Due" -w $mainHwnd | Out-Null
     Start-Sleep -Milliseconds 300
     winapp ui invoke "Todo.Detail.Due.Tomorrow" -a $AppPid | Out-Null
-    winapp ui send-keys "escape" -w $mainHwnd --via send-input | Out-Null
-    winapp ui wait-for "Todo.Detail.Root" -w $mainHwnd --gone -t 3000 | Out-Null
     $updated = Wait-TaskRow "Narrator task renamed" "due Tomorrow"
     if (-not $updated) {
         throw "The task accessible name omitted its due date."
     }
+    winapp ui send-keys "escape" -w $mainHwnd --via send-input | Out-Null
+    winapp ui wait-for "Todo.Detail.Title" -w $mainHwnd --gone -t 3000 | Out-Null
 }
 
 Test-UI "Keyboard completes, deletes, and restores a task" {
@@ -372,6 +379,8 @@ Test-UI "Keyboard completes, deletes, and restores a task" {
 
     winapp ui invoke $completed.selector -w $mainHwnd | Out-Null
     winapp ui send-keys "delete" -w $mainHwnd --via send-input | Out-Null
+    winapp ui wait-for "Todo.Dialog.DeleteTask" -a $AppPid -t 3000 | Out-Null
+    winapp ui invoke "Todo.Dialog.DeleteTask.Confirm" -a $AppPid | Out-Null
     winapp ui wait-for "Todo.List.UndoButton" -w $mainHwnd -t 3000 | Out-Null
     winapp ui send-keys "ctrl+vk=0x5A" -w $mainHwnd --via send-input | Out-Null
     $restored = Wait-TaskRow "Narrator task renamed" ", completed$"

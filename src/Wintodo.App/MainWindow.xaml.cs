@@ -67,14 +67,15 @@ public sealed partial class MainWindow : Window
         _shellPage.SearchFocusRequested += TitleSearch.FocusSearch;
         _shellPage.SearchClearRequested += TitleSearch.TryClear;
         RootFrame.Content = _shellPage;
-        WindowPlacementState? placement =
-            await _stateService.LoadWindowPlacementAsync(cancellationToken);
+        Task<WindowPlacementState?> placementTask =
+            _stateService.LoadWindowPlacementAsync(cancellationToken);
+        Task shellTask = _shellPage.InitializeAsync(cancellationToken);
+        await Task.WhenAll(placementTask, shellTask);
+        WindowPlacementState? placement = await placementTask;
         if (placement is not null)
         {
             ApplyPlacement(placement.Value);
         }
-
-        await _shellPage.InitializeAsync(cancellationToken);
     }
 
     internal void ApplyDeferredPresenterState()
