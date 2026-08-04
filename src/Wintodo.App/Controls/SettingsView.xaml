@@ -132,6 +132,118 @@
                         <ColumnDefinition Width="20" />
                     </Grid.ColumnDefinitions>
                     <TextBlock
+                        x:Uid="SettingsSyncHeader"
+                        VerticalAlignment="Center"
+                        Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <ProgressRing
+                        Grid.Column="1"
+                        Width="20"
+                        Height="20"
+                        AutomationProperties.AutomationId="Todo.Settings.Sync.Progress"
+                        IsActive="{x:Bind ViewModel.IsSyncBusy, Mode=OneWay}"
+                        Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncBusy), Mode=OneWay}" />
+                </Grid>
+
+                <settings:SettingsCard
+                    x:Uid="SettingsSyncConnectCard"
+                    ContentAlignment="Vertical"
+                    Visibility="{x:Bind local:SettingsView.InvertBoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
+                    <StackPanel Spacing="12">
+                        <TextBox
+                            x:Uid="SettingsSyncServer"
+                            AutomationProperties.AutomationId="Todo.Settings.Sync.Server"
+                            Text="{x:Bind ViewModel.CalDavServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox
+                            x:Uid="SettingsSyncUsername"
+                            AutomationProperties.AutomationId="Todo.Settings.Sync.Username"
+                            Text="{x:Bind ViewModel.CalDavUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <PasswordBox
+                            x:Uid="SettingsSyncPassword"
+                            AutomationProperties.AutomationId="Todo.Settings.Sync.Password"
+                            Password="{x:Bind ViewModel.CalDavPassword, Mode=TwoWay}" />
+                        <Button
+                            AutomationProperties.AutomationId="Todo.Settings.Sync.Connect"
+                            Command="{x:Bind ViewModel.ConnectCalDavCommand, Mode=OneTime}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE774;" />
+                                <TextBlock x:Uid="SettingsSyncConnectLabel" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </settings:SettingsCard>
+
+                <settings:SettingsCard
+                    x:Uid="SettingsSyncAccountCard"
+                    ContentAlignment="Vertical"
+                    Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
+                    <StackPanel Spacing="12">
+                        <TextBlock
+                            AutomationProperties.AutomationId="Todo.Settings.Sync.Account"
+                            Style="{StaticResource BodyStrongTextBlockStyle}"
+                            Text="{x:Bind ViewModel.SyncAccountDisplayName, Mode=OneWay}" />
+                        <TextBlock
+                            AutomationProperties.AutomationId="Todo.Settings.Sync.Status"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            Text="{x:Bind ViewModel.SyncStatusText, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                AutomationProperties.AutomationId="Todo.Settings.Sync.Now"
+                                Command="{x:Bind ViewModel.SyncNowCommand, Mode=OneTime}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE895;" />
+                                    <TextBlock x:Uid="SettingsSyncNowLabel" />
+                                </StackPanel>
+                            </Button>
+                            <Button
+                                AutomationProperties.AutomationId="Todo.Settings.Sync.Disconnect"
+                                Command="{x:Bind ViewModel.DisconnectCalDavCommand, Mode=OneTime}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE8BB;" />
+                                    <TextBlock x:Uid="SettingsSyncDisconnectLabel" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </settings:SettingsCard>
+
+                <settings:SettingsCard
+                    x:Uid="SettingsSyncListsCard"
+                    ContentAlignment="Vertical"
+                    Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
+                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.SyncListOptions, Mode=OneWay}">
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="viewModels:SyncListOptionViewModel">
+                                <Grid MinHeight="44" ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock
+                                        VerticalAlignment="Center"
+                                        Style="{StaticResource BodyTextBlockStyle}"
+                                        Text="{x:Bind DisplayName, Mode=OneTime}"
+                                        TextTrimming="CharacterEllipsis" />
+                                    <ToggleSwitch
+                                        Grid.Column="1"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                                        IsEnabled="{x:Bind IsAvailable, Mode=OneWay}"
+                                        IsOn="{x:Bind IsEnabled, Mode=TwoWay}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                </settings:SettingsCard>
+            </StackPanel>
+
+            <StackPanel Spacing="12">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="20" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
                         x:Uid="SettingsDataHeader"
                         VerticalAlignment="Center"
                         Style="{StaticResource SubtitleTextBlockStyle}" />

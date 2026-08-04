@@ -10,7 +10,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <IsAotCompatible Condition="'$(MSBuildProjectName)' == 'Wintodo.Core' Or '$(MSBuildProjectName)' == 'Wintodo.Data'">true</IsAotCompatible>
+    <IsAotCompatible Condition="'$(MSBuildProjectName)' == 'Wintodo.Core' Or '$(MSBuildProjectName)' == 'Wintodo.Data' Or '$(MSBuildProjectName)' == 'Wintodo.Sync'">true</IsAotCompatible>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <EnableAotAnalyzer>true</EnableAotAnalyzer>
     <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>

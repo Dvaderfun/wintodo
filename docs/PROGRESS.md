@@ -934,3 +934,78 @@ budgets, the reference machine, and three follow-ups.
 - ARM64 runtime verification needs ARM64 hardware.
 - The visible taskbar badge and reboot reminder-persistence checks, plus the M8
   Narrator listening check, remain open from earlier milestones.
+
+## M13 — CalDAV sync          2026-08-04
+
+**Gate:** AUTOMATED PASS; LIVE INTEROP OPEN. The production implementation is
+present and the deterministic protocol, persistence, packaged UI, restart, and
+Native AOT checks pass. Radicale and Docker/Nextcloud are not installed on this
+machine, so the PLAN.md requirement to exercise both live servers has not run
+and M13 is not reported closed.
+
+**Shipped**
+- Added the `Wintodo.Sync` project. `CalDavClient` performs principal and
+  calendar-home discovery, enumerates VTODO collections, uses
+  `sync-collection` REPORT tokens, falls back to ctag plus a full Depth-1
+  PROPFIND when a token is invalid, and sends conditional task PUT/DELETE
+  requests with ETags. Collection creation, rename, and deletion use
+  MKCALENDAR, PROPPATCH, and DELETE.
+- Added `CalDavSyncService` with pull-before-push cycles, per-account
+  serialization, offline queueing, timer/manual/resume entry points, and
+  explicit keep-mine/keep-theirs/keep-both conflict resolution. Server-provided
+  URLs are restricted to the configured origin before Basic credentials are
+  attached; non-loopback HTTP, URL credentials/fragments, DTD-bearing XML, and
+  oversized XML/calendar responses are rejected.
+- Extended `SqliteTaskStore` over the M1 sync columns and `change_log`: account
+  and discovery state, per-list metadata/toggles, remote task snapshots,
+  transactional pull application, race-aware change acknowledgements, remote
+  versions, and conflict copies. Pulls do not generate outbound changes,
+  disabled lists do not push, and discovery preserves pending local list
+  deletes. No credential is written to SQLite.
+- Added the app credential adapter over `Windows.Security.Credentials.PasswordVault`.
+  Settings now provides server/user/password connection, account state, manual
+  sync, disconnect, and per-list toggles. The navigation footer shows sync
+  state. Sync runs every 15 minutes, immediately after restart, and after app
+  resume. Conflicts use a deferred localized ContentDialog with three choices.
+- Added automation IDs for every new interactive control and kept all authored
+  UI strings in `Strings/en-US/Resources.resw`. Raw server exception text is
+  traced but not exposed as unlocalized UI.
+
+**Verification**
+- `dotnet test Wintodo.sln -p:Platform=x64 -warnaserror --no-restore`: 88
+  passed (Core 40, Data 39, Sync 9). Sync coverage includes discovery,
+  VTODO-only collection enumeration, token deltas and invalid-token fallback,
+  conditional writes, a stateful two-client create/edit/complete/delete
+  convergence cycle, concurrent-edit detection and resolution, offline queue
+  retention, write-acknowledgement races, pending list deletion, keep-both, and
+  unknown iCalendar property preservation.
+- `BuildAndRun.ps1 -SkipRun`: x64 Debug build passed with zero warnings and zero
+  errors.
+- `tests/ui/run-m13-gate.ps1`: 9/9 passed against the loopback CalDAV harness,
+  including account discovery, per-list toggle, manual sync, real PasswordVault
+  persistence, process restart with immediate resume sync, automation IDs, and
+  disconnect. Artifact:
+  `tests/ui/artifacts/m13/run-20260804-013505`.
+- `scripts/Publish-Aot.ps1`: x64 and ARM64 Native AOT both published cleanly.
+  x64 is 16.41 MB executable / 210.17 MB layout; ARM64 is 16.98 MB / 215.14 MB.
+  Summary: `publish/aot-m13/summary.json`.
+- `/winui-code-review` checks found no legacy Binding, missing explicit x:Bind
+  modes, converter/reflection/legacy-dispatcher usage, or missing IDs on the new
+  surface. The connected Settings screenshot was reviewed for clipping and
+  overlap.
+
+**Deviations from PLAN.md**
+- The owner explicitly directed M13 implementation while M9 still has one open
+  measurement row and M10-M12 have not shipped. This work therefore advances
+  out of milestone order; the status of those milestones is unchanged.
+- The deterministic loopback CalDAV harness supplements but does not replace
+  the required live-server row. `radicale` is absent, the Python module is not
+  installed, and Docker is absent. Installing either would modify the machine
+  outside this repository and requires owner approval under AGENTS.md.
+
+**Known issues carried forward**
+- Run the convergence and unknown-property corpus against live Radicale and
+  Nextcloud, and exercise the conflict ContentDialog through UI Automation.
+  Those are the remaining M13 gate rows.
+- Baikal and Fastmail remain optional interop targets if endpoints become
+  available.

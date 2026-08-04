@@ -902,4 +902,30 @@
   <data name="JumpList_OpenListDescription" xml:space="preserve"><value>Open {0} in Wintodo.</value></data>
   <data name="Share_NoText" xml:space="preserve"><value>The shared item does not contain text.</value></data>
   <data name="Share_CreateFailed" xml:space="preserve"><value>Wintodo could not create a task from the shared text.</value></data>
+  <data name="SettingsSyncHeader.Text" xml:space="preserve"><value>Synchronization</value></data>
+  <data name="SettingsSyncConnectCard.Header" xml:space="preserve"><value>CalDAV account</value></data>
+  <data name="SettingsSyncConnectCard.Description" xml:space="preserve"><value>Connect a task-compatible CalDAV server.</value></data>
+  <data name="SettingsSyncServer.Header" xml:space="preserve"><value>Server URL</value></data>
+  <data name="SettingsSyncServer.PlaceholderText" xml:space="preserve"><value>https://example.com/dav/</value></data>
+  <data name="SettingsSyncUsername.Header" xml:space="preserve"><value>Username</value></data>
+  <data name="SettingsSyncPassword.Header" xml:space="preserve"><value>Password or app password</value></data>
+  <data name="SettingsSyncConnectLabel.Text" xml:space="preserve"><value>Connect</value></data>
+  <data name="SettingsSyncAccountCard.Header" xml:space="preserve"><value>Connected account</value></data>
+  <data name="SettingsSyncAccountCard.Description" xml:space="preserve"><value>Changes synchronize automatically and when the app resumes.</value></data>
+  <data name="SettingsSyncNowLabel.Text" xml:space="preserve"><value>Sync now</value></data>
+  <data name="SettingsSyncDisconnectLabel.Text" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="SettingsSyncListsCard.Header" xml:space="preserve"><value>Synced lists</value></data>
+  <data name="SettingsSyncListsCard.Description" xml:space="preserve"><value>Choose which lists synchronize with this account.</value></data>
+  <data name="Sync_StatusNotConnected" xml:space="preserve"><value>Not connected</value></data>
+  <data name="Sync_StatusSyncing" xml:space="preserve"><value>Syncing</value></data>
+  <data name="Sync_StatusUpToDate" xml:space="preserve"><value>Up to date</value></data>
+  <data name="Sync_StatusOffline" xml:space="preserve"><value>Offline; changes queued</value></data>
+  <data name="Sync_StatusAttention" xml:space="preserve"><value>Conflict needs attention</value></data>
+  <data name="Sync_StatusError" xml:space="preserve"><value>Sync failed</value></data>
+  <data name="SyncConflictDialog.Title" xml:space="preserve"><value>Choose which task to keep</value></data>
+  <data name="SyncConflictDialog.PrimaryButtonText" xml:space="preserve"><value>Keep mine</value></data>
+  <data name="SyncConflictDialog.SecondaryButtonText" xml:space="preserve"><value>Keep theirs</value></data>
+  <data name="SyncConflictDialog.CloseButtonText" xml:space="preserve"><value>Keep both</value></data>
+  <data name="Sync_ConflictMessage" xml:space="preserve"><value>“{0}” in “{1}” changed both here and on the server.</value></data>
+  <data name="Sync_ConflictDeletedMessage" xml:space="preserve"><value>“{0}” in “{1}” changed here but was deleted on the server.</value></data>
 </root>

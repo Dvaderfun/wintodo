@@ -22,6 +22,7 @@ using Wintodo.Core.Ical;
 using Wintodo.Core.Models;
 using Wintodo.Core.Services;
 using Wintodo.Services;
+using Wintodo.Sync;
 using Wintodo.ViewModels;
 
 namespace Wintodo.Pages;
@@ -43,6 +44,9 @@ public sealed partial class ShellPage : Page
     private readonly WindowsIntegrationService _windowsIntegration;
     private CancellationTokenSource? _transferStatusCancellation;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _midnightTimer;
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _syncTimer;
+    private DateTimeOffset _lastSyncAttempt = DateTimeOffset.MinValue;
+    private bool _isSyncConflictDialogOpen;
     private bool _isNavigationInitialized;
     private bool _isHighContrast;
     private bool _isShortcutsDialogOpen;
@@ -55,7 +59,8 @@ public sealed partial class ShellPage : Page
         IClock clock,
         ShellStateService stateService,
         WindowsIntegrationService windowsIntegration,
-        IStartupTaskService startupTaskService)
+        IStartupTaskService startupTaskService,
+        CalDavSyncService syncService)
     {
         _clock = clock;
         _taskStore = taskStore;
@@ -65,7 +70,8 @@ public sealed partial class ShellPage : Page
             taskStore,
             clock,
             stateService,
-            startupTaskService);
+            startupTaskService,
+            syncService);
         KeyboardShortcuts = CreateKeyboardShortcuts();
         InitializeComponent();
         AddPunctuationAccelerators();
@@ -82,6 +88,7 @@ public sealed partial class ShellPage : Page
         ViewModel.AppearanceSettingsChanged += OnAppearanceSettingsChanged;
         ViewModel.UserListVisited += OnUserListVisited;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        ViewModel.SyncConflictsRequested += OnSyncConflictsRequested;
         ShellRoot.ActualThemeChanged += OnActualThemeChanged;
 
         DefaultListNavigationItem.AllowDrop = true;
@@ -108,6 +115,8 @@ public sealed partial class ShellPage : Page
         _isNavigationInitialized = true;
         _uiSettings.ColorValuesChanged += OnColorValuesChanged;
         ScheduleMidnightRefresh();
+        ScheduleBackgroundSync();
+        _ = RunBackgroundSyncAsync();
     }
 
     internal Task SearchAsync(
@@ -122,6 +131,10 @@ public sealed partial class ShellPage : Page
     {
         await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken);
         await _windowsIntegration.RefreshAsync(cancellationToken);
+        if (_clock.UtcNow - _lastSyncAttempt >= TimeSpan.FromMinutes(1))
+        {
+            await RunBackgroundSyncAsync(cancellationToken);
+        }
         ScheduleMidnightRefresh();
     }
 
@@ -233,6 +246,15 @@ public sealed partial class ShellPage : Page
     internal void StopMidnightRefresh()
     {
         ViewModel.UserListVisited -= OnUserListVisited;
+        ViewModel.SyncConflictsRequested -= OnSyncConflictsRequested;
+        ViewModel.DisposeSync();
+        if (_syncTimer is not null)
+        {
+            _syncTimer.Stop();
+            _syncTimer.Tick -= OnSyncTimerTick;
+            _syncTimer = null;
+        }
+
         if (_midnightTimer is null)
         {
             return;
@@ -1453,6 +1475,102 @@ public sealed partial class ShellPage : Page
         _midnightTimer.Start();
     }
 
+    private void ScheduleBackgroundSync()
+    {
+        _syncTimer ??= DispatcherQueue.CreateTimer();
+        _syncTimer.Stop();
+        _syncTimer.Tick -= OnSyncTimerTick;
+        _syncTimer.Tick += OnSyncTimerTick;
+        _syncTimer.Interval = TimeSpan.FromMinutes(15);
+        _syncTimer.IsRepeating = true;
+        _syncTimer.Start();
+    }
+
+    private async void OnSyncTimerTick(
+        Microsoft.UI.Dispatching.DispatcherQueueTimer sender,
+        object args)
+    {
+        await RunBackgroundSyncAsync();
+    }
+
+    private async Task RunBackgroundSyncAsync(
+        CancellationToken cancellationToken = default)
+    {
+        _lastSyncAttempt = _clock.UtcNow;
+        try
+        {
+            await ViewModel.RunBackgroundSyncAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            Trace.WriteLine($"WINTODO_BACKGROUND_SYNC_EXCEPTION={exception}");
+        }
+    }
+
+    private async void OnSyncConflictsRequested(IReadOnlyList<SyncConflict> conflicts)
+    {
+        if (_isSyncConflictDialogOpen || conflicts.Count == 0)
+        {
+            return;
+        }
+
+        _isSyncConflictDialogOpen = true;
+        try
+        {
+            foreach (SyncConflict conflict in conflicts)
+            {
+                ViewModel.IsSyncConflictDialogLoaded = true;
+                await Task.Yield();
+                SyncConflictDialog.XamlRoot = XamlRoot;
+                SyncConflictMessage.Text = string.Format(
+                    CultureInfo.CurrentCulture,
+                    _resources.GetString(
+                        conflict.RemoteDeleted
+                            ? "Sync_ConflictDeletedMessage"
+                            : "Sync_ConflictMessage"),
+                    conflict.LocalTask.Summary,
+                    conflict.ListName);
+                ContentDialogResult result = await SyncConflictDialog.ShowAsync();
+                SyncConflictChoice choice = result switch
+                {
+                    ContentDialogResult.Primary => SyncConflictChoice.KeepMine,
+                    ContentDialogResult.Secondary => SyncConflictChoice.KeepTheirs,
+                    _ => SyncConflictChoice.KeepBoth,
+                };
+                await ViewModel.ResolveSyncConflictAsync(conflict, choice);
+            }
+
+            await ViewModel.PushConflictResolutionsAsync();
+        }
+        catch (COMException exception)
+            when (exception.HResult == unchecked((int)0x80000019))
+        {
+            Trace.WriteLine($"WINTODO_SYNC_DIALOG_BUSY={exception.Message}");
+        }
+        finally
+        {
+            _isSyncConflictDialogOpen = false;
+        }
+    }
+
+    private void OnSyncConflictDialogOpened(
+        ContentDialog sender,
+        ContentDialogOpenedEventArgs args)
+    {
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "PrimaryButton",
+            "Todo.Dialog.SyncConflict.KeepMine");
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "SecondaryButton",
+            "Todo.Dialog.SyncConflict.KeepTheirs");
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "CloseButton",
+            "Todo.Dialog.SyncConflict.KeepBoth");
+    }
+
     private async void OnMidnightTimerTick(
         Microsoft.UI.Dispatching.DispatcherQueueTimer sender,
         object args)
@@ -1601,6 +1719,7 @@ public sealed partial class ShellPage : Page
 
         return navigationKey switch
         {
+            "settings" => SettingsNavigationItem,
             "smart:important" => ImportantNavigationItem,
             "smart:planned" => PlannedNavigationItem,
             "smart:all" => AllNavigationItem,

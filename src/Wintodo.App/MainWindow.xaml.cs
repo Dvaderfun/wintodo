@@ -8,6 +8,7 @@ using Wintodo.Core.Services;
 using Wintodo.Data;
 using Wintodo.Pages;
 using Wintodo.Services;
+using Wintodo.Sync;
 
 namespace Wintodo;
 
@@ -23,6 +24,8 @@ public sealed partial class MainWindow : Window
     private readonly ShellStateService _stateService;
     private readonly WindowsIntegrationService _windowsIntegration;
     private readonly IStartupTaskService _startupTaskService;
+    private readonly CalDavSyncService _syncService;
+    private readonly HttpClient _syncHttpClient;
     private ShellPage? _shellPage;
     private PointInt32 _restoredPosition;
     private SizeInt32 _restoredSize;
@@ -32,13 +35,17 @@ public sealed partial class MainWindow : Window
         SqliteTaskStore store,
         IClock clock,
         WindowsIntegrationService windowsIntegration,
-        IStartupTaskService startupTaskService)
+        IStartupTaskService startupTaskService,
+        CalDavSyncService syncService,
+        HttpClient syncHttpClient)
     {
         _store = store;
         _clock = clock;
         _stateService = new ShellStateService(store);
         _windowsIntegration = windowsIntegration;
         _startupTaskService = startupTaskService;
+        _syncService = syncService;
+        _syncHttpClient = syncHttpClient;
 
         InitializeComponent();
         Title = new ResourceLoader().GetString("MainWindowTitle");
@@ -63,7 +70,8 @@ public sealed partial class MainWindow : Window
             _clock,
             _stateService,
             _windowsIntegration,
-            _startupTaskService);
+            _startupTaskService,
+            _syncService);
         _shellPage.SearchFocusRequested += TitleSearch.FocusSearch;
         _shellPage.SearchClearRequested += TitleSearch.TryClear;
         RootFrame.Content = _shellPage;
@@ -223,6 +231,8 @@ public sealed partial class MainWindow : Window
         finally
         {
             await _windowsIntegration.DisposeAsync();
+            _syncService.Dispose();
+            _syncHttpClient.Dispose();
             await _store.DisposeAsync();
             App.UnregisterAppNotifications();
         }

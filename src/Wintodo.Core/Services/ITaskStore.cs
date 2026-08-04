@@ -4,7 +4,7 @@ using Wintodo.Core.Queries;
 
 namespace Wintodo.Core.Services;
 
-public interface ITaskStore : ISettingsStore, IAsyncDisposable
+public interface ITaskStore : ISettingsStore, ISyncStore, IAsyncDisposable
 {
     event EventHandler<StoreChangedEventArgs>? StoreChanged;
 

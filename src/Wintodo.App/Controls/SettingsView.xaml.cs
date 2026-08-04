@@ -41,4 +41,9 @@ public sealed partial class SettingsView : UserControl
     {
         return value ? Visibility.Visible : Visibility.Collapsed;
     }
+
+    public static Visibility InvertBoolToVisibility(bool value)
+    {
+        return value ? Visibility.Collapsed : Visibility.Visible;
+    }
 }
