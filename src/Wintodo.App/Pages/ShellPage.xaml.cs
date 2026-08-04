@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
@@ -89,6 +90,7 @@ public sealed partial class ShellPage : Page
         ViewModel.UserListVisited += OnUserListVisited;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ViewModel.SyncConflictsRequested += OnSyncConflictsRequested;
+        ViewModel.CustomListIconRequested += OnCustomListIconRequested;
         ShellRoot.ActualThemeChanged += OnActualThemeChanged;
 
         DefaultListNavigationItem.AllowDrop = true;
@@ -104,6 +106,11 @@ public sealed partial class ShellPage : Page
     internal event Action? SearchFocusRequested;
 
     internal event Func<bool>? SearchClearRequested;
+
+    // The app theme has to be applied to the window content root, not this page:
+    // the title bar and its search box are siblings of the frame that hosts the
+    // page, so a page-level RequestedTheme would leave them on the system theme.
+    internal event Action<ElementTheme>? ThemeChanged;
 
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -247,6 +254,7 @@ public sealed partial class ShellPage : Page
     {
         ViewModel.UserListVisited -= OnUserListVisited;
         ViewModel.SyncConflictsRequested -= OnSyncConflictsRequested;
+        ViewModel.CustomListIconRequested -= OnCustomListIconRequested;
         ViewModel.DisposeSync();
         if (_syncTimer is not null)
         {
@@ -268,6 +276,11 @@ public sealed partial class ShellPage : Page
     public static Visibility BoolToVisibility(bool value)
     {
         return value ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public static Visibility CountToVisibility(int count)
+    {
+        return count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     public static ElementTheme ThemeForIndex(int index)
@@ -410,6 +423,8 @@ public sealed partial class ShellPage : Page
 
             ShellNavigation.MenuItems.Add(groupItem);
         }
+
+        UpdateFixedCategoryNavigationAccessibility();
     }
 
     private void ConfigureDefaultListNavigationItem()
@@ -422,14 +437,11 @@ public sealed partial class ShellPage : Page
         }
 
         DefaultListNavigationItem.Visibility = Visibility.Visible;
-        DefaultListNavigationItem.Content = new TextBlock
-        {
-            Text = list.DisplayName,
-            TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
+        DefaultListNavigationItem.Content = BuildDefaultListContent(list);
         DefaultListNavigationItem.Tag = list.NavigationKey;
-        AutomationProperties.SetName(DefaultListNavigationItem, list.DisplayName);
+        AutomationProperties.SetName(
+            DefaultListNavigationItem,
+            GetListAccessibleName(list));
         _navigationItems[list.NavigationKey] = DefaultListNavigationItem;
     }
 
@@ -444,7 +456,7 @@ public sealed partial class ShellPage : Page
             ContextFlyout = CreateListContextFlyout(list),
         };
         AutomationProperties.SetAutomationId(navigationItem, list.AutomationId);
-        AutomationProperties.SetName(navigationItem, list.DisplayName);
+        AutomationProperties.SetName(navigationItem, GetListAccessibleName(list));
         navigationItem.DragStarting += OnListDragStarting;
         navigationItem.DragOver += OnNavigationDragOver;
         navigationItem.Drop += OnListDrop;
@@ -454,13 +466,32 @@ public sealed partial class ShellPage : Page
 
     private Grid BuildListContent(ShellListItemViewModel list)
     {
-        var dot = new Ellipse
+        FrameworkElement icon;
+        if (list.IconEmoji is { Length: > 0 } iconEmoji)
         {
-            Width = 16,
-            Height = 16,
-            Fill = ResolveBrush(list.AccentResourceKey),
-            VerticalAlignment = VerticalAlignment.Center,
-        };
+            icon = new TextBlock
+            {
+                Text = iconEmoji,
+                FontFamily = new FontFamily("Segoe UI Emoji"),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                TextAlignment = TextAlignment.Center,
+                Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
+            };
+        }
+        else
+        {
+            icon = new Ellipse
+            {
+                Width = 16,
+                Height = 16,
+                Fill = ResolveBrush(list.AccentResourceKey),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+        }
+
+        AutomationProperties.SetAutomationId(icon, $"Todo.Nav.Icon.{list.Uid}");
         var label = new TextBlock
         {
             Text = list.DisplayName,
@@ -471,12 +502,73 @@ public sealed partial class ShellPage : Page
         {
             ColumnSpacing = 12,
         };
-        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(16) });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(20) });
         content.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         Grid.SetColumn(label, 1);
-        content.Children.Add(dot);
+        InfoBadge countBadge = BuildTaskCountBadge(list);
+        Grid.SetColumn(countBadge, 2);
+        content.Children.Add(icon);
         content.Children.Add(label);
+        content.Children.Add(countBadge);
         return content;
+    }
+
+    private Grid BuildDefaultListContent(ShellListItemViewModel list)
+    {
+        var label = new TextBlock
+        {
+            Text = list.DisplayName,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        var content = new Grid
+        {
+            ColumnSpacing = 12,
+        };
+        content.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = new GridLength(1, GridUnitType.Star),
+        });
+        content.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        InfoBadge countBadge = BuildTaskCountBadge(list);
+        Grid.SetColumn(countBadge, 1);
+        content.Children.Add(label);
+        content.Children.Add(countBadge);
+        return content;
+    }
+
+    private InfoBadge BuildTaskCountBadge(ShellListItemViewModel list)
+    {
+        var countBadge = new InfoBadge
+        {
+            Value = list.IncompleteTaskCount,
+            Style = (Style)Application.Current.Resources["NavigationTaskCountBadgeStyle"],
+            Visibility = list.IncompleteTaskCount == 0
+                ? Visibility.Collapsed
+                : Visibility.Visible,
+        };
+        AutomationProperties.SetAutomationId(
+            countBadge,
+            list.IsDefault
+                ? "Todo.Nav.DefaultList.Count"
+                : $"Todo.Nav.Count.{list.Uid}");
+        AutomationProperties.SetAccessibilityView(countBadge, AccessibilityView.Content);
+        AutomationProperties.SetName(
+            countBadge,
+            list.IncompleteTaskCount.ToString(CultureInfo.CurrentCulture));
+        return countBadge;
+    }
+
+    private string GetListAccessibleName(ShellListItemViewModel list)
+    {
+        return list.IncompleteTaskCount == 0
+            ? list.DisplayName
+            : string.Format(
+                CultureInfo.CurrentCulture,
+                _resources.GetString("List_AccessibleNameWithCount"),
+                list.DisplayName,
+                list.IncompleteTaskCount);
     }
 
     private MenuFlyout CreateListContextFlyout(ShellListItemViewModel list)
@@ -670,6 +762,46 @@ public sealed partial class ShellPage : Page
             "Todo.Dialog.DeleteTask.Cancel");
     }
 
+    private async void OnCustomListIconRequested()
+    {
+        await Task.Yield();
+        ListIconDialog.XamlRoot = XamlRoot;
+        ContentDialogResult result = await ListIconDialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            await ViewModel.CommitCustomListIconAsync();
+        }
+    }
+
+    private void OnListIconDialogOpened(
+        ContentDialog sender,
+        ContentDialogOpenedEventArgs args)
+    {
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "PrimaryButton",
+            "Todo.Dialog.ListIcon.Save");
+        SetOpenDialogButtonAutomationId(
+            sender,
+            "CloseButton",
+            "Todo.Dialog.ListIcon.Cancel");
+        ListIconInput.Focus(FocusState.Programmatic);
+        ListIconInput.SelectAll();
+    }
+
+    private void OnListIconDialogClosing(
+        ContentDialog sender,
+        ContentDialogClosingEventArgs args)
+    {
+        if (args.Result == ContentDialogResult.Primary
+            && !ViewModel.ValidateCustomListIconInput())
+        {
+            args.Cancel = true;
+            ListIconInput.Focus(FocusState.Programmatic);
+            ListIconInput.SelectAll();
+        }
+    }
+
     private async void OnImportIcalRequested()
     {
         ViewModel.SetTransferBusy(true);
@@ -804,6 +936,7 @@ public sealed partial class ShellPage : Page
                 Uid = list.Uid,
                 DisplayName = list.DisplayName,
                 Color = list.Color,
+                IconEmoji = list.IconEmoji,
             };
             byte[] content = new IcalWriter(_clock.LocalTimeZone).WriteCalendar(
                 model,
@@ -875,6 +1008,7 @@ public sealed partial class ShellPage : Page
                         Uid = list.Uid,
                         DisplayName = list.DisplayName,
                         Color = list.Color,
+                        IconEmoji = list.IconEmoji,
                     };
                     byte[] content = writer.WriteCalendar(
                         model,
@@ -1576,6 +1710,7 @@ public sealed partial class ShellPage : Page
         object args)
     {
         await ViewModel.TaskList.RefreshForDateChangeAsync();
+        await ViewModel.RefreshNavigationCountsAsync();
         ScheduleMidnightRefresh();
     }
 
@@ -1588,6 +1723,7 @@ public sealed partial class ShellPage : Page
             list => list.NavigationKey == selectedKey);
         ApplyListAccent(_selectedList);
         ApplyListBackground();
+        ViewModel.RefreshFixedCategoryIconBrushes();
     }
 
     private void OnColorValuesChanged(UISettings sender, object args)
@@ -1599,6 +1735,7 @@ public sealed partial class ShellPage : Page
             ApplyListAccent(_selectedList, isHighContrast);
             RefreshUserListAccentBrushes(isHighContrast);
             ApplyListBackground(isHighContrast);
+            ViewModel.RefreshFixedCategoryIconBrushes();
         });
     }
 
@@ -1613,6 +1750,40 @@ public sealed partial class ShellPage : Page
         TaskList.Resources["ListAccentBrush"] = brush;
         DetailPane.Resources["ListAccentBrush"] = brush;
         ShellNavigation.Resources["NavigationViewSelectionIndicatorForeground"] = brush;
+    }
+
+    private void UpdateFixedCategoryNavigationAccessibility()
+    {
+        SetFixedCategoryNavigationAccessibleName(
+            MyDayNavigationItem,
+            ViewModel.MyDayTaskCount);
+        SetFixedCategoryNavigationAccessibleName(
+            ImportantNavigationItem,
+            ViewModel.ImportantTaskCount);
+        SetFixedCategoryNavigationAccessibleName(
+            PlannedNavigationItem,
+            ViewModel.PlannedTaskCount);
+        SetFixedCategoryNavigationAccessibleName(
+            AllNavigationItem,
+            ViewModel.AllTaskCount);
+        SetFixedCategoryNavigationAccessibleName(
+            CompletedNavigationItem,
+            ViewModel.CompletedTaskCount);
+    }
+
+    private void SetFixedCategoryNavigationAccessibleName(
+        NavigationViewItem item,
+        int count)
+    {
+        string title = item.Content?.ToString() ?? string.Empty;
+        string accessibleName = count == 0
+            ? title
+            : string.Format(
+                CultureInfo.CurrentCulture,
+                _resources.GetString("FixedCategory_AccessibleNameWithCount"),
+                title,
+                count);
+        AutomationProperties.SetName(item, accessibleName);
     }
 
     private void RefreshUserListAccentBrushes(bool isHighContrast)
@@ -1633,7 +1804,11 @@ public sealed partial class ShellPage : Page
 
     private void OnAppearanceSettingsChanged()
     {
-        DispatcherQueue.TryEnqueue(() => ApplyListBackground());
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            ThemeChanged?.Invoke(ThemeForIndex(ViewModel.AppearanceThemeIndex));
+            ApplyListBackground();
+        });
     }
 
     // The detail pane's upper drag limit depends on how much room the window has,
@@ -1662,7 +1837,7 @@ public sealed partial class ShellPage : Page
     {
         ListBackgroundImage.Source = null;
         _backgroundDecodeWidth = 0;
-        string? assetName = ResolveBackgroundAsset(_selectedList?.BackgroundTheme);
+        string? assetName = ResolveBackgroundAsset(ViewModel.TaskList.BackgroundTheme);
         if (!ViewModel.ShowListBackgrounds
             || assetName is null
             || (isHighContrast ?? _isHighContrast))

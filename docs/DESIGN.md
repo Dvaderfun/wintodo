@@ -131,11 +131,20 @@ Width `*`, horizontal padding **24**, top padding **16**, bottom padding **0**
   theme.
 - Editable in place on click for user lists (turns into a borderless `TextBox`,
   commits on `Enter` / focus loss, `Esc` cancels).
+- An always-visible 44 px icon button precedes an editable user-list title. It
+  shows the selected emoji or the Fluent Emoji symbol when unset. Its flyout
+  presents a six-column preset emoji grid plus `Clear icon`; choosing an item
+  keeps an active title editor open and updates the header and nav row together.
+- Important, Planned, All, Completed, and the pinned default Tasks list place
+  their matching navigation glyph in the same 44 px header slot. My Day omits
+  the header glyph so its dated heading remains compact. Fixed glyphs are
+  decorative and the title remains the accessible page heading; search and
+  Settings stay text-only. Task counts are never shown in the page header.
 - Subtitle (`CaptionTextBlockStyle`, `TextFillColorSecondaryBrush`): only on
   My Day, showing today's date.
 - Right side: `Sort` `DropDownButton` (text + chevron) and a `⋯` `Button`
   (32 × 32, `Subtle` style) opening the list menu: Rename, Change theme,
-  Show/hide completed, Print, Duplicate, Export `.ics`, Delete list.
+  Change icon, Show/hide completed, Print, Duplicate, Export `.ics`, Delete list.
 - Header spacing to composer: **16**.
 
 ### 3.2 Add-task composer
@@ -313,7 +322,8 @@ Header: `BodyStrongTextBlockStyle`, 32 px tall, 8 px top margin, count in
 
 ## 4. Navigation pane (left)
 
-`NavigationView`, `PaneDisplayMode="Left"`, `OpenPaneLength="300"`,
+`NavigationView`, `PaneDisplayMode="Auto"`, `OpenPaneLength="300"`,
+`CompactModeThresholdWidth="640"`, `ExpandedModeThresholdWidth="900"`,
 `IsBackButtonVisible="Collapsed"`, `IsSettingsVisible="True"`.
 Pane background transparent (Mica shows through). Item corner radius
 `ControlCornerRadius`; selection indicator is the WinUI default 3 px pill.
@@ -342,9 +352,9 @@ Pane background transparent (Mica shows through). Item corner radius
 | Element | Spec |
 |---|---|
 | Item height | **40** |
-| Item content | 16 px `FontIcon` + 12 px gap + `BodyTextBlockStyle` label + `*` + count in `CaptionTextBlockStyle` / `TextFillColorSecondaryBrush` |
-| User list icon | 16 px filled circle (`PathIcon` or a `Rectangle` with `RadiusX/Y`) in that list's theme colour — **not** a generic list glyph |
-| Count | Incomplete tasks only. Hidden when 0. Never shown for Completed |
+| Item content | 20 px icon column + 12 px gap + `BodyTextBlockStyle` label + `*` + count badge using `CaptionTextBlockStyle`, `SubtleFillColorSecondaryBrush`, and `ControlCornerRadius` |
+| User list icon | The selected emoji in Segoe UI Emoji, or a centred 16 px filled circle in that list's theme colour when no emoji is set — **not** a generic list glyph |
+| Count | Root tasks only (steps excluded). Every expanded-pane navigation count uses the same neutral rectangular `InfoBadge`: 24 px high, minimum 32 px wide, `ControlCornerRadius`, aligned right, hidden when 0, and hidden with labels in compact/minimal mode so it never overlays an icon. Completed counts completed roots; all other categories count incomplete roots matching that category's filter |
 | Default list | Pinned directly below Completed, above the divider, with the `Home` glyph instead of a colour dot. Never renameable, deletable, draggable, groupable, or reorderable — it has no pane context menu, and its title renders as static text rather than the rename button. Colour and background stay editable |
 | User lists | Top-level `MenuItems` below the divider — never nested under a "Lists" parent |
 | Groups | `NavigationViewItem` with children, expander chevron, drag lists in/out. Drop a grouped list onto an ungrouped one, or use its "Remove from group" context item, to take it out |
@@ -573,8 +583,14 @@ Rules:
 
 ### 9.4 List background themes
 
-Optional per-list background image (the To Do "themes" feature), rendered behind
-the list pane at 12% opacity with the Mica still visible at the edges.
+Optional background image for persisted lists and fixed categories (the To Do
+"themes" feature), rendered behind the list pane at 12% opacity with the Mica
+still visible at the edges. Each fixed category stores its selection in
+`settings` because it has no `lists` row. Its navigation and header glyph use
+the selected theme's accent colour; when no background is selected, each fixed
+category uses its semantic accent. Appearance settings include a toggle that
+returns fixed-category glyphs to the neutral foreground without changing the
+selected background.
 
 - Ship 8 built-in images, each ≤ 200 KB, as `ms-appx` assets.
 - Decode at display size: set `BitmapImage.DecodePixelWidth` to the actual pane
@@ -583,6 +599,24 @@ the list pane at 12% opacity with the Mica still visible at the edges.
   previous.
 - Off by default. If the memory budget in `PLAN.md` §7 is threatened, this is the
   first feature to cut.
+
+### 9.5 User list emoji icons
+
+An emoji icon is optional metadata independent of the list theme colour.
+
+- The icon button beside the editable title opens the primary preset picker.
+  `Change icon > Custom emoji` in the list menu opens a `ContentDialog` with a
+  labelled `TextBox` for emoji outside the preset set; `Remove icon` and the
+  picker footer restore the colour dot without changing the list theme.
+- Accept exactly one extended Unicode grapheme cluster, including joined family,
+  profession, skin-tone, keycap, and flag sequences. The stored value is limited
+  to 32 UTF-16 code units.
+- Render with Segoe UI Emoji in the header and the nav pane's stable 20 px icon
+  column. The navigation item's accessible name excludes the emoji and includes
+  the list name plus its nonzero incomplete-task count.
+- The default Tasks list always renders Home and cannot receive a custom icon.
+- Emoji are user content and retain their native colour in High Contrast. The
+  fallback dot continues to use `SystemColorHighlightColorBrush`.
 
 ---
 
@@ -637,7 +671,7 @@ Single scrolling page, `Frame`-navigated, `SettingsCard` /
 Page padding 36, section spacing 24.
 
 Sections: **Appearance** (theme: System/Light/Dark; density: Comfortable/Compact;
-show list backgrounds) · **Tasks** (default reminder time; week starts on;
+show list backgrounds; colour fixed-category icons) · **Tasks** (default reminder time; week starts on;
 confirm before delete; move completed to bottom) · **My Day** (reset time —
 default midnight) · **Notifications** (enable reminders; default snooze;
 launch at login) · **Data** (import `.ics`, export all, database location,
@@ -653,7 +687,8 @@ database size) · **About** (version, GitHub link, licences).
 - Do not split the window 50/50; the nav pane is fixed-width, the list flexes.
 - Do not put the add-task box inside the scrolling list.
 - Do not animate anything without checking `UISettings.AnimationsEnabled`.
-- Do not use emoji as icons — `FontIcon` with Segoe Fluent Icons only.
+- Do not use emoji for product or command icons. User-selected list icons are the
+  sole exception; all application glyphs use Segoe Fluent Icons.
 - Do not add a hamburger button at ≥ 640 px; the pane is already visible.
 - Do not show a splash screen or a loading spinner on launch. The app must paint
   the shell immediately and fill the list asynchronously — a spinner on startup

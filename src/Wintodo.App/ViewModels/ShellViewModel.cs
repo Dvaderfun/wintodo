@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
@@ -14,10 +16,18 @@ namespace Wintodo.ViewModels;
 public sealed partial class ShellViewModel : ObservableObject
 {
     internal const string MyDayNavigationKey = "smart:my-day";
+    internal const string ImportantNavigationKey = "smart:important";
+    internal const string PlannedNavigationKey = "smart:planned";
+    internal const string AllNavigationKey = "smart:all";
+    internal const string CompletedNavigationKey = "smart:completed";
     private const string UserListNavigationPrefix = "list:";
     private const string AppearanceThemeSetting = "appearance.theme";
     private const string DensitySetting = "appearance.density";
     private const string ShowListBackgroundsSetting = "appearance.show_list_backgrounds";
+    private const string TintFixedCategoryIconsSetting =
+        "appearance.tint_fixed_category_icons";
+    private const string FixedBackgroundSettingPrefix =
+        "appearance.fixed_category_background.";
     private const string DetailPaneWidthSetting = "appearance.detail_pane_width";
     private const double MinimumDetailPaneWidth = 320;
     private const double MaximumDetailPaneWidth = 720;
@@ -26,6 +36,8 @@ public sealed partial class ShellViewModel : ObservableObject
     private readonly ShellStateService _stateService;
     private readonly IStartupTaskService _startupTaskService;
     private readonly ResourceLoader _resources = new();
+    private readonly Dictionary<string, string?> _fixedCategoryBackgrounds =
+        new(StringComparer.Ordinal);
     private string _selectedNavigationKey = MyDayNavigationKey;
     private string _selectedNavigationTitle = string.Empty;
     private bool _selectedNavigationIsMyDay = true;
@@ -35,6 +47,7 @@ public sealed partial class ShellViewModel : ObservableObject
     private TaskItemViewModel? _pendingRowDelete;
     private bool _isDetailDeletePending;
     private CancellationTokenSource? _detailPaneWidthDebounce;
+    private int _navigationCountRefreshVersion;
 
     internal ShellViewModel(
         ITaskStore taskStore,
@@ -53,6 +66,8 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList.ExportListRequested += OnExportListRequested;
         TaskList.ShortcutsRequested += OnShortcutsRequested;
         TaskList.DeleteTaskRequested += OnRowDeleteRequested;
+        TaskList.CustomListIconRequested += OnCustomListIconRequested;
+        TaskList.BackgroundThemeChanged += OnBackgroundThemeChanged;
         Detail = new TaskDetailViewModel(taskStore, clock);
         Detail.CloseRequested += CloseDetail;
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
@@ -73,6 +88,8 @@ public sealed partial class ShellViewModel : ObservableObject
     internal event Action<ShellListItemViewModel>? ExportListRequested;
 
     internal event Action? KeyboardShortcutsRequested;
+
+    internal event Action? CustomListIconRequested;
 
     internal event Action<string>? DeleteTaskRequested;
 
@@ -106,6 +123,18 @@ public sealed partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool IsDeleteTaskDialogLoaded { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsListIconDialogLoaded { get; set; }
+
+    [ObservableProperty]
+    public partial string CustomListIconInput { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasCustomListIconError))]
+    public partial string CustomListIconError { get; set; } = string.Empty;
+
+    public bool HasCustomListIconError => CustomListIconError.Length > 0;
 
     [ObservableProperty]
     public partial bool IsImportPreviewDialogLoaded { get; set; }
@@ -155,6 +184,48 @@ public sealed partial class ShellViewModel : ObservableObject
     public partial bool ShowListBackgrounds { get; set; }
 
     [ObservableProperty]
+    public partial bool TintFixedCategoryIcons { get; set; } = true;
+
+    [ObservableProperty]
+    public partial int MyDayTaskCount { get; set; }
+
+    [ObservableProperty]
+    public partial int ImportantTaskCount { get; set; }
+
+    [ObservableProperty]
+    public partial int PlannedTaskCount { get; set; }
+
+    [ObservableProperty]
+    public partial int AllTaskCount { get; set; }
+
+    [ObservableProperty]
+    public partial int CompletedTaskCount { get; set; }
+
+    [ObservableProperty]
+    public partial Brush MyDayIconBrush { get; set; } =
+        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+
+    [ObservableProperty]
+    public partial Brush ImportantIconBrush { get; set; } =
+        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+
+    [ObservableProperty]
+    public partial Brush PlannedIconBrush { get; set; } =
+        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+
+    [ObservableProperty]
+    public partial Brush AllIconBrush { get; set; } =
+        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+
+    [ObservableProperty]
+    public partial Brush CompletedIconBrush { get; set; } =
+        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+
+    [ObservableProperty]
+    public partial Brush TasksIconBrush { get; set; } =
+        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+
+    [ObservableProperty]
     public partial bool LaunchAtLogin { get; set; }
 
     [ObservableProperty]
@@ -174,6 +245,8 @@ public sealed partial class ShellViewModel : ObservableObject
             cancellationToken);
         Task<IReadOnlyList<TodoList>> listsTask = _taskStore.GetListsAsync(cancellationToken);
         Task<IReadOnlyList<ListGroup>> groupsTask = _taskStore.GetGroupsAsync(cancellationToken);
+        Task<IReadOnlyDictionary<ListQueryKind, int>> smartCountsTask =
+            _taskStore.GetSmartListTaskCountsAsync(cancellationToken);
         Task<string?> themeTask = _taskStore.GetSettingAsync(
             AppearanceThemeSetting,
             cancellationToken);
@@ -182,6 +255,24 @@ public sealed partial class ShellViewModel : ObservableObject
             cancellationToken);
         Task<string?> backgroundsTask = _taskStore.GetSettingAsync(
             ShowListBackgroundsSetting,
+            cancellationToken);
+        Task<string?> tintFixedIconsTask = _taskStore.GetSettingAsync(
+            TintFixedCategoryIconsSetting,
+            cancellationToken);
+        Task<string?> myDayBackgroundTask = _taskStore.GetSettingAsync(
+            GetFixedBackgroundSettingKey(MyDayNavigationKey),
+            cancellationToken);
+        Task<string?> importantBackgroundTask = _taskStore.GetSettingAsync(
+            GetFixedBackgroundSettingKey(ImportantNavigationKey),
+            cancellationToken);
+        Task<string?> plannedBackgroundTask = _taskStore.GetSettingAsync(
+            GetFixedBackgroundSettingKey(PlannedNavigationKey),
+            cancellationToken);
+        Task<string?> allBackgroundTask = _taskStore.GetSettingAsync(
+            GetFixedBackgroundSettingKey(AllNavigationKey),
+            cancellationToken);
+        Task<string?> completedBackgroundTask = _taskStore.GetSettingAsync(
+            GetFixedBackgroundSettingKey(CompletedNavigationKey),
             cancellationToken);
         Task<string?> detailWidthTask = _taskStore.GetSettingAsync(
             DetailPaneWidthSetting,
@@ -192,17 +283,38 @@ public sealed partial class ShellViewModel : ObservableObject
         await Task.WhenAll(
             listsTask,
             groupsTask,
+            smartCountsTask,
             themeTask,
             densityTask,
             backgroundsTask,
+            tintFixedIconsTask,
+            myDayBackgroundTask,
+            importantBackgroundTask,
+            plannedBackgroundTask,
+            allBackgroundTask,
+            completedBackgroundTask,
             detailWidthTask,
             selectedNavigationTask);
         LoadNavigationData(await listsTask, await groupsTask);
+        ApplySmartListTaskCounts(await smartCountsTask);
+        _fixedCategoryBackgrounds[MyDayNavigationKey] =
+            NormalizeBackgroundTheme(await myDayBackgroundTask);
+        _fixedCategoryBackgrounds[ImportantNavigationKey] =
+            NormalizeBackgroundTheme(await importantBackgroundTask);
+        _fixedCategoryBackgrounds[PlannedNavigationKey] =
+            NormalizeBackgroundTheme(await plannedBackgroundTask);
+        _fixedCategoryBackgrounds[AllNavigationKey] =
+            NormalizeBackgroundTheme(await allBackgroundTask);
+        _fixedCategoryBackgrounds[CompletedNavigationKey] =
+            NormalizeBackgroundTheme(await completedBackgroundTask);
 
         AppearanceThemeIndex = ParseChoice(await themeTask, maximum: 2);
         DensityIndex = ParseChoice(await densityTask, maximum: 1);
         ShowListBackgrounds = bool.TryParse(await backgroundsTask, out bool show)
             && show;
+        TintFixedCategoryIcons =
+            !bool.TryParse(await tintFixedIconsTask, out bool tintFixedIcons)
+            || tintFixedIcons;
         DetailPaneWidth = ParseDetailPaneWidth(await detailWidthTask);
         TaskList.IsCompactDensity = DensityIndex == 1;
         _areAppearanceSettingsLoaded = true;
@@ -273,18 +385,23 @@ public sealed partial class ShellViewModel : ObservableObject
         {
             ListQueryKind kind = navigationKey switch
             {
-                "smart:important" => ListQueryKind.Important,
-                "smart:planned" => ListQueryKind.Planned,
-                "smart:all" => ListQueryKind.All,
-                "smart:completed" => ListQueryKind.Completed,
+                ImportantNavigationKey => ListQueryKind.Important,
+                PlannedNavigationKey => ListQueryKind.Planned,
+                AllNavigationKey => ListQueryKind.All,
+                CompletedNavigationKey => ListQueryKind.Completed,
                 _ => ListQueryKind.MyDay,
             };
             await TaskList.LoadSmartListAsync(
                 kind,
                 _selectedNavigationTitle,
                 _selectedNavigationIsMyDay,
+                navigationKey,
+                GetFixedBackgroundSettingKey(navigationKey),
+                GetFixedCategoryBackgroundTheme(navigationKey),
                 cancellationToken);
         }
+
+        UpdateFixedCategoryIconBrushes();
     }
 
     internal void SelectSettings()
@@ -301,8 +418,11 @@ public sealed partial class ShellViewModel : ObservableObject
     {
         Task<IReadOnlyList<TodoList>> listsTask = _taskStore.GetListsAsync(cancellationToken);
         Task<IReadOnlyList<ListGroup>> groupsTask = _taskStore.GetGroupsAsync(cancellationToken);
-        await Task.WhenAll(listsTask, groupsTask);
+        Task<IReadOnlyDictionary<ListQueryKind, int>> smartCountsTask =
+            _taskStore.GetSmartListTaskCountsAsync(cancellationToken);
+        await Task.WhenAll(listsTask, groupsTask, smartCountsTask);
         LoadNavigationData(await listsTask, await groupsTask);
+        ApplySmartListTaskCounts(await smartCountsTask);
         await RefreshSyncOptionsAsync(cancellationToken);
         NavigationStructureChanged?.Invoke();
     }
@@ -561,6 +681,145 @@ public sealed partial class ShellViewModel : ObservableObject
 
         RebuildGroups();
         TaskList.SetLists(UserLists);
+        UpdateFixedCategoryIconBrushes();
+    }
+
+    private void ApplySmartListTaskCounts(
+        IReadOnlyDictionary<ListQueryKind, int> counts)
+    {
+        MyDayTaskCount = counts.GetValueOrDefault(ListQueryKind.MyDay);
+        ImportantTaskCount = counts.GetValueOrDefault(ListQueryKind.Important);
+        PlannedTaskCount = counts.GetValueOrDefault(ListQueryKind.Planned);
+        AllTaskCount = counts.GetValueOrDefault(ListQueryKind.All);
+        CompletedTaskCount = counts.GetValueOrDefault(ListQueryKind.Completed);
+    }
+
+    internal string? GetFixedCategoryBackgroundTheme(string navigationKey)
+    {
+        if (DefaultList?.NavigationKey == navigationKey)
+        {
+            return DefaultList.BackgroundTheme;
+        }
+
+        return _fixedCategoryBackgrounds.GetValueOrDefault(navigationKey);
+    }
+
+    private static string GetFixedBackgroundSettingKey(string navigationKey)
+    {
+        string suffix = navigationKey switch
+        {
+            MyDayNavigationKey => "my_day",
+            ImportantNavigationKey => "important",
+            PlannedNavigationKey => "planned",
+            AllNavigationKey => "all",
+            CompletedNavigationKey => "completed",
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(navigationKey),
+                navigationKey,
+                "Only fixed smart lists have background setting keys."),
+        };
+        return FixedBackgroundSettingPrefix + suffix;
+    }
+
+    private static string? NormalizeBackgroundTheme(string? value)
+    {
+        return value is "Coast"
+            or "Forest"
+            or "Mist"
+            or "Sunrise"
+            or "Indigo"
+            or "Petals"
+            or "Graphite"
+            or "Field"
+            ? value
+            : null;
+    }
+
+    private void UpdateFixedCategoryIconBrushes()
+    {
+        MyDayIconBrush = ResolveAppearanceBrush(
+            ResolveFixedCategoryIconBrushKey(MyDayNavigationKey));
+        ImportantIconBrush = ResolveAppearanceBrush(
+            ResolveFixedCategoryIconBrushKey(ImportantNavigationKey));
+        PlannedIconBrush = ResolveAppearanceBrush(
+            ResolveFixedCategoryIconBrushKey(PlannedNavigationKey));
+        AllIconBrush = ResolveAppearanceBrush(
+            ResolveFixedCategoryIconBrushKey(AllNavigationKey));
+        CompletedIconBrush = ResolveAppearanceBrush(
+            ResolveFixedCategoryIconBrushKey(CompletedNavigationKey));
+        TasksIconBrush = ResolveAppearanceBrush(
+            ResolveFixedCategoryIconBrushKey(DefaultList?.NavigationKey));
+        TaskList.FixedHeaderIconBrush = ResolveAppearanceBrush(
+            ResolveFixedCategoryIconBrushKey(_selectedNavigationKey));
+    }
+
+    internal void RefreshFixedCategoryIconBrushes()
+    {
+        UpdateFixedCategoryIconBrushes();
+        OnPropertyChanged(nameof(MyDayIconBrush));
+        OnPropertyChanged(nameof(ImportantIconBrush));
+        OnPropertyChanged(nameof(PlannedIconBrush));
+        OnPropertyChanged(nameof(AllIconBrush));
+        OnPropertyChanged(nameof(CompletedIconBrush));
+        OnPropertyChanged(nameof(TasksIconBrush));
+        TaskList.RefreshFixedHeaderIconBrush();
+    }
+
+    private string ResolveFixedCategoryIconBrushKey(string? navigationKey)
+    {
+        if (!TintFixedCategoryIcons || !IsFixedCategoryNavigationKey(navigationKey))
+        {
+            return "TextFillColorPrimaryBrush";
+        }
+
+        string? backgroundTheme =
+            GetFixedCategoryBackgroundTheme(navigationKey!);
+        if (backgroundTheme is not null)
+        {
+            return backgroundTheme switch
+            {
+                "Coast" => "ListAccentBlueBrush",
+                "Forest" => "ListAccentGreenBrush",
+                "Mist" => "ListAccentTealBrush",
+                "Sunrise" => "ListAccentOrangeBrush",
+                "Indigo" => "ListAccentPurpleBrush",
+                "Petals" => "ListAccentPinkBrush",
+                "Graphite" => "ListAccentGraphiteBrush",
+                "Field" => "ListAccentLimeBrush",
+                _ => "ListAccentBlueBrush",
+            };
+        }
+
+        if (DefaultList is { } defaultList
+            && defaultList.NavigationKey == navigationKey)
+        {
+            return defaultList.AccentResourceKey;
+        }
+
+        return navigationKey switch
+        {
+            MyDayNavigationKey => "ListAccentYellowBrush",
+            ImportantNavigationKey => "ListAccentPinkBrush",
+            PlannedNavigationKey => "ListAccentBlueBrush",
+            AllNavigationKey => "ListAccentPurpleBrush",
+            CompletedNavigationKey => "ListAccentGreenBrush",
+            _ => "TextFillColorPrimaryBrush",
+        };
+    }
+
+    private bool IsFixedCategoryNavigationKey(string? navigationKey)
+    {
+        return navigationKey is MyDayNavigationKey
+            or ImportantNavigationKey
+            or PlannedNavigationKey
+            or AllNavigationKey
+            or CompletedNavigationKey
+            || DefaultList?.NavigationKey == navigationKey;
+    }
+
+    private static Brush ResolveAppearanceBrush(string resourceKey)
+    {
+        return (Brush)Application.Current.Resources[resourceKey];
     }
 
     private void RebuildGroups()
@@ -589,8 +848,50 @@ public sealed partial class ShellViewModel : ObservableObject
             list => string.Equals(list.Uid, uid, StringComparison.Ordinal));
     }
 
-    private void OnNavigationDataChanged()
+    private async void OnNavigationDataChanged()
     {
+        await RefreshNavigationCountsAsync();
+    }
+
+    internal async Task RefreshNavigationCountsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        int refreshVersion = ++_navigationCountRefreshVersion;
+        try
+        {
+            Task<IReadOnlyDictionary<long, int>> listCountsTask =
+                _taskStore.GetIncompleteTaskCountsAsync(cancellationToken);
+            Task<IReadOnlyDictionary<ListQueryKind, int>> smartCountsTask =
+                _taskStore.GetSmartListTaskCountsAsync(cancellationToken);
+            await Task.WhenAll(listCountsTask, smartCountsTask);
+            if (refreshVersion != _navigationCountRefreshVersion)
+            {
+                return;
+            }
+
+            IReadOnlyDictionary<long, int> listCounts = await listCountsTask;
+            foreach (ShellListItemViewModel list in UserLists)
+            {
+                list.IncompleteTaskCount = listCounts.GetValueOrDefault(list.Id);
+            }
+
+            ApplySmartListTaskCounts(await smartCountsTask);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_NAVIGATION_COUNT_EXCEPTION={exception}");
+        }
+
+        if (refreshVersion != _navigationCountRefreshVersion)
+        {
+            return;
+        }
+
+        UpdateFixedCategoryIconBrushes();
         RebuildGroups();
         NavigationStructureChanged?.Invoke();
     }
@@ -608,6 +909,47 @@ public sealed partial class ShellViewModel : ObservableObject
     private void OnShortcutsRequested()
     {
         KeyboardShortcutsRequested?.Invoke();
+    }
+
+    private void OnCustomListIconRequested(string? iconEmoji)
+    {
+        CustomListIconInput = iconEmoji ?? string.Empty;
+        CustomListIconError = string.Empty;
+        IsListIconDialogLoaded = true;
+        CustomListIconRequested?.Invoke();
+    }
+
+    private void OnBackgroundThemeChanged(string navigationKey, string? theme)
+    {
+        if (_fixedCategoryBackgrounds.ContainsKey(navigationKey))
+        {
+            _fixedCategoryBackgrounds[navigationKey] = theme;
+        }
+
+        UpdateFixedCategoryIconBrushes();
+        AppearanceSettingsChanged?.Invoke();
+    }
+
+    internal bool ValidateCustomListIconInput()
+    {
+        if (!ListEmoji.TryNormalize(CustomListIconInput, out _))
+        {
+            CustomListIconError = _resources.GetString("ListIcon_Invalid");
+            return false;
+        }
+
+        CustomListIconError = string.Empty;
+        return true;
+    }
+
+    internal async Task CommitCustomListIconAsync()
+    {
+        if (!ListEmoji.TryNormalize(CustomListIconInput, out string? normalized))
+        {
+            return;
+        }
+
+        await TaskList.SetSelectedListIconAsync(normalized);
     }
 
     private void OnRowDeleteRequested(TaskItemViewModel item)
@@ -664,6 +1006,12 @@ public sealed partial class ShellViewModel : ObservableObject
     partial void OnShowListBackgroundsChanged(bool value)
     {
         SaveAppearanceSetting(ShowListBackgroundsSetting, value.ToString());
+    }
+
+    partial void OnTintFixedCategoryIconsChanged(bool value)
+    {
+        UpdateFixedCategoryIconBrushes();
+        SaveAppearanceSetting(TintFixedCategoryIconsSetting, value.ToString());
     }
 
     partial void OnLaunchAtLoginChanged(bool value)

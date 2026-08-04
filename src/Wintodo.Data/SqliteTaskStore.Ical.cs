@@ -117,7 +117,8 @@ public sealed partial class SqliteTaskStore
                             transaction,
                             context,
                             listName,
-                            calendar.Color ?? ListColor.Blue);
+                            calendar.Color ?? ListColor.Blue,
+                            calendar.IconEmoji);
                         importedLists.Add(listName, listId);
                         if (created)
                         {
@@ -225,7 +226,8 @@ public sealed partial class SqliteTaskStore
         SqliteTransaction transaction,
         WriteContext context,
         string displayName,
-        ListColor color)
+        ListColor color,
+        string? iconEmoji)
     {
         using (SqliteCommand query = connection.CreateCommand())
         {
@@ -252,17 +254,18 @@ public sealed partial class SqliteTaskStore
         insert.Transaction = transaction;
         insert.CommandText = """
             INSERT INTO lists(
-                uid, display_name, color, background_theme, group_id,
+                uid, display_name, color, background_theme, icon_emoji, group_id,
                 sort_order, sort_mode, sort_descending, show_completed,
                 completed_expanded, is_deleted, created_utc, modified_utc)
             VALUES(
-                @uid, @displayName, @color, NULL, NULL,
+                @uid, @displayName, @color, NULL, @iconEmoji, NULL,
                 @sortOrder, 0, 0, 1, 0, 0, @createdUtc, @modifiedUtc)
             RETURNING id;
             """;
         insert.Parameters.AddWithValue("@uid", uid);
         insert.Parameters.AddWithValue("@displayName", displayName);
         insert.Parameters.AddWithValue("@color", (int)color);
+        AddParameter(insert, "@iconEmoji", iconEmoji);
         insert.Parameters.AddWithValue("@sortOrder", sortOrder);
         insert.Parameters.AddWithValue("@createdUtc", SqliteMapper.FormatInstant(now));
         insert.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(now));

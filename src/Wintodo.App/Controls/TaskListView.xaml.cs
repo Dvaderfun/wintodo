@@ -195,6 +195,7 @@ public sealed partial class TaskListView : UserControl
             oldViewModel.VisibleItems.CollectionChanged -=
                 view.OnVisibleItemsCollectionChanged;
             oldViewModel.TaskCompletionChanged -= view.OnTaskCompletionChanged;
+            oldViewModel.ListIconChanged -= view.OnListIconChanged;
         }
 
         if (args.NewValue is TaskListViewModel newViewModel)
@@ -204,6 +205,7 @@ public sealed partial class TaskListView : UserControl
             newViewModel.VisibleItems.CollectionChanged +=
                 view.OnVisibleItemsCollectionChanged;
             newViewModel.TaskCompletionChanged += view.OnTaskCompletionChanged;
+            newViewModel.ListIconChanged += view.OnListIconChanged;
             newViewModel.AnimationsEnabled = view._uiSettings.AnimationsEnabled;
             ScrollPerformanceProbe.TryStart(newViewModel.VisibleItems.Count);
         }
@@ -423,18 +425,38 @@ public sealed partial class TaskListView : UserControl
     // editor behaves. A blank name has nothing to commit, so it reverts instead.
     private void OnRenameListBoxLostFocus(object sender, RoutedEventArgs args)
     {
-        if (!ViewModel.IsRenamingList)
+        DispatcherQueue.TryEnqueue(() =>
         {
-            return;
-        }
+            if (!ViewModel.IsRenamingList || ListIconPickerFlyout.IsOpen)
+            {
+                return;
+            }
 
-        if (ViewModel.CommitRenameListCommand.CanExecute(null))
+            if (ViewModel.CommitRenameListCommand.CanExecute(null))
+            {
+                ViewModel.CommitRenameListCommand.Execute(null);
+                return;
+            }
+
+            ViewModel.CancelRenameListCommand.Execute(null);
+        });
+    }
+
+    private void OnListIconChanged()
+    {
+        ListIconPickerFlyout.Hide();
+        if (ViewModel.IsRenamingList)
         {
-            ViewModel.CommitRenameListCommand.Execute(null);
-            return;
+            DispatcherQueue.TryEnqueue(FocusRenameBox);
         }
+    }
 
-        ViewModel.CancelRenameListCommand.Execute(null);
+    private void OnListIconPickerClosed(object sender, object args)
+    {
+        if (ViewModel.IsRenamingList)
+        {
+            DispatcherQueue.TryEnqueue(FocusRenameBox);
+        }
     }
 
     private void OnRenameListBoxKeyDown(object sender, KeyRoutedEventArgs args)

@@ -10,7 +10,6 @@
     xmlns:sizers="using:CommunityToolkit.WinUI.Controls"
     xmlns:viewModels="using:Wintodo.ViewModels"
     x:Name="RootPage"
-    RequestedTheme="{x:Bind local:ShellPage.ThemeForIndex(ViewModel.AppearanceThemeIndex), Mode=OneWay}"
     mc:Ignorable="d">
 
     <Page.KeyboardAccelerators>
@@ -36,11 +35,14 @@
                         <AdaptiveTrigger MinWindowWidth="0" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="ShellNavigation.PaneDisplayMode" Value="LeftMinimal" />
-                        <Setter Target="ShellNavigation.IsPaneOpen" Value="False" />
                         <Setter Target="ShellNavigation.IsPaneToggleButtonVisible" Value="True" />
                         <Setter Target="NewListButton.Visibility" Value="Collapsed" />
                         <Setter Target="NewGroupButton.Visibility" Value="Collapsed" />
+                        <Setter Target="MyDayCountBadge.Visibility" Value="Collapsed" />
+                        <Setter Target="ImportantCountBadge.Visibility" Value="Collapsed" />
+                        <Setter Target="PlannedCountBadge.Visibility" Value="Collapsed" />
+                        <Setter Target="AllCountBadge.Visibility" Value="Collapsed" />
+                        <Setter Target="CompletedCountBadge.Visibility" Value="Collapsed" />
                         <Setter Target="ListContentGrid.Padding" Value="64,16,24,0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="0" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="2" />
@@ -53,11 +55,14 @@
                         <AdaptiveTrigger MinWindowWidth="640" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="ShellNavigation.PaneDisplayMode" Value="LeftCompact" />
-                        <Setter Target="ShellNavigation.IsPaneOpen" Value="False" />
                         <Setter Target="ShellNavigation.IsPaneToggleButtonVisible" Value="False" />
                         <Setter Target="NewListButton.Visibility" Value="Collapsed" />
                         <Setter Target="NewGroupButton.Visibility" Value="Collapsed" />
+                        <Setter Target="MyDayCountBadge.Visibility" Value="Collapsed" />
+                        <Setter Target="ImportantCountBadge.Visibility" Value="Collapsed" />
+                        <Setter Target="PlannedCountBadge.Visibility" Value="Collapsed" />
+                        <Setter Target="AllCountBadge.Visibility" Value="Collapsed" />
+                        <Setter Target="CompletedCountBadge.Visibility" Value="Collapsed" />
                         <Setter Target="ListContentGrid.Padding" Value="24,16,24,0" />
                         <Setter Target="DetailHost.(Grid.Column)" Value="0" />
                         <Setter Target="DetailHost.(Grid.ColumnSpan)" Value="2" />
@@ -70,8 +75,6 @@
                         <AdaptiveTrigger MinWindowWidth="900" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="ShellNavigation.PaneDisplayMode" Value="Left" />
-                        <Setter Target="ShellNavigation.IsPaneOpen" Value="True" />
                         <Setter Target="ShellNavigation.IsPaneToggleButtonVisible" Value="False" />
                         <Setter Target="NewListButton.Visibility" Value="Visible" />
                         <Setter Target="NewGroupButton.Visibility" Value="Visible" />
@@ -87,8 +90,6 @@
                         <AdaptiveTrigger MinWindowWidth="1100" />
                     </VisualState.StateTriggers>
                     <VisualState.Setters>
-                        <Setter Target="ShellNavigation.PaneDisplayMode" Value="Left" />
-                        <Setter Target="ShellNavigation.IsPaneOpen" Value="True" />
                         <Setter Target="ShellNavigation.IsPaneToggleButtonVisible" Value="False" />
                         <Setter Target="NewListButton.Visibility" Value="Visible" />
                         <Setter Target="NewGroupButton.Visibility" Value="Visible" />
@@ -135,13 +136,15 @@
         <NavigationView
             x:Name="ShellNavigation"
             AutomationProperties.AutomationId="Todo.Nav.Root"
+            CompactModeThresholdWidth="640"
             CompactPaneLength="48"
+            ExpandedModeThresholdWidth="900"
             IsBackButtonVisible="Collapsed"
             IsPaneToggleButtonVisible="False"
-            IsPaneOpen="False"
+            IsPaneOpen="True"
             IsSettingsVisible="False"
             OpenPaneLength="300"
-            PaneDisplayMode="LeftMinimal"
+            PaneDisplayMode="Auto"
             SelectionChanged="OnNavigationSelectionChanged">
 
             <NavigationView.MenuItems>
@@ -152,8 +155,20 @@
                     IsSelected="True"
                     Tag="smart:my-day">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE706;" />
+                        <FontIcon
+                            x:Name="MyDayNavigationIcon"
+                            Foreground="{x:Bind ViewModel.MyDayIconBrush, Mode=OneWay}"
+                            Glyph="&#xE706;" />
                     </NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge
+                            x:Name="MyDayCountBadge"
+                            AutomationProperties.AutomationId="Todo.Nav.MyDay.Count"
+                            Margin="{StaticResource FixedNavigationCountBadgeMargin}"
+                            Style="{StaticResource NavigationTaskCountBadgeStyle}"
+                            Value="{x:Bind ViewModel.MyDayTaskCount, Mode=OneWay}"
+                            Visibility="{x:Bind local:ShellPage.CountToVisibility(ViewModel.MyDayTaskCount), Mode=OneWay}" />
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
                 <NavigationViewItem
                     x:Name="ImportantNavigationItem"
@@ -161,8 +176,20 @@
                     AutomationProperties.AutomationId="Todo.Nav.Important"
                     Tag="smart:important">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE734;" />
+                        <FontIcon
+                            x:Name="ImportantNavigationIcon"
+                            Foreground="{x:Bind ViewModel.ImportantIconBrush, Mode=OneWay}"
+                            Glyph="&#xE734;" />
                     </NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge
+                            x:Name="ImportantCountBadge"
+                            AutomationProperties.AutomationId="Todo.Nav.Important.Count"
+                            Margin="{StaticResource FixedNavigationCountBadgeMargin}"
+                            Style="{StaticResource NavigationTaskCountBadgeStyle}"
+                            Value="{x:Bind ViewModel.ImportantTaskCount, Mode=OneWay}"
+                            Visibility="{x:Bind local:ShellPage.CountToVisibility(ViewModel.ImportantTaskCount), Mode=OneWay}" />
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
                 <NavigationViewItem
                     x:Name="PlannedNavigationItem"
@@ -170,8 +197,20 @@
                     AutomationProperties.AutomationId="Todo.Nav.Planned"
                     Tag="smart:planned">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE787;" />
+                        <FontIcon
+                            x:Name="PlannedNavigationIcon"
+                            Foreground="{x:Bind ViewModel.PlannedIconBrush, Mode=OneWay}"
+                            Glyph="&#xE787;" />
                     </NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge
+                            x:Name="PlannedCountBadge"
+                            AutomationProperties.AutomationId="Todo.Nav.Planned.Count"
+                            Margin="{StaticResource FixedNavigationCountBadgeMargin}"
+                            Style="{StaticResource NavigationTaskCountBadgeStyle}"
+                            Value="{x:Bind ViewModel.PlannedTaskCount, Mode=OneWay}"
+                            Visibility="{x:Bind local:ShellPage.CountToVisibility(ViewModel.PlannedTaskCount), Mode=OneWay}" />
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
                 <NavigationViewItem
                     x:Name="AllNavigationItem"
@@ -179,8 +218,20 @@
                     AutomationProperties.AutomationId="Todo.Nav.All"
                     Tag="smart:all">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8FD;" />
+                        <FontIcon
+                            x:Name="AllNavigationIcon"
+                            Foreground="{x:Bind ViewModel.AllIconBrush, Mode=OneWay}"
+                            Glyph="&#xE8FD;" />
                     </NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge
+                            x:Name="AllCountBadge"
+                            AutomationProperties.AutomationId="Todo.Nav.All.Count"
+                            Margin="{StaticResource FixedNavigationCountBadgeMargin}"
+                            Style="{StaticResource NavigationTaskCountBadgeStyle}"
+                            Value="{x:Bind ViewModel.AllTaskCount, Mode=OneWay}"
+                            Visibility="{x:Bind local:ShellPage.CountToVisibility(ViewModel.AllTaskCount), Mode=OneWay}" />
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
                 <NavigationViewItem
                     x:Name="CompletedNavigationItem"
@@ -188,15 +239,30 @@
                     AutomationProperties.AutomationId="Todo.Nav.Completed"
                     Tag="smart:completed">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE930;" />
+                        <FontIcon
+                            x:Name="CompletedNavigationIcon"
+                            Foreground="{x:Bind ViewModel.CompletedIconBrush, Mode=OneWay}"
+                            Glyph="&#xE930;" />
                     </NavigationViewItem.Icon>
+                    <NavigationViewItem.InfoBadge>
+                        <InfoBadge
+                            x:Name="CompletedCountBadge"
+                            AutomationProperties.AutomationId="Todo.Nav.Completed.Count"
+                            Margin="{StaticResource FixedNavigationCountBadgeMargin}"
+                            Style="{StaticResource NavigationTaskCountBadgeStyle}"
+                            Value="{x:Bind ViewModel.CompletedTaskCount, Mode=OneWay}"
+                            Visibility="{x:Bind local:ShellPage.CountToVisibility(ViewModel.CompletedTaskCount), Mode=OneWay}" />
+                    </NavigationViewItem.InfoBadge>
                 </NavigationViewItem>
                 <NavigationViewItem
                     x:Name="DefaultListNavigationItem"
                     AutomationProperties.AutomationId="Todo.Nav.DefaultList"
                     Visibility="Collapsed">
                     <NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE80F;" />
+                        <FontIcon
+                            x:Name="TasksNavigationIcon"
+                            Foreground="{x:Bind ViewModel.TasksIconBrush, Mode=OneWay}"
+                            Glyph="&#xE80F;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItemSeparator
@@ -491,6 +557,31 @@
                 x:Name="DeleteTaskMessage"
                 Style="{StaticResource BodyTextBlockStyle}"
                 TextWrapping="Wrap" />
+        </ContentDialog>
+
+        <ContentDialog
+            x:Name="ListIconDialog"
+            x:Uid="ListIconDialog"
+            AutomationProperties.AutomationId="Todo.Dialog.ListIcon"
+            Closing="OnListIconDialogClosing"
+            DefaultButton="Primary"
+            Opened="OnListIconDialogOpened"
+            x:Load="{x:Bind ViewModel.IsListIconDialogLoaded, Mode=OneWay}">
+            <StackPanel Spacing="8">
+                <TextBox
+                    x:Name="ListIconInput"
+                    x:Uid="ListIconInput"
+                    MaxLength="32"
+                    AutomationProperties.AutomationId="Todo.Dialog.ListIcon.Input"
+                    Text="{x:Bind ViewModel.CustomListIconInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBlock
+                    AutomationProperties.AutomationId="Todo.Dialog.ListIcon.Error"
+                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.CustomListIconError, Mode=OneWay}"
+                    TextWrapping="Wrap"
+                    Visibility="{x:Bind local:ShellPage.BoolToVisibility(ViewModel.HasCustomListIconError), Mode=OneWay}" />
+            </StackPanel>
         </ContentDialog>
 
         <ContentDialog

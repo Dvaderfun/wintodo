@@ -46,7 +46,7 @@ After parity, we iterate beyond To Do.
 
 | Area | Must have in v1 |
 |---|---|
-| Lists | Create, rename, delete, reorder, per-list theme colour, list groups, one fixed default list ("Tasks") per account |
+| Lists | Create, rename, delete, reorder, per-list theme colour, optional emoji icon, list groups, one fixed default list ("Tasks") per account |
 | Smart lists | My Day, Important, Planned, All, Completed |
 | Tasks | Create, complete, uncomplete, delete, reorder, move to another list |
 | Task fields | Title, steps (subtasks), note, due date, reminder, repeat, importance (star), "Added to My Day" |
@@ -597,14 +597,19 @@ IDs; then write XAML from those samples.
 **Deliverables**
 - List CRUD: create (inline-editable new row in the pane), rename (F2 / context
   menu), delete (`ContentDialog` confirm), reorder (drag within the pane),
-  per-list theme colour picker, list groups (create, drag lists into/out of).
+  per-list theme colour picker, optional emoji icon chosen beside the title
+  editor (with a custom-entry route in the list menu), list groups (create, drag
+  lists into/out of).
 - A default list ("Tasks", `lists.is_default`) created on first run: pinned
   directly below the smart lists and above the divider, never renameable,
   deletable, groupable, or reorderable. It is the composer target on every smart list, because
   `tasks.list_id` is `NOT NULL` and a listless task has no CalDAV collection to
   live in. Picking another list in the composer applies to that one task.
-- `TaskListView`: header (title + count + list menu), `AddTaskComposer`,
-  `ListView` of `TaskRow`, completed section.
+- `TaskListView`: header (emoji picker + title + list menu),
+  `AddTaskComposer`, `ListView` of `TaskRow`, completed section. Navigation list
+  rows show a zero-hidden root-task count for every fixed and user category;
+  Completed counts completed roots and the other categories count incomplete
+  roots matching their filter.
 - `TaskRow` exactly per `docs/DESIGN.md` §3: completion circle, title,
   metadata line, importance star.
 - Complete / uncomplete with the animation spec in `docs/DESIGN.md` §7.
@@ -760,8 +765,9 @@ milestone is not reported as fully complete.
 - Empty states for every list and every smart list.
 - Per-list theme colours applied to header, completion circles, and the nav-pane
   indicator.
-- Per-list background images (the To Do "themes" feature) — decode at display
-  size, never full resolution.
+- Per-list and fixed-category background images (the To Do "themes" feature) —
+  decode at display size, never full resolution. Fixed-category glyphs use the
+  selected theme colour, with a Settings preference to use neutral glyphs.
 - Full keyboard map per `docs/DESIGN.md` §8, discoverable via a shortcuts dialog.
 - Screen reader pass with Narrator: every row announces title, due date, and
   completion state; completing announces the state change via

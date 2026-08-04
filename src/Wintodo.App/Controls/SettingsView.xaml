@@ -10,293 +10,356 @@
     xmlns:viewModels="using:Wintodo.ViewModels"
     mc:Ignorable="d">
 
-    <ScrollViewer
-        x:Name="SettingsScrollViewer"
-        HorizontalContentAlignment="Stretch"
-        HorizontalScrollBarVisibility="Disabled"
-        HorizontalScrollMode="Disabled"
-        AutomationProperties.AutomationId="Todo.Settings.ScrollViewer">
-        <VisualStateManager.VisualStateGroups>
-            <VisualStateGroup>
-                <VisualState x:Name="CompactSettings" />
-                <VisualState x:Name="MediumSettings">
-                    <VisualState.StateTriggers>
-                        <AdaptiveTrigger MinWindowWidth="900" />
-                    </VisualState.StateTriggers>
-                    <VisualState.Setters>
-                        <Setter Target="SettingsPanel.Width" Value="480" />
-                    </VisualState.Setters>
-                </VisualState>
-                <VisualState x:Name="LargeSettings">
-                    <VisualState.StateTriggers>
-                        <AdaptiveTrigger MinWindowWidth="1050" />
-                    </VisualState.StateTriggers>
-                    <VisualState.Setters>
-                        <Setter Target="SettingsPanel.Width" Value="600" />
-                    </VisualState.Setters>
-                </VisualState>
-                <VisualState x:Name="WideSettings">
-                    <VisualState.StateTriggers>
-                        <AdaptiveTrigger MinWindowWidth="1200" />
-                    </VisualState.StateTriggers>
-                    <VisualState.Setters>
-                        <Setter Target="SettingsPanel.Width" Value="760" />
-                    </VisualState.Setters>
-                </VisualState>
-            </VisualStateGroup>
-        </VisualStateManager.VisualStateGroups>
-        <StackPanel
-            x:Name="SettingsPanel"
-            Width="360"
-            MaxWidth="760"
-            Padding="36"
-            HorizontalAlignment="Stretch"
-            Spacing="24">
-            <TextBlock
-                x:Uid="SettingsTitle"
-                Style="{StaticResource TitleTextBlockStyle}" />
+    <UserControl.Resources>
+        <!--
+            Group headers follow the Windows Settings ramp: 14px SemiBold, not the
+            20px Subtitle ramp, so they read below the 28px page title instead of
+            competing with it.
+        -->
+        <Style
+            x:Key="SettingsGroupHeaderStyle"
+            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+            TargetType="TextBlock">
+            <Setter Property="Margin" Value="0,4,0,0" />
+        </Style>
+    </UserControl.Resources>
 
-            <StackPanel Spacing="12">
-                <TextBlock
-                    x:Uid="SettingsAppearanceHeader"
-                    Style="{StaticResource SubtitleTextBlockStyle}" />
+    <!--
+        The title lives outside the ScrollViewer in a 64px row so it stays pinned
+        and lands on the same baseline and inset as the task list title.
+    -->
+    <Grid AutomationProperties.AutomationId="Todo.Settings.Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="64" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
-                <settings:SettingsCard
-                    x:Uid="SettingsThemeCard"
-                    ContentAlignment="Vertical">
-                    <ComboBox
-                        x:Name="ThemeComboBox"
-                        x:Uid="SettingsThemeCombo"
-                        Width="200"
-                        AutomationProperties.AutomationId="Todo.Settings.Theme"
-                        SelectedIndex="{x:Bind ViewModel.AppearanceThemeIndex, Mode=TwoWay}">
-                        <ComboBoxItem
-                            x:Uid="SettingsThemeSystem"
-                            AutomationProperties.AutomationId="Todo.Settings.Theme.System" />
-                        <ComboBoxItem
-                            x:Uid="SettingsThemeLight"
-                            AutomationProperties.AutomationId="Todo.Settings.Theme.Light" />
-                        <ComboBoxItem
-                            x:Uid="SettingsThemeDark"
-                            AutomationProperties.AutomationId="Todo.Settings.Theme.Dark" />
-                    </ComboBox>
-                </settings:SettingsCard>
+        <TextBlock
+            x:Uid="SettingsTitle"
+            Grid.Row="0"
+            VerticalAlignment="Top"
+            AutomationProperties.AutomationId="Todo.Settings.Title"
+            Style="{StaticResource TitleTextBlockStyle}" />
 
-                <settings:SettingsCard
-                    x:Uid="SettingsDensityCard"
-                    ContentAlignment="Vertical">
-                    <ComboBox
-                        x:Uid="SettingsDensityCombo"
-                        Width="160"
-                        AutomationProperties.AutomationId="Todo.Settings.Density"
-                        SelectedIndex="{x:Bind ViewModel.DensityIndex, Mode=TwoWay}">
-                        <ComboBoxItem
-                            x:Uid="SettingsDensityComfortable"
-                            AutomationProperties.AutomationId="Todo.Settings.Density.Comfortable" />
-                        <ComboBoxItem
-                            x:Uid="SettingsDensityCompact"
-                            AutomationProperties.AutomationId="Todo.Settings.Density.Compact" />
-                    </ComboBox>
-                </settings:SettingsCard>
+        <ScrollViewer
+            x:Name="SettingsScrollViewer"
+            Grid.Row="1"
+            Padding="0,0,12,48"
+            HorizontalContentAlignment="Stretch"
+            HorizontalScrollBarVisibility="Disabled"
+            HorizontalScrollMode="Disabled"
+            AutomationProperties.AutomationId="Todo.Settings.ScrollViewer">
+            <!--
+                A left-aligned StackPanel would size to its own content and leave the
+                cards narrow enough to trip SettingsCard's wrap threshold, which is
+                what pushes each control below its description. A star column capped
+                by MaxWidth fills the viewport instead and still keeps the content
+                left-aligned on wide monitors.
+            -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="1000" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
 
-                <settings:SettingsCard
-                    x:Uid="SettingsBackgroundsCard"
-                    ContentAlignment="Vertical">
-                    <ToggleSwitch
-                        x:Uid="SettingsBackgroundsToggle"
-                        AutomationProperties.AutomationId="Todo.Settings.ShowBackgrounds"
-                        IsOn="{x:Bind ViewModel.ShowListBackgrounds, Mode=TwoWay}" />
-                </settings:SettingsCard>
-            </StackPanel>
+                <StackPanel
+                    x:Name="SettingsPanel"
+                    Grid.Column="0"
+                    Spacing="24">
 
-            <StackPanel Spacing="12">
-                <TextBlock
-                    x:Uid="SettingsWindowsHeader"
-                    Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <StackPanel Spacing="4">
+                        <TextBlock
+                            x:Uid="SettingsAppearanceHeader"
+                            Style="{StaticResource SettingsGroupHeaderStyle}" />
 
-                <settings:SettingsCard
-                    x:Uid="SettingsLaunchAtLoginCard"
-                    ContentAlignment="Vertical">
-                    <ToggleSwitch
-                        x:Uid="SettingsLaunchAtLoginToggle"
-                        AutomationProperties.AutomationId="Todo.Settings.LaunchAtLogin"
-                        IsEnabled="{x:Bind ViewModel.CanChangeLaunchAtLogin, Mode=OneWay}"
-                        IsOn="{x:Bind ViewModel.LaunchAtLogin, Mode=TwoWay}" />
-                </settings:SettingsCard>
-            </StackPanel>
+                        <settings:SettingsCard x:Uid="SettingsThemeCard">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE790;" />
+                            </settings:SettingsCard.HeaderIcon>
+                            <ComboBox
+                                x:Name="ThemeComboBox"
+                                x:Uid="SettingsThemeCombo"
+                                MinWidth="200"
+                                AutomationProperties.AutomationId="Todo.Settings.Theme"
+                                SelectedIndex="{x:Bind ViewModel.AppearanceThemeIndex, Mode=TwoWay}">
+                                <ComboBoxItem
+                                    x:Uid="SettingsThemeSystem"
+                                    AutomationProperties.AutomationId="Todo.Settings.Theme.System" />
+                                <ComboBoxItem
+                                    x:Uid="SettingsThemeLight"
+                                    AutomationProperties.AutomationId="Todo.Settings.Theme.Light" />
+                                <ComboBoxItem
+                                    x:Uid="SettingsThemeDark"
+                                    AutomationProperties.AutomationId="Todo.Settings.Theme.Dark" />
+                            </ComboBox>
+                        </settings:SettingsCard>
 
-            <StackPanel Spacing="12">
-                <Grid ColumnSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="20" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
-                        x:Uid="SettingsSyncHeader"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <ProgressRing
-                        Grid.Column="1"
-                        Width="20"
-                        Height="20"
-                        AutomationProperties.AutomationId="Todo.Settings.Sync.Progress"
-                        IsActive="{x:Bind ViewModel.IsSyncBusy, Mode=OneWay}"
-                        Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncBusy), Mode=OneWay}" />
-                </Grid>
+                        <settings:SettingsCard x:Uid="SettingsDensityCard">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE8FD;" />
+                            </settings:SettingsCard.HeaderIcon>
+                            <ComboBox
+                                x:Uid="SettingsDensityCombo"
+                                MinWidth="200"
+                                AutomationProperties.AutomationId="Todo.Settings.Density"
+                                SelectedIndex="{x:Bind ViewModel.DensityIndex, Mode=TwoWay}">
+                                <ComboBoxItem
+                                    x:Uid="SettingsDensityComfortable"
+                                    AutomationProperties.AutomationId="Todo.Settings.Density.Comfortable" />
+                                <ComboBoxItem
+                                    x:Uid="SettingsDensityCompact"
+                                    AutomationProperties.AutomationId="Todo.Settings.Density.Compact" />
+                            </ComboBox>
+                        </settings:SettingsCard>
 
-                <settings:SettingsCard
-                    x:Uid="SettingsSyncConnectCard"
-                    ContentAlignment="Vertical"
-                    Visibility="{x:Bind local:SettingsView.InvertBoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
-                    <StackPanel Spacing="12">
-                        <TextBox
-                            x:Uid="SettingsSyncServer"
-                            AutomationProperties.AutomationId="Todo.Settings.Sync.Server"
-                            Text="{x:Bind ViewModel.CalDavServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBox
-                            x:Uid="SettingsSyncUsername"
-                            AutomationProperties.AutomationId="Todo.Settings.Sync.Username"
-                            Text="{x:Bind ViewModel.CalDavUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                        <PasswordBox
-                            x:Uid="SettingsSyncPassword"
-                            AutomationProperties.AutomationId="Todo.Settings.Sync.Password"
-                            Password="{x:Bind ViewModel.CalDavPassword, Mode=TwoWay}" />
-                        <Button
-                            AutomationProperties.AutomationId="Todo.Settings.Sync.Connect"
-                            Command="{x:Bind ViewModel.ConnectCalDavCommand, Mode=OneTime}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
+                        <settings:SettingsCard x:Uid="SettingsBackgroundsCard">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xEB9F;" />
+                            </settings:SettingsCard.HeaderIcon>
+                            <ToggleSwitch
+                                x:Uid="SettingsBackgroundsToggle"
+                                AutomationProperties.AutomationId="Todo.Settings.ShowBackgrounds"
+                                IsOn="{x:Bind ViewModel.ShowListBackgrounds, Mode=TwoWay}" />
+                        </settings:SettingsCard>
+
+                        <settings:SettingsCard x:Uid="SettingsFixedCategoryIconTintCard">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE790;" />
+                            </settings:SettingsCard.HeaderIcon>
+                            <ToggleSwitch
+                                x:Uid="SettingsFixedCategoryIconTintToggle"
+                                AutomationProperties.AutomationId="Todo.Settings.TintFixedCategoryIcons"
+                                IsOn="{x:Bind ViewModel.TintFixedCategoryIcons, Mode=TwoWay}" />
+                        </settings:SettingsCard>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock
+                            x:Uid="SettingsWindowsHeader"
+                            Style="{StaticResource SettingsGroupHeaderStyle}" />
+
+                        <settings:SettingsCard x:Uid="SettingsLaunchAtLoginCard">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE713;" />
+                            </settings:SettingsCard.HeaderIcon>
+                            <ToggleSwitch
+                                x:Uid="SettingsLaunchAtLoginToggle"
+                                AutomationProperties.AutomationId="Todo.Settings.LaunchAtLogin"
+                                IsEnabled="{x:Bind ViewModel.CanChangeLaunchAtLogin, Mode=OneWay}"
+                                IsOn="{x:Bind ViewModel.LaunchAtLogin, Mode=TwoWay}" />
+                        </settings:SettingsCard>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="20" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                x:Uid="SettingsSyncHeader"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource SettingsGroupHeaderStyle}" />
+                            <ProgressRing
+                                Grid.Column="1"
+                                Width="20"
+                                Height="20"
+                                AutomationProperties.AutomationId="Todo.Settings.Sync.Progress"
+                                IsActive="{x:Bind ViewModel.IsSyncBusy, Mode=OneWay}"
+                                Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncBusy), Mode=OneWay}" />
+                        </Grid>
+
+                        <!--
+                            A failed connect leaves IsSyncConnected false, which hides
+                            the account card that carries SyncStatusText — so the error
+                            needs its own surface above both cards.
+                        -->
+                        <InfoBar
+                            x:Uid="SettingsSyncErrorBar"
+                            AutomationProperties.AutomationId="Todo.Settings.Sync.Error"
+                            IsOpen="{x:Bind ViewModel.IsSyncErrorOpen, Mode=TwoWay}"
+                            Message="{x:Bind ViewModel.SyncErrorMessage, Mode=OneWay}"
+                            Severity="Error" />
+
+                        <!--
+                            SettingsCard's ContentAlignment="Vertical" loses to the
+                            control's own width heuristic once the card is wide, which
+                            squeezes a credential form into a narrow right-hand column.
+                            SettingsExpander's items region is full width by design.
+                        -->
+                        <settings:SettingsExpander
+                            x:Uid="SettingsSyncConnectCard"
+                            IsExpanded="True"
+                            Visibility="{x:Bind local:SettingsView.InvertBoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
+                            <settings:SettingsExpander.HeaderIcon>
                                 <FontIcon Glyph="&#xE774;" />
-                                <TextBlock x:Uid="SettingsSyncConnectLabel" />
-                            </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </settings:SettingsCard>
-
-                <settings:SettingsCard
-                    x:Uid="SettingsSyncAccountCard"
-                    ContentAlignment="Vertical"
-                    Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
-                    <StackPanel Spacing="12">
-                        <TextBlock
-                            AutomationProperties.AutomationId="Todo.Settings.Sync.Account"
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind ViewModel.SyncAccountDisplayName, Mode=OneWay}" />
-                        <TextBlock
-                            AutomationProperties.AutomationId="Todo.Settings.Sync.Status"
-                            Style="{StaticResource BodyTextBlockStyle}"
-                            Text="{x:Bind ViewModel.SyncStatusText, Mode=OneWay}"
-                            TextWrapping="Wrap" />
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button
-                                AutomationProperties.AutomationId="Todo.Settings.Sync.Now"
-                                Command="{x:Bind ViewModel.SyncNowCommand, Mode=OneTime}">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon Glyph="&#xE895;" />
-                                    <TextBlock x:Uid="SettingsSyncNowLabel" />
+                            </settings:SettingsExpander.HeaderIcon>
+                            <settings:SettingsExpander.ItemsFooter>
+                                <StackPanel Padding="16" Spacing="12">
+                                    <TextBox
+                                        x:Uid="SettingsSyncServer"
+                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Server"
+                                        InputScope="Url"
+                                        KeyDown="OnCredentialKeyDown"
+                                        Text="{x:Bind ViewModel.CalDavServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBox
+                                        x:Uid="SettingsSyncUsername"
+                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Username"
+                                        KeyDown="OnCredentialKeyDown"
+                                        Text="{x:Bind ViewModel.CalDavUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <PasswordBox
+                                        x:Uid="SettingsSyncPassword"
+                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Password"
+                                        KeyDown="OnCredentialKeyDown"
+                                        Password="{x:Bind ViewModel.CalDavPassword, Mode=TwoWay}" />
+                                    <Button
+                                        HorizontalAlignment="Right"
+                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Connect"
+                                        Command="{x:Bind ViewModel.ConnectCalDavCommand, Mode=OneTime}"
+                                        Style="{StaticResource AccentButtonStyle}">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <FontIcon FontSize="16" Glyph="&#xE774;" />
+                                            <TextBlock x:Uid="SettingsSyncConnectLabel" />
+                                        </StackPanel>
+                                    </Button>
                                 </StackPanel>
-                            </Button>
-                            <Button
-                                AutomationProperties.AutomationId="Todo.Settings.Sync.Disconnect"
-                                Command="{x:Bind ViewModel.DisconnectCalDavCommand, Mode=OneTime}">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon Glyph="&#xE8BB;" />
-                                    <TextBlock x:Uid="SettingsSyncDisconnectLabel" />
-                                </StackPanel>
-                            </Button>
-                        </StackPanel>
-                    </StackPanel>
-                </settings:SettingsCard>
+                            </settings:SettingsExpander.ItemsFooter>
+                        </settings:SettingsExpander>
 
-                <settings:SettingsCard
-                    x:Uid="SettingsSyncListsCard"
-                    ContentAlignment="Vertical"
-                    Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
-                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.SyncListOptions, Mode=OneWay}">
-                        <ItemsRepeater.ItemTemplate>
-                            <DataTemplate x:DataType="viewModels:SyncListOptionViewModel">
-                                <Grid MinHeight="44" ColumnSpacing="12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
+                        <settings:SettingsCard
+                            x:Uid="SettingsSyncAccountCard"
+                            Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE774;" />
+                            </settings:SettingsCard.HeaderIcon>
+                            <StackPanel
+                                VerticalAlignment="Center"
+                                Orientation="Horizontal"
+                                Spacing="16">
+                                <StackPanel VerticalAlignment="Center" Spacing="2">
                                     <TextBlock
-                                        VerticalAlignment="Center"
-                                        Style="{StaticResource BodyTextBlockStyle}"
-                                        Text="{x:Bind DisplayName, Mode=OneTime}"
+                                        HorizontalAlignment="Right"
+                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Account"
+                                        Style="{StaticResource BodyStrongTextBlockStyle}"
+                                        Text="{x:Bind ViewModel.SyncAccountDisplayName, Mode=OneWay}"
                                         TextTrimming="CharacterEllipsis" />
-                                    <ToggleSwitch
-                                        Grid.Column="1"
-                                        VerticalAlignment="Center"
-                                        AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
-                                        IsEnabled="{x:Bind IsAvailable, Mode=OneWay}"
-                                        IsOn="{x:Bind IsEnabled, Mode=TwoWay}" />
-                                </Grid>
-                            </DataTemplate>
-                        </ItemsRepeater.ItemTemplate>
-                    </ItemsRepeater>
-                </settings:SettingsCard>
-            </StackPanel>
-
-            <StackPanel Spacing="12">
-                <Grid ColumnSpacing="12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="20" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
-                        x:Uid="SettingsDataHeader"
-                        VerticalAlignment="Center"
-                        Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <ProgressRing
-                        x:Uid="SettingsTransferProgress"
-                        Grid.Column="1"
-                        Width="20"
-                        Height="20"
-                        AutomationProperties.AutomationId="Todo.Settings.TransferProgress"
-                        IsActive="{x:Bind ViewModel.IsTransferBusy, Mode=OneWay}"
-                        Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsTransferBusy), Mode=OneWay}" />
-                </Grid>
-
-                <settings:SettingsCard
-                    x:Uid="SettingsDataCard"
-                    ContentAlignment="Vertical">
-                    <StackPanel Spacing="8">
-                        <Button
-                            x:Uid="SettingsImportButton"
-                            AutomationProperties.AutomationId="Todo.Settings.ImportIcal"
-                            Command="{x:Bind ViewModel.ImportIcalCommand, Mode=OneTime}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE8B5;" />
-                                <TextBlock
-                                    x:Uid="SettingsImportLabel"
-                                    Style="{StaticResource BodyTextBlockStyle}" />
+                                    <TextBlock
+                                        HorizontalAlignment="Right"
+                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Status"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        Text="{x:Bind ViewModel.SyncStatusText, Mode=OneWay}"
+                                        TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                                <Button
+                                    AutomationProperties.AutomationId="Todo.Settings.Sync.Now"
+                                    Command="{x:Bind ViewModel.SyncNowCommand, Mode=OneTime}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon FontSize="16" Glyph="&#xE895;" />
+                                        <TextBlock x:Uid="SettingsSyncNowLabel" />
+                                    </StackPanel>
+                                </Button>
+                                <Button
+                                    AutomationProperties.AutomationId="Todo.Settings.Sync.Disconnect"
+                                    Command="{x:Bind ViewModel.DisconnectCalDavCommand, Mode=OneTime}">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <FontIcon FontSize="16" Glyph="&#xE8BB;" />
+                                        <TextBlock x:Uid="SettingsSyncDisconnectLabel" />
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
-                        </Button>
+                        </settings:SettingsCard>
 
-                        <Button
-                            x:Uid="SettingsExportAllButton"
-                            AutomationProperties.AutomationId="Todo.Settings.ExportAll"
-                            Command="{x:Bind ViewModel.ExportAllCommand, Mode=OneTime}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <FontIcon Glyph="&#xE898;" />
-                                <TextBlock
-                                    x:Uid="SettingsExportAllLabel"
-                                    Style="{StaticResource BodyTextBlockStyle}" />
-                            </StackPanel>
-                        </Button>
+                        <settings:SettingsExpander
+                            x:Uid="SettingsSyncListsCard"
+                            IsExpanded="True"
+                            ItemsSource="{x:Bind ViewModel.SyncListOptions, Mode=OneWay}"
+                            Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
+                            <settings:SettingsExpander.HeaderIcon>
+                                <FontIcon Glyph="&#xE895;" />
+                            </settings:SettingsExpander.HeaderIcon>
+                            <settings:SettingsExpander.ItemTemplate>
+                                <DataTemplate x:DataType="viewModels:SyncListOptionViewModel">
+                                    <settings:SettingsCard Header="{x:Bind DisplayName, Mode=OneTime}">
+                                        <ToggleSwitch
+                                            AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                                            IsEnabled="{x:Bind IsAvailable, Mode=OneWay}"
+                                            IsOn="{x:Bind IsEnabled, Mode=TwoWay}" />
+                                    </settings:SettingsCard>
+                                </DataTemplate>
+                            </settings:SettingsExpander.ItemTemplate>
+                        </settings:SettingsExpander>
                     </StackPanel>
-                </settings:SettingsCard>
-            </StackPanel>
 
-            <StackPanel Spacing="12">
-                <TextBlock
-                    x:Uid="SettingsAboutHeader"
-                    Style="{StaticResource SubtitleTextBlockStyle}" />
-                <settings:SettingsCard
-                    x:Uid="SettingsVersionCard"
-                    ContentAlignment="Vertical"
-                    Description="{x:Bind VersionText, Mode=OneTime}" />
-            </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+                    <StackPanel Spacing="4">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="20" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock
+                                x:Uid="SettingsDataHeader"
+                                VerticalAlignment="Center"
+                                Style="{StaticResource SettingsGroupHeaderStyle}" />
+                            <ProgressRing
+                                x:Uid="SettingsTransferProgress"
+                                Grid.Column="1"
+                                Width="20"
+                                Height="20"
+                                AutomationProperties.AutomationId="Todo.Settings.TransferProgress"
+                                IsActive="{x:Bind ViewModel.IsTransferBusy, Mode=OneWay}"
+                                Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsTransferBusy), Mode=OneWay}" />
+                        </Grid>
+
+                        <settings:SettingsCard x:Uid="SettingsImportCard">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE8B5;" />
+                            </settings:SettingsCard.HeaderIcon>
+                            <Button
+                                x:Uid="SettingsImportButton"
+                                AutomationProperties.AutomationId="Todo.Settings.ImportIcal"
+                                Command="{x:Bind ViewModel.ImportIcalCommand, Mode=OneTime}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="16" Glyph="&#xE8B5;" />
+                                    <TextBlock
+                                        x:Uid="SettingsImportLabel"
+                                        Style="{StaticResource BodyTextBlockStyle}" />
+                                </StackPanel>
+                            </Button>
+                        </settings:SettingsCard>
+
+                        <settings:SettingsCard x:Uid="SettingsExportCard">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE898;" />
+                            </settings:SettingsCard.HeaderIcon>
+                            <Button
+                                x:Uid="SettingsExportAllButton"
+                                AutomationProperties.AutomationId="Todo.Settings.ExportAll"
+                                Command="{x:Bind ViewModel.ExportAllCommand, Mode=OneTime}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon FontSize="16" Glyph="&#xE898;" />
+                                    <TextBlock
+                                        x:Uid="SettingsExportAllLabel"
+                                        Style="{StaticResource BodyTextBlockStyle}" />
+                                </StackPanel>
+                            </Button>
+                        </settings:SettingsCard>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
+                        <TextBlock
+                            x:Uid="SettingsAboutHeader"
+                            Style="{StaticResource SettingsGroupHeaderStyle}" />
+                        <settings:SettingsCard
+                            x:Uid="SettingsVersionCard"
+                            Description="{x:Bind VersionText, Mode=OneTime}">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE946;" />
+                            </settings:SettingsCard.HeaderIcon>
+                        </settings:SettingsCard>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

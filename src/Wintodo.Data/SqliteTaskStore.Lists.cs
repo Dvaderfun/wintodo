@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Wintodo.Core.Models;
+using Wintodo.Core.Queries;
 using Wintodo.Data.Mapping;
 
 namespace Wintodo.Data;
@@ -10,7 +11,8 @@ public sealed partial class SqliteTaskStore
         id, uid, display_name, color, background_theme, group_id,
         sort_order, sort_mode, sort_descending, show_completed,
         completed_expanded, is_default, is_deleted, created_utc,
-        modified_utc, account_id, remote_url, remote_ctag, sync_token
+        modified_utc, account_id, remote_url, remote_ctag, sync_token,
+        icon_emoji
         """;
 
     public Task<IReadOnlyList<TodoList>> GetListsAsync(CancellationToken cancellationToken = default)
@@ -24,10 +26,19 @@ public sealed partial class SqliteTaskStore
                            sort_order, sort_mode, sort_descending, show_completed,
                            completed_expanded, is_default, is_deleted, created_utc,
                            modified_utc, account_id, remote_url, remote_ctag, sync_token,
+                           icon_emoji,
                            account_id IS NOT NULL AND remote_url IS NOT NULL AND NOT EXISTS(
                                SELECT 1 FROM settings
                                WHERE key = 'sync.list.' || lists.uid || '.disabled'
                                      AND value = 'true'
+                           ),
+                           (
+                               SELECT COUNT(*)
+                               FROM tasks
+                               WHERE tasks.list_id = lists.id
+                                     AND tasks.parent_uid IS NULL
+                                     AND tasks.status <> 2
+                                     AND tasks.is_deleted = 0
                            )
                     FROM lists
                     WHERE is_deleted = 0
@@ -38,11 +49,91 @@ public sealed partial class SqliteTaskStore
                 while (reader.Read())
                 {
                     TodoList list = SqliteMapper.ReadList(reader);
-                    list.IsSyncEnabled = reader.GetBoolean(19);
+                    list.IsSyncEnabled = reader.GetBoolean(20);
+                    list.IncompleteTaskCount = checked((int)reader.GetInt64(21));
                     lists.Add(list);
                 }
 
                 return lists;
+            },
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyDictionary<long, int>> GetIncompleteTaskCountsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteReadAsync<IReadOnlyDictionary<long, int>>(
+            connection =>
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = """
+                    SELECT lists.id, COUNT(tasks.id)
+                    FROM lists
+                    LEFT JOIN tasks
+                           ON tasks.list_id = lists.id
+                          AND tasks.parent_uid IS NULL
+                          AND tasks.status <> 2
+                          AND tasks.is_deleted = 0
+                    WHERE lists.is_deleted = 0
+                    GROUP BY lists.id;
+                    """;
+                using SqliteDataReader reader = command.ExecuteReader();
+                var counts = new Dictionary<long, int>();
+                while (reader.Read())
+                {
+                    counts.Add(reader.GetInt64(0), checked((int)reader.GetInt64(1)));
+                }
+
+                return counts;
+            },
+            cancellationToken);
+    }
+
+    public Task<IReadOnlyDictionary<ListQueryKind, int>> GetSmartListTaskCountsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return ExecuteReadAsync<IReadOnlyDictionary<ListQueryKind, int>>(
+            connection =>
+            {
+                using SqliteCommand command = connection.CreateCommand();
+                command.CommandText = """
+                    SELECT
+                        COALESCE(SUM(CASE
+                            WHEN t.status <> 2 AND t.my_day_date = @today THEN 1
+                            ELSE 0
+                        END), 0),
+                        COALESCE(SUM(CASE
+                            WHEN t.status <> 2 AND t.priority BETWEEN 1 AND 4 THEN 1
+                            ELSE 0
+                        END), 0),
+                        COALESCE(SUM(CASE
+                            WHEN t.status <> 2 AND t.due_utc IS NOT NULL THEN 1
+                            ELSE 0
+                        END), 0),
+                        COALESCE(SUM(CASE WHEN t.status <> 2 THEN 1 ELSE 0 END), 0),
+                        COALESCE(SUM(CASE WHEN t.status = 2 THEN 1 ELSE 0 END), 0)
+                    FROM tasks t
+                    JOIN lists l ON l.id = t.list_id AND l.is_deleted = 0
+                    WHERE t.parent_uid IS NULL
+                      AND t.is_deleted = 0;
+                    """;
+                command.Parameters.AddWithValue(
+                    "@today",
+                    SqliteMapper.FormatDateOnly(_clock.Today));
+                using SqliteDataReader reader = command.ExecuteReader();
+                if (!reader.Read())
+                {
+                    throw new InvalidOperationException("The smart-list count query returned no row.");
+                }
+
+                return new Dictionary<ListQueryKind, int>
+                {
+                    [ListQueryKind.MyDay] = checked((int)reader.GetInt64(0)),
+                    [ListQueryKind.Important] = checked((int)reader.GetInt64(1)),
+                    [ListQueryKind.Planned] = checked((int)reader.GetInt64(2)),
+                    [ListQueryKind.All] = checked((int)reader.GetInt64(3)),
+                    [ListQueryKind.Completed] = checked((int)reader.GetInt64(4)),
+                };
             },
             cancellationToken);
     }
@@ -188,6 +279,59 @@ public sealed partial class SqliteTaskStore
         CancellationToken cancellationToken = default)
     {
         return UpdateListAsync(listId, "color = @value", (int)color, cancellationToken);
+    }
+
+    public Task SetListIconEmojiAsync(
+        long listId,
+        string? iconEmoji,
+        CancellationToken cancellationToken = default)
+    {
+        if (!ListEmoji.TryNormalize(iconEmoji, out string? normalized))
+        {
+            throw new ArgumentException(
+                "A list icon must contain one emoji.",
+                nameof(iconEmoji));
+        }
+
+        return ExecuteWriteAsync(
+            (connection, transaction, context) =>
+            {
+                string listUid = GetListUid(connection, transaction, listId);
+                using (SqliteCommand guard = connection.CreateCommand())
+                {
+                    guard.Transaction = transaction;
+                    guard.CommandText = "SELECT is_default FROM lists WHERE id = @listId;";
+                    guard.Parameters.AddWithValue("@listId", listId);
+                    if (Convert.ToInt64(
+                            guard.ExecuteScalar() ?? 0L,
+                            System.Globalization.CultureInfo.InvariantCulture) == 1)
+                    {
+                        throw new InvalidOperationException(
+                            "The default list uses its fixed Home icon.");
+                    }
+                }
+
+                using SqliteCommand command = connection.CreateCommand();
+                command.Transaction = transaction;
+                command.CommandText = """
+                    UPDATE lists
+                    SET icon_emoji = @iconEmoji, modified_utc = @modifiedUtc
+                    WHERE id = @listId AND is_deleted = 0;
+                    """;
+                command.Parameters.AddWithValue("@listId", listId);
+                AddParameter(command, "@iconEmoji", normalized);
+                command.Parameters.AddWithValue(
+                    "@modifiedUtc",
+                    SqliteMapper.FormatInstant(_clock.UtcNow));
+                if (command.ExecuteNonQuery() != 1)
+                {
+                    throw new KeyNotFoundException($"List {listId} was not found.");
+                }
+
+                LogChange(connection, transaction, ListEntityType, listUid, ChangeOperation.Update);
+                context.AddList(listId);
+            },
+            cancellationToken);
     }
 
     public Task SetListBackgroundThemeAsync(

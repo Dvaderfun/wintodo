@@ -30,6 +30,7 @@ public sealed class IcalWriter
         return Write(
             list.DisplayName,
             list.Color,
+            list.IconEmoji,
             tasks,
             timestamp,
             attachmentRoot);
@@ -44,6 +45,7 @@ public sealed class IcalWriter
         return Write(
             calendar.Name,
             calendar.Color,
+            calendar.IconEmoji,
             calendar.Tasks,
             timestamp,
             attachmentRoot);
@@ -52,6 +54,7 @@ public sealed class IcalWriter
     private byte[] Write(
         string? calendarName,
         ListColor? color,
+        string? iconEmoji,
         IEnumerable<TodoTask> tasks,
         DateTimeOffset timestamp,
         string? attachmentRoot)
@@ -68,6 +71,12 @@ public sealed class IcalWriter
         if (color is not null)
         {
             AppendLine(output, "X-WINTODO-LIST-COLOR:" + color.Value);
+        }
+
+        if (ListEmoji.TryNormalize(iconEmoji, out string? normalizedIcon)
+            && normalizedIcon is not null)
+        {
+            AppendLine(output, "X-WINTODO-LIST-ICON:" + EscapeText(normalizedIcon));
         }
 
         foreach (TodoTask task in tasks)

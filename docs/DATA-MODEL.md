@@ -103,14 +103,22 @@ public sealed class TodoTask
 }
 ```
 
-`TodoList`, `ListGroup`, `TaskAlarm`, `TaskAttachment`, `SavedView`, and
-`Account` mirror their tables in §3 one-for-one. Steps are **not** a separate
-type — a step is a `TodoTask` whose `ParentUid` is set. That is what makes M11
-(deep trees) a UI change rather than a data migration.
+`ListGroup`, `TaskAlarm`, `TaskAttachment`, `SavedView`, and `Account` mirror
+their tables in §3 one-for-one. `TodoList.IconEmoji` is a nullable
+single-grapheme user icon; `ListEmoji` owns its validation.
+`TodoList.IncompleteTaskCount` is query-derived and is never stored. It counts
+non-deleted, non-completed root tasks in that list; child steps are excluded.
+Smart-list navigation counts are query-derived in the same way:
+`GetSmartListTaskCountsAsync` returns incomplete roots matching My Day,
+Important, Planned, and All, plus completed roots for Completed. Soft-deleted
+tasks and tasks belonging to soft-deleted lists are excluded.
+Steps are **not** a separate type — a step is a `TodoTask` whose `ParentUid` is
+set. That is what makes M11 (deep trees) a UI change rather than a data
+migration.
 
 ---
 
-## 3. SQLite schema — `Wintodo.Data/Migrations/001_init.sql`
+## 3. SQLite schema — `Wintodo.Data/Migrations/001_init.sql` plus forward migrations
 
 Location: `%LOCALAPPDATA%\Packages\<PackageFamilyName>\LocalState\wintodo.db`
 Attachments: `…\LocalState\attachments\<task-uid>\<filename>`
@@ -152,6 +160,7 @@ CREATE TABLE lists (
     display_name       TEXT    NOT NULL,
     color              INTEGER NOT NULL DEFAULT 0,     -- ListColor
     background_theme   TEXT    NULL,
+    icon_emoji         TEXT    NULL,                    -- one emoji grapheme
     group_id           INTEGER NULL REFERENCES list_groups(id) ON DELETE SET NULL,
     sort_order         REAL    NOT NULL,
     sort_mode          INTEGER NOT NULL DEFAULT 0,     -- SortMode
@@ -343,6 +352,8 @@ in-memory index competing for the working-set budget.
   starts read-only with an error banner rather than half-migrated.
 - Before any migration above 001, copy the DB to `wintodo.db.bak-<version>`.
 - Migrations are **forward-only**. No down-migrations.
+- `002_list_icon_emoji.sql` adds nullable `lists.icon_emoji`; existing lists keep
+  the colour-dot fallback.
 
 ---
 
@@ -378,6 +389,7 @@ The wire format. `VCALENDAR` wrapper with `PRODID:-//Wintodo//Wintodo 1.0//EN`,
 | `X-APPLE-SORT-ORDER` | `sort_order` | §3.3 |
 | `X-WINTODO-MYDAY` | `my_day_date` | `YYYY-MM-DD`. Other clients ignore it harmlessly |
 | `X-WINTODO-LIST-COLOR` | `lists.color` | Only on export of a whole list |
+| `X-WINTODO-LIST-ICON` | `lists.icon_emoji` | One emoji grapheme; only on export of a whole list |
 | **anything else** | `ical_unknown` | Verbatim, re-emitted in original order |
 
 Importance (the To Do star) maps to `PRIORITY`: starring writes `1`, unstarring
@@ -455,7 +467,9 @@ also appends to `change_log` and raises a coalesced `StoreChanged` carrying the
 affected list ids and task uids.
 
 ```
-Lists:  GetListsAsync · CreateListAsync · RenameListAsync · SetListColorAsync
+Lists:  GetListsAsync · GetIncompleteTaskCountsAsync · GetSmartListTaskCountsAsync
+        · CreateListAsync
+        · RenameListAsync · SetListColorAsync · SetListIconEmojiAsync
         · ReorderListAsync · MoveListToGroupAsync · DeleteListAsync
 Groups: GetGroupsAsync · CreateGroupAsync · RenameGroupAsync · DeleteGroupAsync
 Tasks:  GetTasksAsync(ListQuery) · GetTaskAsync(uid) · CreateTaskAsync
@@ -471,3 +485,8 @@ Maint:  VacuumAsync · GetStatsAsync
 mode, include-completed, optional filter) rather than a set of boolean
 parameters. M12's query language compiles into the same descriptor, so the
 filter path is built once.
+
+Fixed-category appearance preferences live in the generic `settings` table:
+`appearance.fixed_category_background.<category>` stores the selected built-in
+background key and `appearance.tint_fixed_category_icons` stores whether fixed
+navigation/header glyphs use their category accent or the neutral foreground.

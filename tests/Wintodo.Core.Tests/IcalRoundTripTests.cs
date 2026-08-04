@@ -92,6 +92,25 @@ public sealed class IcalRoundTripTests
     }
 
     [Fact]
+    public void ListMetadata_RoundTripsColorAndEmojiIcon()
+    {
+        var calendar = new IcalCalendar
+        {
+            Name = "Travel",
+            Color = ListColor.Teal,
+            IconEmoji = "\U0001F680",
+        };
+
+        byte[] content = new IcalWriter(TimeZoneInfo.Utc)
+            .WriteCalendar(calendar, ExportTimestamp);
+        IcalCalendar reparsed = new IcalReader(TimeZoneInfo.Utc).Read(content);
+
+        Assert.Equal(calendar.Name, reparsed.Name);
+        Assert.Equal(calendar.Color, reparsed.Color);
+        Assert.Equal(calendar.IconEmoji, reparsed.IconEmoji);
+    }
+
+    [Fact]
     public void Reader_ParsesDateKindsParametersEscapesAndAlarm()
     {
         const string content = """

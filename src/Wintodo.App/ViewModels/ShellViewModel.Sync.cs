@@ -51,6 +51,15 @@ public sealed partial class ShellViewModel
     [ObservableProperty]
     public partial string SyncStatusGlyph { get; set; } = "\uE895";
 
+    // SyncStatusText only renders inside the connected-account card, so a failed
+    // connect \u2014 which leaves IsSyncConnected false \u2014 would otherwise report
+    // nothing at all. These drive a section-level InfoBar instead.
+    [ObservableProperty]
+    public partial bool IsSyncErrorOpen { get; set; }
+
+    [ObservableProperty]
+    public partial string SyncErrorMessage { get; set; } = string.Empty;
+
     [ObservableProperty]
     public partial IList<object> SyncListOptions { get; set; } = new List<object>();
 
@@ -88,6 +97,8 @@ public sealed partial class ShellViewModel
     [RelayCommand(CanExecute = nameof(CanConnectCalDav))]
     private async Task ConnectCalDavAsync()
     {
+        IsSyncErrorOpen = false;
+        SyncErrorMessage = string.Empty;
         IsSyncBusy = true;
         try
         {
@@ -289,5 +300,17 @@ public sealed partial class ShellViewModel
             SyncRunStatus.Error => "\uEA39",
             _ => "\uE895",
         };
+
+        if (status == SyncRunStatus.Error)
+        {
+            SyncErrorMessage = string.IsNullOrWhiteSpace(message)
+                ? SyncStatusText
+                : message;
+            IsSyncErrorOpen = true;
+            return;
+        }
+
+        IsSyncErrorOpen = false;
+        SyncErrorMessage = string.Empty;
     }
 }

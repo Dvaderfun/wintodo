@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
@@ -34,6 +37,8 @@ public sealed partial class TaskListViewModel : ObservableObject
     private bool _composerMyDay;
     private long? _composerListOverrideId;
     private ListQueryKind _composerKind = ListQueryKind.MyDay;
+    private string? _selectedNavigationKey;
+    private string? _selectedBackgroundSettingKey;
 
     internal TaskListViewModel(ITaskStore taskStore, IClock clock)
     {
@@ -50,6 +55,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         ComposerDueLabel = _resources.GetString("Composer_DueDate");
         ComposerReminderLabel = _resources.GetString("Composer_RemindMe");
         ComposerRepeatLabel = _resources.GetString("Composer_Repeat");
+        ListIconChoices = CreateListIconChoices(ChangeListIconCommand);
     }
 
     internal event Action? NavigationDataChanged;
@@ -64,12 +70,20 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     internal event Action? ShortcutsRequested;
 
+    internal event Action<string?>? CustomListIconRequested;
+
+    internal event Action? ListIconChanged;
+
+    internal event Action<string, string?>? BackgroundThemeChanged;
+
     public ObservableCollection<TaskListEntryViewModel> VisibleItems { get; } = [];
 
     [ObservableProperty]
     public partial IList<object> TaskGroups { get; set; } = new List<object>();
 
     public ObservableCollection<MoveTargetViewModel> MoveTargets { get; } = [];
+
+    public IReadOnlyList<ListEmojiChoiceViewModel> ListIconChoices { get; }
 
     [ObservableProperty]
     public partial string Title { get; set; }
@@ -82,6 +96,22 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     [ObservableProperty]
     public partial int ActiveCount { get; set; }
+
+    [ObservableProperty]
+    public partial string FixedHeaderGlyph { get; set; } = "\uE706";
+
+    [ObservableProperty]
+    public partial bool HasFixedHeaderGlyph { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool CanChangeSelectedBackground { get; set; }
+
+    [ObservableProperty]
+    public partial string? BackgroundTheme { get; set; }
+
+    [ObservableProperty]
+    public partial Brush FixedHeaderIconBrush { get; set; } =
+        (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RequestExportListCommand))]
@@ -189,9 +219,18 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     internal ListColor SelectedColor => _selectedList?.Color ?? ListColor.Blue;
 
+    public string? SelectedIconEmoji => _selectedList?.IconEmoji;
+
+    public bool HasSelectedIconEmoji => !string.IsNullOrEmpty(SelectedIconEmoji);
+
     internal TaskItemViewModel? FindTask(string uid)
     {
         return _itemCache.GetValueOrDefault(uid);
+    }
+
+    internal void RefreshFixedHeaderIconBrush()
+    {
+        OnPropertyChanged(nameof(FixedHeaderIconBrush));
     }
 
     internal void SetLists(IReadOnlyList<ShellListItemViewModel> lists)
@@ -213,18 +252,27 @@ public sealed partial class TaskListViewModel : ObservableObject
         ListQueryKind kind,
         string title,
         bool isMyDay,
+        string navigationKey,
+        string backgroundSettingKey,
+        string? backgroundTheme,
         CancellationToken cancellationToken = default)
     {
         _selectedList = null;
+        _selectedNavigationKey = navigationKey;
+        _selectedBackgroundSettingKey = backgroundSettingKey;
         IsUserListSelected = false;
         IsTaskListVisible = true;
         IsComposerVisible = kind != ListQueryKind.Completed;
         AreListCommandsVisible = true;
         CanReorderTasks = false;
+        CanChangeSelectedBackground = true;
+        BackgroundTheme = backgroundTheme;
+        HasFixedHeaderGlyph = kind != ListQueryKind.MyDay;
         Title = title;
         Subtitle = isMyDay ? FormatToday() : string.Empty;
         HasSubtitle = isMyDay;
         ConfigureEmptyState(kind);
+        FixedHeaderGlyph = EmptyGlyph;
         _composerKind = kind;
         ResetComposer();
 
@@ -254,12 +302,19 @@ public sealed partial class TaskListViewModel : ObservableObject
         CancellationToken cancellationToken = default)
     {
         _selectedList = list;
+        _selectedNavigationKey = list.NavigationKey;
+        _selectedBackgroundSettingKey = null;
+        NotifySelectedListIconChanged();
         IsUserListSelected = true;
         CanEditSelectedList = !list.IsDefault;
         IsTaskListVisible = true;
         IsComposerVisible = true;
         AreListCommandsVisible = true;
         CanReorderTasks = list.SortMode == SortMode.Manual;
+        CanChangeSelectedBackground = true;
+        BackgroundTheme = list.BackgroundTheme;
+        FixedHeaderGlyph = "\uE80F";
+        HasFixedHeaderGlyph = list.IsDefault;
         Title = list.DisplayName;
         Subtitle = string.Empty;
         HasSubtitle = false;
@@ -291,12 +346,17 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         _loadVersion++;
         _selectedList = null;
+        _selectedNavigationKey = null;
+        _selectedBackgroundSettingKey = null;
         _currentQuery = null;
         IsUserListSelected = false;
         IsTaskListVisible = false;
         IsComposerVisible = false;
         AreListCommandsVisible = false;
         CanReorderTasks = false;
+        CanChangeSelectedBackground = false;
+        BackgroundTheme = null;
+        HasFixedHeaderGlyph = false;
         ResetComposer();
         Title = title;
         Subtitle = string.Empty;
@@ -313,6 +373,8 @@ public sealed partial class TaskListViewModel : ObservableObject
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         _loadVersion++;
         _selectedList = null;
+        _selectedNavigationKey = null;
+        _selectedBackgroundSettingKey = null;
         _currentQuery = null;
         _searchText = text.Trim();
         IsUserListSelected = false;
@@ -320,6 +382,9 @@ public sealed partial class TaskListViewModel : ObservableObject
         IsComposerVisible = false;
         AreListCommandsVisible = false;
         CanReorderTasks = false;
+        CanChangeSelectedBackground = false;
+        BackgroundTheme = null;
+        HasFixedHeaderGlyph = false;
         ResetComposer();
         Title = _resources.GetString("Search_Title");
         Subtitle = string.Empty;
@@ -435,6 +500,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         UpdateItemDisplay(item);
         if (wasCompleted == item.IsCompleted)
         {
+            NavigationDataChanged?.Invoke();
             return;
         }
 
@@ -463,6 +529,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         _completedTasks.Remove(item);
         RebuildVisibleItems();
         BeginUndo(item);
+        NavigationDataChanged?.Invoke();
     }
 
     [RelayCommand]
@@ -676,6 +743,49 @@ public sealed partial class TaskListViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void RequestCustomListIcon()
+    {
+        if (_selectedList is not { IsDefault: false } list)
+        {
+            return;
+        }
+
+        CustomListIconRequested?.Invoke(list.IconEmoji);
+    }
+
+    [RelayCommand]
+    private async Task ChangeListIconAsync(string? value)
+    {
+        if (!ListEmoji.TryNormalize(value, out string? normalized))
+        {
+            return;
+        }
+
+        await SetSelectedListIconAsync(normalized);
+    }
+
+    internal async Task SetSelectedListIconAsync(string? iconEmoji)
+    {
+        ShellListItemViewModel? list = _selectedList;
+        if (list is null || list.IsDefault)
+        {
+            return;
+        }
+
+        await _taskStore.SetListIconEmojiAsync(list.Id, iconEmoji);
+        list.IconEmoji = iconEmoji;
+        NotifySelectedListIconChanged();
+        ListIconChanged?.Invoke();
+        NavigationDataChanged?.Invoke();
+    }
+
+    private void NotifySelectedListIconChanged()
+    {
+        OnPropertyChanged(nameof(SelectedIconEmoji));
+        OnPropertyChanged(nameof(HasSelectedIconEmoji));
+    }
+
+    [RelayCommand]
     private async Task ChangeListBackgroundAsync(string value)
     {
         await Task.Yield();
@@ -683,14 +793,29 @@ public sealed partial class TaskListViewModel : ObservableObject
         string? theme = string.Equals(value, "None", StringComparison.Ordinal)
             ? null
             : value;
-        if (list is null || !IsKnownBackgroundTheme(theme))
+        if (_selectedNavigationKey is null || !IsKnownBackgroundTheme(theme))
         {
             return;
         }
 
-        await _taskStore.SetListBackgroundThemeAsync(list.Id, theme);
-        list.BackgroundTheme = theme;
-        NavigationDataChanged?.Invoke();
+        if (list is not null)
+        {
+            await _taskStore.SetListBackgroundThemeAsync(list.Id, theme);
+            list.BackgroundTheme = theme;
+        }
+        else if (_selectedBackgroundSettingKey is not null)
+        {
+            await _taskStore.SetSettingAsync(
+                _selectedBackgroundSettingKey,
+                theme ?? string.Empty);
+        }
+        else
+        {
+            return;
+        }
+
+        BackgroundTheme = theme;
+        BackgroundThemeChanged?.Invoke(_selectedNavigationKey, theme);
     }
 
     [RelayCommand]
@@ -840,6 +965,8 @@ public sealed partial class TaskListViewModel : ObservableObject
             _completedTasks.Remove(item);
             RebuildVisibleItems();
         }
+
+        NavigationDataChanged?.Invoke();
     }
 
     [RelayCommand]
@@ -879,6 +1006,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         await _taskStore.RestoreTaskAsync(uid);
         CloseUndo();
         await ReloadAsync();
+        NavigationDataChanged?.Invoke();
     }
 
     private async Task LoadAsync(ListQuery query, CancellationToken cancellationToken)
@@ -1022,6 +1150,8 @@ public sealed partial class TaskListViewModel : ObservableObject
             _completedTasks.Remove(item);
             RebuildVisibleItems();
         }
+
+        NavigationDataChanged?.Invoke();
     }
 
     private async Task DeleteTaskAsync(TaskItemViewModel item)
@@ -1039,6 +1169,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         _completedTasks.Remove(item);
         RebuildVisibleItems();
         BeginUndo(item);
+        NavigationDataChanged?.Invoke();
     }
 
     private async Task MoveTaskAsync(TaskItemViewModel item, long destinationListId)
@@ -1046,6 +1177,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         await Task.Yield();
         await _taskStore.MoveTaskAsync(item.Uid, destinationListId);
         await ReloadAsync();
+        NavigationDataChanged?.Invoke();
     }
 
     private async Task RenameTaskAsync(TaskItemViewModel item)
@@ -1165,7 +1297,9 @@ public sealed partial class TaskListViewModel : ObservableObject
             }
         }
 
-        ActiveCount = _activeTasks.Count;
+        int activeCount = _activeTasks.Count;
+        bool activeCountChanged = ActiveCount != activeCount;
+        ActiveCount = activeCount;
         IsEmpty = _activeTasks.Count == 0 && _completedTasks.Count == 0;
         if (selected is not null && VisibleItems.Contains(selected))
         {
@@ -1177,6 +1311,10 @@ public sealed partial class TaskListViewModel : ObservableObject
         }
 
         TaskGroups = new List<object>(TaskGroups);
+        if (activeCountChanged)
+        {
+            NavigationDataChanged?.Invoke();
+        }
     }
 
     private void BuildSearchGroups()
@@ -1424,6 +1562,62 @@ public sealed partial class TaskListViewModel : ObservableObject
             or "Field";
     }
 
+    private IReadOnlyList<ListEmojiChoiceViewModel> CreateListIconChoices(
+        ICommand selectCommand)
+    {
+        (string Emoji, string ResourceKey)[] choices =
+        [
+            ("\U0001F686", "ListIconChoice_Train"),
+            ("\U0001F3E2", "ListIconChoice_Office"),
+            ("\U0001F3E5", "ListIconChoice_Hospital"),
+            ("\U0001F527", "ListIconChoice_Tools"),
+            ("\U0001F5A5\uFE0F", "ListIconChoice_Computer"),
+            ("\U0001F4BC", "ListIconChoice_Briefcase"),
+            ("\U0001F4C1", "ListIconChoice_Folder"),
+            ("\U0001F4DE", "ListIconChoice_Phone"),
+            ("\U0001F512", "ListIconChoice_Lock"),
+            ("\U0001F37F", "ListIconChoice_Popcorn"),
+            ("\u2615", "ListIconChoice_Coffee"),
+            ("\U0001F377", "ListIconChoice_Wine"),
+            ("\U0001F355", "ListIconChoice_Pizza"),
+            ("\U0001F4E6", "ListIconChoice_Package"),
+            ("\U0001F34C", "ListIconChoice_Banana"),
+            ("\U0001F4DA", "ListIconChoice_Books"),
+            ("\U0001F4F7", "ListIconChoice_Camera"),
+            ("\U0001F388", "ListIconChoice_Balloon"),
+            ("\U0001F4A1", "ListIconChoice_LightBulb"),
+            ("\U0001F6D2", "ListIconChoice_ShoppingCart"),
+            ("\U0001F392", "ListIconChoice_Backpack"),
+            ("\U0001F3D5\uFE0F", "ListIconChoice_Camping"),
+            ("\U0001F525", "ListIconChoice_Fire"),
+            ("\u2600\uFE0F", "ListIconChoice_Sun"),
+            ("\U0001F389", "ListIconChoice_Celebration"),
+            ("\u2764\uFE0F", "ListIconChoice_Heart"),
+            ("\U0001F495", "ListIconChoice_Hearts"),
+            ("\U0001F46A", "ListIconChoice_Family"),
+            ("\U0001F919", "ListIconChoice_CallMe"),
+            ("\u2708\uFE0F", "ListIconChoice_Airplane"),
+            ("\U0001F3AF", "ListIconChoice_Target"),
+            ("\U0001F3AE", "ListIconChoice_Game"),
+            ("\U0001F3E0", "ListIconChoice_Home"),
+            ("\U0001F4DD", "ListIconChoice_Note"),
+            ("\U0001F4B0", "ListIconChoice_Money"),
+            ("\U0001F381", "ListIconChoice_Gift"),
+        ];
+        var result = new List<ListEmojiChoiceViewModel>(choices.Length);
+        for (int index = 0; index < choices.Length; index++)
+        {
+            (string emoji, string resourceKey) = choices[index];
+            result.Add(new ListEmojiChoiceViewModel(
+                emoji,
+                _resources.GetString(resourceKey),
+                $"Todo.List.Icon.Choice.{(index + 1).ToString("00", CultureInfo.InvariantCulture)}",
+                selectCommand));
+        }
+
+        return result;
+    }
+
     private void ConfigureEmptyState(ListQueryKind kind)
     {
         (EmptyGlyph, EmptyTitle, EmptySubtitle) = kind switch
@@ -1444,10 +1638,14 @@ public sealed partial class TaskListViewModel : ObservableObject
                 "\uE930",
                 _resources.GetString("Empty_CompletedTitle"),
                 _resources.GetString("Empty_CompletedSubtitle")),
-            _ => (
+            ListQueryKind.All => (
                 "\uE8FD",
                 _resources.GetString("Empty_AllTitle"),
                 _resources.GetString("Empty_AllSubtitle")),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(kind),
+                kind,
+                "A user list does not have a smart-list empty state."),
         };
     }
 

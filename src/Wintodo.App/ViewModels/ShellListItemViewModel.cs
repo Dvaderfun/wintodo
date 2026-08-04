@@ -12,12 +12,14 @@ public sealed partial class ShellListItemViewModel : ObservableObject
         DisplayName = list.DisplayName;
         Color = list.Color;
         BackgroundTheme = list.BackgroundTheme;
+        IconEmoji = list.IconEmoji;
         GroupId = list.GroupId;
         SortOrder = list.SortOrder;
         SortMode = list.SortMode;
         SortDescending = list.SortDescending;
         ShowCompleted = list.ShowCompleted;
         CompletedExpanded = list.CompletedExpanded;
+        IncompleteTaskCount = list.IncompleteTaskCount;
         IsDefault = list.IsDefault;
     }
 
@@ -37,6 +39,9 @@ public sealed partial class ShellListItemViewModel : ObservableObject
     public partial string? BackgroundTheme { get; set; }
 
     [ObservableProperty]
+    public partial string? IconEmoji { get; set; }
+
+    [ObservableProperty]
     public partial long? GroupId { get; set; }
 
     [ObservableProperty]
@@ -53,6 +58,9 @@ public sealed partial class ShellListItemViewModel : ObservableObject
 
     [ObservableProperty]
     public partial bool CompletedExpanded { get; set; }
+
+    [ObservableProperty]
+    public partial int IncompleteTaskCount { get; set; }
 
     public string NavigationKey => $"list:{Uid}";
 
