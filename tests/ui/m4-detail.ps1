@@ -65,6 +65,7 @@ function Add-Step {
         -a $AppPid `
         --via send-input
     Start-Sleep -Milliseconds 350
+    winapp ui wait-for "Todo.Detail.Title" -a $AppPid -t 3000
 }
 
 function Get-StepRows {
@@ -141,6 +142,32 @@ Test-UI "Detail XAML is deferred until first open" {
         -a $AppPid `
         --value "1" `
         -t 5000
+}
+
+Test-UI "Enter in detail editors preserves the pane and draft text" {
+    $draftTitle = "M4 Enter-safe title"
+    winapp ui set-value "Todo.Detail.Title" $draftTitle -a $AppPid
+    winapp ui send-keys "enter" `
+        --target "Todo.Detail.Title" `
+        -a $AppPid `
+        --via send-input
+    winapp ui wait-for "Todo.Detail.Title" `
+        -a $AppPid `
+        --value $draftTitle `
+        --contains `
+        -t 3000
+
+    $draftNote = "M4 Enter-safe note"
+    winapp ui set-value "Todo.Detail.Note" $draftNote -a $AppPid
+    winapp ui send-keys "enter" `
+        --target "Todo.Detail.Note" `
+        -a $AppPid `
+        --via send-input
+    winapp ui wait-for "Todo.Detail.Note" `
+        -a $AppPid `
+        --value $draftNote `
+        --contains `
+        -t 3000
 }
 
 Test-UI "Title note importance My Day and reminder update" {

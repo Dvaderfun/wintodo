@@ -495,12 +495,22 @@ public sealed partial class TaskListViewModel : ObservableObject
             return;
         }
 
+        TodoTask previous = item.Model;
         bool wasCompleted = item.IsCompleted;
+        bool navigationCountsChanged =
+            previous.Status != task.Status
+            || previous.Priority != task.Priority
+            || previous.Due != task.Due
+            || previous.MyDayDate != task.MyDayDate;
         item.Model = task;
         UpdateItemDisplay(item);
         if (wasCompleted == item.IsCompleted)
         {
-            NavigationDataChanged?.Invoke();
+            if (navigationCountsChanged)
+            {
+                NavigationDataChanged?.Invoke();
+            }
+
             return;
         }
 

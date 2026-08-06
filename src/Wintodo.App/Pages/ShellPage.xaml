@@ -298,101 +298,150 @@
             <NavigationView.PaneFooter>
                 <Grid
                     x:Name="PaneFooterGrid"
-                    Margin="4,0,4,4"
-                    ColumnSpacing="8"
-                    RowSpacing="4">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="32" />
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="40" />
-                    </Grid.RowDefinitions>
-                    <TextBox
-                        x:Name="NewListNameBox"
-                        x:Uid="NewListNameBox"
-                        Grid.Row="0"
-                        Grid.ColumnSpan="2"
-                        AutomationProperties.AutomationId="Todo.Nav.NewListNameBox"
-                        KeyDown="OnNewListNameBoxKeyDown"
-                        Text="{x:Bind ViewModel.NewListName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                        x:Load="{x:Bind ViewModel.IsCreatingList, Mode=OneWay}" />
-                    <TextBox
-                        x:Name="NewGroupNameBox"
-                        x:Uid="NewGroupNameBox"
-                        Grid.Row="1"
-                        Grid.ColumnSpan="2"
-                        AutomationProperties.AutomationId="Todo.Nav.NewGroupNameBox"
-                        KeyDown="OnNewGroupNameBoxKeyDown"
-                        Text="{x:Bind ViewModel.NewGroupName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                        x:Load="{x:Bind ViewModel.IsCreatingGroup, Mode=OneWay}" />
-                    <Button
-                        x:Name="NewListButton"
-                        x:Uid="NewListButton"
-                        Grid.Row="2"
-                        Height="40"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Left"
-                        AutomationProperties.AutomationId="Todo.Nav.NewListButton"
-                        Command="{x:Bind ViewModel.BeginCreateListCommand, Mode=OneTime}"
-                        Style="{StaticResource SubtleButtonStyle}">
-                        <StackPanel Orientation="Horizontal" Spacing="12">
-                            <SymbolIcon Symbol="Add" />
-                            <TextBlock
-                                x:Uid="NewListButtonLabel"
-                                Style="{StaticResource BodyTextBlockStyle}" />
-                        </StackPanel>
-                    </Button>
-                    <Button
-                        x:Name="NewGroupButton"
-                        x:Uid="NewGroupButton"
-                        Grid.Row="2"
-                        Grid.Column="1"
-                        Width="32"
-                        Height="32"
-                        Padding="0"
-                        AutomationProperties.AutomationId="Todo.Nav.NewGroupButton"
-                        Command="{x:Bind ViewModel.BeginCreateGroupCommand, Mode=OneTime}"
-                        Style="{StaticResource SubtleButtonStyle}">
+                    Margin="4,0,4,4">
+                    <Grid.Resources>
                         <!--
-                            Segoe Fluent has no "add group" glyph: NewFolder reads as a
-                            folder and AddTo as a circled plus. This is the same mark
-                            Microsoft To Do uses — a list card with a plus on its corner.
+                            The name boxes carry the surrounding card's chrome, not their
+                            own, so the row reads as one control the way the task composer
+                            does.
                         -->
-                        <Viewbox Width="16" Height="16">
-                            <Canvas Width="16" Height="16">
-                                <Rectangle
-                                    Canvas.Left="0.6"
-                                    Canvas.Top="5"
-                                    Width="11"
-                                    Height="10"
-                                    RadiusX="2"
-                                    RadiusY="2"
-                                    Stroke="{ThemeResource TextFillColorPrimaryBrush}"
-                                    StrokeThickness="1.2" />
-                                <Rectangle
-                                    Canvas.Left="3.6"
-                                    Canvas.Top="8"
-                                    Width="1.2"
-                                    Height="4"
-                                    Fill="{ThemeResource TextFillColorPrimaryBrush}" />
-                                <Rectangle
-                                    Canvas.Left="9.8"
-                                    Canvas.Top="2.4"
-                                    Width="6"
-                                    Height="1.2"
-                                    Fill="{ThemeResource TextFillColorPrimaryBrush}" />
-                                <Rectangle
-                                    Canvas.Left="12.2"
-                                    Canvas.Top="0"
-                                    Width="1.2"
-                                    Height="6"
-                                    Fill="{ThemeResource TextFillColorPrimaryBrush}" />
-                            </Canvas>
-                        </Viewbox>
-                    </Button>
+                        <!--
+                            A TextBox lays its single line out at the top of whatever
+                            height it gets, so the theme's 32px floor leaves the text
+                            riding high in a centred row. Dropping the floor lets the
+                            box hug its line and centre exactly.
+                        -->
+                        <x:Double x:Key="TextControlThemeMinHeight">0</x:Double>
+                        <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+                        <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="SubtleFillColorTransparentBrush" />
+                        <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="SubtleFillColorTransparentBrush" />
+                        <Style x:Key="PaneFooterEditorStyle" TargetType="Border">
+                            <Setter Property="Height" Value="40" />
+                            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+                            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+                            <Setter Property="BorderThickness" Value="1" />
+                            <Setter Property="CornerRadius" Value="{StaticResource ControlCornerRadius}" />
+                        </Style>
+                    </Grid.Resources>
+
+                    <!--
+                        The editor takes the action row's place instead of stacking above
+                        it, so naming a list happens where the button was and the footer
+                        keeps one 40px row in every mode. The width-driven visual states
+                        own the buttons' own Visibility, so the creating state hides them
+                        through this host instead — two owners on one property would fight.
+                    -->
+                    <Grid
+                        x:Name="NewItemActionsHost"
+                        ColumnSpacing="4"
+                        Visibility="{x:Bind local:ShellPage.NewItemActionsVisibility(ViewModel.IsCreatingList, ViewModel.IsCreatingGroup), Mode=OneWay}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Button
+                            x:Name="NewListButton"
+                            x:Uid="NewListButton"
+                            Height="40"
+                            Padding="12,0"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            AutomationProperties.AutomationId="Todo.Nav.NewListButton"
+                            Command="{x:Bind ViewModel.BeginCreateListCommand, Mode=OneTime}"
+                            Style="{StaticResource SubtleButtonStyle}">
+                            <StackPanel
+                                Orientation="Horizontal"
+                                Spacing="12">
+                                <FontIcon
+                                    FontSize="16"
+                                    Glyph="&#xE710;" />
+                                <TextBlock
+                                    x:Uid="NewListButtonLabel"
+                                    Style="{StaticResource BodyTextBlockStyle}" />
+                            </StackPanel>
+                        </Button>
+                        <Button
+                            x:Name="NewGroupButton"
+                            x:Uid="NewGroupButton"
+                            Grid.Column="1"
+                            Width="40"
+                            Height="40"
+                            Padding="0"
+                            AutomationProperties.AutomationId="Todo.Nav.NewGroupButton"
+                            Command="{x:Bind ViewModel.BeginCreateGroupCommand, Mode=OneTime}"
+                            Style="{StaticResource SubtleButtonStyle}">
+                            <!-- NewFolder: the folder-with-a-plus Segoe Fluent glyph. -->
+                            <FontIcon
+                                FontSize="16"
+                                Glyph="&#xE8F4;" />
+                        </Button>
+                    </Grid>
+
+                    <Border
+                        x:Name="NewListEditor"
+                        Style="{StaticResource PaneFooterEditorStyle}"
+                        x:Load="{x:Bind ViewModel.IsCreatingList, Mode=OneWay}">
+                        <Grid
+                            Padding="12,0"
+                            ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon
+                                VerticalAlignment="Center"
+                                AutomationProperties.AccessibilityView="Raw"
+                                FontSize="16"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE710;" />
+                            <controls:TitleEditBox
+                                x:Name="NewListNameBox"
+                                x:Uid="NewListNameBox"
+                                Grid.Column="1"
+                                MinHeight="0"
+                                Padding="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="Todo.Nav.NewListNameBox"
+                                Background="{ThemeResource SubtleFillColorTransparentBrush}"
+                                BorderThickness="0"
+                                KeyDown="OnNewListNameBoxKeyDown"
+                                LostFocus="OnNewListNameBoxLostFocus"
+                                Text="{x:Bind ViewModel.NewListName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </Grid>
+                    </Border>
+
+                    <Border
+                        x:Name="NewGroupEditor"
+                        Style="{StaticResource PaneFooterEditorStyle}"
+                        x:Load="{x:Bind ViewModel.IsCreatingGroup, Mode=OneWay}">
+                        <Grid
+                            Padding="12,0"
+                            ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon
+                                VerticalAlignment="Center"
+                                AutomationProperties.AccessibilityView="Raw"
+                                FontSize="16"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE8F4;" />
+                            <controls:TitleEditBox
+                                x:Name="NewGroupNameBox"
+                                x:Uid="NewGroupNameBox"
+                                Grid.Column="1"
+                                MinHeight="0"
+                                Padding="0"
+                                VerticalAlignment="Center"
+                                AutomationProperties.AutomationId="Todo.Nav.NewGroupNameBox"
+                                Background="{ThemeResource SubtleFillColorTransparentBrush}"
+                                BorderThickness="0"
+                                KeyDown="OnNewGroupNameBoxKeyDown"
+                                LostFocus="OnNewGroupNameBoxLostFocus"
+                                Text="{x:Bind ViewModel.NewGroupName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        </Grid>
+                    </Border>
                 </Grid>
             </NavigationView.PaneFooter>
 

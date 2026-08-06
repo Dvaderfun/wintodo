@@ -49,6 +49,7 @@ public sealed partial class ShellPage : Page
     private DateTimeOffset _lastSyncAttempt = DateTimeOffset.MinValue;
     private bool _isSyncConflictDialogOpen;
     private bool _isNavigationInitialized;
+    private bool _isRebuildingNavigation;
     private bool _isHighContrast;
     private bool _isShortcutsDialogOpen;
     private bool _taskListEventsAttached;
@@ -283,6 +284,11 @@ public sealed partial class ShellPage : Page
         return count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    public static Visibility NewItemActionsVisibility(bool isCreatingList, bool isCreatingGroup)
+    {
+        return isCreatingList || isCreatingGroup ? Visibility.Collapsed : Visibility.Visible;
+    }
+
     public static ElementTheme ThemeForIndex(int index)
     {
         return index switch
@@ -302,7 +308,7 @@ public sealed partial class ShellPage : Page
         NavigationView sender,
         NavigationViewSelectionChangedEventArgs args)
     {
-        if (!_isNavigationInitialized)
+        if (!_isNavigationInitialized || _isRebuildingNavigation)
         {
             return;
         }
@@ -682,14 +688,22 @@ public sealed partial class ShellPage : Page
     private void OnNavigationStructureChanged()
     {
         string? selectedKey = (ShellNavigation.SelectedItem as NavigationViewItem)?.Tag as string;
-        PopulateUserListNavigationItems();
-        if (selectedKey is not null)
+        _isRebuildingNavigation = true;
+        try
         {
-            ShellNavigation.SelectedItem = ResolveNavigationItem(selectedKey);
-            _selectedList = ViewModel.UserLists.FirstOrDefault(
-                list => list.NavigationKey == selectedKey);
-            ApplyListAccent(_selectedList);
-            ApplyListBackground();
+            PopulateUserListNavigationItems();
+            if (selectedKey is not null)
+            {
+                ShellNavigation.SelectedItem = ResolveNavigationItem(selectedKey);
+                _selectedList = ViewModel.UserLists.FirstOrDefault(
+                    list => list.NavigationKey == selectedKey);
+                ApplyListAccent(_selectedList);
+                ApplyListBackground();
+            }
+        }
+        finally
+        {
+            _isRebuildingNavigation = false;
         }
     }
 
@@ -1268,7 +1282,12 @@ public sealed partial class ShellPage : Page
         else if (args.PropertyName is nameof(ShellViewModel.IsCreatingList)
                  or nameof(ShellViewModel.IsCreatingGroup))
         {
-            DispatcherQueue.TryEnqueue(PinMenuItemsToPaneTop);
+            bool wasCreatingList = args.PropertyName == nameof(ShellViewModel.IsCreatingList);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                PinMenuItemsToPaneTop();
+                ReturnFocusToPaneFooter(wasCreatingList ? NewListButton : NewGroupButton);
+            });
         }
         else if (args.PropertyName == nameof(ShellViewModel.IsDetailPaneOpen))
         {
@@ -1357,6 +1376,70 @@ public sealed partial class ShellPage : Page
             ViewModel.CancelCreateGroupCommand.Execute(null);
             args.Handled = true;
         }
+    }
+
+    // Clicking anywhere outside leaves the editor, the same way the inline list title
+    // editor behaves. A blank name has nothing to commit, so it reverts instead.
+    private void OnNewListNameBoxLostFocus(object sender, RoutedEventArgs args)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!ViewModel.IsCreatingList || !HasFocusMovedInsideApp())
+            {
+                return;
+            }
+
+            if (ViewModel.CreateListCommand.CanExecute(null))
+            {
+                ViewModel.CreateListCommand.Execute(null);
+                return;
+            }
+
+            ViewModel.CancelCreateListCommand.Execute(null);
+        });
+    }
+
+    private void OnNewGroupNameBoxLostFocus(object sender, RoutedEventArgs args)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!ViewModel.IsCreatingGroup || !HasFocusMovedInsideApp())
+            {
+                return;
+            }
+
+            if (ViewModel.CreateGroupCommand.CanExecute(null))
+            {
+                ViewModel.CreateGroupCommand.Execute(null);
+                return;
+            }
+
+            ViewModel.CancelCreateGroupCommand.Execute(null);
+        });
+    }
+
+    // Switching away from the window also raises LostFocus, and closing the editor
+    // there would drop a half-typed name on every alt-tab. Focus lands on nothing
+    // inside the app in that case, so the editor stays open until focus moves to
+    // another element in the window.
+    private bool HasFocusMovedInsideApp()
+    {
+        return XamlRoot is { } xamlRoot
+            && FocusManager.GetFocusedElement(xamlRoot) is not null;
+    }
+
+    // Closing the editor takes the focused element out of the tree. Without a
+    // landing spot focus flies on to the next tab stop — the footer menu — where
+    // the key-up half of the committing Enter press opens Settings.
+    private void ReturnFocusToPaneFooter(Control button)
+    {
+        if (NewItemActionsHost.Visibility != Visibility.Visible
+            || button.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        button.Focus(FocusState.Programmatic);
     }
 
     private IList<object> CreateKeyboardShortcuts()

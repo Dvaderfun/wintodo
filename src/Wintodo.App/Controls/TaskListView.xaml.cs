@@ -494,7 +494,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (ViewModel.SelectedTask is null)
+        if (ViewModel.SelectedTask is null || IsTextInputFocused())
         {
             return;
         }
@@ -597,9 +597,7 @@ public sealed partial class TaskListView : UserControl
 
     private bool MoveSelection(int offset)
     {
-        object? focused = FocusManager.GetFocusedElement(XamlRoot);
-        if (focused is TextBox or AutoSuggestBox or RichEditBox
-            || TasksList.Items.Count == 0)
+        if (IsTextInputFocused() || TasksList.Items.Count == 0)
         {
             return false;
         }
@@ -612,5 +610,11 @@ public sealed partial class TaskListView : UserControl
         TasksList.ScrollIntoView(TasksList.SelectedItem);
         TasksList.Focus(FocusState.Keyboard);
         return true;
+    }
+
+    private bool IsTextInputFocused()
+    {
+        object? focused = FocusManager.GetFocusedElement(XamlRoot);
+        return focused is TextBox or AutoSuggestBox or RichEditBox;
     }
 }
