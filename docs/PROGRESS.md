@@ -1238,3 +1238,83 @@ interaction gate, and responsive shell gate all passed.
 
 **Deviations from PLAN.md**
 - None. This corrects visual inconsistency in the existing count presentation.
+
+## Post-M13 — Detail editor Enter-key isolation          2026-08-04
+
+**Gate:** FOCUSED PASS — the analyzer-backed Debug x64 build completed with zero
+warnings, all 102 Core/Data/Sync tests passed, and the new Enter regression plus
+the following title/note/importance/My Day flow passed in the packaged app.
+
+**Shipped**
+- Scoped the task-list Enter accelerator away from focused text editors so
+  list-level Enter handling cannot claim input from the detail editors.
+- Suppressed `NavigationView.SelectionChanged` while navigation items are
+  rebuilt, preserving the selected list and open detail pane during count
+  refreshes.
+- Limited count refreshes to completion, importance, due-date, and My Day field
+  changes. Title, note, reminder, recurrence, attachment, and step edits no
+  longer rebuild navigation because they cannot affect a navigation count.
+- Extended the M4 UI gate to verify Enter preserves both the open detail pane
+  and unsaved title/note text, while the existing next-step flow still verifies
+  Enter adds a step without dismissing the pane.
+
+**Deviations from PLAN.md**
+- None. This is a focused keyboard interaction repair for the existing M4
+  detail-pane contract.
+
+**Verification**
+- `BuildAndRun.ps1 -SkipRun`: Debug x64 passed with zero warnings and errors.
+- `BuildAndRun.ps1 ... /p:Configuration=Release -SkipRun`: Release x64 passed
+  with zero warnings and errors.
+- `dotnet test Wintodo.sln -p:Platform=x64 -warnaserror --no-restore`: 102
+  passed (Core 50, Data 43, Sync 9).
+- `tests/ui/run-m4-gate.ps1`: the new Enter regression, detail editing/actions,
+  recurrence, and all next-step additions passed. The broader historical gate
+  remains red on unrelated drag-reorder and file-picker automation; the open
+  picker then contaminated the final accessibility and Escape checks. Artifacts:
+  `tests/ui/artifacts/m4/run-20260804-131305`.
+
+## Post-M13 — Pane footer list and group composer          2026-08-06
+
+**Gate:** NOT RUN — UI gates were deliberately skipped for this change at the
+requester's instruction. The analyzer-backed Debug x64 build completed with zero
+warnings and every flow below was verified by hand in the packaged app.
+
+**Shipped**
+- Replaced the stacked name box with an in-place composer: choosing New list or
+  New group turns the footer's action row into a 40px card carrying a leading
+  icon and a chrome-free text box, so the pane keeps one action row in every
+  state instead of growing a detached field above the buttons.
+- Hid the action buttons through a wrapper element while a composer is open. The
+  responsive visual states already own each button's own `Visibility`, and two
+  owners on one property fight.
+- Added commit-or-revert on losing focus, matching the inline list rename.
+  Leaving the window is excluded: focus lands on nothing inside the app there, so
+  a half-typed name survives an alt-tab.
+- Returned focus to the originating button once a composer closes. Without a
+  landing spot focus flew to the next tab stop, where the key-up half of the
+  committing Enter press opened Settings.
+- Swapped the hand-drawn group mark for the `NewFolder` Segoe Fluent glyph, and
+  the New list mark from a 20px `SymbolIcon` to a 16px `FontIcon`, so both footer
+  icons share one weight and follow the button foreground in every visual state.
+- Dropped `TextControlThemeMinHeight` to zero for the composer boxes. A text box
+  lays its single line out at the top of whatever height it gets, so the theme's
+  32px floor left the text and placeholder riding about 3px above the centre of
+  the row.
+
+**Deviations from PLAN.md**
+- None. This is presentation and keyboard-focus work on the existing navigation
+  pane contract.
+
+**Known gap**
+- Groups can still only be created. `ITaskStore.DeleteGroupAsync` exists but
+  nothing in the UI calls it, and there is no rename either, so a group made by
+  mistake cannot be removed.
+
+**Verification**
+- `BuildAndRun.ps1 -SkipRun`: Debug x64 passed with zero warnings and errors.
+- By hand in the packaged app: create by Enter, revert by Escape, commit by
+  clicking away, group creation, the composer surviving window deactivation, and
+  focus returning to the button afterwards. Alignment was measured from window
+  captures rather than judged by eye — the caret centre moved from 3px above the
+  card centre to within half a pixel of it.
