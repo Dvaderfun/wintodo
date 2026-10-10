@@ -34,6 +34,44 @@ Rules:
 
 ## UI gate scripts
 
+**Main-machine policy:** UI automation must run in Windows Sandbox or a dedicated
+VM. Builds and unit tests can run on the host while the owner works. Until a gate
+has been migrated and validated for an isolated target, leave its UI rows pending.
+Never silently fall back to the owner's desktop. Local UI scripts refuse to run
+unless `WINTODO_ALLOW_LOCAL_UI=1` is explicitly set for an owner-authorized session.
+The loopback CalDAV server alone does not require this opt-in.
+
+Current scripts are **local-only**: they contain host UIA, input injection, file
+paths and process cleanup. They are not Sandbox-ready. Host/guest PIDs and HWNDs
+must stay paired with their target. Merely adding `--on sandbox` to `winapp run`
+would leave later commands acting on the host.
+
+For a dedicated VM or an explicitly authorized local session, use a fresh
+PowerShell window and set the process-only opt-in, then restore it in `finally`:
+
+```powershell
+$previousLocalUi = $env:WINTODO_ALLOW_LOCAL_UI
+try {
+    $env:WINTODO_ALLOW_LOCAL_UI = '1'
+    .\tests\ui\run-undo-gate.ps1
+} finally {
+    $env:WINTODO_ALLOW_LOCAL_UI = $previousLocalUi
+}
+```
+
+Agents must obtain permission before setting this opt-in on the main machine;
+never persist it in a user/machine environment variable or shell profile. Run
+one desktop workflow at a time. Local synthetic input moves the real cursor and
+changes focus; contrast and reduced-motion gates also change Windows settings.
+
+For Sandbox migration, build on the host, deploy with `winapp run --on sandbox`,
+and route **every** UI command with the returned `UiTargetArgs`. Run direct UIA,
+native input and system-setting helpers inside the guest using `winapp target exec
+sandbox`; transfer fixtures with `target push`, recover data with `target pull`,
+and stop the guest app inside the guest. Keep the Sandbox client connected and
+nonminimized. Sandbox is useful for functional gates; timing/performance budgets
+still require their designated measurement environment.
+
 Each `run-*-gate.ps1` launches the **already-built Debug x64 output**
 (`src\Wintodo.App\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64`) with
 `winapp run <folder> --detach --json`, points it at a throwaway database under
@@ -68,9 +106,10 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-list-icon-gate.ps1` | Emoji list icons and navigation counts |
 | `run-undo-gate.ps1` | Undo history across navigation/expiry, preserved newer title, due/reminder/repeat clears, step/list deletion, moves and bulk field/completion actions |
 
-The scripts drive real input. Don't use the mouse or keyboard while they run.
-`/winui-ui-testing` can run suites in Windows Sandbox instead; ask the owner
-before enabling Sandbox.
+The scripts drive real input on the selected desktop. Local runs require the
+explicit opt-in above. Enabling Sandbox is owner-controlled (Windows feature,
+UAC and potentially a restart); ask first. Its absence does not authorize local
+automation.
 
 ## AutomationIds are API
 
