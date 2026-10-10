@@ -285,3 +285,45 @@ and stability 3/3; 10 px viewport anchor shift versus one-row tolerance. Native
 row transitions remain suppressed when preserving selected-task focus to avoid
 viewport movement toward a virtualized Completed row. The checkbox stays 32x32
 while its decorative circle springs. No AOT/memory measurement was made.
+
+### UX-02 closure: existing query budgets — 2026-10-11
+
+**PASS.** Debug x64 existing SmartListPerformanceTests, 10,000 tasks. No query
+implementation or budget changes. Full unit suite also passes 259/259, zero skipped.
+
+| Query | Measured warm time | Budget | Result |
+|---|---:|---:|---|
+| My Day | 0.897 ms | 5 ms | PASS |
+| Important | 0.807 ms | 5 ms | PASS |
+| Planned | 0.896 ms | 5 ms | PASS |
+| All | 0.873 ms | 5 ms | PASS |
+| Completed | 0.964 ms | 5 ms | PASS |
+| FTS (worst warm query) | 1.655 ms | 60 ms | PASS |
+
+Command: `dotnet test --project tests/Wintodo.Data.Tests -p:Platform=x64
+--filter-class '*SmartListPerformanceTests' --output Detailed`.
+These are store unit-test timings, not app render or Native AOT measurements.
+Historical variable failures above remain recorded.
+
+### UX-13 follow-up: completion validation — 2026-10-11
+
+Debug x64, unchanged product binaries, 200 tasks / 20 lists, 15 prewarmed
+in-process UIA placement samples with one excluded warm-up. Original strict
+mean/median comparisons remain unchanged. No AOT or statistical speedup claim.
+
+| Run | Baseline median / mean | Candidate median / mean | Result |
+|---|---|---|---|
+| Fresh ca140a8 pre-refactor pair | 333.837 / 336.241 ms | 331.487 / 337.272 ms | FAIL: mean +1.031 ms |
+| Second fresh ca140a8 pair | 330.490 / 336.310 ms | 331.586 / 331.446 ms | FAIL: median +1.096 ms |
+| Gate against accepted UX-07 d6038f2 baseline | 338.447 / 339.532 ms | 331.071 / 329.839 ms | Timing PASS |
+
+The two fresh pairs remain failed evidence; the accepted UX-07 comparison is
+a separate existing-gate check and does not supersede them. All three runs
+pass visual completion/uncompletion, importance and undo checks. Reduced motion
+is SKIPPED: explicit owner permission for the temporary Windows setting change
+was requested but not received. No system setting changed in this follow-up.
+
+Evidence under `tests/ui/artifacts/closure-20261011/`: `motion-before`,
+`motion-after`, `motion-before-repeat`, `motion-after-repeat`, and
+`motion-ux07-baseline` (placement-timings.json, results.json and recording).
+UX-13 remains in progress; no full motion-gate PASS is claimed.
