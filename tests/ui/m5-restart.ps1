@@ -67,6 +67,18 @@ winapp ui wait-for "Todo.List.SortLabel" `
     --contains `
     -t 5000
 
+foreach ($nav in 'Todo.Nav.MyDay', 'Todo.Nav.Important') {
+    winapp ui invoke $nav -a $AppPid | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Could not navigate to '$nav' after restart." }
+    Start-Sleep -Milliseconds 400
+    foreach ($name in 'Needle beta', 'Beta later') {
+        $rows = @(Get-SearchMatches $name | Where-Object {
+            $_.type -eq 'ListItem' -and $_.automationId -match '^Todo\.Row\.[0-9a-f-]+$'
+        })
+        if ($rows.Count -ne 1) { throw "'$name' lost '$nav' membership after restart." }
+    }
+}
+
 winapp ui screenshot -a $AppPid -o (
     Join-Path $ArtifactDirectory "03-restart-sort-persistence.png"
 ) 2>$null
@@ -74,6 +86,7 @@ winapp ui screenshot -a $AppPid -o (
 @(
     @{ name = "Alpha sort survived restart"; status = "PASS" }
     @{ name = "Beta sort survived restart"; status = "PASS" }
+    @{ name = "Dropped smart-list membership survived restart"; status = "PASS" }
 ) | ConvertTo-Json | Out-File (
     Join-Path $ArtifactDirectory "restart-results.json"
 )

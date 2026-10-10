@@ -355,6 +355,10 @@ already have the state. Bulk writes commit in one transaction and publish one
 store notification. Bulk delete respects confirmation and offers one undo entry
 restoring all deleted tasks. Dragging selected tasks onto a navigation list
 moves the selection; manual row reordering remains a single-task operation.
+Dropping tasks onto My Day adds them for the current day; dropping onto
+Important marks them important. The drag caption states "Add to My Day" or
+"Mark as important". These actions retain the real list and apply to the
+whole dragged selection. Repeating a drop keeps the property set.
 
 ---
 

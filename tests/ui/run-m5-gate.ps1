@@ -19,8 +19,8 @@ New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
 
 $env:WINTODO_M5_GATE_DB_PATH = $databasePath
 try {
-    dotnet test (Join-Path $repositoryRoot "tests\Wintodo.Data.Tests") `
-        --filter "FullyQualifiedName~M5GateDatabaseTests" `
+    dotnet test --project (Join-Path $repositoryRoot "tests\Wintodo.Data.Tests") `
+        -p:Platform=x64 --filter-class '*M5GateDatabaseTests' `
         --no-restore
     if ($LASTEXITCODE -ne 0) {
         throw "M5 database seeding failed."

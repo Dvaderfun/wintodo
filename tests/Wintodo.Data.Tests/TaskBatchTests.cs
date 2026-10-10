@@ -7,6 +7,36 @@ namespace Wintodo.Data.Tests;
 public sealed class TaskBatchTests
 {
     [Theory]
+    [InlineData(TaskBatchAction.AddToMyDay)]
+    [InlineData(TaskBatchAction.MarkImportant)]
+    public async Task SmartListDrop_SetsSelectionOnceAndRetainsOriginalList(TaskBatchAction action)
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TodoList list = await fixture.Store.CreateListAsync("Source", cancellationToken: token);
+        TodoTask first = await fixture.Store.CreateTaskAsync(new() { ListId = list.Id, Summary = "First" }, token);
+        TodoTask second = await fixture.Store.CreateTaskAsync(new() { ListId = list.Id, Summary = "Second" }, token);
+        TodoTask untouched = await fixture.Store.CreateTaskAsync(new() { ListId = list.Id, Summary = "Untouched" }, token);
+        int events = 0;
+        fixture.Store.StoreChanged += (_, _) => events++;
+        await fixture.Store.ApplyTaskBatchAsync([first.Uid, second.Uid], action, token);
+        int changes = ChangeCount(fixture.DatabasePath);
+        await fixture.Store.ApplyTaskBatchAsync([first.Uid, second.Uid], action, token);
+        Assert.Equal(1, events);
+        Assert.Equal(changes, ChangeCount(fixture.DatabasePath));
+        foreach (string uid in new[] { first.Uid, second.Uid })
+        {
+            TodoTask updated = (await fixture.Store.GetTaskAsync(uid, token))!;
+            Assert.Equal(list.Id, updated.ListId);
+            if (action == TaskBatchAction.AddToMyDay) Assert.Equal(fixture.Clock.Today, updated.MyDayDate);
+            else Assert.Equal((int)TaskPriority.High, updated.Priority);
+        }
+        TodoTask retained = (await fixture.Store.GetTaskAsync(untouched.Uid, token))!;
+        Assert.Null(retained.MyDayDate);
+        Assert.Equal(0, retained.Priority);
+    }
+
+    [Theory]
     [InlineData(TaskBatchAction.Complete)]
     [InlineData(TaskBatchAction.Uncomplete)]
     [InlineData(TaskBatchAction.MarkImportant)]

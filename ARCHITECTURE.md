@@ -107,6 +107,8 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
   delete/restore and moves commit in one writer transaction with per-task change
   log rows and one StoreChanged notification. One undo entry restores a deleted
   selection together.
+  Navigation drops onto My Day or Important use that same batch path to set
+  membership/importance for the dragged UIDs while retaining their real lists.
 - Responsive breakpoints are `VisualStateManager` states (`docs/DESIGN.md` §6).
 
 ## Layers and data flow

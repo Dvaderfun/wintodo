@@ -236,6 +236,100 @@ Test-UI "Beta keeps an independent sort choice" {
         -t 5000
 }
 
+# UX-11: keep the task in its real list while adding smart-list membership.
+function Invoke-DropUi([string[]]$Arguments) {
+    $output = winapp ui @Arguments -a $AppPid
+    if ($LASTEXITCODE -ne 0) { throw "Drop UI command failed: $($Arguments -join ' ')" }
+    $output
+}
+function Drop-Task([string]$Name, [string]$TargetId, [switch]$PreserveSelection) {
+    $row = Get-TaskRows $Name | Select-Object -First 1
+    if (-not $row) { throw "Drop source '$Name' missing." }
+    if (-not $PreserveSelection) { Invoke-DropUi @('click', $row.selector) | Out-Null }
+    Start-Sleep -Milliseconds 400
+    $row = Get-TaskRows $Name | Select-Object -First 1
+    $target = Get-SearchMatches $TargetId | Where-Object automationId -eq $TargetId | Select-Object -First 1
+    if (-not $target) { throw "Drop target '$TargetId' missing." }
+    $from = '{0},{1}' -f [int]($row.x + $row.width / 2), [int]($row.y + $row.height / 2)
+    $to = '{0},{1}' -f [int]($target.x + $target.width / 2), [int]($target.y + $target.height / 2)
+    Invoke-DropUi @('drag', $from, $to, '--hold-ms', '1000', '--dwell-ms', '1000') | Out-Null
+    Start-Sleep -Milliseconds 500
+}
+Test-UI "Dropping onto My Day adds a task and repeating the drop keeps it set" {
+    Invoke-List "Beta"
+    Start-Sleep -Milliseconds 400
+    Drop-Task 'Needle beta' 'Todo.Nav.MyDay'
+    Drop-Task 'Needle beta' 'Todo.Nav.MyDay'
+    if ((Get-TaskRows 'Needle beta').Count -ne 1) { throw 'Task left its original list.' }
+    Invoke-DropUi @('invoke', 'Todo.Nav.MyDay') | Out-Null
+    Start-Sleep -Milliseconds 400
+    if ((Get-TaskRows 'Needle beta').Count -ne 1) { throw 'Dropped task is missing from My Day.' }
+    Invoke-DropUi @('screenshot', '-o', (Join-Path $ArtifactDirectory '04-drop-my-day.png')) | Out-Null
+    $global:LASTEXITCODE = 0
+}
+Test-UI "Dropping onto Important stars a task and repeating the drop keeps it set" {
+    Invoke-List "Beta"
+    Start-Sleep -Milliseconds 400
+    Drop-Task 'Beta later' 'Todo.Nav.Important'
+    Drop-Task 'Beta later' 'Todo.Nav.Important'
+    $row = Get-TaskRows 'Beta later' | Select-Object -First 1
+    if (-not $row -or $row.name -notmatch ', important,') { throw 'Task left its list or was not starred.' }
+    Invoke-DropUi @('invoke', 'Todo.Nav.Important') | Out-Null
+    Start-Sleep -Milliseconds 400
+    if ((Get-TaskRows 'Beta later').Count -ne 1) { throw 'Dropped task is missing from Important.' }
+    Invoke-DropUi @('screenshot', '-o', (Join-Path $ArtifactDirectory '05-drop-important.png')) | Out-Null
+    $global:LASTEXITCODE = 0
+}
+
+Test-UI "A multi-task drop adds every selected task to both smart lists" {
+    Invoke-List 'Beta'
+    Start-Sleep -Milliseconds 400
+    $first = Get-TaskRows 'Needle beta' | Select-Object -First 1
+    Invoke-DropUi @('click', $first.selector) | Out-Null
+    Start-Sleep -Milliseconds 400
+    $second = Get-TaskRows 'Beta later' | Select-Object -First 1
+    Add-Type @'
+using System.Runtime.InteropServices;
+public static class WintodoSmartDropInput {
+    [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
+    [DllImport("user32.dll")] public static extern void mouse_event(uint flags, uint x, uint y, uint data, System.UIntPtr extra);
+    [DllImport("user32.dll")] public static extern void keybd_event(byte key, byte scan, uint flags, System.UIntPtr extra);
+}
+'@
+    # WinApp CLI click releases held modifiers; inject the modified click together.
+    [WintodoSmartDropInput]::SetCursorPos([int]($second.x + $second.width / 2), [int]($second.y + $second.height / 2)) | Out-Null
+    [WintodoSmartDropInput]::keybd_event(0x11, 0, 0, [UIntPtr]::Zero)
+    try {
+        [WintodoSmartDropInput]::mouse_event(2, 0, 0, 0, [UIntPtr]::Zero)
+        [WintodoSmartDropInput]::mouse_event(4, 0, 0, 0, [UIntPtr]::Zero)
+        Start-Sleep -Milliseconds 100
+    } finally { [WintodoSmartDropInput]::keybd_event(0x11, 0, 2, [UIntPtr]::Zero) }
+    Start-Sleep -Milliseconds 400
+    foreach ($name in 'Needle beta', 'Beta later') {
+        $row = Get-TaskRows $name | Select-Object -First 1
+        $properties = Invoke-DropUi @('get-property', $row.selector, '--json') | ConvertFrom-Json
+        if ($properties.properties.IsSelected -ne 'True') { throw "Task '$name' was not selected for drag." }
+    }
+    Drop-Task 'Beta later' 'Todo.Nav.MyDay' -PreserveSelection
+    # Re-select both after the pointer press, which may select the drag source.
+    Invoke-DropUi @('focus', 'Todo.List.Tasks') | Out-Null
+    Invoke-DropUi @('send-keys', 'ctrl+vk=0x41', '--via', 'send-input') | Out-Null
+    Drop-Task 'Beta later' 'Todo.Nav.Important' -PreserveSelection
+    foreach ($nav in 'Todo.Nav.MyDay', 'Todo.Nav.Important') {
+        Invoke-DropUi @('invoke', $nav) | Out-Null
+        Start-Sleep -Milliseconds 400
+        foreach ($name in 'Needle beta', 'Beta later') {
+            if ((Get-TaskRows $name).Count -ne 1) { throw "'$name' is missing from '$nav' after bulk drop." }
+        }
+    }
+    Invoke-List 'Beta'
+    Start-Sleep -Milliseconds 400
+    if ((Get-TaskRows 'Needle beta').Count -ne 1 -or (Get-TaskRows 'Beta later').Count -ne 1) {
+        throw 'Bulk drop changed the original list.'
+    }
+    $global:LASTEXITCODE = 0
+}
+
 Test-UI "All visible app controls have AutomationIds" {
     $inspection = winapp ui inspect -a $AppPid --interactive --json 2>$null |
         ConvertFrom-Json
