@@ -26,7 +26,8 @@ As of 2026-10-10:
 - **Known gaps:** the task list clears and refills its bound collection instead
   of diff-updating (`ARCHITECTURE.md`, Known divergences). Final app name and
   MSIX publisher are still undecided.
-- **Next:** continue app polish before release. M9 remains owner-deferred;
+- **Next:** continue app polish before release via the work packages in
+  [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
 ---
