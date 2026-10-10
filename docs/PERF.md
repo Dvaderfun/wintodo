@@ -214,3 +214,28 @@ Compared with baseline, completion decreased by 69.089 ms; list round trips
 increased by 66.397/46.451 ms. CLI/UIA overhead is included; no isolated UI
 latency or overall speedup claim. The correctness gate separately proves
 middle-of-list selection, focus and one-row scroll tolerance.
+
+### UX-08 completion motion — 2026-10-10
+
+Debug x64, 200 tasks / 20 lists, checkbox click to Completed header. These are
+CLI/UI Automation round trips, not render latency or Native AOT measurements.
+The strict UX-08 no-regression row remains **FAIL / open**; no budget changed.
+
+| Comparison | Before | After | Result |
+|---|---|---|---|
+| UX-07 historical single sample vs initial UX-08 (M8 also running) | 830.239 ms | 929.242 ms | FAIL |
+| UX-07 historical single sample vs isolated UX-08 | 830.239 ms | 905.278 ms | FAIL |
+| Fresh matched five-run median (UX-07 d6038f2 vs UX-08) | 1071.996 ms | 1074.956 ms | +2.960 ms, strict acceptance remains open |
+| Fresh matched five-run mean | 1067.830 ms | 1097.890 ms | +30.060 ms |
+
+Fresh baseline samples: 1106.208, 1071.996, 1046.719, 1085.724, 1028.504 ms.
+After samples: 1182.320, 1118.564, 1042.619, 1070.993, 1074.956 ms.
+Fresh comparisons add identical focus before the timed click, then expand,
+uncomplete and repeat five times. All fixtures are fresh scratch databases.
+Baseline source was built in an isolated worktree without changing product code.
+Evidence: tests/ui/artifacts/ux08-baseline-timings-4/timings.json and
+ux08-after-timings/timings.json; harness ux08-measure-completion.ps1 in the same
+artifacts directory. Earlier aborted baseline runs (collapsed header / lost
+foreground focus) are not timing measurements. A subsequent screen-capture
+attempt measured 1280.704 ms and failed to start recording; it is not a passed gate.
+No new AOT or memory claim; M9 remains owner-deferred.

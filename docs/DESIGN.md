@@ -510,6 +510,13 @@ setting automatically. For explicit animations, check
 
 Connected animations are **not** used — there is no page navigation to connect.
 
+Completion/check fades and undo entrance/exit are visual-state transitions.
+The row resets motion when recycled; circle springs and star bounces follow
+visual-state changes. The list observes Windows animation-setting changes while
+open, skips the completion/viewport delays when effects are disabled, and enables
+the built-in row transitions specifically for completion moves while retaining
+the viewport capture from §3.3. The snackbar remains loaded for its exit fade.
+
 ---
 
 ## 8. Keyboard

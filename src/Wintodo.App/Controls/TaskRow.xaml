@@ -41,26 +41,28 @@
         PointerEntered="OnPointerEntered"
         PointerExited="OnPointerExited">
         <VisualStateManager.VisualStateGroups>
-            <VisualStateGroup x:Name="CompletionStates">
+            <VisualStateGroup x:Name="CompletionStates" CurrentStateChanging="OnCompletionStateChanging">
                 <VisualStateGroup.Transitions>
-                    <VisualTransition GeneratedDuration="0:0:0.2" />
+                    <VisualTransition From="Active" To="Completed" GeneratedDuration="0:0:0.2">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="CompletionGlyph" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.1" />
+                            <DoubleAnimation Storyboard.TargetName="TaskContent" Storyboard.TargetProperty="Opacity" From="1" To="0.6" Duration="0:0:0.2" />
+                        </Storyboard>
+                    </VisualTransition>
+                    <VisualTransition From="Completed" To="Active" GeneratedDuration="0:0:0.2" />
                 </VisualStateGroup.Transitions>
                 <VisualState x:Name="Active">
-                    <VisualState.StateTriggers>
-                        <StateTrigger IsActive="{x:Bind local:TaskRow.Not(ViewModel.IsCompleted), Mode=OneWay}" />
-                    </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="TaskContent.Opacity" Value="1" />
                         <Setter Target="TaskTitle.TextDecorations" Value="None" />
+                        <Setter Target="CompletionGlyph.Opacity" Value="0" />
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="Completed">
-                    <VisualState.StateTriggers>
-                        <StateTrigger IsActive="{x:Bind ViewModel.IsCompleted, Mode=OneWay}" />
-                    </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="TaskContent.Opacity" Value="0.6" />
                         <Setter Target="TaskTitle.TextDecorations" Value="Strikethrough" />
+                        <Setter Target="CompletionGlyph.Opacity" Value="1" />
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
@@ -95,19 +97,13 @@
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
-            <VisualStateGroup x:Name="ImportanceStates">
+            <VisualStateGroup x:Name="ImportanceStates" CurrentStateChanging="OnImportanceStateChanging">
                 <VisualState x:Name="NotImportant">
-                    <VisualState.StateTriggers>
-                        <StateTrigger IsActive="{x:Bind local:TaskRow.Not(ViewModel.IsImportant), Mode=OneWay}" />
-                    </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="ImportanceIcon.Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="Important">
-                    <VisualState.StateTriggers>
-                        <StateTrigger IsActive="{x:Bind ViewModel.IsImportant, Mode=OneWay}" />
-                    </VisualState.StateTriggers>
                     <VisualState.Setters>
                         <Setter Target="ImportanceIcon.Foreground" Value="{ThemeResource ListAccentBrush}" />
                     </VisualState.Setters>
@@ -160,17 +156,14 @@
                     Style="{StaticResource CaptionTextBlockStyle}"
                     Text="&#xE73E;" />
                 <TextBlock
+                    x:Name="CompletionGlyph"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     FontFamily="{ThemeResource SymbolThemeFontFamily}"
                     Foreground="{ThemeResource CompletionCheckForegroundBrush}"
-                    Opacity="{x:Bind local:TaskRow.BoolToOpacity(ViewModel.IsCompleted), Mode=OneWay}"
+                    Opacity="0"
                     Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="&#xE73E;">
-                    <TextBlock.OpacityTransition>
-                        <ScalarTransition Duration="0:0:0.1" />
-                    </TextBlock.OpacityTransition>
-                </TextBlock>
+                    Text="&#xE73E;" />
             </Grid>
             <CheckBox
                 x:Name="CompletionToggle"
@@ -188,9 +181,6 @@
             Grid.Column="2"
             VerticalAlignment="Center"
             Spacing="0">
-            <StackPanel.OpacityTransition>
-                <ScalarTransition Duration="0:0:0.2" />
-            </StackPanel.OpacityTransition>
             <TextBlock
                 x:Name="TaskTitle"
                 Foreground="{ThemeResource TextFillColorPrimaryBrush}"

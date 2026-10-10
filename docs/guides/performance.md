@@ -51,3 +51,8 @@ often broken:
 
 UX-07 replaces task-list resets with keyed collection diffs. Its before/after
 rows in PERF.md distinguish framework-dependent timings from AOT gates.
+
+UX-08's completion gate measures the same Debug checkbox-to-Completed-header
+round trip as UX-07, including CLI startup/UIA overhead. Its failed historical
+comparison and fresh five-sample before/after comparison are recorded in PERF.md;
+the strict no-regression acceptance remains open. These are not AOT timings.

@@ -163,6 +163,37 @@
 
     <Grid>
         <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="UndoStates">
+                <VisualStateGroup.Transitions>
+                    <VisualTransition From="UndoHidden" To="UndoShown" GeneratedDuration="0:0:0.2">
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="UndoSnackbar" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.2" />
+                            <DoubleAnimation Storyboard.TargetName="UndoOffset" Storyboard.TargetProperty="Y" From="24" To="0" Duration="0:0:0.2">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </VisualTransition>
+                    <VisualTransition From="UndoShown" To="UndoHidden" GeneratedDuration="0:0:0.2">
+                        <Storyboard Completed="OnUndoHideCompleted">
+                            <DoubleAnimation Storyboard.TargetName="UndoSnackbar" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.2" />
+                        </Storyboard>
+                    </VisualTransition>
+                </VisualStateGroup.Transitions>
+                <VisualState x:Name="UndoHidden">
+                    <VisualState.Setters>
+                        <Setter Target="UndoSnackbar.Opacity" Value="0" />
+                        <Setter Target="UndoOffset.Y" Value="24" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="UndoShown">
+                    <VisualState.Setters>
+                        <Setter Target="UndoSnackbar.Opacity" Value="1" />
+                        <Setter Target="UndoOffset.Y" Value="0" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
             <VisualStateGroup x:Name="TaskDropStates">
                 <VisualState x:Name="TaskDropIdle" />
                 <VisualState x:Name="TaskDropAllowed">
@@ -732,12 +763,10 @@
             BorderThickness="1"
             CornerRadius="{StaticResource OverlayCornerRadius}"
             Translation="0,0,32"
-            x:Load="{x:Bind ViewModel.IsUndoVisible, Mode=OneWay}">
-            <Border.Transitions>
-                <TransitionCollection>
-                    <EntranceThemeTransition FromVerticalOffset="24" />
-                </TransitionCollection>
-            </Border.Transitions>
+            x:Load="{x:Bind IsUndoLoaded, Mode=OneWay}">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="UndoOffset" />
+            </Border.RenderTransform>
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />

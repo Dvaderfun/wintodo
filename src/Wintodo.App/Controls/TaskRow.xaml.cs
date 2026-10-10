@@ -17,6 +17,7 @@ public sealed partial class TaskRow : UserControl
 {
     private static readonly ResourceLoader StringResources = new();
     private readonly UISettings _uiSettings = new();
+    private bool _isInitializingMotion;
 
     public static readonly DependencyProperty ViewModelProperty =
         DependencyProperty.Register(
@@ -29,6 +30,8 @@ public sealed partial class TaskRow : UserControl
     {
         InitializeComponent();
         RowContextFlyout.Opening += OnContextFlyoutOpening;
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
     }
 
     public TaskItemViewModel ViewModel
@@ -131,6 +134,7 @@ public sealed partial class TaskRow : UserControl
         {
             newViewModel.PropertyChanged += row.OnViewModelPropertyChanged;
             row.ApplySearchHighlight();
+            row.ApplyMotionStates(useTransitions: false);
         }
     }
 
@@ -154,11 +158,13 @@ public sealed partial class TaskRow : UserControl
         }
         else if (args.PropertyName == nameof(TaskItemViewModel.IsCompleted))
         {
-            AnimateCompletion();
+            VisualStateManager.GoToState(this, ViewModel.IsCompleted ? "Completed" : "Active",
+                useTransitions: IsLoaded && _uiSettings.AnimationsEnabled);
         }
         else if (args.PropertyName == nameof(TaskItemViewModel.IsImportant))
         {
-            AnimateImportance();
+            VisualStateManager.GoToState(this, ViewModel.IsImportant ? "Important" : "NotImportant",
+                useTransitions: IsLoaded && _uiSettings.AnimationsEnabled);
         }
     }
 
@@ -248,9 +254,64 @@ public sealed partial class TaskRow : UserControl
         }
     }
 
-    private void AnimateCompletion()
+    private void OnLoaded(object sender, RoutedEventArgs args)
     {
-        if (!_uiSettings.AnimationsEnabled)
+        _uiSettings.AnimationsEnabledChanged += OnAnimationsEnabledChanged;
+        ApplyMotionStates(useTransitions: false);
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs args)
+    {
+        _uiSettings.AnimationsEnabledChanged -= OnAnimationsEnabledChanged;
+        ResetMotion();
+    }
+
+    private void OnAnimationsEnabledChanged(UISettings sender, UISettingsAnimationsEnabledChangedEventArgs args)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!IsLoaded) return;
+            ResetMotion();
+            ApplyMotionStates(useTransitions: false);
+        });
+    }
+
+    private void ApplyMotionStates(bool useTransitions)
+    {
+        if (ViewModel is null) return;
+        _isInitializingMotion = !useTransitions;
+        VisualStateManager.GoToState(this, ViewModel.IsCompleted ? "Completed" : "Active", useTransitions);
+        VisualStateManager.GoToState(this, ViewModel.IsImportant ? "Important" : "NotImportant", useTransitions);
+        _isInitializingMotion = false;
+        // Recycling must not carry a running spring into another task.
+        if (!useTransitions) ResetMotion();
+        TaskTitle.TextDecorations = ViewModel.IsCompleted
+            ? Windows.UI.Text.TextDecorations.Strikethrough : Windows.UI.Text.TextDecorations.None;
+    }
+
+    private void ResetMotion()
+    {
+        foreach (VisualTransition transition in CompletionStates.Transitions)
+            transition.Storyboard?.Stop();
+        if (ViewModel is not null)
+        {
+            TaskContent.Opacity = ViewModel.IsCompleted ? 0.6 : 1;
+            CompletionGlyph.Opacity = ViewModel.IsCompleted ? 1 : 0;
+        }
+        foreach (UIElement element in new UIElement[] { CompletionHost, ImportanceButton })
+        {
+            Visual visual = ElementCompositionPreview.GetElementVisual(element);
+            visual.StopAnimation("Scale");
+            visual.Scale = Vector3.One;
+        }
+    }
+
+    private void OnCompletionStateChanging(object sender, VisualStateChangedEventArgs args)
+    {
+        // State setters can wait for the transition; strike the title immediately.
+        TaskTitle.TextDecorations = ViewModel.IsCompleted
+            ? Windows.UI.Text.TextDecorations.Strikethrough : Windows.UI.Text.TextDecorations.None;
+        if (_isInitializingMotion || !IsLoaded || args.OldState is null || !_uiSettings.AnimationsEnabled)
         {
             return;
         }
@@ -265,9 +326,9 @@ public sealed partial class TaskRow : UserControl
         visual.StartAnimation("Scale", animation);
     }
 
-    private void AnimateImportance()
+    private void OnImportanceStateChanging(object sender, VisualStateChangedEventArgs args)
     {
-        if (!_uiSettings.AnimationsEnabled)
+        if (_isInitializingMotion || !IsLoaded || args.OldState is null || !_uiSettings.AnimationsEnabled)
         {
             return;
         }

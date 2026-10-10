@@ -74,6 +74,7 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     internal event Action? NavigationDataChanged;
     internal event Action<bool>? VisibleItemsUpdating;
+    internal event Action? CompletionReordering;
     internal event Action? VisibleItemsUpdated;
 
     internal event Action<ShellListItemViewModel>? DeleteListRequested;
@@ -1165,6 +1166,7 @@ public sealed partial class TaskListViewModel : ObservableObject
                 item.Model.CompletedAt = null;
                 item.IsCompleted = false;
                 item.CompletionDateText = string.Empty;
+                CompletionReordering?.Invoke();
                 _completedTasks.Remove(item);
                 InsertBySortOrder(_activeTasks, item);
                 UpdateItemDisplay(item);
@@ -1202,6 +1204,7 @@ public sealed partial class TaskListViewModel : ObservableObject
                 await Task.Delay(TimeSpan.FromMilliseconds(250));
             }
 
+            CompletionReordering?.Invoke();
             _activeTasks.Remove(item);
             InsertBySortOrder(_completedTasks, item);
             if (ReferenceEquals(SelectedTask, item)) _completedExpanded = true;

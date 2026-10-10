@@ -43,6 +43,8 @@ public sealed partial class TaskListView : UserControl
         TasksList.BringIntoViewRequested += OnTaskBringIntoViewRequested;
         TasksList.PointerPressed += OnTaskPointerInteraction;
         TasksList.PointerWheelChanged += OnTaskPointerInteraction;
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
     }
 
     public TaskListViewModel ViewModel
@@ -217,6 +219,7 @@ public sealed partial class TaskListView : UserControl
             oldViewModel.ListIconChanged -= view.OnListIconChanged;
             oldViewModel.VisibleItemsUpdating -= view.OnVisibleItemsUpdating;
             oldViewModel.VisibleItemsUpdated -= view.OnVisibleItemsUpdated;
+            oldViewModel.CompletionReordering -= view.OnCompletionReordering;
         }
 
         if (args.NewValue is TaskListViewModel newViewModel)
@@ -229,6 +232,7 @@ public sealed partial class TaskListView : UserControl
             newViewModel.ListIconChanged += view.OnListIconChanged;
             newViewModel.VisibleItemsUpdating += view.OnVisibleItemsUpdating;
             newViewModel.VisibleItemsUpdated += view.OnVisibleItemsUpdated;
+            newViewModel.CompletionReordering += view.OnCompletionReordering;
             newViewModel.AnimationsEnabled = view._uiSettings.AnimationsEnabled;
             ScrollPerformanceProbe.TryStart(newViewModel.VisibleItems.Count);
         }
@@ -258,6 +262,81 @@ public sealed partial class TaskListView : UserControl
         {
             AnimateListSwitch();
         }
+        else if (args.PropertyName == nameof(TaskListViewModel.IsUndoVisible))
+        {
+            ApplyUndoState();
+        }
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs args)
+    {
+        _uiSettings.AnimationsEnabledChanged += OnAnimationsEnabledChanged;
+        if (ViewModel is not null) ViewModel.AnimationsEnabled = _uiSettings.AnimationsEnabled;
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs args)
+    {
+        _uiSettings.AnimationsEnabledChanged -= OnAnimationsEnabledChanged;
+    }
+
+    private void OnAnimationsEnabledChanged(UISettings sender, UISettingsAnimationsEnabledChangedEventArgs args)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!IsLoaded || ViewModel is null) return;
+            ViewModel.AnimationsEnabled = _uiSettings.AnimationsEnabled;
+            if (!_uiSettings.AnimationsEnabled)
+            {
+                foreach (VisualTransition transition in UndoStates.Transitions)
+                    transition.Storyboard?.Stop();
+                ApplyUndoState();
+                if (IsUndoLoaded)
+                {
+                    UndoSnackbar.Opacity = ViewModel.IsUndoVisible ? 1 : 0;
+                    UndoOffset.Y = 0;
+                }
+            }
+        });
+    }
+
+    private void OnCompletionReordering()
+    {
+        // UX-07 suppresses transitions for ordinary diffs. Completion needs the
+        // built-in add/delete/reorder motion while retaining its viewport capture.
+        TasksList.ItemContainerTransitions = _uiSettings.AnimationsEnabled ? _savedTransitions : null;
+    }
+
+    public static readonly DependencyProperty IsUndoLoadedProperty = DependencyProperty.Register(
+        nameof(IsUndoLoaded), typeof(bool), typeof(TaskListView), new PropertyMetadata(false));
+
+    public bool IsUndoLoaded
+    {
+        get => (bool)GetValue(IsUndoLoadedProperty);
+        set => SetValue(IsUndoLoadedProperty, value);
+    }
+
+    private void ApplyUndoState()
+    {
+        if (ViewModel.IsUndoVisible)
+        {
+            if (!IsUndoLoaded)
+            {
+                IsUndoLoaded = true;
+                FindName(nameof(UndoSnackbar));
+                VisualStateManager.GoToState(this, "UndoHidden", useTransitions: false);
+            }
+            VisualStateManager.GoToState(this, "UndoShown", useTransitions: _uiSettings.AnimationsEnabled);
+        }
+        else if (IsUndoLoaded)
+        {
+            VisualStateManager.GoToState(this, "UndoHidden", useTransitions: _uiSettings.AnimationsEnabled);
+            if (!_uiSettings.AnimationsEnabled) IsUndoLoaded = false;
+        }
+    }
+
+    private void OnUndoHideCompleted(object? sender, object args)
+    {
+        if (!ViewModel.IsUndoVisible) IsUndoLoaded = false;
     }
 
     private void OnTaskCompletionChanged(TaskItemViewModel item)
@@ -446,14 +525,14 @@ public sealed partial class TaskListView : UserControl
     private async Task RestoreViewportAfterTransitionAsync(int version, TaskItemViewModel? anchor, double anchorY)
     {
         double offset = _savedVerticalOffset;
-        await Task.Delay(TimeSpan.FromMilliseconds(500));
+        if (_uiSettings.AnimationsEnabled) await Task.Delay(TimeSpan.FromMilliseconds(500));
         if (version != _updateVersion) return;
         _restoringTaskFocus = true;
         if (_tasksScrollViewer is not null)
         {
             _tasksScrollViewer.BringIntoViewOnFocusChange = false;
             _tasksScrollViewer.ChangeView(null, offset, null, disableAnimation: true);
-            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            if (_uiSettings.AnimationsEnabled) await Task.Delay(TimeSpan.FromMilliseconds(200));
             if (version != _updateVersion) return;
             TasksList.UpdateLayout();
             if (anchor is not null && TasksList.ContainerFromItem(anchor) is ListViewItem row)
