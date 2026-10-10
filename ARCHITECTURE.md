@@ -133,6 +133,10 @@ without touching the OS clock.
 `ToastNotificationManager`, `Tag` = alarm uid, `Group` = task uid, with a
 rescheduling sweep per `PLAN.md` M7), Complete/Snooze toast actions (including
 activation while the app is closed), the taskbar badge, and the jump list.
+`NotificationPreferences` loads the enabled flag and default snooze before
+the scheduling sweep, including background activations. Settings shares that
+instance. Turning reminders off cancels scheduled toasts; stored alarms remain.
+Changing snooze rebuilds scheduled payloads with the selected default.
 `StartupTaskService` wraps the optional launch-at-login toggle. Credentials go
 to `PasswordVault` via `PasswordVaultCredentialStore` — never SQLite.
 

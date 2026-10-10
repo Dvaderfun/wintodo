@@ -54,11 +54,15 @@ public sealed partial class ShellViewModel : ObservableObject
         IClock clock,
         ShellStateService stateService,
         IStartupTaskService startupTaskService,
-        CalDavSyncService syncService)
+        CalDavSyncService syncService,
+        WindowsIntegrationService windowsIntegration)
     {
         _taskStore = taskStore;
         _stateService = stateService;
         _startupTaskService = startupTaskService;
+        Notifications = windowsIntegration.NotificationPreferences;
+        Notifications.SaveFailed += OnNotificationSettingsFailed;
+        windowsIntegration.NotificationSettingsFailed += OnNotificationSettingsFailed;
         InitializeSync(syncService);
         Preferences = new TaskPreferences(taskStore);
         Preferences.SaveFailed += OnPreferencesSaveFailed;
@@ -430,6 +434,7 @@ public sealed partial class ShellViewModel : ObservableObject
         _selectedNavigationTitle = _resources.GetString("Shell_SettingsTitle");
         _selectedNavigationIsMyDay = false;
         TaskList.ShowSettings(_resources.GetString("Shell_SettingsTitle"));
+        _ = RefreshDatabaseStatsAsync();
     }
 
     internal async Task RefreshNavigationAsync(CancellationToken cancellationToken = default)

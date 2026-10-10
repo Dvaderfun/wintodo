@@ -37,7 +37,7 @@ if ($VerifyToastCompletion -or $VerifyToastSnooze) {
     $env:WINTODO_M7_GATE_DB_PATH = [System.IO.Path]::GetFullPath($GateDatabasePath)
     try {
         dotnet test $testProject `
-            --filter "FullyQualifiedName~M7GateDatabaseTests.$verificationName" `
+            -p:Platform=x64 --no-build --filter-method "*M7GateDatabaseTests.$verificationName" `
             --verbosity quiet
         if ($LASTEXITCODE -ne 0) {
             throw $failureMessage
@@ -56,7 +56,7 @@ New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
 $env:WINTODO_M7_GATE_DB_PATH = $databasePath
 try {
     dotnet test $testProject `
-        --filter "FullyQualifiedName~M7GateDatabaseTests.SeedRequestedGateDatabase" `
+        -p:Platform=x64 --no-build --filter-method "*M7GateDatabaseTests.SeedRequestedGateDatabase" `
         --verbosity quiet
     if ($LASTEXITCODE -ne 0) {
         throw "The M7 gate database could not be seeded."
@@ -83,7 +83,7 @@ try {
     }
 
     dotnet test $testProject `
-        --filter "FullyQualifiedName~M7GateDatabaseTests.RequestedGateDatabaseHasScheduleTagAndBadgeCount" `
+        -p:Platform=x64 --no-build --filter-method "*M7GateDatabaseTests.RequestedGateDatabaseHasScheduleTagAndBadgeCount" `
         --verbosity quiet
     if ($LASTEXITCODE -ne 0) {
         throw "The reminder schedule or badge preflight failed."

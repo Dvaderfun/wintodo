@@ -7,6 +7,8 @@ public interface ISettingsStore
     const string WeekStartKey = "tasks.week_start";
     const string AddNewToTopKey = "tasks.add_new_to_top";
     const string MoveStarredToTopKey = "tasks.move_starred_to_top";
+    const string NotificationsEnabledKey = "notifications.enabled";
+    const string DefaultSnoozeKey = "notifications.default_snooze";
 
     Task<string?> GetSettingAsync(
         string key,

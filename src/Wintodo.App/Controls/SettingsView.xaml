@@ -181,8 +181,26 @@
 
                     <StackPanel Spacing="4">
                         <TextBlock
-                            x:Uid="SettingsWindowsHeader"
+                            x:Uid="SettingsNotificationsHeader"
                             Style="{StaticResource SettingsGroupHeaderStyle}" />
+
+                        <InfoBar AutomationProperties.AutomationId="Todo.Settings.Notifications.Error"
+                            IsOpen="{x:Bind ViewModel.IsNotificationSettingsErrorOpen, Mode=TwoWay}"
+                            Message="{x:Bind ViewModel.NotificationSettingsErrorMessage, Mode=OneWay}" Severity="Error" />
+                        <settings:SettingsCard x:Uid="SettingsNotificationsEnabledCard">
+                            <ToggleSwitch x:Uid="SettingsNotificationsEnabledControl"
+                                AutomationProperties.AutomationId="Todo.Settings.Notifications.Enabled"
+                                IsOn="{x:Bind ViewModel.Notifications.Enabled, Mode=TwoWay, FallbackValue=True}" />
+                        </settings:SettingsCard>
+                        <settings:SettingsCard x:Uid="SettingsNotificationsSnoozeCard">
+                            <ComboBox x:Uid="SettingsNotificationsSnoozeControl" MinWidth="200"
+                                AutomationProperties.AutomationId="Todo.Settings.Notifications.DefaultSnooze"
+                                SelectedIndex="{x:Bind ViewModel.Notifications.DefaultSnoozeIndex, Mode=TwoWay, FallbackValue=0}">
+                                <ComboBoxItem x:Uid="SettingsSnooze10" AutomationProperties.AutomationId="Todo.Settings.Notifications.Snooze10" />
+                                <ComboBoxItem x:Uid="SettingsSnooze60" AutomationProperties.AutomationId="Todo.Settings.Notifications.Snooze60" />
+                                <ComboBoxItem x:Uid="SettingsSnoozeTomorrow" AutomationProperties.AutomationId="Todo.Settings.Notifications.SnoozeTomorrow" />
+                            </ComboBox>
+                        </settings:SettingsCard>
 
                         <settings:SettingsCard x:Uid="SettingsLaunchAtLoginCard">
                             <settings:SettingsCard.HeaderIcon>
@@ -334,6 +352,26 @@
                                 Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsTransferBusy), Mode=OneWay}" />
                         </Grid>
 
+                        <InfoBar AutomationProperties.AutomationId="Todo.Settings.Data.Error"
+                            IsOpen="{x:Bind ViewModel.IsDataSettingsErrorOpen, Mode=TwoWay}"
+                            Message="{x:Bind ViewModel.DataSettingsErrorMessage, Mode=OneWay}" Severity="Error" />
+                        <settings:SettingsCard x:Uid="SettingsDatabasePathCard">
+                            <settings:SettingsCard.Description>
+                                <TextBlock AutomationProperties.AutomationId="Todo.Settings.Data.DatabasePath"
+                                    Text="{x:Bind ViewModel.DatabasePath, Mode=OneWay}" TextWrapping="Wrap" />
+                            </settings:SettingsCard.Description>
+                            <Button x:Uid="SettingsDatabaseExplorerButton"
+                                AutomationProperties.AutomationId="Todo.Settings.Data.ShowInExplorer"
+                                Command="{x:Bind ViewModel.ShowDatabaseInExplorerCommand, Mode=OneTime}"
+                                Style="{StaticResource SettingsActionButtonStyle}" />
+                        </settings:SettingsCard>
+                        <settings:SettingsCard x:Uid="SettingsDatabaseSizeCard">
+                            <settings:SettingsCard.Description>
+                                <TextBlock AutomationProperties.AutomationId="Todo.Settings.Data.DatabaseSize"
+                                    Text="{x:Bind ViewModel.DatabaseSizeText, Mode=OneWay}" />
+                            </settings:SettingsCard.Description>
+                        </settings:SettingsCard>
+
                         <settings:SettingsCard x:Uid="SettingsImportCard">
                             <settings:SettingsCard.HeaderIcon>
                                 <FontIcon Glyph="&#xE8B5;" />
@@ -381,6 +419,31 @@
                             <settings:SettingsCard.HeaderIcon>
                                 <FontIcon Glyph="&#xE946;" />
                             </settings:SettingsCard.HeaderIcon>
+                        </settings:SettingsCard>
+                        <settings:SettingsCard x:Uid="SettingsRepositoryCard">
+                            <HyperlinkButton x:Uid="SettingsRepositoryLink"
+                                AutomationProperties.AutomationId="Todo.Settings.About.Repository"
+                                NavigateUri="https://github.com/Dvaderfun/wintodo" />
+                        </settings:SettingsCard>
+                        <settings:SettingsExpander x:Name="LicencesExpander" x:Uid="SettingsLicencesExpander"
+                            Loaded="OnLicencesExpanderLoaded"
+                            AutomationProperties.AutomationId="Todo.Settings.About.Licences"
+                            ItemsSource="{x:Bind LicenceSections, Mode=OneTime}">
+                            <settings:SettingsExpander.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Stretch">
+                                        <TextBlock AutomationProperties.AutomationId="Todo.Settings.About.LicenceList"
+                                            Text="{x:Bind Mode=OneTime}" TextWrapping="Wrap"
+                                            IsTextSelectionEnabled="True" Style="{StaticResource BodyTextBlockStyle}" />
+                                    </settings:SettingsCard>
+                                </DataTemplate>
+                            </settings:SettingsExpander.ItemTemplate>
+                        </settings:SettingsExpander>
+                        <settings:SettingsCard x:Uid="SettingsLicenceNoticesCard">
+                            <Button x:Uid="SettingsReadLicencesButton"
+                                AutomationProperties.AutomationId="Todo.Settings.About.ReadLicences"
+                                Command="{x:Bind ViewModel.ReadLicenceNoticesCommand, Mode=OneTime}"
+                                Style="{StaticResource SettingsActionButtonStyle}" />
                         </settings:SettingsCard>
                     </StackPanel>
                 </StackPanel>

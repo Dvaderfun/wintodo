@@ -2,6 +2,8 @@ namespace Wintodo.Core.Services;
 
 public sealed class StoreStats
 {
+    public string DatabasePath { get; set; } = string.Empty;
+
     public int SchemaVersion { get; set; }
 
     public long ListCount { get; set; }
