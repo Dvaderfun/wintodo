@@ -43,6 +43,8 @@ stops the app. Artifacts (results JSON, screenshots, UI trees) are gitignored.
 ```powershell
 dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 .\tests\ui\run-m8-gate.ps1                        # design + accessibility, 14 checks
+.\tests\ui\run-composer-layout-gate.ps1           # detail-open/narrow input, options, resize; -Aot for publish
+.\tests\ui\run-navigation-startup-gate.ps1       # one selected category on first launch, restart and hover
 .\tests\ui\run-m5-gate.ps1                        # smart lists, search, restart
 .\tests\ui\run-m13-gate.ps1                       # starts a loopback CalDAV server
 ```
@@ -57,7 +59,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |
 | `run-m7-gate.ps1` | Reminders, toasts, badge, jump list (`-VerifyToastCompletion`, `-VerifyToastSnooze`) |
 | `run-m8-gate.ps1` | Design, responsive layout, High Contrast, accessibility audit |
-| `run-m13-gate.ps1` | CalDAV connect, sync, list toggles |
+| `run-m13-gate.ps1` | CalDAV Configure dialog, cancel/retry, sync, list toggles (`-Aot` for published x64) |
 | `run-list-icon-gate.ps1` | Emoji list icons and navigation counts |
 
 The scripts drive real input. Don't use the mouse or keyboard while they run.

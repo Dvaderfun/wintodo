@@ -197,6 +197,12 @@ never on a second line:
 - The `Add` button is `AccentButtonStyle`, right-aligned, enabled only when the
   text is non-empty.
 - Chips are `x:Load`-deferred and slide in 12 px from the right on focus.
+- When the composer itself is narrower than 880 DIPs (including when detail
+  opens or is resized), the chips move into a single `Task options` flyout
+  beside `Add`. Its submenus retain the list, due-date, reminder, repeat and
+  Clear actions. The input and Add button stay on the same 48 px row. Inline
+  chips return at wider sizes; selected-value labels are capped at 72 DIPs
+  so they cannot consume the text field. Drafts and options survive resizing.
 - Composer to first row spacing: **12**.
 
 Smart lists prefill the new task so it lands where it was typed:
@@ -327,6 +333,10 @@ Header: `BodyStrongTextBlockStyle`, 32 px tall, 8 px top margin, count in
 `IsBackButtonVisible="Collapsed"`, `IsSettingsVisible="True"`.
 Pane background transparent (Mica shows through). Item corner radius
 `ControlCornerRadius`; selection indicator is the WinUI default 3 px pill.
+Startup chooses `NavigationView.SelectedItem` after loading the saved list,
+falling back to My Day on a fresh database. Do not preselect an individual
+item in XAML: its local `IsSelected` flag can survive saved-list restoration
+and leave two highlighted items.
 
 ```
 ┌───────────────────────────────┐
@@ -676,6 +686,13 @@ confirm before delete; move completed to bottom) · **My Day** (reset time —
 default midnight) · **Notifications** (enable reminders; default snooze;
 launch at login) · **Data** (import `.ics`, export all, database location,
 database size) · **About** (version, GitHub link, licences).
+
+The disconnected CalDAV card offers a Configure command opening a credential
+ContentDialog. Server and username drafts survive reopening; passwords clear
+when the dialog closes. Connect is disabled until all fields are filled and
+while a request runs. A failed connection keeps the dialog open with an inline
+error; success dismisses it and reveals account/sync controls. Settings action
+buttons share a 152 DIP minimum width.
 
 ---
 

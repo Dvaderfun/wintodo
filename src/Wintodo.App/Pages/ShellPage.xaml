@@ -152,7 +152,6 @@
                     x:Name="MyDayNavigationItem"
                     x:Uid="NavMyDay"
                     AutomationProperties.AutomationId="Todo.Nav.MyDay"
-                    IsSelected="True"
                     Tag="smart:my-day">
                     <NavigationViewItem.Icon>
                         <FontIcon

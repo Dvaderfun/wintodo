@@ -13,7 +13,7 @@ As of 2026-10-10:
 | M6 iCalendar interop | AUTOMATED PASS | One-time hand import into Nextcloud Tasks or Thunderbird |
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
-| M9 Native AOT | BLOCKED | Full idle perf matrix pending (host busy); AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
+| M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
 | M10 Packaging and release | GROUNDWORK | Unsigned tag CI added; final identity/signing, Store assets and clean-VM install/uninstall gates pending |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
@@ -26,8 +26,8 @@ As of 2026-10-10:
 - **Known gaps:** the task list clears and refills its bound collection instead
   of diff-updating (`ARCHITECTURE.md`, Known divergences). Final app name and
   MSIX publisher are still undecided.
-- **Next:** obtain a full idle window for M9; choose the final name/publisher
-  before production signing and M10 clean-VM gates.
+- **Next:** continue app polish before release. M9 remains owner-deferred;
+  final name/publisher, signing and M10 clean-VM gates remain pending.
 
 ---
 
@@ -1536,3 +1536,103 @@ All six final screenshots reviewed; the existing settings/background visual
 coverage gaps recorded in M9 persist, so no full visual gate claimed.
 `winui-code-review` of the targeted fix found no issue above informational.
 Existing settings/CodeGraph working-tree changes excluded from both commits.
+
+## 2026-10-10 — M8 follow-up: composer stays usable with detail open
+
+Opening the inline detail pane left only 112 px for the task title in the
+expanded composer. Added composer-width visual states: below 880 DIPs, the
+inline list/date/reminder/repeat chips move to one localized Task options
+button with native submenus, while the title and Add remain on the same
+48 px row. Inline chips return at wider widths; value labels are capped at
+72 DIPs. Drafts and option selections survive resizing. Existing commands,
+quick choices and Clear actions are reused; no dependency or model change.
+SizeChanged only selects a VisualState; visual properties stay in XAML.
+Updated DESIGN §3.2 and the testing guide. The M9 performance task remains
+owner-deferred and was not resumed.
+
+Validation: x64 warnings-as-errors build clean; 102/102 unit tests, zero skips;
+x64 Native AOT publish clean. The new `run-composer-layout-gate.ps1` passed
+3/3 checks in Debug (`artifacts/composer/run-20261010-112948`) and AOT
+(`artifacts/composer/run-20261010-113025`): usable input with detail open,
+compact menu reachability and scheduled task creation, narrow/wide resize
+with draft preservation. All eight focused screenshots reviewed: no clipping
+or overlapping composer controls at the tested widths. Initial focused runs
+found test setup issues (detail already closed after commit, focus remaining
+in a collapsed composer, popup foreground targeting, startup window timing);
+the harness now captures the main HWND, waits for startup and changes focus
+before reopening the composer. Those failed artifacts are retained.
+
+Full M8 first attempt failed 9/14 checks, beginning with keyboard row
+activation (`artifacts/m8/run-20261010-112733`). Repeated with one explicit
+WINAPP_UI_WORKFLOW_ID after the other run completed, without changing app
+code: **14/14 automated checks passed** (`artifacts/m8/run-20261010-113116`).
+This supports desktop-input contention as the cause but does not prove it.
+Manual Narrator listening and the existing settings/background screenshot
+coverage gaps remain open; no complete manual gate is claimed.
+`winui-code-review` of the composer change found no issue above informational:
+explicit x:Bind modes, PropertyChanged text binding, localized accessible
+names, theme resources, command actions, 4 px spacing and no reflection.
+Existing uncommitted settings/CodeGraph edits were preserved. The new composer
+strings are added alongside the owner's existing Resources.resw edits.
+
+## 2026-10-10 — M8 follow-up: clear stale My Day startup selection
+
+Reproduced the owner's double-highlight report after restoring Completed:
+UI Automation reported **My Day IsSelected=True and Completed IsSelected=True**,
+with **HasKeyboardFocus=False** on both, even after moving the pointer away.
+It was a stale selection flag, not keyboard focus or an ordinary hover.
+My Day had `IsSelected="True"` locally in XAML; startup then assigned the saved
+item through `NavigationView.SelectedItem`. Removed the local flag so
+`ShellPage.InitializeAsync` owns initial selection. The existing fresh-database
+fallback to My Day remains unchanged. No control/template/dependency changes.
+
+Added `run-navigation-startup-gate.ps1`: fresh My Day selection, changing to
+Completed, restoring Completed across process restart, and hover/leave all
+assert exactly one selected fixed category. **4/4 passed**, with selection and
+focus properties saved alongside screenshots under
+`tests/ui/artifacts/navigation/run-20261010-114120`. All four screenshots
+reviewed: the extra My Day highlight is gone. Initial harness attempts used
+the editable-title selector for smart lists and encountered foreground/focus
+safeguards; corrected to the static page title and captured main HWND. Their
+failed artifacts remain available. Product fix stayed one XAML-line removal.
+
+Validation: x64 warnings-as-errors build clean; **102/102** unit tests with
+zero skipped; M8 **14/14 automated checks** passed at
+`tests/ui/artifacts/m8/run-20261010-114153`. All six M8 screenshots reviewed;
+existing settings/background capture coverage and manual Narrator listening
+remain open. `winui-code-review` found no issue above informational in the
+one-line change. Docs describe startup selection ownership. Existing composer
+and owner settings/CodeGraph changes preserved; no commit or push performed.
+M9 performance remains owner-deferred.
+
+## 2026-10-10 — M8/M13 polish batch reviewed for commit
+
+Owner authorized committing and pushing all pending work, including the
+composer responsive layout, single startup navigation selection, CalDAV
+Configure dialog/settings action sizing, and CodeGraph ignore-all policy.
+Generated databases, certificates, builds and test artifacts stay ignored.
+
+Final review corrected the pending CalDAV dialog to use a RelayCommand for
+Configure, explicit two-way credential bindings (PropertyChanged on TextBox),
+view-model busy state, password clearing on dismissal, and a guaranteed async
+deferral completion. Native dialog buttons receive stable AutomationIds via
+the popup tree. Removed raw FontSize from the touched settings action icons.
+The connection command and PasswordVault storage remain unchanged.
+
+Updated M13 UI coverage for Configure, cancel/reopen draft preservation,
+password clearing, failed connection/retry and optional `-Aot` runs. The first
+attempt failed 7/11 because native dialog button IDs were not assigned from
+the popup tree (`artifacts/m13/run-20261010-114700`); the error-path check in
+that older harness could also mask a prior CLI failure. Corrected the ID
+lookup and enabled native-command failure propagation within each check.
+Rerun **11/11 passed** in Debug (`artifacts/m13/run-20261010-115017`) and AOT
+(`artifacts/m13/run-20261010-115221`). All ten M13 screenshots reviewed, including
+credential and error states. No visual clipping in the tested dialog states.
+
+Final validation: requested x64 warnings-as-errors build clean, **102/102** unit
+tests with no skips, x64 AOT publish clean, M8 **14/14 automated checks**
+(`artifacts/m8/run-20261010-115059`, all six screenshots reviewed). Prior focused
+composer **3/3 Debug + 3/3 AOT** and navigation startup **4/4** results remain
+recorded above. `winui-code-review` found no issue above informational in the
+final diff. Manual Narrator, live-server convergence, ARM64 runtime perf and
+M10 release gates remain open; M9 perf is explicitly owner-deferred.

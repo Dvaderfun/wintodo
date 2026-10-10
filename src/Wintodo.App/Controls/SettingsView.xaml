@@ -22,6 +22,19 @@
             TargetType="TextBlock">
             <Setter Property="Margin" Value="0,4,0,0" />
         </Style>
+
+        <!--
+            Card actions size to their own label by default, so "Import .ics" and
+            "Export all" land on different widths in adjacent cards. A shared
+            minimum width keeps the right edge of every action button aligned.
+        -->
+        <Style
+            x:Key="SettingsActionButtonStyle"
+            BasedOn="{StaticResource DefaultButtonStyle}"
+            TargetType="Button">
+            <Setter Property="MinWidth" Value="152" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
     </UserControl.Resources>
 
     <!--
@@ -181,50 +194,25 @@
                             Message="{x:Bind ViewModel.SyncErrorMessage, Mode=OneWay}"
                             Severity="Error" />
 
-                        <!--
-                            SettingsCard's ContentAlignment="Vertical" loses to the
-                            control's own width heuristic once the card is wide, which
-                            squeezes a credential form into a narrow right-hand column.
-                            SettingsExpander's items region is full width by design.
-                        -->
-                        <settings:SettingsExpander
+                        <settings:SettingsCard
                             x:Uid="SettingsSyncConnectCard"
-                            IsExpanded="True"
                             Visibility="{x:Bind local:SettingsView.InvertBoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
-                            <settings:SettingsExpander.HeaderIcon>
+                            <settings:SettingsCard.HeaderIcon>
                                 <FontIcon Glyph="&#xE774;" />
-                            </settings:SettingsExpander.HeaderIcon>
-                            <settings:SettingsExpander.ItemsFooter>
-                                <StackPanel Padding="16" Spacing="12">
-                                    <TextBox
-                                        x:Uid="SettingsSyncServer"
-                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Server"
-                                        InputScope="Url"
-                                        KeyDown="OnCredentialKeyDown"
-                                        Text="{x:Bind ViewModel.CalDavServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <TextBox
-                                        x:Uid="SettingsSyncUsername"
-                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Username"
-                                        KeyDown="OnCredentialKeyDown"
-                                        Text="{x:Bind ViewModel.CalDavUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                    <PasswordBox
-                                        x:Uid="SettingsSyncPassword"
-                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Password"
-                                        KeyDown="OnCredentialKeyDown"
-                                        Password="{x:Bind ViewModel.CalDavPassword, Mode=TwoWay}" />
-                                    <Button
-                                        HorizontalAlignment="Right"
-                                        AutomationProperties.AutomationId="Todo.Settings.Sync.Connect"
-                                        Command="{x:Bind ViewModel.ConnectCalDavCommand, Mode=OneTime}"
-                                        Style="{StaticResource AccentButtonStyle}">
-                                        <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <FontIcon FontSize="16" Glyph="&#xE774;" />
-                                            <TextBlock x:Uid="SettingsSyncConnectLabel" />
-                                        </StackPanel>
-                                    </Button>
+                            </settings:SettingsCard.HeaderIcon>
+                            <Button
+                                x:Uid="SettingsSyncConfigureButton"
+                                AutomationProperties.AutomationId="Todo.Settings.Sync.Configure"
+                                Command="{x:Bind ConfigureCalDavCommand, Mode=OneTime}"
+                                Style="{StaticResource SettingsActionButtonStyle}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE713;" />
+                                    <TextBlock
+                                        x:Uid="SettingsSyncConfigureLabel"
+                                        Style="{StaticResource BodyTextBlockStyle}" />
                                 </StackPanel>
-                            </settings:SettingsExpander.ItemsFooter>
-                        </settings:SettingsExpander>
+                            </Button>
+                        </settings:SettingsCard>
 
                         <settings:SettingsCard
                             x:Uid="SettingsSyncAccountCard"
@@ -253,17 +241,19 @@
                                 </StackPanel>
                                 <Button
                                     AutomationProperties.AutomationId="Todo.Settings.Sync.Now"
-                                    Command="{x:Bind ViewModel.SyncNowCommand, Mode=OneTime}">
+                                    Command="{x:Bind ViewModel.SyncNowCommand, Mode=OneTime}"
+                                    Style="{StaticResource SettingsActionButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <FontIcon FontSize="16" Glyph="&#xE895;" />
+                                        <FontIcon Glyph="&#xE895;" />
                                         <TextBlock x:Uid="SettingsSyncNowLabel" />
                                     </StackPanel>
                                 </Button>
                                 <Button
                                     AutomationProperties.AutomationId="Todo.Settings.Sync.Disconnect"
-                                    Command="{x:Bind ViewModel.DisconnectCalDavCommand, Mode=OneTime}">
+                                    Command="{x:Bind ViewModel.DisconnectCalDavCommand, Mode=OneTime}"
+                                    Style="{StaticResource SettingsActionButtonStyle}">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <FontIcon FontSize="16" Glyph="&#xE8BB;" />
+                                        <FontIcon Glyph="&#xE8BB;" />
                                         <TextBlock x:Uid="SettingsSyncDisconnectLabel" />
                                     </StackPanel>
                                 </Button>
@@ -318,9 +308,10 @@
                             <Button
                                 x:Uid="SettingsImportButton"
                                 AutomationProperties.AutomationId="Todo.Settings.ImportIcal"
-                                Command="{x:Bind ViewModel.ImportIcalCommand, Mode=OneTime}">
+                                Command="{x:Bind ViewModel.ImportIcalCommand, Mode=OneTime}"
+                                Style="{StaticResource SettingsActionButtonStyle}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon FontSize="16" Glyph="&#xE8B5;" />
+                                    <FontIcon Glyph="&#xE8B5;" />
                                     <TextBlock
                                         x:Uid="SettingsImportLabel"
                                         Style="{StaticResource BodyTextBlockStyle}" />
@@ -335,9 +326,10 @@
                             <Button
                                 x:Uid="SettingsExportAllButton"
                                 AutomationProperties.AutomationId="Todo.Settings.ExportAll"
-                                Command="{x:Bind ViewModel.ExportAllCommand, Mode=OneTime}">
+                                Command="{x:Bind ViewModel.ExportAllCommand, Mode=OneTime}"
+                                Style="{StaticResource SettingsActionButtonStyle}">
                                 <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <FontIcon FontSize="16" Glyph="&#xE898;" />
+                                    <FontIcon Glyph="&#xE898;" />
                                     <TextBlock
                                         x:Uid="SettingsExportAllLabel"
                                         Style="{StaticResource BodyTextBlockStyle}" />
@@ -361,5 +353,74 @@
                 </StackPanel>
             </Grid>
         </ScrollViewer>
+
+        <!--
+            DefaultButton="Primary" is what makes Enter submit the form, so the
+            credential boxes need no key handler of their own. The dialog stays
+            open on a failed connect and reports the reason inline, because the
+            page-level InfoBar underneath it is not visible while it is up.
+        -->
+        <ContentDialog
+            x:Name="CalDavDialog"
+            x:Uid="CalDavDialog"
+            AutomationProperties.AutomationId="Todo.Dialog.CalDav"
+            DefaultButton="Primary"
+            Closed="OnCalDavDialogClosed"
+            IsPrimaryButtonEnabled="{x:Bind local:SettingsView.CanSubmitCalDav(ViewModel.CalDavServerUrl, ViewModel.CalDavUsername, ViewModel.CalDavPassword, ViewModel.IsSyncBusy), Mode=OneWay}"
+            Opened="OnCalDavDialogOpened"
+            PrimaryButtonClick="OnCalDavDialogPrimaryClick">
+            <StackPanel Width="360" Spacing="16">
+                <TextBlock
+                    x:Uid="CalDavDialogIntro"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    TextWrapping="Wrap" />
+
+                <InfoBar
+                    x:Name="CalDavDialogError"
+                    x:Uid="CalDavDialogError"
+                    AutomationProperties.AutomationId="Todo.Dialog.CalDav.Error"
+                    IsClosable="False"
+                    IsOpen="False"
+                    Severity="Error" />
+
+                <StackPanel Spacing="12">
+                    <TextBox
+                        x:Name="CalDavServerBox"
+                        x:Uid="SettingsSyncServer"
+                        AutomationProperties.AutomationId="Todo.Settings.Sync.Server"
+                        InputScope="Url"
+                        IsEnabled="{x:Bind local:SettingsView.Not(ViewModel.IsSyncBusy), Mode=OneWay}"
+                        Text="{x:Bind ViewModel.CalDavServerUrl, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox
+                        x:Name="CalDavUsernameBox"
+                        x:Uid="SettingsSyncUsername"
+                        AutomationProperties.AutomationId="Todo.Settings.Sync.Username"
+                        IsEnabled="{x:Bind local:SettingsView.Not(ViewModel.IsSyncBusy), Mode=OneWay}"
+                        Text="{x:Bind ViewModel.CalDavUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <PasswordBox
+                        x:Name="CalDavPasswordBox"
+                        x:Uid="SettingsSyncPassword"
+                        AutomationProperties.AutomationId="Todo.Settings.Sync.Password"
+                        IsEnabled="{x:Bind local:SettingsView.Not(ViewModel.IsSyncBusy), Mode=OneWay}"
+                        Password="{x:Bind ViewModel.CalDavPassword, Mode=TwoWay}" />
+                </StackPanel>
+
+                <StackPanel
+                    x:Name="CalDavDialogBusy"
+                    Orientation="Horizontal"
+                    Spacing="12"
+                    Visibility="{x:Bind local:SettingsView.BoolToVisibility(ViewModel.IsSyncBusy), Mode=OneWay}">
+                    <ProgressRing
+                        Width="16"
+                        Height="16"
+                        IsActive="True" />
+                    <TextBlock
+                        x:Uid="CalDavDialogBusyLabel"
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        Style="{StaticResource CaptionTextBlockStyle}" />
+                </StackPanel>
+            </StackPanel>
+        </ContentDialog>
     </Grid>
 </UserControl>

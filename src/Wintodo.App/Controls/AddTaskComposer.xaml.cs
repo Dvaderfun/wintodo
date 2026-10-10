@@ -19,6 +19,7 @@ public sealed partial class AddTaskComposer : UserControl
     public AddTaskComposer()
     {
         InitializeComponent();
+        SizeChanged += OnComposerSizeChanged;
     }
 
     public TaskListViewModel ViewModel
@@ -43,6 +44,25 @@ public sealed partial class AddTaskComposer : UserControl
         return value ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    private void OnComposerSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        UpdateActionLayout(args.NewSize.Width);
+    }
+
+    private void OnComposerActionsLoaded(object sender, RoutedEventArgs args)
+    {
+        UpdateActionLayout(ActualWidth);
+    }
+
+    private void UpdateActionLayout(double width)
+    {
+        // The detail pane can shrink this control while the window stays wide.
+        VisualStateManager.GoToState(
+            this,
+            width < 880 ? "CompactActions" : "InlineActions",
+            useTransitions: false);
+    }
+
     private void OnTaskTitleBoxGotFocus(object sender, RoutedEventArgs args)
     {
         ViewModel.BeginComposerCommand.Execute(null);
@@ -64,7 +84,17 @@ public sealed partial class AddTaskComposer : UserControl
 
     private void OnTargetListFlyoutOpening(object? sender, object args)
     {
-        TargetListFlyout.Items.Clear();
+        PopulateTargetLists(TargetListFlyout.Items);
+    }
+
+    private void OnCompactOptionsOpening(object? sender, object args)
+    {
+        PopulateTargetLists(CompactTargetList.Items);
+    }
+
+    private void PopulateTargetLists(IList<MenuFlyoutItemBase> items)
+    {
+        items.Clear();
         foreach (MoveTargetViewModel target in ViewModel.MoveTargets)
         {
             var item = new ToggleMenuFlyoutItem
@@ -75,7 +105,7 @@ public sealed partial class AddTaskComposer : UserControl
                 CommandParameter = target.ListId,
             };
             AutomationProperties.SetAutomationId(item, target.ComposerAutomationId);
-            TargetListFlyout.Items.Add(item);
+            items.Add(item);
         }
     }
 }
