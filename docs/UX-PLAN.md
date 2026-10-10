@@ -51,7 +51,7 @@ this dependency exception does not mark those gates passed.
 |---|---|---|---|---|---|---|
 | UX-01 | Dates and times in the UI language | A | S | — | TaskDetailVM, TaskListVM | done (252f8e6) |
 | UX-02 | Settings infrastructure + **Tasks** section (confirm before delete) | A | M | — | SettingsView, ShellVM, ShellPage | in progress (Codex/main; settings gate PASS; composer/perf gates open) |
-| UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | in progress (Codex/main) |
+| UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | done (09aa070) |
 | UX-04 | High-contrast fixes | A | S | — | ShellPage | ready |
 | UX-05 | Hide the sync status until sync is configured | A | S | — | ShellPage.xaml, ShellVM.Sync | ready |
 | UX-06 | Move list presentation logic into Core, with unit tests | B | M | — | TaskListVM | ready |
