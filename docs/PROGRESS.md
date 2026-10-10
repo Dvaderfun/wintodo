@@ -1404,7 +1404,8 @@ the only app-code change is a behaviour-preserving extraction in
   2.1.3 and later.
 
 **Known issues carried forward**
-- CI has not run on GitHub yet; the first push will be its first run.
+- ~~CI has not run on GitHub yet.~~ First run (commit `7fec1b6`, run 38045772106)
+  passed: build with warnings as errors and 102/102 tests on `windows-latest`.
 - Unchanged: M6 hand import, M7 reboot/badge checks, M8 Narrator check, M9
   +10 min sample and ARM64 runtime, M13 live-server rows.
 
