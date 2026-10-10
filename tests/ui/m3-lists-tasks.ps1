@@ -1,13 +1,14 @@
 param(
     [Parameter(Mandatory)]
-    [int]$AppPid
+    [int]$AppPid,
+    [string]$ArtifactDirectory = (Join-Path $PSScriptRoot "artifacts\m3")
 )
 
 $ErrorActionPreference = "Continue"
 $pass = 0
 $fail = 0
 $results = @()
-$artifactDirectory = Join-Path $PSScriptRoot "artifacts\m3"
+$artifactDirectory = $ArtifactDirectory
 
 New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
 
@@ -54,6 +55,8 @@ function Get-TaskRow {
         } |
         Select-Object -First 1
 }
+
+winapp ui wait-for "Todo.Nav.NewListButton" -a $AppPid -t 15000 | Out-Null
 
 Test-UI "Create list inline" {
     winapp ui invoke "Todo.Nav.NewListButton" -a $AppPid
@@ -115,13 +118,20 @@ Test-UI "Completed section expands" {
 
 Test-UI "Reorder remaining tasks" {
     $task5 = Get-TaskRow "Gate task 5"
+    # Selection opens detail and changes the row width. Settle it before
+    # calculating screen coordinates for the drag.
+    winapp ui invoke $task5.automationId -a $AppPid
+    winapp ui wait-for "Todo.Detail.Title" -a $AppPid -t 5000
+    Start-Sleep -Milliseconds 400
+    $task5 = Get-TaskRow "Gate task 5"
     $task3 = Get-TaskRow "Gate task 3"
     if (-not $task5 -or -not $task3) {
         throw "The reorder source or destination row was not found."
     }
 
-    $source = "{0},{1}" -f ($task5.x + 8), ($task5.y + ($task5.height / 2))
-    $destination = "{0},{1}" -f ($task3.x + 8), ($task3.y + 12)
+    # Start on the row body, away from the completion checkbox.
+    $source = "{0},{1}" -f ($task5.x + ($task5.width / 2)), ($task5.y + ($task5.height / 2))
+    $destination = "{0},{1}" -f ($task3.x + ($task3.width / 2)), ($task3.y + 4)
     winapp ui drag $source $destination `
         -a $AppPid `
         --hold-ms 1000 `
@@ -173,17 +183,20 @@ Test-UI "Delete task offers undo" {
     }
 
     winapp ui invoke $row.automationId -a $AppPid
-    winapp ui send-keys "delete" -a $AppPid --via send-input
+    winapp ui focus $row.automationId -a $AppPid
+    winapp ui send-keys "delete" --target $row.automationId -a $AppPid --via send-input
     winapp ui wait-for "Todo.List.UndoButton" -a $AppPid -t 3000
     winapp ui invoke "Todo.List.UndoButton" -a $AppPid
-    Start-Sleep -Milliseconds 400
+    winapp ui wait-for "Undo me" -a $AppPid -t 5000
     if (-not (Get-TaskRow "Undo me")) {
         throw "Undo did not restore the task."
     }
 
     $restored = Get-TaskRow "Undo me"
     winapp ui invoke $restored.automationId -a $AppPid
-    winapp ui send-keys "delete" -a $AppPid --via send-input
+    winapp ui focus $restored.automationId -a $AppPid
+    winapp ui send-keys "delete" --target $restored.automationId -a $AppPid --via send-input
+    winapp ui wait-for "Todo.List.UndoButton" -a $AppPid -t 3000
 }
 
 Test-UI "Create list group" {

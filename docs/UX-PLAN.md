@@ -54,7 +54,7 @@ this dependency exception does not mark those gates passed.
 | UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | done (09aa070) |
 | UX-04 | High-contrast fixes | A | S | — | ShellPage | done (71f6434) |
 | UX-05 | Hide the sync status until sync is configured | A | S | — | ShellPage.xaml, ShellVM.Sync | done (07fbcdc) |
-| UX-06 | Move list presentation logic into Core, with unit tests | B | M | — | TaskListVM | in progress (Codex/main) |
+| UX-06 | Move list presentation logic into Core, with unit tests | B | M | — | TaskListVM | in progress (Codex/main; Core/M5/M8 PASS; existing M3 reorder gate open) |
 | UX-07 | Update the task list in place instead of rebuilding it | B | L | UX-06 | TaskListVM, TaskListView | ready |
 | UX-08 | Completion and row motion per DESIGN §7 | B | S | UX-07 | TaskRow, TaskListView | ready |
 | UX-09 | Real multi-select and bulk actions | B | L | UX-07 | TaskListView, TaskListVM, TaskRow | ready |
@@ -623,3 +623,9 @@ file reference.
 - UX-02 validation: composer gate loses `Todo.Composer.OptionsButton` after adding
   a task through compact options (2/3 checks fail). Settings gate passes 9/9;
   startup crash from VSM targeting unloaded actions fixed separately.
+- UX-06 prerequisite: M3 task-row drag reorder still fails on the unchanged
+  baseline and after extraction (`Controls/TaskListView.xaml.cs` container drag
+  path). Removing container drag/drop overrides did not resolve it; reverted.
+- `TaskListViewModel.UpdateItemDisplay`: DESIGN §3.3 reminder, steps, note and
+  attachment subtitle parts are not implemented. UX-06 preserves the shipped
+  list/due/repeat/My Day parts; adding the missing parts is separate work.

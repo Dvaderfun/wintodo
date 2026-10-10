@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using Microsoft.Data.Sqlite;
 using Wintodo.Core.Models;
+using Wintodo.Core.Presentation;
 using Wintodo.Core.Queries;
 using Wintodo.Core.Recurrence;
 using Wintodo.Data.Mapping;
@@ -469,34 +470,24 @@ public sealed partial class SqliteTaskStore
         bool descending,
         ListQueryKind queryKind)
     {
-        if (queryKind == ListQueryKind.Completed)
-        {
-            return descending
-                ? " ORDER BY t.completed_utc, t.id"
-                : " ORDER BY t.completed_utc DESC, t.id DESC";
-        }
-
-        string direction = descending ? " DESC" : string.Empty;
-        if (queryKind == ListQueryKind.Important && sortMode == SortMode.Importance)
-        {
-            return $" ORDER BY t.priority{direction}, t.id{direction}";
-        }
-
-        if (queryKind == ListQueryKind.Planned && sortMode == SortMode.DueDate)
-        {
-            return $" ORDER BY t.due_utc{direction}, t.id{direction}";
-        }
-
-        string expression = sortMode switch
-        {
-            SortMode.Manual => "t.sort_order",
-            SortMode.Importance => "t.priority = 0, t.priority",
-            SortMode.DueDate => "t.due_utc IS NULL, t.due_utc",
-            SortMode.Alphabetical => "t.summary COLLATE NOCASE",
-            SortMode.CreationDate => "t.created_utc",
-            _ => throw new ArgumentOutOfRangeException(nameof(sortMode), sortMode, "Unknown sort mode."),
-        };
-        return $" ORDER BY {expression}{direction}, t.id{direction}";
+        return " ORDER BY " + string.Join(", ", TaskSorting.GetTerms(sortMode, descending, queryKind)
+            .Select(term =>
+            {
+                string expression = term.Field switch
+                {
+                    TaskSortField.ManualOrder => "t.sort_order",
+                    TaskSortField.UndefinedPriority => "t.priority = 0",
+                    TaskSortField.Priority => "t.priority",
+                    TaskSortField.MissingDue => "t.due_utc IS NULL",
+                    TaskSortField.Due => "t.due_utc",
+                    TaskSortField.Summary => "t.summary COLLATE NOCASE",
+                    TaskSortField.Created => "t.created_utc",
+                    TaskSortField.Completed => "t.completed_utc",
+                    TaskSortField.Id => "t.id",
+                    _ => throw new InvalidOperationException("Unknown sort field."),
+                };
+                return expression + (term.Descending ? " DESC" : string.Empty);
+            }));
     }
 
     private static string EscapeLike(string value)

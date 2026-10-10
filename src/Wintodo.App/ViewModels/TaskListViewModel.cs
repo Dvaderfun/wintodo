@@ -1296,50 +1296,26 @@ public sealed partial class TaskListViewModel : ObservableObject
         VisibleItems.Clear();
         TaskGroups.Clear();
 
-        if (!string.IsNullOrEmpty(_searchText))
+        IReadOnlyList<TaskGroup> groups = TaskGrouping.Build(
+            _currentQuery,
+            _activeTasks.Select(item => item.Model).ToArray(),
+            _completedTasks.Select(item => item.Model).ToArray(),
+            _selectedList?.ShowCompleted ?? true,
+            _searchText,
+            _clock,
+            _preferences.FirstDayOfWeek,
+            _lists.Select(list => new TaskGroupList(list.Id, list.Uid, list.SortOrder)).ToArray(),
+            _completedExpanded);
+        foreach (TaskGroup descriptor in groups)
         {
-            BuildSearchGroups();
-        }
-        else if (_currentQuery?.Kind == ListQueryKind.Planned)
-        {
-            BuildPlannedGroups();
-        }
-        else if (_currentQuery?.Kind == ListQueryKind.Completed)
-        {
-            AddTaskGroup(CreateHiddenGroup(_completedTasks));
-        }
-        else
-        {
-            AddTaskGroup(CreateHiddenGroup(_activeTasks));
-
-            bool showCompleted = _selectedList?.ShowCompleted ?? true;
-            if (showCompleted && _completedTasks.Count > 0)
+            TaskListGroupViewModel group = CreateTaskGroup(descriptor);
+            foreach (string uid in descriptor.TaskUids)
             {
-                var completedGroup = new TaskListGroupViewModel(
-                    TaskListGroupKind.Completed,
-                    _resources.GetString("CompletedHeader/Text"),
-                    "Todo.List.CompletedHeader",
-                    toggle: ToggleCompletedAsync,
-                    accessibleName: string.Format(
-                        DisplayCulture.Current,
-                        _resources.GetString("CompletedHeader_AccessibleName"),
-                        _completedTasks.Count))
-                {
-                    CountOverride = _completedTasks.Count,
-                    IsExpanded = _completedExpanded,
-                };
-                if (_completedExpanded)
-                {
-                    AddItems(completedGroup, _completedTasks);
-                }
-
-                TaskGroups.Add(completedGroup.Items);
-                foreach (TaskItemViewModel item in
-                         completedGroup.Items.OfType<TaskItemViewModel>())
-                {
-                    VisibleItems.Add(item);
-                }
+                TaskItemViewModel item = _itemCache[uid];
+                group.Items.Add(item);
+                VisibleItems.Add(item);
             }
+            TaskGroups.Add(group.Items);
         }
 
         int activeCount = _activeTasks.Count;
@@ -1362,139 +1338,25 @@ public sealed partial class TaskListViewModel : ObservableObject
         }
     }
 
-    private void BuildSearchGroups()
+    private TaskListGroupViewModel CreateTaskGroup(TaskGroup group)
     {
-        foreach (ShellListItemViewModel list in _lists.OrderBy(item => item.SortOrder))
+        return group.Kind switch
         {
-            List<TaskItemViewModel> matches =
-                _activeTasks.Concat(_completedTasks)
-                    .Where(item => item.ListId == list.Id)
-                    .ToList();
-            if (matches.Count == 0)
-            {
-                continue;
-            }
-
-            var group = new TaskListGroupViewModel(
-                TaskListGroupKind.Named,
-                list.DisplayName,
-                $"Todo.List.SearchGroup.{list.Uid}");
-            AddItems(group, matches);
-            AddTaskGroup(group);
-        }
-    }
-
-    private void BuildPlannedGroups()
-    {
-        var buckets = new Dictionary<string, List<TaskItemViewModel>>(StringComparer.Ordinal)
-        {
-            ["Overdue"] = [],
-            ["Today"] = [],
-            ["Tomorrow"] = [],
-            ["ThisWeek"] = [],
-            ["Later"] = [],
-            ["NoDate"] = [],
+            TaskGroupKind.Hidden => new(TaskListGroupKind.Hidden, string.Empty, string.Empty),
+            TaskGroupKind.Search => new(TaskListGroupKind.Named,
+                FindListName(group.ListId!.Value) ?? string.Empty,
+                $"Todo.List.SearchGroup.{group.Key}"),
+            TaskGroupKind.Planned => new(TaskListGroupKind.Named,
+                _resources.GetString($"Planned_{group.Key}"),
+                $"Todo.List.PlannedGroup.{group.Key}", group.Key == "Overdue"),
+            TaskGroupKind.Completed => new(TaskListGroupKind.Completed,
+                _resources.GetString("CompletedHeader/Text"), "Todo.List.CompletedHeader",
+                toggle: ToggleCompletedAsync,
+                accessibleName: string.Format(DisplayCulture.Current,
+                    _resources.GetString("CompletedHeader_AccessibleName"), group.Count))
+                { CountOverride = group.Count, IsExpanded = group.IsExpanded },
+            _ => throw new InvalidOperationException("Unknown task group kind."),
         };
-        foreach (TaskItemViewModel item in _activeTasks.Concat(_completedTasks))
-        {
-            buckets[GetPlannedBucket(item.Model.Due)].Add(item);
-        }
-
-        AddNamedBucket(
-            buckets["Overdue"],
-            "Planned_Overdue",
-            "Overdue",
-            isCritical: true);
-        AddNamedBucket(buckets["Today"], "Planned_Today", "Today");
-        AddNamedBucket(buckets["Tomorrow"], "Planned_Tomorrow", "Tomorrow");
-        AddNamedBucket(buckets["ThisWeek"], "Planned_ThisWeek", "ThisWeek");
-        AddNamedBucket(buckets["Later"], "Planned_Later", "Later");
-        AddNamedBucket(buckets["NoDate"], "Planned_NoDate", "NoDate");
-    }
-
-    private void AddNamedBucket(
-        IReadOnlyList<TaskItemViewModel> items,
-        string resourceKey,
-        string automationSuffix,
-        bool isCritical = false)
-    {
-        if (items.Count == 0)
-        {
-            return;
-        }
-
-        var group = new TaskListGroupViewModel(
-            TaskListGroupKind.Named,
-            _resources.GetString(resourceKey),
-            $"Todo.List.PlannedGroup.{automationSuffix}",
-            isCritical);
-        AddItems(group, items);
-        AddTaskGroup(group);
-    }
-
-    private void AddTaskGroup(TaskListGroupViewModel group)
-    {
-        if (group.Items.Count == 0)
-        {
-            return;
-        }
-
-        TaskGroups.Add(group.Items);
-        foreach (TaskItemViewModel item in
-                 group.Items.OfType<TaskItemViewModel>())
-        {
-            VisibleItems.Add(item);
-        }
-    }
-
-    private static TaskListGroupViewModel CreateHiddenGroup(
-        IEnumerable<TaskItemViewModel> items)
-    {
-        var group = new TaskListGroupViewModel(
-            TaskListGroupKind.Hidden,
-            string.Empty,
-            string.Empty);
-        AddItems(group, items);
-        return group;
-    }
-
-    private static void AddItems(
-        TaskListGroupViewModel group,
-        IEnumerable<TaskItemViewModel> items)
-    {
-        foreach (TaskItemViewModel item in items)
-        {
-            group.Items.Add(item);
-        }
-    }
-
-    private string GetPlannedBucket(DateTimeOffset? due)
-    {
-        if (due is null)
-        {
-            return "NoDate";
-        }
-
-        DateOnly dueDate = DateOnly.FromDateTime(
-            TimeZoneInfo.ConvertTime(due.Value, _clock.LocalTimeZone).DateTime);
-        int offset = dueDate.DayNumber - _clock.Today.DayNumber;
-        if (offset < 0)
-        {
-            return "Overdue";
-        }
-
-        if (offset == 0)
-        {
-            return "Today";
-        }
-
-        if (offset == 1)
-        {
-            return "Tomorrow";
-        }
-
-        DateOnly endOfWeek = _preferences.EndOfWeek(_clock.Today);
-        return dueDate <= endOfWeek ? "ThisWeek" : "Later";
     }
 
     private void UpdateItemDisplay(TaskItemViewModel item)
@@ -1504,42 +1366,20 @@ public sealed partial class TaskListViewModel : ObservableObject
         item.IsCompleted =
             task.Status == Wintodo.Core.Models.TaskStatus.Completed;
         item.IsImportant = task.Priority is >= 1 and <= 4;
-        DateOnly? dueDate = task.Due is null
-            ? null
-            : DateOnly.FromDateTime(
-                TimeZoneInfo.ConvertTime(
-                    task.Due.Value,
-                    _clock.LocalTimeZone).DateTime);
-        item.IsOverdue = dueDate < _clock.Today && !item.IsCompleted;
-        item.IsDueToday = dueDate == _clock.Today && !item.IsCompleted;
-
-        var metadata = new List<string>(4);
-        if (_currentQuery?.Kind != ListQueryKind.UserList)
+        TaskMetadataResult metadata = TaskMetadataLine.Build(
+            task, _currentQuery?.Kind, _clock, FindListName(task.ListId));
+        item.IsOverdue = metadata.IsOverdue;
+        item.IsDueToday = metadata.IsDueToday;
+        item.Metadata = string.Join(" · ", metadata.Parts.Select(part => part.Kind switch
         {
-            string? listName = FindListName(task.ListId);
-            if (!string.IsNullOrEmpty(listName))
-            {
-                metadata.Add(listName);
-            }
-        }
-
-        if (task.Due is not null)
-        {
-            metadata.Add(FormatDueDate(task.Due.Value));
-        }
-
-        if (!string.IsNullOrWhiteSpace(task.RRule))
-        {
-            metadata.Add(_resources.GetString("Task_Metadata_Repeats"));
-        }
-
-        if (task.MyDayDate is not null
-            && _currentQuery?.Kind != ListQueryKind.MyDay)
-        {
-            metadata.Add(_resources.GetString("Task_Metadata_MyDay"));
-        }
-
-        item.Metadata = string.Join(" \u00B7 ", metadata);
+            TaskMetadataKind.ListName => part.Text ?? string.Empty,
+            TaskMetadataKind.DueDate => TaskDateLabels.FormatListDue(part.Date!.Value, _clock,
+                DisplayCulture.Current, _resources.GetString("Task_Metadata_Yesterday"),
+                _resources.GetString("Task_Metadata_Today"), _resources.GetString("Task_Metadata_Tomorrow")),
+            TaskMetadataKind.Repeat => _resources.GetString("Task_Metadata_Repeats"),
+            TaskMetadataKind.MyDay => _resources.GetString("Task_Metadata_MyDay"),
+            _ => throw new InvalidOperationException("Unknown metadata part kind."),
+        }));
         item.CompletionDateText = task.CompletedAt is null
             ? string.Empty
             : string.Format(
@@ -1822,9 +1662,8 @@ public sealed partial class TaskListViewModel : ObservableObject
     private void InsertManualItem(List<TaskItemViewModel> items, TaskItemViewModel item)
     {
         bool descending = _currentQuery?.SortDescending == true;
-        int index = items.FindIndex(candidate => descending
-            ? candidate.SortOrder < item.SortOrder
-            : candidate.SortOrder > item.SortOrder);
+        int index = items.FindIndex(candidate =>
+            TaskSorting.CompareManualOrder(candidate.SortOrder, item.SortOrder, descending) > 0);
         items.Insert(index < 0 ? items.Count : index, item);
     }
 
@@ -1832,7 +1671,8 @@ public sealed partial class TaskListViewModel : ObservableObject
         List<TaskItemViewModel> items,
         TaskItemViewModel item)
     {
-        int index = items.FindIndex(candidate => candidate.SortOrder > item.SortOrder);
+        int index = items.FindIndex(candidate =>
+            TaskSorting.CompareManualOrder(candidate.SortOrder, item.SortOrder, reverse: false) > 0);
         if (index < 0)
         {
             items.Add(item);
