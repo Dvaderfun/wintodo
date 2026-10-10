@@ -23,7 +23,7 @@ if ($daysUntilTuesday -eq 0) {
 }
 
 $nextDue = $today.AddDays($daysUntilTuesday + 14)
-$culture = [System.Globalization.CultureInfo]::CurrentCulture
+$culture = [System.Globalization.CultureInfo]::GetCultureInfo('en-US')
 $expectedDueLabel = "Due {0}" -f $nextDue.ToString("ddd, d MMM", $culture)
 $tuesdayName = $culture.DateTimeFormat.GetAbbreviatedDayName([DayOfWeek]::Tuesday)
 $expectedRepeatLabel = "Repeats every 2 weeks on $tuesdayName"

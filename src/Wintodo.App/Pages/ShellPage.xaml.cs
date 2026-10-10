@@ -562,7 +562,7 @@ public sealed partial class ShellPage : Page
         AutomationProperties.SetAccessibilityView(countBadge, AccessibilityView.Content);
         AutomationProperties.SetName(
             countBadge,
-            list.IncompleteTaskCount.ToString(CultureInfo.CurrentCulture));
+            list.IncompleteTaskCount.ToString(DisplayCulture.Current));
         return countBadge;
     }
 
@@ -571,7 +571,7 @@ public sealed partial class ShellPage : Page
         return list.IncompleteTaskCount == 0
             ? list.DisplayName
             : string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("List_AccessibleNameWithCount"),
                 list.DisplayName,
                 list.IncompleteTaskCount);
@@ -718,7 +718,7 @@ public sealed partial class ShellPage : Page
         await Task.Yield();
         DeleteListDialog.XamlRoot = XamlRoot;
         DeleteListMessage.Text = string.Format(
-            CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             _resources.GetString("DeleteListDialog_Message"),
             list.DisplayName);
         ContentDialogResult result = await DeleteListDialog.ShowAsync();
@@ -734,7 +734,7 @@ public sealed partial class ShellPage : Page
         await Task.Yield();
         DeleteTaskDialog.XamlRoot = XamlRoot;
         DeleteTaskMessage.Text = string.Format(
-            CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             _resources.GetString("DeleteTaskDialog_Message"),
             summary);
         ContentDialogResult result = await DeleteTaskDialog.ShowAsync();
@@ -866,7 +866,7 @@ public sealed partial class ShellPage : Page
             ImportPreviewDialog.XamlRoot = XamlRoot;
             ImportPreviewDialog.IsPrimaryButtonEnabled = preview.TaskCount > 0;
             ImportPreviewMessage.Text = string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Import_PreviewMessage"),
                 preview.TaskCount,
                 preview.ListCount,
@@ -884,7 +884,7 @@ public sealed partial class ShellPage : Page
                 ShowTransferStatus(
                     _resources.GetString("Transfer_StatusTitleSuccess"),
                     string.Format(
-                        CultureInfo.CurrentCulture,
+                        DisplayCulture.Current,
                         _resources.GetString("Import_SuccessMessage"),
                         result.CreatedTaskCount,
                         result.UpdatedTaskCount),
@@ -901,7 +901,7 @@ public sealed partial class ShellPage : Page
             Trace.WriteLine($"WINTODO_ICAL_IMPORT_FORMAT_EXCEPTION={exception}");
             string message = exception.LineNumber > 0
                 ? string.Format(
-                    CultureInfo.CurrentCulture,
+                    DisplayCulture.Current,
                     _resources.GetString("Import_MalformedMessage"),
                     exception.LineNumber)
                 : _resources.GetString("Import_MalformedMessageNoLine");
@@ -961,7 +961,7 @@ public sealed partial class ShellPage : Page
             ShowTransferStatus(
                 _resources.GetString("Transfer_StatusTitleSuccess"),
                 string.Format(
-                    CultureInfo.CurrentCulture,
+                    DisplayCulture.Current,
                     _resources.GetString("ExportList_SuccessMessage"),
                     list.DisplayName),
                 InfoBarSeverity.Success);
@@ -1043,7 +1043,7 @@ public sealed partial class ShellPage : Page
             ShowTransferStatus(
                 _resources.GetString("Transfer_StatusTitleSuccess"),
                 string.Format(
-                    CultureInfo.CurrentCulture,
+                    DisplayCulture.Current,
                     _resources.GetString("ExportAll_SuccessMessage"),
                     ViewModel.UserLists.Count),
                 InfoBarSeverity.Success);
@@ -1229,7 +1229,7 @@ public sealed partial class ShellPage : Page
         while (!usedNames.Add(candidate))
         {
             candidate = string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Export_DuplicateFileNameFormat"),
                 stem,
                 suffix++);
@@ -1740,7 +1740,7 @@ public sealed partial class ShellPage : Page
                 await Task.Yield();
                 SyncConflictDialog.XamlRoot = XamlRoot;
                 SyncConflictMessage.Text = string.Format(
-                    CultureInfo.CurrentCulture,
+                    DisplayCulture.Current,
                     _resources.GetString(
                         conflict.RemoteDeleted
                             ? "Sync_ConflictDeletedMessage"
@@ -1862,7 +1862,7 @@ public sealed partial class ShellPage : Page
         string accessibleName = count == 0
             ? title
             : string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("FixedCategory_AccessibleNameWithCount"),
                 title,
                 count);

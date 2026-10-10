@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.Core.Models;
+using Wintodo.Services;
 
 namespace Wintodo.ViewModels;
 
@@ -53,7 +54,7 @@ public sealed partial class AttachmentItemViewModel : ObservableObject
             _ => ("Detail_SizeMegabytes", sizeBytes / (1024d * 1024d)),
         };
         return string.Format(
-            System.Globalization.CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             Resources.GetString(key),
             value);
     }

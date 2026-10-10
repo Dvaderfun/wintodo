@@ -10,6 +10,7 @@ using Microsoft.Windows.Storage.Pickers;
 using Windows.Storage;
 using Windows.System;
 using Wintodo.ViewModels;
+using Wintodo.Services;
 
 namespace Wintodo.Controls;
 
@@ -112,7 +113,7 @@ public sealed partial class TaskDetailView : UserControl
     public static string DeleteStepName(string summary)
     {
         return string.Format(
-            System.Globalization.CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             StringResources.GetString("Detail_DeleteStep"),
             summary);
     }
@@ -120,7 +121,7 @@ public sealed partial class TaskDetailView : UserControl
     public static string RemoveAttachmentName(string fileName)
     {
         return string.Format(
-            System.Globalization.CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             StringResources.GetString("Detail_RemoveAttachment"),
             fileName);
     }
@@ -201,8 +202,7 @@ public sealed partial class TaskDetailView : UserControl
 
         AutomationProperties.SetAutomationId(container, step.AutomationId);
         AutomationProperties.SetName(container, step.Summary);
-        container.CanDrag = true;
-        container.AllowDrop = true;
+        // Let the ListView own drag initiation and its reorder drop target.
     }
 
     private void OnStepDragItemsStarting(

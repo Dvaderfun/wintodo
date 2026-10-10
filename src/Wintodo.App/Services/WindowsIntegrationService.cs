@@ -440,7 +440,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
                     list.DisplayName);
                 item.GroupName = _resources.GetString("JumpList_RecentLists");
                 item.Description = string.Format(
-                    CultureInfo.CurrentCulture,
+                    DisplayCulture.Current,
                     _resources.GetString("JumpList_OpenListDescription"),
                     list.DisplayName);
                 item.Logo = new Uri(

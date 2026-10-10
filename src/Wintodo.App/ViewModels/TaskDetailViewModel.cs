@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -6,8 +7,10 @@ using Microsoft.Windows.ApplicationModel.Resources;
 using Windows.Storage;
 using Windows.System;
 using Wintodo.Core.Models;
+using Wintodo.Core.Presentation;
 using Wintodo.Core.Recurrence;
 using Wintodo.Core.Services;
+using Wintodo.Services;
 
 namespace Wintodo.ViewModels;
 
@@ -67,7 +70,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     internal event Action? AddAttachmentRequested;
 
     [ObservableProperty]
-    public partial IList<object> Steps { get; set; } = new List<object>();
+    public partial ObservableCollection<object> Steps { get; set; } = [];
 
     [ObservableProperty]
     public partial IList<object> Attachments { get; set; } = new List<object>();
@@ -247,7 +250,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         _model = task;
         ApplyModelToEditor(task);
 
-        var steps = new List<object>();
+        var steps = new ObservableCollection<object>();
         foreach (TodoTask step in await stepsRequest)
         {
             steps.Add(CreateStepViewModel(step));
@@ -561,10 +564,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         }
 
         TodoTask step = await _taskStore.AddStepAsync(_model.Uid, NewStepTitle.Trim());
-        Steps = new List<object>(Steps)
-        {
-            CreateStepViewModel(step),
-        };
+        Steps.Add(CreateStepViewModel(step));
         NewStepTitle = string.Empty;
         TaskChanged?.Invoke(CloneTask(_model));
     }
@@ -638,9 +638,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private async Task DeleteStepAsync(StepItemViewModel item)
     {
         await _taskStore.DeleteTaskAsync(item.Uid);
-        var steps = new List<object>(Steps);
-        steps.Remove(item);
-        Steps = steps;
+        Steps.Remove(item);
         TaskChanged?.Invoke(CloneTask(_model!));
     }
 
@@ -749,10 +747,10 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         IsCompleted = task.Status == Wintodo.Core.Models.TaskStatus.Completed;
         IsImportant = task.Priority is >= 1 and <= 4;
         IsMyDay = task.MyDayDate is not null;
-        CreatedText = string.Format(
-            CultureInfo.CurrentCulture,
+        CreatedText = TaskDateLabels.FormatCreated(
+            task.Created.ToLocalTime(),
             _resources.GetString("Detail_Created"),
-            task.Created.ToLocalTime());
+            DisplayCulture.Current);
 
         PendingDueDate = task.Due?.ToLocalTime();
         PendingDueTime = task.DueIsDateOnly
@@ -892,7 +890,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         DueLabel = _model.Due is null
             ? _resources.GetString("Detail_AddDueDate")
             : string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Detail_Due"),
                 FormatDate(_model.Due.Value));
 
@@ -900,7 +898,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         ReminderLabel = reminder?.Trigger is null
             ? _resources.GetString("Detail_RemindMe")
             : string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Detail_Reminder"),
                 reminder.Trigger.Value.ToLocalTime());
         RepeatLabel = FormatRepeat(_model.RRule);
@@ -941,15 +939,15 @@ public sealed partial class TaskDetailViewModel : ObservableObject
             string daySuffix = rule.ByDay.Count == 0
                 ? string.Empty
                 : string.Format(
-                    CultureInfo.CurrentCulture,
+                    DisplayCulture.Current,
                     _resources.GetString("Detail_OnDays"),
                     string.Join(
                         ", ",
                         rule.ByDay.Select(day =>
-                            CultureInfo.CurrentCulture.DateTimeFormat
+                            DisplayCulture.Current.DateTimeFormat
                                 .GetAbbreviatedDayName(day.Day))));
             return string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Detail_RepeatsEvery"),
                 rule.Interval,
                 period,
@@ -958,7 +956,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         catch (FormatException)
         {
             return string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Detail_RepeatsCustom"),
                 rrule);
         }
@@ -967,14 +965,13 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private string FormatDate(DateTimeOffset value)
     {
         DateOnly date = DateOnly.FromDateTime(value.LocalDateTime);
-        int offset = date.DayNumber - _clock.Today.DayNumber;
-        return offset switch
-        {
-            0 => _resources.GetString("Task_Metadata_Today"),
-            1 => _resources.GetString("Task_Metadata_Tomorrow"),
-            7 => _resources.GetString("Detail_NextWeek"),
-            _ => value.ToLocalTime().ToString("ddd, d MMM", CultureInfo.CurrentCulture),
-        };
+        return TaskDateLabels.FormatDetailDue(
+            date,
+            _clock,
+            DisplayCulture.Current,
+            _resources.GetString("Task_Metadata_Today"),
+            _resources.GetString("Task_Metadata_Tomorrow"),
+            _resources.GetString("Detail_NextWeek"));
     }
 
     private void SetReminder(DateTimeOffset value)

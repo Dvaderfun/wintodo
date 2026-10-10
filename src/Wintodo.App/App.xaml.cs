@@ -50,6 +50,7 @@ public partial class App : Application
         try
         {
             long launchStartTimestamp = Stopwatch.GetTimestamp();
+            DisplayCulture.Initialize();
             DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
             RegisterAppNotifications();
             TraceStartupStage("notifications", launchStartTimestamp);

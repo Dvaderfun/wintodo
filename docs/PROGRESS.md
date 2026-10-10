@@ -20,12 +20,13 @@ As of 2026-10-10:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 50, Data 43, Sync 9 — 102/102.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 67, Data 43, Sync 9 — 119/119.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** the task list clears and refills its bound collection instead
   of diff-updating (`ARCHITECTURE.md`, Known divergences). Final app name and
-  MSIX publisher are still undecided.
+  MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
+  blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **Next:** continue app polish before release via the work packages in
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -1637,3 +1638,87 @@ composer **3/3 Debug + 3/3 AOT** and navigation startup **4/4** results remain
 recorded above. `winui-code-review` found no issue above informational in the
 final diff. Manual Narrator, live-server convergence, ARM64 runtime perf and
 M10 release gates remain open; M9 perf is explicitly owner-deferred.
+
+## 2026-10-10 — UX-01 — Dates and times in the UI language
+
+Implemented language-matched formatting: `App_FormattingCulture` in the
+MRT-resolved en-US resources sets `DisplayCulture.Current` before view models
+and Windows integration are created, including background/toast activation.
+Missing or invalid tags fall back to `CurrentUICulture`. All 39 user-visible
+`CurrentCulture` uses now read this culture; the sole remaining use is the
+commented regional week-start calculation reserved for UX-02. Invariant parsing,
+storage and notification payload serialisation are unchanged. Current toast
+text already comes from resources and has no date formatter; the jump-list
+formatting now uses display culture too. DESIGN §11 records the rule.
+
+Extracted pure Created/list-due/detail-due helpers and culture resolution into
+Core Presentation, keeping translated strings in App. Added 17 regression
+cases covering Ukrainian/German regional formats, relative-date boundaries,
+weekday/month labels, translated tags and missing/invalid fallback. Debug and
+Release x64 warnings-as-errors builds passed with zero warnings; all 119 unit
+tests passed (Core 67, Data 43, Sync 9; zero skipped). `winui-code-review` of
+the changed code found no issue above informational; UX-01's explicit display
+culture policy takes precedence over the skill's generic CurrentCulture advice.
+No XAML, model, storage or dependency changes.
+
+M4's new English Created assertion passed on a uk-UA regional/UI-culture host.
+Updated M4 date/recurrence expectations to en-US and repaired calendar lookup
+(result cap could hide day numbers behind uid matches) and file-picker lookup
+(the picker can be hosted by the app rather than PickerHost). Assertions were
+preserved. Initial run: 4/9; first retry: 8/9; final retry: 8/9. The remaining
+step drag failed to reorder the rows in each run; experimental coordinates were
+removed, with before/after UIA evidence retained in artifacts. Per the UI skill's
+two-retry limit, no further full runs were attempted. Restart phase was not
+reached. Latest evidence: `tests/ui/artifacts/m4/run-20261010-122129`; screenshot
+review confirms English Created, reminder and recurrence labels. The unrelated
+step-drag issue is in UX-PLAN's parking lot; UX-01 stays in progress until the
+full required M4 gate passes.
+
+M8 passed 14/14 automated checks in
+`tests/ui/artifacts/m8/run-20261010-121746`. All six PNGs were reviewed: relevant
+app layout/text states showed no new clipping; the settings image captured a
+transition and an external desktop overlay partly covered the dialog captures,
+so those existing capture limitations are retained. High-contrast issues already
+scheduled as UX-04 remain. Windows Sandbox is disabled on this machine, so gates
+ran locally with scratch databases. No Windows regional/language setting was
+changed. Native AOT runtime, ARM64 and German desktop UI were not rerun; German
+formatting is covered by the new unit tests. M9 remains owner-deferred.
+
+## 2026-10-10 — UX-01 — M4 blocker resolved and package completed
+
+Owner authorized investigating/fixing the remaining M4 step drag, closing UX-01
+and committing the combined work. The focused probe reproduced the unchanged
+UI and database order using M4's original gesture. Temporary event traces proved
+that container-level `CanDrag=true` started a standalone element drag: the
+ListView's native reorder path received no DragEnter/DragOver and completion
+returned None. Removing the per-container drag/drop overrides let the ListView
+own the operation; traces then showed accepted Move and SQLite persisted the new
+sort order. A plain `List<object>` still left visible rows stale. The final fix
+uses `ObservableCollection<object>` for Steps, adds/removes in place, and leaves
+container AutomationIds/names intact. Loading another task replaces its source
+as before. Temporary traces and trial changes were removed. DESIGN §5 records
+this native ListView ownership requirement; no new interaction pattern or ADR.
+
+The full M4 gate passed on the first final run: 9/9 phase-one checks plus the
+restart round-trip, including completed-step order/status, title/note, due date,
+biweekly recurrence, reminder, My Day, attachment persistence/removal and pane
+closure. Evidence: `tests/ui/artifacts/m4/run-20261010-124453`. Both screenshots
+reviewed: completed Second step stays first before and after restart; English
+Created, due and recurrence labels remain legible without new clipping.
+The original drag coordinates and behavior assertions were preserved.
+
+Final Debug and Release x64 warnings-as-errors builds: zero warnings/errors.
+All 119 unit tests passed with zero skipped (Core 67, Data 43, Sync 9), including
+17 new UX-01 culture/date cases and the existing M4 store persistence test.
+M8 rerun: 14/14 automated checks passed in
+`tests/ui/artifacts/m8/run-20261010-124559`. All six PNGs reviewed: dialog and
+high-contrast layout remain legible; the existing Settings capture still shows
+the transition state, and UX-04's already-known contrast issues remain scheduled.
+`winui-code-review` found no issue above informational in the final changed code.
+Only the documented regional FirstDayOfWeek use of CurrentCulture remains;
+invariant parsing/serialization, credentials and database schema are unchanged.
+No XAML edits, dependencies, Windows feature enablement or perf claims.
+
+The previous UX-01 partial-gate history is retained above. Its parking-lot
+blocker is removed and UX-01 is done. Next package: UX-02 Tasks settings.
+M9 performance, ARM64 runtime and owner-run manual gates remain deferred/open.

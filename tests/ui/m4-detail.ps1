@@ -87,7 +87,7 @@ if ($daysUntilTuesday -eq 0) {
 
 $firstDue = $today.AddDays($daysUntilTuesday)
 $nextDue = $firstDue.AddDays(14)
-$culture = [System.Globalization.CultureInfo]::CurrentCulture
+$culture = [System.Globalization.CultureInfo]::GetCultureInfo('en-US')
 $expectedDueLabel = "Due {0}" -f $nextDue.ToString("ddd, d MMM", $culture)
 $tuesdayName = $culture.DateTimeFormat.GetAbbreviatedDayName([DayOfWeek]::Tuesday)
 $expectedRepeatLabel = "Repeats every 2 weeks on $tuesdayName"
@@ -142,6 +142,11 @@ Test-UI "Detail XAML is deferred until first open" {
         -a $AppPid `
         --value "1" `
         -t 5000
+}
+
+Test-UI "Created date uses the app's English language" {
+    $expectedCreated = 'Created {0}' -f $today.ToString('ddd, d MMM', $culture)
+    winapp ui wait-for $expectedCreated -a $AppPid -t 3000
 }
 
 Test-UI "Enter in detail editors preserves the pane and draft text" {
@@ -250,7 +255,11 @@ Test-UI "Biweekly Tuesday recurrence advances exactly 14 days" {
 
     $tuesdayHeader = Get-SearchMatches "WeekDay3" |
         Select-Object -First 1
-    $calendarTarget = Get-SearchMatches $firstDue.Day.ToString() |
+    # Day numbers also match task uids; filter in UIA before the result cap.
+    $calendarDays = (winapp ui search $firstDue.Day.ToString() `
+        -a $AppPid --type DataItem --class-name CalendarViewDayItem --json |
+        ConvertFrom-Json).matches
+    $calendarTarget = $calendarDays |
         Where-Object {
             $_.type -eq "DataItem" -and
             $_.className -eq "CalendarViewDayItem" -and
@@ -316,8 +325,8 @@ Test-UI "Attachment picker copies a local file" {
         $picker = winapp ui list-windows --json 2>$null |
             ConvertFrom-Json |
             Where-Object {
-                $_.processName -eq "PickerHost" -and
-                $_.ownerHwnd -eq $mainWindow.hwnd
+                $_.ownerHwnd -eq $mainWindow.hwnd -and
+                $_.hwnd -ne $mainWindow.hwnd
             } |
             Select-Object -First 1
         if ($picker) {

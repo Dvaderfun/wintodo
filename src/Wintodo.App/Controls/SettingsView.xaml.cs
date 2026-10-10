@@ -8,6 +8,7 @@ using Microsoft.Windows.ApplicationModel.Resources;
 using System.Globalization;
 using Windows.ApplicationModel;
 using Wintodo.ViewModels;
+using Wintodo.Services;
 
 namespace Wintodo.Controls;
 
@@ -24,7 +25,7 @@ public sealed partial class SettingsView : UserControl
     {
         PackageVersion version = Package.Current.Id.Version;
         VersionText = string.Format(
-            CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             new ResourceLoader().GetString("Settings_VersionFormat"),
             version.Major,
             version.Minor,
