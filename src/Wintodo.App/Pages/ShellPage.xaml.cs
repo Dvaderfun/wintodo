@@ -670,7 +670,7 @@ public sealed partial class ShellPage : Page
                 list => list.Uid == targetUid);
             if (value is string taskUid && target is not null)
             {
-                await ViewModel.TaskList.MoveTaskToListAsync(taskUid, target.Id);
+                await ViewModel.TaskList.MoveTasksToListAsync(taskUid.Split('\n', StringSplitOptions.RemoveEmptyEntries), target.Id);
             }
         }
     }
@@ -745,8 +745,9 @@ public sealed partial class ShellPage : Page
         DeleteTaskDialog.XamlRoot = XamlRoot;
         DeleteTaskMessage.Text = string.Format(
             DisplayCulture.Current,
-            _resources.GetString("DeleteTaskDialog_Message"),
-            summary);
+            _resources.GetString(ViewModel.PendingDeleteCount > 1
+                ? "DeleteTasksDialog_Message" : "DeleteTaskDialog_Message"),
+            ViewModel.PendingDeleteCount > 1 ? ViewModel.PendingDeleteCount : summary);
         ContentDialogResult result = await DeleteTaskDialog.ShowAsync();
         if (result == ContentDialogResult.Primary)
         {
@@ -1307,7 +1308,7 @@ public sealed partial class ShellPage : Page
             }
             else
             {
-                if (_taskListEventsAttached)
+                if (_taskListEventsAttached && ViewModel.TaskList.SelectionCount <= 1)
                 {
                     TaskList.ClearTaskSelection();
                 }
@@ -1454,8 +1455,8 @@ public sealed partial class ShellPage : Page
 
     private IList<object> CreateKeyboardShortcuts()
     {
-        var shortcuts = new List<object>(19);
-        for (int index = 1; index <= 19; index++)
+        var shortcuts = new List<object>(21);
+        for (int index = 1; index <= 21; index++)
         {
             string key = index.ToString("00", CultureInfo.InvariantCulture);
             shortcuts.Add(new ShortcutEntryViewModel(
@@ -1662,6 +1663,14 @@ public sealed partial class ShellPage : Page
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+
+        if (ViewModel.TaskList.SelectionCount > 0)
+        {
+            TaskList.ClearTaskSelection();
+            ViewModel.CloseDetail();
+            args.Handled = true;
+            return;
+        }
         if (ViewModel.IsDetailPaneOpen)
         {
             ViewModel.CloseDetail();

@@ -252,7 +252,7 @@ fill) + `ContentPresenter`, with `CommonStates`, `DisabledStates`, and
 | Hover | Background → `CardBackgroundFillColorSecondaryBrush` |
 | Pressed | Background → `SubtleFillColorTertiaryBrush` |
 | Selected | Background → `SubtleFillColorSecondaryBrush` + a 3 px × 20 px rounded accent bar at the left edge in the list theme colour |
-| Activation | Clicking an inactive row selects it and opens detail; clicking the active row again clears selection and closes detail |
+| Activation | Clicking a row selects it and opens detail; Ctrl+click toggles membership and Esc clears selection |
 | Drag-over | 2 px accent insertion line, 4 px inset |
 
 Task rows use a grouped `CollectionViewSource`; WinUI's built-in
@@ -337,6 +337,24 @@ Overdue · Today · Tomorrow · This week · Later · No date.
 Header: `BodyStrongTextBlockStyle`, 32 px tall, 8 px top margin, count in
 `TextFillColorSecondaryBrush`. "Overdue" header text uses
 `SystemFillColorCriticalBrush`.
+
+### 3.8 Multi-select
+
+The grouped `ListView` uses Extended selection. Click selects one task,
+Ctrl+click toggles a task, and Shift+click or Shift+↑/↓ selects a range.
+Ctrl+A selects tasks in the focused group. The detail pane opens for exactly
+one selected task and closes when multiple tasks are selected. Esc clears the
+selection. UI Automation exposes the native SelectionPattern and selection
+changes announce the count.
+
+Right-clicking a selected row keeps the selection; an unselected row becomes
+the selection. Context actions apply to all selected tasks: complete/incomplete,
+importance, My Day, due date (Today / Tomorrow / Pick a date), move and delete.
+Mixed selections apply the positive action; the inverse appears when all tasks
+already have the state. Bulk writes commit in one transaction and publish one
+store notification. Bulk delete respects confirmation and offers one undo entry
+restoring all deleted tasks. Dragging selected tasks onto a navigation list
+moves the selection; manual row reordering remains a single-task operation.
 
 ---
 
@@ -539,15 +557,17 @@ reachable from the list menu and from `Ctrl+?`.
 | `Ctrl+,` | Settings |
 | `Ctrl+?` | Keyboard shortcuts |
 | `↑` / `↓` | Move row selection |
-| `Space` | Toggle completion on the selected row |
+| `Space` | Complete/incomplete the selected tasks |
+| `Shift+↑` / `Shift+↓` | Extend the task selection |
+| `Ctrl+A` | Select all tasks in the current group |
 | `Enter` | Open the detail pane for the selected row |
-| `Esc` | Close detail pane → clear search → collapse composer (in that order) |
-| `Ctrl+I` | Toggle importance |
-| `Ctrl+T` | Toggle "Add to My Day" |
+| `Esc` | Clear task selection / close detail pane → clear search → collapse composer (in that order) |
+| `Ctrl+I` | Toggle importance for the selected tasks |
+| `Ctrl+T` | Add/remove the selected tasks from My Day |
 | `Ctrl+Shift+D` | Open the due-date picker |
 | `Ctrl+Shift+R` | Open the reminder picker |
 | `F2` | Rename the selected list, or edit the selected task title inline |
-| `Delete` | Delete the selected task (dialog if *Confirm before deleting* is on, then undo snackbar) |
+| `Delete` | Delete the selected tasks (dialog if *Confirm before deleting* is on, then one undo snackbar) |
 | `Ctrl+Z` | Undo the last destructive action |
 | `Alt+↑` / `Alt+↓` | Move the selected task up/down in manual sort order |
 | `Tab` / `Shift+Tab` | *(M11)* Demote / promote a task in the tree |

@@ -1,0 +1,130 @@
+using Microsoft.Data.Sqlite;
+using Wintodo.Core.Models;
+using Wintodo.Core.Services;
+
+namespace Wintodo.Data.Tests;
+
+public sealed class TaskBatchTests
+{
+    [Theory]
+    [InlineData(TaskBatchAction.Complete)]
+    [InlineData(TaskBatchAction.Uncomplete)]
+    [InlineData(TaskBatchAction.MarkImportant)]
+    [InlineData(TaskBatchAction.RemoveImportance)]
+    [InlineData(TaskBatchAction.AddToMyDay)]
+    [InlineData(TaskBatchAction.RemoveFromMyDay)]
+    [InlineData(TaskBatchAction.SetDueDate)]
+    [InlineData(TaskBatchAction.Move)]
+    [InlineData(TaskBatchAction.Delete)]
+    [InlineData(TaskBatchAction.Restore)]
+    public async Task Batch_CommitsOnceAndPreservesUnrelatedData(TaskBatchAction action)
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TodoList source = await fixture.Store.CreateListAsync("Source", cancellationToken: token);
+        TodoList target = await fixture.Store.CreateListAsync("Target", cancellationToken: token);
+        var tasks = new List<TodoTask>();
+        for (int i = 0; i < 3; i++)
+        {
+            var task = new TodoTask
+            {
+                ListId = source.Id, Summary = $"Task {i}", Description = "Retain note",
+                IcalUnknown = "X-OTHER;PARAM=VALUE:keep", Priority = action == TaskBatchAction.RemoveImportance ? 1 : 0,
+                MyDayDate = action == TaskBatchAction.RemoveFromMyDay ? fixture.Clock.Today : null,
+            };
+            task.Categories.Add("retain-tag");
+            tasks.Add(await fixture.Store.CreateTaskAsync(task, token));
+            if (action == TaskBatchAction.Uncomplete) await fixture.Store.CompleteTaskAsync(task.Uid, token);
+            if (action == TaskBatchAction.Restore) await fixture.Store.DeleteTaskAsync(task.Uid, token);
+        }
+        int before = ChangeCount(fixture.DatabasePath);
+        var events = new List<StoreChangedEventArgs>();
+        fixture.Store.StoreChanged += (_, args) => events.Add(args);
+        string[] uids = tasks.Select(task => task.Uid).ToArray();
+        await fixture.Store.ApplyTaskBatchAsync([.. uids, uids[0]], action, token,
+            date: new DateOnly(2026, 1, 9), destinationListId: target.Id);
+        Assert.Single(events);
+        Assert.Equal(3, events[0].TaskUids.Count);
+        Assert.Equal(before + 3, ChangeCount(fixture.DatabasePath));
+        foreach (string uid in uids)
+        {
+            TodoTask? task = await fixture.Store.GetTaskAsync(uid, token);
+            if (action == TaskBatchAction.Delete) { Assert.Null(task); continue; }
+            Assert.NotNull(task);
+            Assert.Equal("Retain note", task.Description);
+            Assert.Equal("X-OTHER;PARAM=VALUE:keep", task.IcalUnknown);
+            Assert.Contains("retain-tag", task.Categories);
+            Assert.True(task.IsDirty);
+            if (action == TaskBatchAction.Complete) Assert.Equal(Core.Models.TaskStatus.Completed, task.Status);
+            if (action == TaskBatchAction.Uncomplete) Assert.Equal(Core.Models.TaskStatus.NeedsAction, task.Status);
+            if (action == TaskBatchAction.MarkImportant) Assert.Equal(1, task.Priority);
+            if (action == TaskBatchAction.RemoveImportance) Assert.Equal(0, task.Priority);
+            if (action == TaskBatchAction.AddToMyDay) Assert.Equal(fixture.Clock.Today, task.MyDayDate);
+            if (action == TaskBatchAction.RemoveFromMyDay) Assert.Null(task.MyDayDate);
+            if (action == TaskBatchAction.SetDueDate)
+            {
+                Assert.True(task.DueIsDateOnly);
+                Assert.Equal(new DateOnly(2026, 1, 9), DateOnly.FromDateTime(task.Due!.Value.DateTime));
+            }
+            if (action == TaskBatchAction.Move) Assert.Equal(target.Id, task.ListId);
+        }
+        if (action == TaskBatchAction.Move)
+        {
+            var moved = await fixture.Store.GetTasksAsync(new() { Kind = Core.Queries.ListQueryKind.UserList, ListId = target.Id }, token);
+            Assert.Equal(3, moved.Select(task => task.SortOrder).Distinct().Count());
+            Assert.Contains(source.Id, events[0].ListIds);
+            Assert.Contains(target.Id, events[0].ListIds);
+        }
+    }
+
+    [Theory]
+    [InlineData(TaskBatchAction.Complete)]
+    [InlineData(TaskBatchAction.MarkImportant)]
+    [InlineData(TaskBatchAction.Move)]
+    [InlineData(TaskBatchAction.Delete)]
+    public async Task Batch_MissingTaskRollsBackChangesAndEmitsNoEvent(TaskBatchAction action)
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TodoList list = await fixture.Store.CreateListAsync("Source", cancellationToken: token);
+        TodoList target = await fixture.Store.CreateListAsync("Target", cancellationToken: token);
+        TodoTask task = await fixture.Store.CreateTaskAsync(new() { ListId = list.Id, Summary = "Keep" }, token);
+        int before = ChangeCount(fixture.DatabasePath);
+        int events = 0;
+        fixture.Store.StoreChanged += (_, _) => events++;
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => fixture.Store.ApplyTaskBatchAsync(
+            [task.Uid, "missing"], action, token, destinationListId: target.Id));
+        TodoTask restored = (await fixture.Store.GetTaskAsync(task.Uid, token))!;
+        Assert.Equal(list.Id, restored.ListId);
+        Assert.Equal(Core.Models.TaskStatus.NeedsAction, restored.Status);
+        Assert.Equal(0, restored.Priority);
+        Assert.Equal(task.Sequence, restored.Sequence);
+        Assert.Equal(before, ChangeCount(fixture.DatabasePath));
+        Assert.Equal(0, events);
+    }
+
+    [Fact]
+    public async Task Batch_RecurringCompletionAdvancesAlarmsAndHistory()
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TodoList list = await fixture.Store.CreateListAsync("Repeat", cancellationToken: token);
+        TodoTask task = new() { ListId = list.Id, Summary = "Daily", Due = fixture.Clock.UtcNow, RRule = "FREQ=DAILY" };
+        task.Alarms.Add(new() { Uid = Guid.NewGuid().ToString(), Trigger = fixture.Clock.UtcNow });
+        await fixture.Store.CreateTaskAsync(task, token);
+        await fixture.Store.ApplyTaskBatchAsync([task.Uid], TaskBatchAction.Complete, token);
+        TodoTask updated = (await fixture.Store.GetTaskAsync(task.Uid, token))!;
+        Assert.Equal(task.Due!.Value.AddDays(1), updated.Due);
+        Assert.Equal(Core.Models.TaskStatus.NeedsAction, updated.Status);
+        Assert.Equal(fixture.Clock.UtcNow.AddDays(1), Assert.Single(updated.Alarms).Trigger);
+    }
+
+    private static int ChangeCount(string path)
+    {
+        using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
+        connection.Open();
+        using var command = connection.CreateCommand();
+        command.CommandText = "SELECT COUNT(*) FROM change_log;";
+        return Convert.ToInt32(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
+    }
+}

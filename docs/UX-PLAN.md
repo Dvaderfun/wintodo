@@ -629,3 +629,7 @@ file reference.
 - `TaskListViewModel.UpdateItemDisplay`: DESIGN §3.3 reminder, steps, note and
   attachment subtitle parts are not implemented. UX-06 preserves the shipped
   list/due/repeat/My Day parts; adding the missing parts is separate work.
+- `tests/Wintodo.Data.Tests/StoreFixture.cs`: intermittent SQLite disposed-handle
+  during another fixture's `InitializeAsync` on a UX-09 full-suite run. Fixtures
+  call process-wide `SqliteConnection.ClearAllPools` during parallel tests;
+  investigate pool cleanup isolation separately. Fresh full suite passes 257/257.

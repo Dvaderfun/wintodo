@@ -32,7 +32,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     private string _searchText = string.Empty;
     private bool _completedExpanded;
     private int _loadVersion;
-    private string? _lastDeletedTaskUid;
+    private IReadOnlyList<string>? _lastDeletedTaskUids;
     private CancellationTokenSource? _undoCancellation;
     private DateTimeOffset? _composerDue;
     private DateTimeOffset? _composerReminder;
@@ -591,7 +591,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         _activeTasks.Remove(item);
         _completedTasks.Remove(item);
         RebuildVisibleItems();
-        BeginUndo(item);
+        BeginUndo([item]);
         NavigationDataChanged?.Invoke();
     }
 
@@ -991,52 +991,37 @@ public sealed partial class TaskListViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteSelectedTaskAsync()
     {
-        if (SelectedTask is not null)
-        {
-            await DeleteTaskAsync(SelectedTask);
-        }
+        await Task.Yield();
+        if (SelectionCount > 0) DeleteTasksRequested?.Invoke(SelectedTasks.ToArray());
     }
 
     [RelayCommand]
     private async Task ToggleSelectedCompletionAsync()
     {
-        if (SelectedTask is not null)
+        if (SelectionCount == 1 && SelectedTask is not null)
         {
             await ToggleTaskCompletionAsync(SelectedTask);
         }
+        else await ApplySelectionAsync(SelectedTasks.All(item => item.IsCompleted)
+            ? TaskBatchAction.Uncomplete : TaskBatchAction.Complete);
     }
 
     [RelayCommand]
     private async Task ToggleSelectedImportanceAsync()
     {
-        if (SelectedTask is not null)
+        if (SelectionCount == 1 && SelectedTask is not null)
         {
             await ToggleTaskImportanceAsync(SelectedTask);
         }
+        else await ApplySelectionAsync(SelectedTasks.All(item => item.IsImportant)
+            ? TaskBatchAction.RemoveImportance : TaskBatchAction.MarkImportant);
     }
 
     [RelayCommand]
     private async Task ToggleSelectedMyDayAsync()
     {
-        await Task.Yield();
-        TaskItemViewModel? item = SelectedTask;
-        if (item is null)
-        {
-            return;
-        }
-
-        bool isInMyDay = item.Model.MyDayDate == _clock.Today;
-        item.Model.MyDayDate = isInMyDay ? null : _clock.Today;
-        await _taskStore.UpdateTaskAsync(item.Model);
-        UpdateItemDisplay(item);
-        if (isInMyDay && _currentQuery?.Kind == ListQueryKind.MyDay)
-        {
-            _activeTasks.Remove(item);
-            _completedTasks.Remove(item);
-            RebuildVisibleItems();
-        }
-
-        NavigationDataChanged?.Invoke();
+        await ApplySelectionAsync(SelectionIsInMyDay
+            ? TaskBatchAction.RemoveFromMyDay : TaskBatchAction.AddToMyDay);
     }
 
     [RelayCommand]
@@ -1059,21 +1044,21 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     private bool CanUndoDelete()
     {
-        return IsUndoVisible && _lastDeletedTaskUid is not null;
+        return IsUndoVisible && _lastDeletedTaskUids is not null;
     }
 
     [RelayCommand(CanExecute = nameof(CanUndoDelete))]
     private async Task UndoDeleteAsync()
     {
         await Task.Yield();
-        string? uid = _lastDeletedTaskUid;
-        if (uid is null)
+        IReadOnlyList<string>? uids = _lastDeletedTaskUids;
+        if (uids is null)
         {
             return;
         }
 
         _undoCancellation?.Cancel();
-        await _taskStore.RestoreTaskAsync(uid);
+        await _taskStore.ApplyTaskBatchAsync(uids, TaskBatchAction.Restore);
         CloseUndo();
         await ReloadAsync();
         NavigationDataChanged?.Invoke();
@@ -1122,7 +1107,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     internal Task ReloadAsync(CancellationToken cancellationToken = default)
     {
         return _currentQuery is null
-            ? Task.CompletedTask
+            ? (string.IsNullOrEmpty(_searchText) ? Task.CompletedTask : LoadSearchAsync(_searchText, cancellationToken))
             : LoadAsync(_currentQuery, cancellationToken, preserveViewport: true);
     }
 
@@ -1254,12 +1239,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         TaskItemViewModel item,
         CancellationToken cancellationToken = default)
     {
-        await _taskStore.DeleteTaskAsync(item.Uid, cancellationToken);
-        _activeTasks.Remove(item);
-        _completedTasks.Remove(item);
-        RebuildVisibleItems();
-        BeginUndo(item);
-        NavigationDataChanged?.Invoke();
+        await ConfirmDeleteTasksAsync([item], cancellationToken);
     }
 
     private async Task MoveTaskAsync(TaskItemViewModel item, long destinationListId)
@@ -1301,16 +1281,16 @@ public sealed partial class TaskListViewModel : ObservableObject
         await PersistVisibleOrderAsync();
     }
 
-    private void BeginUndo(TaskItemViewModel item)
+    private void BeginUndo(IReadOnlyList<TaskItemViewModel> items)
     {
         _undoCancellation?.Cancel();
         _undoCancellation?.Dispose();
         _undoCancellation = new CancellationTokenSource();
-        _lastDeletedTaskUid = item.Uid;
+        _lastDeletedTaskUids = items.Select(item => item.Uid).ToArray();
         UndoMessage = string.Format(
             DisplayCulture.Current,
-            _resources.GetString("Undo_TaskDeleted"),
-            item.Summary);
+            _resources.GetString(items.Count == 1 ? "Undo_TaskDeleted" : "Undo_TasksDeleted"),
+            items.Count == 1 ? items[0].Summary : items.Count);
         IsUndoVisible = true;
         _ = DismissUndoAsync(_undoCancellation.Token);
     }
@@ -1329,7 +1309,7 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     private void CloseUndo()
     {
-        _lastDeletedTaskUid = null;
+        _lastDeletedTaskUids = null;
         IsUndoVisible = false;
         _undoCancellation?.Dispose();
         _undoCancellation = null;
@@ -1337,8 +1317,6 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     private void RebuildVisibleItems(bool preserveViewport = true, bool viewportAlreadyCaptured = false)
     {
-        TaskItemViewModel? selected = SelectedTask;
-
         IReadOnlyList<TaskGroup> groups = TaskGrouping.Build(
             _currentQuery,
             _activeTasks.Select(item => item.Model).ToArray(),
@@ -1384,7 +1362,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             bool activeCountChanged = ActiveCount != activeCount;
             ActiveCount = activeCount;
             IsEmpty = _activeTasks.Count == 0 && _completedTasks.Count == 0;
-            SelectedTask = selected is not null && VisibleItems.Contains(selected) ? selected : null;
+            SetSelection(preserveViewport ? SelectedTasks.Where(VisibleItems.Contains).ToArray() : []);
             if (activeCountChanged) NavigationDataChanged?.Invoke();
         }
         finally

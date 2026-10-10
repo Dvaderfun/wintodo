@@ -475,6 +475,7 @@ Groups: GetGroupsAsync · CreateGroupAsync · RenameGroupAsync · DeleteGroupAsy
 Tasks:  GetTasksAsync(ListQuery) · GetTaskAsync(uid) · CreateTaskAsync
         · UpdateTaskAsync · CompleteTaskAsync · UncompleteTaskAsync
         · DeleteTaskAsync · RestoreTaskAsync · ReorderTaskAsync · MoveTaskAsync
+        · ApplyTaskBatchAsync(uids, action)
 Steps:  GetChildrenAsync(parentUid) · AddStepAsync · ReorderStepAsync
 Search: SearchAsync(text, limit)
 Alarms: GetPendingAlarmsAsync · SetAlarmAsync · SnoozeAlarmAsync · AcknowledgeAlarmAsync
@@ -485,6 +486,13 @@ Maint:  VacuumAsync · GetStatsAsync
 mode, include-completed, optional filter) rather than a set of boolean
 parameters. M12's query language compiles into the same descriptor, so the
 filter path is built once.
+
+`ApplyTaskBatchAsync` reads and mutates each selected UID inside one writer
+transaction. It supports completion (including recurrence), importance, My Day,
+date-only due dates, moves, soft delete and restore. Unknown properties and owned
+collections are retained; each changed task gets one change-log row, and one
+StoreChanged event reports the committed selection and affected lists. Missing
+tasks or invalid destinations roll back the whole batch without notifications.
 
 Fixed-category appearance preferences live in the generic `settings` table:
 `appearance.fixed_category_background.<category>` stores the selected built-in

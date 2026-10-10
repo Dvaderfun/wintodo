@@ -101,6 +101,12 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
   operations. Stable TaskGroupCollection instances explicitly implement
   IObservableVector for Release/AOT projection. Group headers bind to observable
   metadata; the view preserves selection, focus and the viewport around updates.
+- Task selection uses the grouped ListView's Extended mode. The list view model
+  owns the selected task snapshot; detail opens only for a single task. Bulk
+  commands use `ITaskStore.ApplyTaskBatchAsync`: field changes, recurrence,
+  delete/restore and moves commit in one writer transaction with per-task change
+  log rows and one StoreChanged notification. One undo entry restores a deleted
+  selection together.
 - Responsive breakpoints are `VisualStateManager` states (`docs/DESIGN.md` §6).
 
 ## Layers and data flow

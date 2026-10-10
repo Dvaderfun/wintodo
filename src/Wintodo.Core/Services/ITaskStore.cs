@@ -90,6 +90,15 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IAsyncDisposable
 
     Task RestoreTaskAsync(string uid, CancellationToken cancellationToken = default);
 
+    /// <summary>Commits the entire selection together and raises one store change event.</summary>
+    Task ApplyTaskBatchAsync(
+        IReadOnlyList<string> uids,
+        TaskBatchAction action,
+        CancellationToken cancellationToken = default,
+        DateOnly? date = null,
+        long? destinationListId = null,
+        bool moveStarredToTop = false);
+
     Task ReorderTaskAsync(string uid, double sortOrder, CancellationToken cancellationToken = default);
 
     Task MoveTaskAsync(
