@@ -55,7 +55,7 @@ this dependency exception does not mark those gates passed.
 | UX-04 | High-contrast fixes | A | S | — | ShellPage | done (71f6434) |
 | UX-05 | Hide the sync status until sync is configured | A | S | — | ShellPage.xaml, ShellVM.Sync | done (07fbcdc) |
 | UX-06 | Move list presentation logic into Core, with unit tests | B | M | — | TaskListVM | done (8a319ad; M3/M5/M8 PASS) |
-| UX-07 | Update the task list in place instead of rebuilding it | B | L | UX-06 | TaskListVM, TaskListView | in progress (Codex/main) |
+| UX-07 | Update the task list in place instead of rebuilding it | B | L | UX-06 | TaskListVM, TaskListView | done (d6038f2; stability/M3/M5/M8 PASS) |
 | UX-08 | Completion and row motion per DESIGN §7 | B | S | UX-07 | TaskRow, TaskListView | ready |
 | UX-09 | Real multi-select and bulk actions | B | L | UX-07 | TaskListView, TaskListVM, TaskRow | ready |
 | UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | ready |
