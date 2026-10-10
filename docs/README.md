@@ -10,6 +10,7 @@ Read what the task needs, not everything. Start from `AGENTS.md`, then
 | [DESIGN.md](DESIGN.md) | Writing or changing any XAML, theme resource, motion, or keyboard map |
 | [DATA-MODEL.md](DATA-MODEL.md) | Changing models, the SQLite schema, or the `VTODO` mapping |
 | [../PLAN.md](../PLAN.md) | Starting a milestone (scope, deliverables, gate) or touching a §7 budget |
+| [UX-PLAN.md](UX-PLAN.md) | Picking up a UX work package (`UX-xx`): status table, scope, acceptance |
 
 ## Records
 

@@ -19,6 +19,7 @@ subtasks, M12 tags. `Wintodo` is a placeholder name.
    [docs/DATA-MODEL.md](docs/DATA-MODEL.md) before model or storage code.
 4. The guide for your task in [docs/guides/](docs/guides/) — index in [docs/README.md](docs/README.md).
 5. Milestone work: that milestone's section in [PLAN.md](PLAN.md) §8 (deliverables + gate).
+   UX work packages (`UX-xx`): [docs/UX-PLAN.md](docs/UX-PLAN.md) — claim one in its status table first.
 
 ## Commands
 
