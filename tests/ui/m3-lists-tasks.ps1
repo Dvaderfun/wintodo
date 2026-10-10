@@ -130,12 +130,13 @@ Test-UI "Reorder remaining tasks" {
     }
 
     # Start on the row body, away from the completion checkbox.
-    $source = "{0},{1}" -f ($task5.x + ($task5.width / 2)), ($task5.y + ($task5.height / 2))
-    $destination = "{0},{1}" -f ($task3.x + ($task3.width / 2)), ($task3.y + 4)
+    $source = "{0},{1}" -f [int]($task5.x + ($task5.width / 2)), [int]($task5.y + ($task5.height / 2))
+    $destination = "{0},{1}" -f [int]($task3.x + ($task3.width / 2)), [int]($task3.y + 4)
     winapp ui drag $source $destination `
         -a $AppPid `
         --hold-ms 1000 `
         --dwell-ms 1000
+    if ($LASTEXITCODE -ne 0) { throw "Task drag command failed: $source -> $destination." }
     Start-Sleep -Milliseconds 500
 
     $task5 = Get-TaskRow "Gate task 5"
@@ -146,6 +147,12 @@ Test-UI "Reorder remaining tasks" {
 }
 
 Test-UI "Rename list with F2" {
+    # F2 edits a selected task; clear that selection before renaming the list.
+    if (Get-SearchMatches "Todo.Detail.Close") {
+        winapp ui invoke "Todo.Detail.Close" -a $AppPid
+    }
+    winapp ui wait-for "Todo.Detail.Title" --gone -a $AppPid -t 3000
+    winapp ui focus "Todo.List.Tasks" -a $AppPid
     winapp ui send-keys "f2" -a $AppPid --via send-input
     winapp ui wait-for "Todo.List.RenameBox" -a $AppPid -t 3000
     winapp ui set-value "Todo.List.RenameBox" "M3 Gate renamed" -a $AppPid

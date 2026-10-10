@@ -53,7 +53,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 |---|---|
 | `m0-smoke.ps1 -AppPid <pid>` | Window exists, interactive tree, screenshot |
 | `m2-shell.ps1`, `m2-theme.ps1` | Shell layout, Light/Dark/High Contrast |
-| `run-m3-gate.ps1` / `m3-lists-tasks.ps1` | List CRUD, add/complete/reorder/delete/undo tasks; runner uses a fresh database with delete confirmation off |
+| `run-m3-gate.ps1` / `m3-lists-tasks.ps1` / `m3-restart.ps1` | List CRUD, add/complete/reorder/delete/undo tasks and drag-order persistence after restart; runner uses a fresh database with delete confirmation off |
 | `run-m4-gate.ps1` | Detail pane fields and restart persistence |
 | `run-m5-gate.ps1` | Smart lists, search, sort, restart |
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |

@@ -19,6 +19,7 @@ public sealed partial class TaskListView : UserControl
     private readonly UISettings _uiSettings = new();
     private readonly HashSet<TaskItemViewModel> _observedTaskItems = [];
     private bool _isSynchronizingSelection;
+    private string? _draggedTaskUid;
 
     public static readonly DependencyProperty ViewModelProperty =
         DependencyProperty.Register(
@@ -354,8 +355,13 @@ public sealed partial class TaskListView : UserControl
             {
                 task.PropertyChanged += OnTaskItemPropertyChanged;
             }
+            // The custom row template has no ListViewItemPresenter to initiate
+            // an item drag. Use element initiation with our grouped drop handler.
             container.CanDrag = true;
-            container.AllowDrop = true;
+            container.DragStarting -= OnTaskContainerDragStarting;
+            container.DragStarting += OnTaskContainerDragStarting;
+            container.DropCompleted -= OnTaskContainerDropCompleted;
+            container.DropCompleted += OnTaskContainerDropCompleted;
         }
     }
 
@@ -401,24 +407,134 @@ public sealed partial class TaskListView : UserControl
         DragItemsStartingEventArgs args)
     {
         TaskItemViewModel? task = args.Items.OfType<TaskItemViewModel>().FirstOrDefault();
-        if (task is null || task.IsCompleted)
+        if (task is null || task.IsCompleted || args.Items.Count != 1)
         {
             args.Cancel = true;
             return;
         }
 
+        _draggedTaskUid = task.Uid;
         args.Data.SetData(TaskDragFormat, task.Uid);
         args.Data.RequestedOperation = DataPackageOperation.Move;
     }
 
-    private async void OnDragItemsCompleted(
+    private void OnDragItemsCompleted(
         ListViewBase sender,
         DragItemsCompletedEventArgs args)
     {
-        if (args.DropResult != DataPackageOperation.None)
+        _draggedTaskUid = null;
+        HideTaskInsertionIndicator();
+    }
+
+    private void OnTaskContainerDragStarting(UIElement sender, DragStartingEventArgs args)
+    {
+        if (sender is not ListViewItem container
+            || TasksList.ItemFromContainer(container) is not TaskItemViewModel task
+            || task.IsCompleted || !ViewModel.CanReorderTasks)
         {
-            await ViewModel.PersistVisibleOrderAsync();
+            args.Cancel = true;
+            return;
         }
+
+        _draggedTaskUid = task.Uid;
+        args.Data.SetData(TaskDragFormat, task.Uid);
+        args.Data.RequestedOperation = DataPackageOperation.Move;
+    }
+
+    private void OnTaskContainerDropCompleted(UIElement sender, DropCompletedEventArgs args)
+    {
+        _draggedTaskUid = null;
+        HideTaskInsertionIndicator();
+    }
+
+    // WinUI's built-in reorder path does not support grouped CollectionViewSource.
+    // Route the active-row boundary to the VM rather than asking WinUI to reorder.
+    private void OnTaskDragOver(object sender, DragEventArgs args)
+    {
+        if (!TryGetTaskDropTarget(args, out _, out _, out double boundary))
+        {
+            args.AcceptedOperation = DataPackageOperation.None;
+            HideTaskInsertionIndicator();
+            args.Handled = true;
+            return;
+        }
+
+        args.AcceptedOperation = DataPackageOperation.Move;
+        args.Handled = true;
+        TaskInsertionIndicator.Margin = new Thickness(4, Math.Max(0, boundary), 4, 0);
+        VisualStateManager.GoToState(this, "TaskDropAllowed", useTransitions: false);
+    }
+
+    private void OnTaskDragLeave(object sender, DragEventArgs args)
+    {
+        HideTaskInsertionIndicator();
+    }
+
+    private async void OnTaskDrop(object sender, DragEventArgs args)
+    {
+        string? sourceUid = _draggedTaskUid;
+        if (sourceUid is null
+            || !TryGetTaskDropTarget(args, out TaskItemViewModel? target, out bool after, out _))
+        {
+            args.AcceptedOperation = DataPackageOperation.None;
+            args.Handled = true;
+            HideTaskInsertionIndicator();
+            return;
+        }
+
+        args.AcceptedOperation = DataPackageOperation.Move;
+        args.Handled = true;
+        HideTaskInsertionIndicator();
+        string targetUid = target!.Uid;
+        // Let the routed drop finish before rebuilding its containers.
+        await Task.Yield();
+        await ViewModel.ReorderActiveTaskAsync(sourceUid, targetUid, after);
+    }
+
+    private bool TryGetTaskDropTarget(
+        DragEventArgs args, out TaskItemViewModel? target, out bool after, out double boundary)
+    {
+        target = null;
+        after = false;
+        boundary = 0;
+        if (_draggedTaskUid is null || !ViewModel.CanReorderTasks
+            || !args.DataView.Contains(TaskDragFormat))
+        {
+            return false;
+        }
+
+        double y = args.GetPosition(TasksList).Y;
+        foreach (TaskItemViewModel item in ViewModel.VisibleItems)
+        {
+            if (TasksList.ContainerFromItem(item) is not ListViewItem container)
+            {
+                continue;
+            }
+
+            double top = container.TransformToVisual(TasksList)
+                .TransformPoint(new Windows.Foundation.Point()).Y;
+            double bottom = top + container.ActualHeight;
+            if (item.IsCompleted)
+            {
+                // Completed is a separate group, never a reorder destination.
+                return target is not null && y < top;
+            }
+            target = item;
+            after = y >= top + container.ActualHeight / 2;
+            boundary = after ? bottom : top;
+            if (y <= bottom)
+            {
+                return true;
+            }
+        }
+
+        // Do not turn the collapsed Completed header into an active-group target.
+        return target is not null && y <= boundary + 4;
+    }
+
+    private void HideTaskInsertionIndicator()
+    {
+        VisualStateManager.GoToState(this, "TaskDropIdle", useTransitions: false);
     }
 
     // Clicking anywhere outside leaves the editor, the same way the inline task title
