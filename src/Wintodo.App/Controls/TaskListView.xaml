@@ -241,6 +241,16 @@
     </UserControl.Resources>
 
     <Grid>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="TaskDropStates">
+                <VisualState x:Name="TaskDropIdle" />
+                <VisualState x:Name="TaskDropAllowed">
+                    <VisualState.Setters>
+                        <Setter Target="TaskInsertionIndicator.Visibility" Value="Visible" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <Grid.RowDefinitions>
             <RowDefinition Height="64" />
             <RowDefinition Height="Auto" />
@@ -717,8 +727,10 @@
                 AutomationProperties.AutomationId="Todo.List.Tasks"
                 AllowDrop="{x:Bind ViewModel.CanReorderTasks, Mode=OneWay}"
                 CanDragItems="{x:Bind ViewModel.CanReorderTasks, Mode=OneWay}"
-                CanReorderItems="{x:Bind ViewModel.CanReorderTasks, Mode=OneWay}"
                 ContainerContentChanging="OnContainerContentChanging"
+                DragOver="OnTaskDragOver"
+                DragLeave="OnTaskDragLeave"
+                Drop="OnTaskDrop"
                 DragItemsCompleted="OnDragItemsCompleted"
                 DragItemsStarting="OnDragItemsStarting"
                 IsItemClickEnabled="False"
@@ -746,6 +758,16 @@
                     </TransitionCollection>
                 </ListView.ItemContainerTransitions>
             </ListView>
+
+            <Border
+                x:Name="TaskInsertionIndicator"
+                Grid.RowSpan="3"
+                Height="4"
+                VerticalAlignment="Top"
+                BorderBrush="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                BorderThickness="0,2,0,0"
+                IsHitTestVisible="False"
+                Visibility="Collapsed" />
 
             <StackPanel
                 x:Name="EmptyState"

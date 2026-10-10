@@ -474,6 +474,33 @@ public sealed partial class TaskListViewModel : ObservableObject
         await ReloadAsync(cancellationToken);
     }
 
+    internal async Task ReorderActiveTaskAsync(string taskUid, string targetUid, bool insertAfter)
+    {
+        if (!CanReorderTasks)
+        {
+            return;
+        }
+
+        int source = _activeTasks.FindIndex(item => item.Uid == taskUid);
+        int target = _activeTasks.FindIndex(item => item.Uid == targetUid);
+        if (source < 0 || target < 0)
+        {
+            return;
+        }
+
+        int destination = TaskReordering.GetDestinationIndex(source, target, insertAfter);
+        if (source == destination)
+        {
+            return;
+        }
+
+        TaskItemViewModel item = _activeTasks[source];
+        _activeTasks.RemoveAt(source);
+        _activeTasks.Insert(destination, item);
+        RebuildVisibleItems();
+        await PersistVisibleOrderAsync();
+    }
+
     internal async Task PersistVisibleOrderAsync(CancellationToken cancellationToken = default)
     {
         if (!CanReorderTasks)

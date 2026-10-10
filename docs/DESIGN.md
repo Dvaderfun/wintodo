@@ -255,6 +255,12 @@ fill) + `ContentPresenter`, with `CommonStates`, `DisabledStates`, and
 | Activation | Clicking an inactive row selects it and opens detail; clicking the active row again clears selection and closes detail |
 | Drag-over | 2 px accent insertion line, 4 px inset |
 
+Task rows use a grouped `CollectionViewSource`; WinUI's built-in
+`CanReorderItems` does not support grouped sources. The custom row containers
+start a drag with the task UID, and the list handles drops at an active-row
+boundary. Completed rows and non-manual lists cannot be reordered. The view
+model applies the move and persists order after the routed drop has finished.
+
 **Element budget: 12 or fewer visual elements.** Every element costs working set
 × visible rows × recycling headroom. Do not add decorative borders.
 

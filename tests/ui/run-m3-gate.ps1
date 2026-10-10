@@ -24,5 +24,13 @@ try {
 } finally {
     Stop-Process -Id $launch.ProcessId -ErrorAction SilentlyContinue
 }
+$restart = winapp run $appDirectory --detach --json -- --database-path $databasePath | ConvertFrom-Json
+if ($LASTEXITCODE -ne 0 -or -not $restart.ProcessId) { throw "M3 restart launch failed." }
+try {
+    & (Join-Path $PSScriptRoot "m3-restart.ps1") -AppPid $restart.ProcessId -ArtifactDirectory $artifactDirectory
+    if ($LASTEXITCODE -ne 0) { throw "M3 restart gate failed." }
+} finally {
+    Stop-Process -Id $restart.ProcessId -ErrorAction SilentlyContinue
+}
 Write-Host "M3 UI gate: PASS"
 Write-Host "Artifacts: $artifactDirectory"

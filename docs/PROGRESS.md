@@ -20,8 +20,8 @@ As of 2026-10-10:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 149, Data 66, Sync 9 — 224/224,
-  zero skipped on the UX-06 extraction run.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 159, Data 66, Sync 9 — 234/234,
+  zero skipped on the UX-06 closure run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** the task list clears and refills its bound collection instead
@@ -37,9 +37,10 @@ As of 2026-10-10:
 - **UX-05:** Sync footer hidden until an account exists; connect, failed-connect,
   restart and disconnect checks pass in M13 (11/11). M8 passes 17/17.
 - **UX-06:** Grouping, sort policy and subtitle parts extracted into Core;
-  70 new Core cases and 16 SQLite parity cases pass. M5 8/8 and M8 17/17.
-  Package remains in progress: existing M3 drag-reorder gate fails (9/10).
-- **Next:** close UX-06's M3 gate before UX-07, keeping the UX-02 composer
+  70 extraction cases, 10 reorder cases and 16 SQLite parity cases pass.
+  Grouped task drag fixed; M3 10/10 plus restart order, M5 8/8 and M8 17/17.
+  Package complete.
+- **Next:** UX-07 in-place task list updates, keeping the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -1969,3 +1970,54 @@ explicit owner exception; no failed row is recorded as passed.
 - No Native AOT/ARM64 runtime or performance claims. UX-02 composer/performance
   checks and earlier owner-run rows remain open. Unrelated CLAUDE.md edit left
   untouched.
+
+## UX-06 — M3 drag blocker resolved and package completed          2026-10-10
+
+**Gate:** PASS — Debug and Release x64 warnings-as-errors builds, zero warnings
+and errors; 234/234 unit tests (Core 159, Data 66, Sync 9), zero skipped;
+M3 10/10 plus new restart-order check; M5 6/6 plus restart 2/2; M8 17/17.
+
+**Shipped**
+- Fixed grouped task drag reorder. WinUI documents that built-in
+  CanReorderItems cannot reorder grouped sources. Custom row containers now
+  provide task payloads; the ListView accepts active-row insertion boundaries
+  and delegates ordering/persistence to the view model after the drop finishes.
+  Completed rows, non-manual lists and external payloads are rejected.
+- Added the DESIGN insertion indicator using a theme brush and visual states.
+  Added Core TaskReordering boundary logic with 10 cases covering both directions,
+  end positions, same-row drops and adjacent no-ops. Existing keyboard ordering
+  remains on its prior path; collection stability remains UX-07.
+- Fixed M3's drag coordinates: integer conversion prevents Ukrainian decimal
+  commas from producing invalid x,y pairs, and native drag failures now throw.
+  Clear selection before list F2, which correctly edits a selected task otherwise.
+  Original reorder and rename behavior assertions remain intact.
+- Added m3-restart.ps1 to prove task 5 stays before task 3 after stopping and
+  relaunching the same scratch database. Updated DESIGN and testing guide.
+
+**Evidence and review**
+- Initial baseline M3: 8/10 (reorder and selected-task F2 setup). A focused probe
+  then showed no drag events for the malformed gesture. Integer coordinates
+  and explicit container payloads produced DragStarting, accepted Move, Drop,
+  and updated row order. Temporary file traces were removed before final builds.
+- Final M3: tests/ui/artifacts/m3/run-20261010-162336; all three screenshots
+  reviewed, including restarted order and intact Completed section.
+- Final M5: tests/ui/artifacts/m5/run-20261010-162628; all three screenshots
+  reviewed. The tracked runner still uses obsolete VSTest flags; an untracked
+  copy adapted only its test invocation to --project/--filter-class and x64.
+- First M8: tests/ui/artifacts/m8/run-20261010-162430, 16/17; one screenshot
+  command failed for the shortcuts dialog bottom. Unchanged rerun:
+  tests/ui/artifacts/m8/run-20261010-162703, 17/17. All 21 PNGs reviewed via
+  contact sheet with dialog detail reviewed at full size; no new row clipping
+  or contrast regressions. The Settings image retains its existing transition
+  capture limitation and is not visual proof of Settings content.
+- winui-code-review: nothing above informational in the final diff; event
+  adapters own pointer geometry/payloads, the view model owns ordering, and
+  Core remains free of UI types. No dependencies, schema or new strings.
+
+**Deviations / carried forward**
+- The pre-existing grouped drag defect needed a product fix to close UX-06's
+  mandatory M3 gate. This restores the specified interaction; no new design
+  decision or ADR. The extraction itself retains existing presentation policy.
+- Local gates used scratch databases because Windows Sandbox is disabled.
+  No Native AOT/ARM64 runtime or performance claims. UX-02 composer/performance,
+  M9 owner deferral and manual gate rows remain open. UX-07 is now unblocked.
