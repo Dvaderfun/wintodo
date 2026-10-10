@@ -532,6 +532,26 @@ try {
                 -Scheme $schemeName.ToString()
             $themePath = Join-Path $env:SystemRoot "Resources\Ease of Access Themes\$($theme.File)"
             $themeText = Get-Content -LiteralPath $themePath -Raw
+            # SPI can enable High Contrast while retaining a customised palette.
+            # Apply the shipped theme's actual system colours, then verify them.
+            $systemColorNames = @('Scrollbar','Background','ActiveTitle','InactiveTitle','Menu',
+                'Window','WindowFrame','MenuText','WindowText','TitleText','ActiveBorder','InactiveBorder',
+                'AppWorkspace','Hilight','HilightText','ButtonFace','ButtonShadow','GrayText','ButtonText',
+                'InactiveTitleText','ButtonHilight','ButtonDkShadow','ButtonLight','InfoText','InfoWindow',
+                '', 'HotTrackingColor','GradientActiveTitle','GradientInactiveTitle','MenuHilight','MenuBar')
+            $paletteIndices = [Collections.Generic.List[int]]::new()
+            $paletteValues = [Collections.Generic.List[uint32]]::new()
+            for ($index = 0; $index -lt $systemColorNames.Count; $index++) {
+                if (-not $systemColorNames[$index]) { continue }
+                $color = [regex]::Match($themeText, "(?m)^$($systemColorNames[$index])=(\d+) (\d+) (\d+)\r?$")
+                if (-not $color.Success) { continue }
+                $paletteIndices.Add($index)
+                $paletteValues.Add([uint32]([int]$color.Groups[1].Value -bor
+                    ([int]$color.Groups[2].Value -shl 8) -bor ([int]$color.Groups[3].Value -shl 16)))
+            }
+            if (-not [WintodoM8ThemeNative]::SetSysColors($paletteIndices.Count,
+                    $paletteIndices.ToArray(), $paletteValues.ToArray())) { throw 'Could not apply shipped contrast colours.' }
+            Start-Sleep -Milliseconds 300
             foreach ($colorName in $checkedColors.Keys) {
                 $match = [regex]::Match($themeText, "(?m)^$colorName=(\d+) (\d+) (\d+)\r?$")
                 if (-not $match.Success) { throw "Theme colour missing: $colorName" }

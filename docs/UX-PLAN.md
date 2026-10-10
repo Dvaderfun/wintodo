@@ -58,7 +58,7 @@ this dependency exception does not mark those gates passed.
 | UX-07 | Update the task list in place instead of rebuilding it | B | L | UX-06 | TaskListVM, TaskListView | done (d6038f2; stability/M3/M5/M8 PASS) |
 | UX-08 | Completion and row motion per DESIGN §7 | B | S | UX-07 | TaskRow, TaskListView | done (9fa4a86; motion 7/7, stability 3/3, M8 17/17) |
 | UX-09 | Real multi-select and bulk actions | B | L | UX-07 | TaskListView, TaskListVM, TaskRow | done (b327d85; multiselect 7/7, M3/M8/stability PASS) |
-| UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | in progress (Codex/main) |
+| UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | in progress (Codex/main; undo 7/7, M3/M4/M13/M8 PASS; optional completion awaiting owner) |
 | UX-11 | Drop tasks on My Day and Important | B | S | — | ShellPage | done (41b1946; M5 9/9 + restart, M8 17/17) |
 | UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | ready |
 | UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | done (efa09c2; motion 7/7, ADR-011 accepted) |

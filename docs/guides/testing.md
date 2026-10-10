@@ -66,6 +66,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-notification-settings-gate.ps1` | Reminder enable/disable, actual scheduled payload defaults, restart, Data/About and accessibility |
 | `run-settings-gate.ps1` | Tasks settings, immediate delete/undo, restart, reminder default, ordering and accessibility |
 | `run-list-icon-gate.ps1` | Emoji list icons and navigation counts |
+| `run-undo-gate.ps1` | Undo history across navigation/expiry, preserved newer title, due/reminder/repeat clears, step/list deletion, moves and bulk field/completion actions |
 
 The scripts drive real input. Don't use the mouse or keyboard while they run.
 `/winui-ui-testing` can run suites in Windows Sandbox instead; ask the owner

@@ -68,7 +68,8 @@ public sealed partial class ShellViewModel : ObservableObject
         InitializeSync(syncService);
         Preferences = new TaskPreferences(taskStore);
         Preferences.SaveFailed += OnPreferencesSaveFailed;
-        TaskList = new TaskListViewModel(taskStore, clock, Preferences);
+        Undo = new UndoService();
+        TaskList = new TaskListViewModel(taskStore, clock, Preferences, Undo);
         TaskList.NavigationDataChanged += OnNavigationDataChanged;
         TaskList.DeleteListRequested += OnDeleteListRequested;
         TaskList.ExportListRequested += OnExportListRequested;
@@ -77,7 +78,10 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList.DeleteTasksRequested += OnRowsDeleteRequested;
         TaskList.CustomListIconRequested += OnCustomListIconRequested;
         TaskList.BackgroundThemeChanged += OnBackgroundThemeChanged;
-        Detail = new TaskDetailViewModel(taskStore, clock, Preferences);
+        Detail = new TaskDetailViewModel(taskStore, clock, Preferences, Undo);
+        TaskList.UndoCompleted += RefreshAfterUndoAsync;
+        TaskList.UndoPreparing += PrepareUndoAsync;
+        _taskStore.StoreChanged += OnUndoStoreChanged;
         Detail.CloseRequested += CloseDetail;
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
         Detail.TaskDeleted += TaskList.ApplyDetailTaskDeleted;
@@ -114,6 +118,8 @@ public sealed partial class ShellViewModel : ObservableObject
     public partial ShellListItemViewModel? DefaultList { get; set; }
 
     public TaskPreferences Preferences { get; }
+
+    internal UndoService Undo { get; }
 
     [ObservableProperty]
     public partial bool IsTaskPreferencesErrorOpen { get; set; }

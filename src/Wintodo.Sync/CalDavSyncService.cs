@@ -290,7 +290,7 @@ public sealed class CalDavSyncService : IDisposable
                 cancellationToken).ConfigureAwait(false);
             var result = new SyncRunResult { Status = SyncRunStatus.Success };
             var conflictedUids = new HashSet<string>(StringComparer.Ordinal);
-            foreach (TodoList list in lists.Where(value => !value.IsDeleted))
+            foreach (TodoList list in lists.Where(value => !value.IsDeleted && value.RemoteUrl is not null))
             {
                 await PullListAsync(
                     account,
@@ -554,6 +554,18 @@ public sealed class CalDavSyncService : IDisposable
             account.Id,
             cancellationToken).ConfigureAwait(false);
         Dictionary<long, TodoList> listsById = lists.ToDictionary(list => list.Id);
+        foreach (SyncChange change in changes.Where(value => value.EntityType == SyncEntityType.List
+                     && value.Operation == ChangeOperation.Create && value.List is { IsDeleted: false, RemoteUrl: null }))
+        {
+            TodoList list = change.List!;
+            Uri url = await _client.CreateCollectionAsync(account, secret, list.Uid, list.DisplayName,
+                cancellationToken).ConfigureAwait(false);
+            await _store.MarkListChangeSyncedAsync(change.Id, list.Uid, url.AbsoluteUri,
+                cancellationToken).ConfigureAwait(false);
+            list.RemoteUrl = url.AbsoluteUri;
+            listsById[list.Id] = list;
+            result.PushedCount++;
+        }
         foreach (SyncChange change in changes
                      .OrderBy(value => value.EntityType == SyncEntityType.Task ? 0 : 1)
                      .ThenBy(value => value.Id))
@@ -583,6 +595,7 @@ public sealed class CalDavSyncService : IDisposable
 
             TodoList changedList = change.List
                 ?? throw new InvalidOperationException("A list sync change has no list.");
+            if (change.Operation == ChangeOperation.Create) continue;
             if (!listsById.ContainsKey(changedList.Id)
                 || string.IsNullOrWhiteSpace(changedList.RemoteUrl))
             {

@@ -1127,4 +1127,14 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- UX-11 -->
   <data name="Drop_AddToMyDay" xml:space="preserve"><value>Add to My Day</value></data>
   <data name="Drop_MarkImportant" xml:space="preserve"><value>Mark as important</value></data>
+  <!-- UX-10 -->
+  <data name="Undo_ListDeleted" xml:space="preserve"><value>Deleted list “{0}”</value></data>
+  <data name="Undo_TaskMoved" xml:space="preserve"><value>Moved tasks</value></data>
+  <data name="Undo_TasksChanged" xml:space="preserve"><value>Updated tasks</value></data>
+  <data name="Undo_StepDeleted" xml:space="preserve"><value>Deleted step “{0}”</value></data>
+  <data name="Undo_DueCleared" xml:space="preserve"><value>Removed due date</value></data>
+  <data name="Undo_ReminderCleared" xml:space="preserve"><value>Removed reminder</value></data>
+  <data name="Undo_RepeatCleared" xml:space="preserve"><value>Removed repeat</value></data>
+  <data name="Undo_Completed" xml:space="preserve"><value>Completed</value></data>
+  <data name="Undo_Failed" xml:space="preserve"><value>Couldn’t undo. Try again.</value></data>
 </root>

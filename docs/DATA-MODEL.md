@@ -297,6 +297,14 @@ app-password stored in SQLite is a defect, not a shortcut.
 
 ### 3.2 Indexes
 
+Migration `003_list_delete_membership.sql` adds `list_deleted_tasks(list_id,
+task_uid)`, a composite primary key with foreign keys to lists and tasks. List
+delete records only tasks it actually soft-deletes. Restore uses this membership
+to retain earlier task deletions; restores append list/task change-log rows.
+Undo is session-only, capped at 20 actions; task restore updates only captured
+fields and retains current sync identity, unknown properties and unrelated edits.
+
+
 ```sql
 CREATE INDEX ix_tasks_list_status_sort ON tasks(list_id, status, sort_order) WHERE is_deleted = 0;
 CREATE INDEX ix_tasks_due              ON tasks(due_utc)      WHERE is_deleted = 0 AND status <> 2;
@@ -470,12 +478,13 @@ affected list ids and task uids.
 Lists:  GetListsAsync · GetIncompleteTaskCountsAsync · GetSmartListTaskCountsAsync
         · CreateListAsync
         · RenameListAsync · SetListColorAsync · SetListIconEmojiAsync
-        · ReorderListAsync · MoveListToGroupAsync · DeleteListAsync
+        · ReorderListAsync · MoveListToGroupAsync · DeleteListAsync · RestoreListAsync
 Groups: GetGroupsAsync · CreateGroupAsync · RenameGroupAsync · DeleteGroupAsync
 Tasks:  GetTasksAsync(ListQuery) · GetTaskAsync(uid) · CreateTaskAsync
         · UpdateTaskAsync · CompleteTaskAsync · UncompleteTaskAsync
         · DeleteTaskAsync · RestoreTaskAsync · ReorderTaskAsync · MoveTaskAsync
         · ApplyTaskBatchAsync(uids, action)
+        · CaptureTaskUndoAsync(uids, fields) · RestoreTaskFieldsAsync(states)
 Steps:  GetChildrenAsync(parentUid) · AddStepAsync · ReorderStepAsync
 Search: SearchAsync(text, limit)
 Alarms: GetPendingAlarmsAsync · SetAlarmAsync · SnoozeAlarmAsync · AcknowledgeAlarmAsync

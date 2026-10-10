@@ -58,12 +58,15 @@ public sealed partial class TaskDetailViewModel
             return;
         }
 
+        if (_model.Due is null) return;
+        var states = await CaptureUndoAsync(Core.Services.TaskUndoFields.Due);
         _model.Due = null;
         _model.DueIsDateOnly = false;
+        _model.DueTzid = null;
         PendingDueDate = null;
         PendingDueTime = TimeSpan.Zero;
         UpdateActionLabels();
-        await PersistModelAsync();
+        if (await PersistModelAsync()) RecordUndo(states, "Undo_DueCleared");
     }
 
     [RelayCommand]
@@ -118,11 +121,13 @@ public sealed partial class TaskDetailViewModel
             return;
         }
 
+        if (_model.Alarms.Count == 0) return;
+        var states = await CaptureUndoAsync(Core.Services.TaskUndoFields.Reminder);
         _model.Alarms.Clear();
         PendingReminderDate = null;
         PendingReminderTime = _preferences.DefaultReminderTime;
         UpdateActionLabels();
-        await PersistModelAsync();
+        if (await PersistModelAsync()) RecordUndo(states, "Undo_ReminderCleared");
     }
 
     private void UpdateActionLabels()

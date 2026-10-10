@@ -9,6 +9,7 @@ public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
     [
         "Wintodo.Data.Migrations.001_init.sql",
         "Wintodo.Data.Migrations.002_list_icon_emoji.sql",
+        "Wintodo.Data.Migrations.003_list_delete_membership.sql",
     ];
     private const string ConnectionPragmas = """
         PRAGMA journal_mode = WAL;
@@ -177,7 +178,7 @@ public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
                     {
                         StoreChanged?.Invoke(
                             this,
-                            new StoreChangedEventArgs(context.ListIds, context.TaskUids));
+                            new StoreChangedEventArgs(context.ListIds, context.TaskUids, context.IsRemoteChange));
                     }
                 }
             },
@@ -296,6 +297,7 @@ public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
 
     private sealed class WriteContext
     {
+        internal bool IsRemoteChange { get; set; }
         internal HashSet<long> ListIds { get; } = [];
 
         internal HashSet<string> TaskUids { get; } = new(StringComparer.Ordinal);

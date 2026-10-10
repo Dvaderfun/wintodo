@@ -53,12 +53,14 @@ public sealed partial class TaskDetailViewModel
             return;
         }
 
+        if (_model.RRule is null) return;
+        var states = await CaptureUndoAsync(Core.Services.TaskUndoFields.Repeat);
         _isLoading = true;
         _model.RRule = null;
         RepeatModeIndex = -1;
         _isLoading = false;
         UpdateActionLabels();
-        await PersistModelAsync();
+        if (await PersistModelAsync()) RecordUndo(states, "Undo_RepeatCleared");
     }
 
     private void ConfigureRepeatEditor(string? rrule)

@@ -184,6 +184,7 @@ public sealed partial class ShellViewModel
         SyncConflictChoice choice,
         CancellationToken cancellationToken = default)
     {
+        Undo.Invalidate([conflict.LocalTask.Uid]);
         return _syncService.ResolveConflictAsync(conflict, choice, cancellationToken);
     }
 
@@ -195,6 +196,8 @@ public sealed partial class ShellViewModel
     internal void DisposeSync()
     {
         _syncService.StatusChanged -= OnSyncStatusChanged;
+        _taskStore.StoreChanged -= OnUndoStoreChanged;
+        TaskList.DisposeUndo();
     }
 
     private async Task RunSyncAsync(

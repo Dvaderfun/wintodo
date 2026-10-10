@@ -120,6 +120,9 @@ public sealed partial class ShellPage
 
     private void AddPunctuationAccelerators()
     {
+        var undo = new KeyboardAccelerator { Key = VirtualKey.Z, Modifiers = VirtualKeyModifiers.Control };
+        undo.Invoked += OnUndoAccelerator;
+        KeyboardAccelerators.Add(undo);
         var settings = new KeyboardAccelerator
         {
             Key = (VirtualKey)188,
@@ -135,6 +138,14 @@ public sealed partial class ShellPage
         };
         shortcuts.Invoked += OnShowShortcutsAccelerator;
         KeyboardAccelerators.Add(shortcuts);
+    }
+
+    private void OnUndoAccelerator(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (FocusManager.GetFocusedElement(XamlRoot) is TextBox or RichEditBox or PasswordBox) return;
+        if (!ViewModel.TaskList.UndoDeleteCommand.CanExecute(null)) return;
+        ViewModel.TaskList.UndoDeleteCommand.Execute(null);
+        args.Handled = true;
     }
 
     private void OnNewListAccelerator(

@@ -182,7 +182,9 @@ public sealed partial class SqliteTaskStore
                 command.CommandText = $"""
                     SELECT {ListColumns}
                     FROM lists
-                    WHERE account_id = @accountId AND remote_url IS NOT NULL
+                    WHERE account_id = @accountId AND (remote_url IS NOT NULL OR
+                          (is_deleted = 0 AND EXISTS(SELECT 1 FROM change_log
+                           WHERE entity_type = 1 AND entity_uid = lists.uid AND synced = 0 AND operation = 0)))
                           AND NOT EXISTS(
                               SELECT 1 FROM settings
                               WHERE key = 'sync.list.' || lists.uid || '.disabled'
@@ -459,7 +461,8 @@ public sealed partial class SqliteTaskStore
                     else
                     {
                         TodoList? list = ReadListByUid(connection, transaction: null, candidate.EntityUid);
-                        if (list?.AccountId != accountId || string.IsNullOrWhiteSpace(list.RemoteUrl))
+                        if (list?.AccountId != accountId ||
+                            (string.IsNullOrWhiteSpace(list.RemoteUrl) && candidate.Operation != ChangeOperation.Create))
                         {
                             continue;
                         }
@@ -540,6 +543,7 @@ public sealed partial class SqliteTaskStore
             {
                 GetListUid(connection, transaction, listId);
                 var parents = new List<(long TaskId, string Uid, string ParentUid)>();
+                context.IsRemoteChange = true;
                 foreach (RemoteTaskUpdate remote in updates)
                 {
                     ArgumentNullException.ThrowIfNull(remote);
@@ -849,7 +853,8 @@ public sealed partial class SqliteTaskStore
             SELECT EXISTS(
                 SELECT 1 FROM lists
                 WHERE id = @listId AND account_id = @accountId
-                      AND remote_url IS NOT NULL
+                      AND (remote_url IS NOT NULL OR EXISTS(SELECT 1 FROM change_log
+                          WHERE entity_type = 1 AND entity_uid = lists.uid AND synced = 0 AND operation = 0))
             );
             """;
         command.Parameters.AddWithValue("@listId", listId);
