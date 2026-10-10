@@ -2,7 +2,7 @@
 
 | Layer | Where | How |
 |---|---|---|
-| Core (recurrence, iCalendar, queries, emoji validation) | `tests/Wintodo.Core.Tests` | xunit v3, pure functions |
+| Core (recurrence, iCalendar, queries, emoji validation, list presentation) | `tests/Wintodo.Core.Tests` | xunit v3, pure functions; presentation cases under `Presentation/` |
 | Data (store, migrations, perf assertions, iCal import/export) | `tests/Wintodo.Data.Tests` | xunit v3, temp-file SQLite per test (`StoreFixture`) |
 | Sync (CalDAV client and sync service) | `tests/Wintodo.Sync.Tests` | xunit v3, fake HTTP handler |
 | App shell and features | `tests/ui/*.ps1` | `winapp ui` (UI Automation) scripts against the running packaged app |
@@ -53,7 +53,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 |---|---|
 | `m0-smoke.ps1 -AppPid <pid>` | Window exists, interactive tree, screenshot |
 | `m2-shell.ps1`, `m2-theme.ps1` | Shell layout, Light/Dark/High Contrast |
-| `m3-lists-tasks.ps1` | List CRUD, add/complete/reorder tasks |
+| `run-m3-gate.ps1` / `m3-lists-tasks.ps1` | List CRUD, add/complete/reorder/delete/undo tasks; runner uses a fresh database with delete confirmation off |
 | `run-m4-gate.ps1` | Detail pane fields and restart persistence |
 | `run-m5-gate.ps1` | Smart lists, search, sort, restart |
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |

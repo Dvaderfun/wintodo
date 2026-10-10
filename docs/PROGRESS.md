@@ -20,8 +20,8 @@ As of 2026-10-10:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 79, Data 49, Sync 9 — 137/137,
-  zero skipped on the UX-05 run.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 149, Data 66, Sync 9 — 224/224,
+  zero skipped on the UX-06 extraction run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** the task list clears and refills its bound collection instead
@@ -36,7 +36,10 @@ As of 2026-10-10:
   fixed. Expanded M8 passes 17/17 across all four Windows contrast palettes.
 - **UX-05:** Sync footer hidden until an account exists; connect, failed-connect,
   restart and disconnect checks pass in M13 (11/11). M8 passes 17/17.
-- **Next:** UX-06 list presentation extraction, keeping the UX-02 composer
+- **UX-06:** Grouping, sort policy and subtitle parts extracted into Core;
+  70 new Core cases and 16 SQLite parity cases pass. M5 8/8 and M8 17/17.
+  Package remains in progress: existing M3 drag-reorder gate fails (9/10).
+- **Next:** close UX-06's M3 gate before UX-07, keeping the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -1903,3 +1906,66 @@ and errors; 137/137 unit tests, zero skipped; M13 11/11; M8 17/17.
 - Native AOT/ARM64 runtime, live Radicale/Nextcloud convergence and performance
   gates were not run for this visibility patch. UX-02 composer/performance
   checks and earlier owner-run rows remain open. No accepted-decision change.
+
+## UX-06 — Core list presentation extraction          2026-10-10
+
+**Gate:** PARTIAL — Debug and Release x64 builds with `-warnaserror`, zero
+warnings/errors; 224/224 tests (Core 149, Data 66, Sync 9), zero skipped;
+M5 6/6 plus restart 2/2; M8 17/17. M3 9/10: task drag reorder fails on the
+unchanged baseline too. UX-06 remains in progress pending that gate or an
+explicit owner exception; no failed row is recorded as passed.
+
+**Implemented**
+- Core `TaskGrouping.Build` returns ordered group descriptors and task UIDs
+  from already ordered query results. Search list order, active-before-completed
+  order, Planned bucket order, completed count/expansion and empty groups match
+  the prior implementation. Local date and week boundaries take IClock and the
+  resolved week-start preference.
+- Core `TaskSorting` owns sort terms and pure comparisons. Data translates
+  those closed enum terms into the same SQL ORDER BY expressions, preserving
+  SQLite ordering and indexes. Undefined priority/null due terms keep their
+  original reverse semantics; completed defaults newest first; persisted id
+  ties reverse, while in-place manual insertion keeps equal-order input order.
+  SQLite ASCII-only NOCASE and stored date-only ordering have explicit tests.
+- Core `TaskMetadataLine.Build` returns unformatted list/due/repeat/My Day parts
+  and due-state flags. App keeps resource formatting, accessible names, command
+  wiring, cached row objects, selection and completed expansion. TaskListViewModel
+  shrank from 1,845 to 1,685 lines (160 fewer).
+- 70 Core cases cover bucket/week/local-midnight boundaries, grouping and
+  empty/collapsed cases, every sort mode/direction/tie, and current metadata
+  order/contexts. Sixteen Data cases compare Core sorting to actual SQLite
+  query results. No schema or dependency changes.
+- Architecture and testing guide updated. A repeatable M3 runner creates a
+  scratch database with confirmation off to exercise its immediate-delete loop.
+  M3 assertions remain intact; startup, row-body drag coordinates, focus and
+  state waits improve the test's input sequencing.
+
+**Evidence and review**
+- Baseline unit suite 137/137; valid baseline M5 under
+  `tests/ui/artifacts/m5/run-20261010-155338` passed 6/6 + restart 2/2.
+- Post-extraction M5 under `tests/ui/artifacts/m5/run-20261010-155819` passed
+  6/6 + restart 2/2; search and Planned screenshots reviewed.
+- M8 under `tests/ui/artifacts/m8/run-20261010-160504`: 17/17 with unchanged
+  assertions, zero missing AutomationIds and original appearance restored.
+  List metadata screenshot reviewed.
+- M3 under `tests/ui/artifacts/ux06-m3/run-20261010-160203`: 9/10; only
+  reorder fails. Baseline under `tests/ui/artifacts/ux06-baseline-m3/
+  run-20261010-155906` also fails reorder (plus older input-sequencing failures).
+  Historical post-M8 entry already documented the same reorder failure.
+- `winui-code-review`: nothing above informational in extraction code. No new
+  XAML, runtime bindings, reflection, UI types in Core or user-visible strings.
+
+**Deviations / carried forward**
+- Task sorting was in Data's query builder rather than the App. Core now owns
+  the policy; Data retains SQL execution. Localization stays entirely in App,
+  so Core returns metadata kinds/dates rather than accepting a culture.
+- DESIGN §3.3 reminder/steps/note/attachment subtitle parts were absent before
+  this package. Preserve the shipped subset; missing parts are in Parking lot.
+- M3 row drag overrides were removed experimentally, without resolving reorder;
+  experiment reverted. An initial pair of overlapping M5 baseline runs had
+  invalid input interference and were discarded; the serial runs above are
+  the evidence. Existing M3 UIA/input and Release settings crashes remain outside
+  this behavior-preserving extraction.
+- No Native AOT/ARM64 runtime or performance claims. UX-02 composer/performance
+  checks and earlier owner-run rows remain open. Unrelated CLAUDE.md edit left
+  untouched.

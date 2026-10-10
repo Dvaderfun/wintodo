@@ -37,6 +37,8 @@ src/
     Recurrence/        RRULE parse/serialise + ComputeNext
     Ical/              IcalReader / IcalWriter / IcalUnknownCodec (verbatim passthrough)
     Queries/           ListQuery (smart-list and filter descriptors)
+    Presentation/      TaskGrouping (ordered UID groups), TaskSorting (query sort terms/comparison),
+                       TaskMetadataLine (subtitle parts), display-culture/date helpers
     Services/          interfaces: ITaskStore, ISyncStore, ISettingsStore, ICredentialStore, IClock; TaskPreferences
   Wintodo.Data/        net10.0, Core + Microsoft.Data.Sqlite, AOT-compatible
     Migrations/        NNN_*.sql, embedded resources, forward-only
@@ -90,6 +92,10 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
 - Tasks settings share one Core `TaskPreferences` instance between Settings, list
   and detail view models. It validates values, queues persistence and notifies
   consumers; task ordering options are explicit store parameters.
+- Core presentation helpers build groups from already ordered query results,
+  define sort terms shared with the SQLite query builder, and return unformatted
+  subtitle parts. The App maps these to localised group headers, cached row view
+  models and metadata text, preserving UI selection and completed expansion.
 - Responsive breakpoints are `VisualStateManager` states (`docs/DESIGN.md` §6).
 
 ## Layers and data flow
