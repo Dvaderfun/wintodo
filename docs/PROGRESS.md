@@ -13,7 +13,7 @@ As of 2026-10-10:
 | M6 iCalendar interop | AUTOMATED PASS | One-time hand import into Nextcloud Tasks or Thunderbird |
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
-| M9 Native AOT | OPEN | +10 min idle working-set sample never measured; ARM64 runtime perf not measured |
+| M9 Native AOT | BLOCKED | Full idle perf matrix pending (host busy); AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
 | M10 Packaging and release | not started | — |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
@@ -26,7 +26,8 @@ As of 2026-10-10:
 - **Known gaps:** the task list clears and refills its bound collection instead
   of diff-updating (`ARCHITECTURE.md`, Known divergences). Final app name and
   MSIX publisher are still undecided.
-- **Next:** close the M9 +10 min sample, then M10.
+- **Next:** obtain a full idle window for M9; M10 groundwork may proceed while
+  M9 is blocked, per the owner's 2026-10-10 instruction.
 
 ---
 
@@ -1449,3 +1450,45 @@ the Debug x64 build. Other UI gates and `Measure-Perf.ps1` were not re-run.
   10.0.401.
 - Unchanged: M6 hand import, M7 reboot/badge checks, M8 Narrator check, M9
   +10 min sample and ARM64 runtime, M13 live-server rows.
+
+## 2026-10-10 — M9 harness repair, AOT crash fix, idle gate blocked
+
+**Gate: BLOCKED, not closed.** The exact requested command,
+`./scripts/Measure-Perf.ps1 -Milestone M9 -Builds AOT`, published x64 cleanly,
+then stopped before any runtime matrix sample: the old VSTest filter selected
+zero tests under Microsoft Testing Platform. Artifact:
+`tests/ui/artifacts/perf/20261010-104850/data-access.log`.
+
+The harness now uses MTP project/filter arguments and live output, appends
+rather than overwrites previous PERF rows, and returns failure after preserving
+a complete measured matrix when a budget fails. Verified the actual 5,000-task
+seed, parsed query/search output, monotonic-growth and +10 MB rejection checks,
+and repeat appends against an ignored copy of PERF.md. No budget changed.
+
+The idle precondition could not be met: repeated host CPU observations were
+76–100%, with Zed, ingest tests, rustc, Windows Search and other workloads
+active. The owner was asked to pause workloads; no idle-ready reply arrived.
+No +2 s, +30 s, +10 min or scroll sample was taken, no new matrix row was
+fabricated, and no leak conclusion is possible. All three datasets remain
+pending; rerun the full command on an otherwise idle host. ARM64 runtime perf
+is **not measured** on this x64 machine.
+
+The published x64 AOT M8 attempt failed 13/14 checks after a startup crash
+(`tests/ui/artifacts/m9-aot/run-20261010-105453`). Attached `winapp run
+--debug-output` diagnosed `Argument 'source' is not a supported vector` at
+`ItemsRepeater.ItemsSource` for `TaskListViewModel.ListIconChoices`. Changed
+that source to the existing `IList<object>` vector pattern and made its item
+class partial for CsWinRT. No XAML or user choices changed. Clean AOT republish:
+16.69 MB executable, 220.17 MB layout (under the 260 MB size ceiling).
+The AOT M8 rerun passed **14/14 automated checks**:
+`tests/ui/artifacts/m9-aot/run-20261010-110036/results.json`.
+
+Validation: requested x64 warnings-as-errors build clean; unit tests **102/102**
+(Core 50, Data 43, Sync 9). Debug M8 automation also passed 14/14 before the
+fix; final Debug gate is recorded with the M10 entry. Reviewed both suites'
+six screenshots: settings capture shows the shell, and the background capture
+does not visually prove the chosen raster. These visual coverage gaps and the
+manual Narrator check remain open; 14/14 automation is not full visual signoff.
+`winui-code-review` of the targeted collection change found no issue above
+informational. Existing uncommitted settings edits were preserved and excluded
+from this milestone commit.

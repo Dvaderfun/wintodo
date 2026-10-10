@@ -83,7 +83,8 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     public ObservableCollection<MoveTargetViewModel> MoveTargets { get; } = [];
 
-    public IReadOnlyList<ListEmojiChoiceViewModel> ListIconChoices { get; }
+    // ItemsRepeater requires a WinRT vector; the object projection is AOT-safe.
+    public IList<object> ListIconChoices { get; }
 
     [ObservableProperty]
     public partial string Title { get; set; }
@@ -1572,7 +1573,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             or "Field";
     }
 
-    private IReadOnlyList<ListEmojiChoiceViewModel> CreateListIconChoices(
+    private IList<object> CreateListIconChoices(
         ICommand selectCommand)
     {
         (string Emoji, string ResourceKey)[] choices =
@@ -1614,7 +1615,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             ("\U0001F4B0", "ListIconChoice_Money"),
             ("\U0001F381", "ListIconChoice_Gift"),
         ];
-        var result = new List<ListEmojiChoiceViewModel>(choices.Length);
+        var result = new List<object>(choices.Length);
         for (int index = 0; index < choices.Length; index++)
         {
             (string emoji, string resourceKey) = choices[index];

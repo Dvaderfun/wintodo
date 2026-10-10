@@ -2,7 +2,7 @@ using System.Windows.Input;
 
 namespace Wintodo.ViewModels;
 
-public sealed class ListEmojiChoiceViewModel
+public sealed partial class ListEmojiChoiceViewModel
 {
     internal ListEmojiChoiceViewModel(
         string emoji,
