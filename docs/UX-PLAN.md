@@ -54,7 +54,7 @@ this dependency exception does not mark those gates passed.
 | UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | done (09aa070) |
 | UX-04 | High-contrast fixes | A | S | — | ShellPage | done (71f6434) |
 | UX-05 | Hide the sync status until sync is configured | A | S | — | ShellPage.xaml, ShellVM.Sync | done (07fbcdc) |
-| UX-06 | Move list presentation logic into Core, with unit tests | B | M | — | TaskListVM | ready |
+| UX-06 | Move list presentation logic into Core, with unit tests | B | M | — | TaskListVM | in progress (Codex/main) |
 | UX-07 | Update the task list in place instead of rebuilding it | B | L | UX-06 | TaskListVM, TaskListView | ready |
 | UX-08 | Completion and row motion per DESIGN §7 | B | S | UX-07 | TaskRow, TaskListView | ready |
 | UX-09 | Real multi-select and bulk actions | B | L | UX-07 | TaskListView, TaskListVM, TaskRow | ready |
