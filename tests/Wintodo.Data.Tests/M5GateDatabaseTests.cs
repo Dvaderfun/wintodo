@@ -27,9 +27,9 @@ public sealed class M5GateDatabaseTests
 
         var clock = new GateClock();
         await using var store = new SqliteTaskStore(databasePath, clock);
-        await store.InitializeAsync();
-        TodoList alpha = await store.CreateListAsync("Alpha");
-        TodoList beta = await store.CreateListAsync("Beta");
+        await store.InitializeAsync(TestContext.Current.CancellationToken);
+        TodoList alpha = await store.CreateListAsync("Alpha", cancellationToken: TestContext.Current.CancellationToken);
+        TodoList beta = await store.CreateListAsync("Beta", cancellationToken: TestContext.Current.CancellationToken);
 
         await store.CreateTaskAsync(new TodoTask
         {
@@ -37,28 +37,28 @@ public sealed class M5GateDatabaseTests
             Summary = "Midnight focus",
             MyDayDate = clock.Today,
             SortOrder = 1024,
-        });
+        }, TestContext.Current.CancellationToken);
         await store.CreateTaskAsync(new TodoTask
         {
             ListId = alpha.Id,
             Summary = "Needle alpha",
             Description = "Search match in the first list",
             SortOrder = 2048,
-        });
+        }, TestContext.Current.CancellationToken);
         await store.CreateTaskAsync(new TodoTask
         {
             ListId = alpha.Id,
             Summary = "Overdue alpha",
             Due = clock.UtcNow.AddDays(-1),
             SortOrder = 3072,
-        });
+        }, TestContext.Current.CancellationToken);
         TodoTask completed = await store.CreateTaskAsync(new TodoTask
         {
             ListId = alpha.Id,
             Summary = "Completed alpha",
             SortOrder = 4096,
-        });
-        await store.CompleteTaskAsync(completed.Uid);
+        }, TestContext.Current.CancellationToken);
+        await store.CompleteTaskAsync(completed.Uid, TestContext.Current.CancellationToken);
 
         await store.CreateTaskAsync(new TodoTask
         {
@@ -66,14 +66,14 @@ public sealed class M5GateDatabaseTests
             Summary = "Needle beta",
             Description = "Search match in the second list",
             SortOrder = 1024,
-        });
+        }, TestContext.Current.CancellationToken);
         await store.CreateTaskAsync(new TodoTask
         {
             ListId = beta.Id,
             Summary = "Beta later",
             Due = clock.UtcNow.AddDays(14),
             SortOrder = 2048,
-        });
+        }, TestContext.Current.CancellationToken);
     }
 
     private static void DeleteIfExists(string path)

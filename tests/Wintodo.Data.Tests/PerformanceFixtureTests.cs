@@ -36,29 +36,30 @@ public sealed class PerformanceFixtureTests
             };
             await using (var store = new SqliteTaskStore(databasePath, clock))
             {
-                await store.InitializeAsync();
+                await store.InitializeAsync(TestContext.Current.CancellationToken);
             }
 
             string repositoryRoot = FindRepositoryRoot();
             string sql = await File.ReadAllTextAsync(
-                Path.Combine(repositoryRoot, "tests", "fixtures", "perf", "seed.sql"));
+                Path.Combine(repositoryRoot, "tests", "fixtures", "perf", "seed.sql"),
+                TestContext.Current.CancellationToken);
             await using (var connection = new SqliteConnection($"Data Source={databasePath}"))
             {
-                await connection.OpenAsync();
+                await connection.OpenAsync(TestContext.Current.CancellationToken);
                 await using (SqliteCommand command = connection.CreateCommand())
                 {
                     command.CommandText = sql;
                     command.Parameters.AddWithValue("@taskCount", taskCount);
                     command.Parameters.AddWithValue("@listCount", listCount);
-                    await command.ExecuteNonQueryAsync();
+                    await command.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
                 }
 
                 await using SqliteCommand verify = connection.CreateCommand();
                 verify.CommandText = "SELECT COUNT(*) FROM tasks;";
-                Assert.Equal(taskCount, Convert.ToInt32(await verify.ExecuteScalarAsync()));
+                Assert.Equal(taskCount, Convert.ToInt32(await verify.ExecuteScalarAsync(TestContext.Current.CancellationToken)));
                 verify.CommandText =
                     "SELECT COUNT(*) FROM lists WHERE uid LIKE 'perf-list-%';";
-                Assert.Equal(listCount, Convert.ToInt32(await verify.ExecuteScalarAsync()));
+                Assert.Equal(listCount, Convert.ToInt32(await verify.ExecuteScalarAsync(TestContext.Current.CancellationToken)));
             }
         }
         finally

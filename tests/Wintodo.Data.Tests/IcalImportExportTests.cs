@@ -23,8 +23,8 @@ public sealed class IcalImportExportTests
         int notifications = 0;
         fixture.Store.StoreChanged += (_, _) => notifications++;
 
-        IcalImportPreview preview = await fixture.Store.PreviewIcalImportAsync(calendars);
-        IcalImportResult result = await fixture.Store.ImportIcalAsync(calendars);
+        IcalImportPreview preview = await fixture.Store.PreviewIcalImportAsync(calendars, TestContext.Current.CancellationToken);
+        IcalImportResult result = await fixture.Store.ImportIcalAsync(calendars, TestContext.Current.CancellationToken);
 
         Assert.Equal(6, preview.TaskCount);
         Assert.Equal(4, preview.ListCount);
@@ -34,7 +34,7 @@ public sealed class IcalImportExportTests
         Assert.Equal(0, result.UpdatedTaskCount);
         Assert.Equal(1, notifications);
 
-        IReadOnlyList<TodoList> lists = await fixture.Store.GetListsAsync();
+        IReadOnlyList<TodoList> lists = await fixture.Store.GetListsAsync(TestContext.Current.CancellationToken);
         Assert.Equal(4, lists.Count);
         var reader = new IcalReader(fixture.Clock.LocalTimeZone);
         var writer = new IcalWriter(fixture.Clock.LocalTimeZone);
@@ -44,7 +44,7 @@ public sealed class IcalImportExportTests
                 item.DisplayName,
                 originalCalendar.Name,
                 StringComparison.OrdinalIgnoreCase));
-            IReadOnlyList<TodoTask> stored = await fixture.Store.GetTasksForExportAsync(list.Id);
+            IReadOnlyList<TodoTask> stored = await fixture.Store.GetTasksForExportAsync(list.Id, TestContext.Current.CancellationToken);
             IcalCalendar reparsed = reader.Read(
                 writer.WriteCalendar(list, stored, fixture.Clock.UtcNow));
             Assert.Equal(originalCalendar.Tasks.Count, reparsed.Tasks.Count);
@@ -56,10 +56,10 @@ public sealed class IcalImportExportTests
         }
 
         using var connection = new SqliteConnection($"Data Source={fixture.DatabasePath};Mode=ReadOnly");
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         using SqliteCommand command = connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM tasks WHERE ical_unknown IS NOT NULL;";
-        Assert.Equal(6L, (long)(await command.ExecuteScalarAsync() ?? 0L));
+        Assert.Equal(6L, (long)(await command.ExecuteScalarAsync(TestContext.Current.CancellationToken) ?? 0L));
     }
 
     [Fact]
@@ -67,19 +67,19 @@ public sealed class IcalImportExportTests
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
         IcalCalendar calendar = ReadFixture("nextcloud.ics");
-        await fixture.Store.ImportIcalAsync([calendar]);
+        await fixture.Store.ImportIcalAsync([calendar], TestContext.Current.CancellationToken);
         calendar.Tasks[0].Summary = "Imported replacement";
 
-        IcalImportPreview preview = await fixture.Store.PreviewIcalImportAsync([calendar]);
-        IcalImportResult result = await fixture.Store.ImportIcalAsync([calendar]);
+        IcalImportPreview preview = await fixture.Store.PreviewIcalImportAsync([calendar], TestContext.Current.CancellationToken);
+        IcalImportResult result = await fixture.Store.ImportIcalAsync([calendar], TestContext.Current.CancellationToken);
 
         Assert.Equal(2, preview.ConflictCount);
         Assert.Equal(0, result.CreatedTaskCount);
         Assert.Equal(2, result.UpdatedTaskCount);
-        TodoTask updated = (await fixture.Store.GetTaskAsync("nextcloud-parent"))!;
+        TodoTask updated = (await fixture.Store.GetTaskAsync("nextcloud-parent", TestContext.Current.CancellationToken))!;
         Assert.Equal("Imported replacement", updated.Summary);
-        TodoList list = Assert.Single(await fixture.Store.GetListsAsync());
-        Assert.Equal(2, (await fixture.Store.GetTasksForExportAsync(list.Id)).Count);
+        TodoList list = Assert.Single(await fixture.Store.GetListsAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(2, (await fixture.Store.GetTasksForExportAsync(list.Id, TestContext.Current.CancellationToken)).Count);
     }
 
     [Fact]
@@ -99,9 +99,9 @@ public sealed class IcalImportExportTests
             Summary = "Parent",
         });
 
-        await fixture.Store.ImportIcalAsync([calendar]);
+        await fixture.Store.ImportIcalAsync([calendar], TestContext.Current.CancellationToken);
 
-        TodoTask child = (await fixture.Store.GetTaskAsync("child"))!;
+        TodoTask child = (await fixture.Store.GetTaskAsync("child", TestContext.Current.CancellationToken))!;
         Assert.Equal("parent", child.ParentUid);
     }
 
@@ -109,7 +109,7 @@ public sealed class IcalImportExportTests
     public async Task Import_MissingParent_RollsBackEntireBatch()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList existing = await fixture.Store.CreateListAsync("Existing");
+        TodoList existing = await fixture.Store.CreateListAsync("Existing", cancellationToken: TestContext.Current.CancellationToken);
         var calendar = new IcalCalendar { Name = "Must roll back" };
         calendar.Tasks.Add(new TodoTask
         {
@@ -124,13 +124,13 @@ public sealed class IcalImportExportTests
         });
 
         await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => fixture.Store.ImportIcalAsync([calendar]));
+            () => fixture.Store.ImportIcalAsync([calendar], TestContext.Current.CancellationToken));
 
-        IReadOnlyList<TodoList> lists = await fixture.Store.GetListsAsync();
+        IReadOnlyList<TodoList> lists = await fixture.Store.GetListsAsync(TestContext.Current.CancellationToken);
         Assert.Single(lists);
         Assert.Equal(existing.Id, lists[0].Id);
-        Assert.Null(await fixture.Store.GetTaskAsync("valid-first-row"));
-        Assert.Null(await fixture.Store.GetTaskAsync("missing-parent-child"));
+        Assert.Null(await fixture.Store.GetTaskAsync("valid-first-row", TestContext.Current.CancellationToken));
+        Assert.Null(await fixture.Store.GetTaskAsync("missing-parent-child", TestContext.Current.CancellationToken));
     }
 
     [Fact]
@@ -152,24 +152,24 @@ public sealed class IcalImportExportTests
         });
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => fixture.Store.ImportIcalAsync([calendar]));
+            () => fixture.Store.ImportIcalAsync([calendar], TestContext.Current.CancellationToken));
 
-        Assert.Empty(await fixture.Store.GetListsAsync());
-        Assert.Null(await fixture.Store.GetTaskAsync("cycle-a"));
-        Assert.Null(await fixture.Store.GetTaskAsync("cycle-b"));
+        Assert.Empty(await fixture.Store.GetListsAsync(TestContext.Current.CancellationToken));
+        Assert.Null(await fixture.Store.GetTaskAsync("cycle-a", TestContext.Current.CancellationToken));
+        Assert.Null(await fixture.Store.GetTaskAsync("cycle-b", TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task Import_CannotMoveAParentAwayFromExistingChildren()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList originalList = await fixture.Store.CreateListAsync("Original");
+        TodoList originalList = await fixture.Store.CreateListAsync("Original", cancellationToken: TestContext.Current.CancellationToken);
         TodoTask parent = await fixture.Store.CreateTaskAsync(new TodoTask
         {
             ListId = originalList.Id,
             Summary = "Parent",
-        });
-        await fixture.Store.AddStepAsync(parent.Uid, "Existing child");
+        }, TestContext.Current.CancellationToken);
+        await fixture.Store.AddStepAsync(parent.Uid, "Existing child", TestContext.Current.CancellationToken);
         var calendar = new IcalCalendar { Name = "Imported" };
         calendar.Tasks.Add(new TodoTask
         {
@@ -178,19 +178,19 @@ public sealed class IcalImportExportTests
         });
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => fixture.Store.ImportIcalAsync([calendar]));
+            () => fixture.Store.ImportIcalAsync([calendar], TestContext.Current.CancellationToken));
 
-        TodoTask unchanged = (await fixture.Store.GetTaskAsync(parent.Uid))!;
+        TodoTask unchanged = (await fixture.Store.GetTaskAsync(parent.Uid, TestContext.Current.CancellationToken))!;
         Assert.Equal(originalList.Id, unchanged.ListId);
         Assert.Equal("Parent", unchanged.Summary);
-        Assert.Single(await fixture.Store.GetListsAsync());
+        Assert.Single(await fixture.Store.GetListsAsync(TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task ExportQuery_IncludesChildTasksAndCollections()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList list = await fixture.Store.CreateListAsync("Export");
+        TodoList list = await fixture.Store.CreateListAsync("Export", cancellationToken: TestContext.Current.CancellationToken);
         var parent = new TodoTask
         {
             ListId = list.Id,
@@ -203,10 +203,10 @@ public sealed class IcalImportExportTests
             Action = AlarmAction.Display,
             TriggerOffsetSeconds = -600,
         });
-        parent = await fixture.Store.CreateTaskAsync(parent);
-        await fixture.Store.AddStepAsync(parent.Uid, "Child");
+        parent = await fixture.Store.CreateTaskAsync(parent, TestContext.Current.CancellationToken);
+        await fixture.Store.AddStepAsync(parent.Uid, "Child", TestContext.Current.CancellationToken);
 
-        IReadOnlyList<TodoTask> exported = await fixture.Store.GetTasksForExportAsync(list.Id);
+        IReadOnlyList<TodoTask> exported = await fixture.Store.GetTasksForExportAsync(list.Id, TestContext.Current.CancellationToken);
 
         Assert.Equal(2, exported.Count);
         TodoTask loadedParent = Assert.Single(exported, task => task.ParentUid is null);

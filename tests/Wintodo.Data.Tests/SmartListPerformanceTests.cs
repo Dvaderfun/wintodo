@@ -2,7 +2,6 @@ using System.Diagnostics;
 using Microsoft.Data.Sqlite;
 using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
-using Xunit.Abstractions;
 
 namespace Wintodo.Data.Tests;
 
@@ -20,7 +19,7 @@ public sealed class SmartListPerformanceTests
     public async Task TenThousandTasks_EachSmartListQueryCompletesWithinFiveMilliseconds()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList list = await fixture.Store.CreateListAsync("Benchmark");
+        TodoList list = await fixture.Store.CreateListAsync("Benchmark", cancellationToken: TestContext.Current.CancellationToken);
         await SeedTasksAsync(fixture, list.Id, count: 10_000);
 
         var queries = new Dictionary<string, ListQuery>
@@ -34,12 +33,12 @@ public sealed class SmartListPerformanceTests
 
         foreach ((string name, ListQuery query) in queries)
         {
-            await fixture.Store.GetTasksAsync(query);
+            await fixture.Store.GetTasksAsync(query, TestContext.Current.CancellationToken);
             double bestMilliseconds = double.MaxValue;
             for (int attempt = 0; attempt < 7; attempt++)
             {
                 long start = Stopwatch.GetTimestamp();
-                IReadOnlyList<TodoTask> result = await fixture.Store.GetTasksAsync(query);
+                IReadOnlyList<TodoTask> result = await fixture.Store.GetTasksAsync(query, TestContext.Current.CancellationToken);
                 double elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
                 bestMilliseconds = Math.Min(bestMilliseconds, elapsed);
                 Assert.NotEmpty(result);
@@ -56,16 +55,16 @@ public sealed class SmartListPerformanceTests
     public async Task TenThousandTasks_FullTextSearchCompletesWithinSixtyMilliseconds()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList list = await fixture.Store.CreateListAsync("Search benchmark");
+        TodoList list = await fixture.Store.CreateListAsync("Search benchmark", cancellationToken: TestContext.Current.CancellationToken);
         await SeedTasksAsync(fixture, list.Id, count: 10_000);
 
-        await fixture.Store.SearchAsync("Task 09999");
+        await fixture.Store.SearchAsync("Task 09999", cancellationToken: TestContext.Current.CancellationToken);
         double worstMilliseconds = 0;
         for (int attempt = 0; attempt < 7; attempt++)
         {
             long start = Stopwatch.GetTimestamp();
             IReadOnlyList<TodoTask> result =
-                await fixture.Store.SearchAsync("Task 09999");
+                await fixture.Store.SearchAsync("Task 09999", cancellationToken: TestContext.Current.CancellationToken);
             double elapsed = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
             worstMilliseconds = Math.Max(worstMilliseconds, elapsed);
             Assert.Equal("Task 09999", Assert.Single(result).Summary);
