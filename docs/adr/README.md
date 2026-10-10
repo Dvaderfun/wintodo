@@ -19,7 +19,7 @@ owner's acknowledgement first (`AGENTS.md`, Working style).
 | [008](ADR-008-perf-budget-rebaseline.md) | Performance budgets re-baselined to the measured WinUI 3 floor | accepted |
 | [009](ADR-009-list-emoji-icons.md) | Optional emoji icons for user lists | accepted |
 | [010](ADR-010-ai-friendly-repo-docs.md) | AI-friendly repo layout, vendored skills, toolchain 0.7 | accepted |
-| [011](ADR-011-ux13-validation-harnesses.md) | UX-13 validation with separately corrected harnesses | proposed |
+| [011](ADR-011-ux13-validation-harnesses.md) | UX-13 validation with separately corrected harnesses | accepted |
 
 ADR-001…007 were written inline in `PLAN.md` §2 and moved here verbatim by ADR-010.
 

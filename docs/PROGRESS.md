@@ -59,10 +59,9 @@ As of 2026-10-11:
   M3/M4/M5/M7/M8/M13, multi-select, navigation and notification settings pass.
   Stability passes on repeat. Baseline harness failures corrected separately:
   M6 7/7, list icons 10/10, Tasks settings 9/9 and composer 3/3 now pass.
-  Motion visuals and the strict fresh timing comparison pass; reduced-motion
-  validation and acknowledgement of the corrected harnesses remain open.
-- **Next:** Close UX-13's reduced-motion validation and harness acknowledgement,
-  then UX-10 undo, via
+  Complete: motion 7/7 with strict fresh timing PASS, reduced motion and Windows
+  setting restoration verified; corrected harnesses acknowledged under ADR-011.
+- **Next:** UX-10 undo, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
@@ -2462,3 +2461,23 @@ establish full package acceptance. No app or test harness source changed.
   `40a1a34`: [ADR-011](adr/ADR-011-ux13-validation-harnesses.md). This clarification
   is proposed only; the package remains in progress.
 - UX-10 has not been claimed or implemented while UX-13 closure remains pending.
+
+## UX-13 — Close motion validation          2026-10-11
+
+**Gate: PASS** — motion 7/7, zero skipped. Candidate completion median/mean
+332.018/332.204 ms remain below the fresh pre-refactor baseline 333.070/335.488 ms.
+Animation-off placement samples 67.143, 92.222, 64.366 ms all omit the 250 ms hold.
+Windows Animation effects restored and read back as original=1, restored=1.
+
+**Shipped**
+- Owner acknowledged ADR-011 and authorized the temporary Windows setting change
+  with "Yes" on 2026-10-11. Accepted the separate harness corrections in `40a1a34`
+  while preserving functional assertions and strict timing thresholds.
+- Source split, all functional gates, 259/259 tests, Debug/Release builds and
+  clean structural/WinUI review proof remain current for unchanged product source.
+- Evidence: `tests/ui/artifacts/ux13-approved-motion/` contains results, timing,
+  restoration JSON, screenshots and recording. No AOT runtime claim.
+
+**Deviations**
+- Literal unchanged-script criterion clarified by accepted ADR-011. Earlier
+  failures remain recorded. UX-13 is complete; UX-10 is next.

@@ -1,9 +1,9 @@
 # ADR-011 — UX-13 validation with corrected harnesses
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-11
 - **Supersedes:** UX-13's literal requirement that all UI gate scripts remain unchanged
-- **Owner acknowledgement:** pending
+- **Owner acknowledgement:** the owner replied "Yes" on 2026-10-11 to accepting this ADR and running reduced-motion validation with verified setting restoration.
 
 ## Context
 
