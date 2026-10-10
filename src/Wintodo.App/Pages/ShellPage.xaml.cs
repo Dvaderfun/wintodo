@@ -99,6 +99,14 @@ public sealed partial class ShellPage : Page
         DefaultListNavigationItem.DragOver += OnNavigationDragOver;
         DefaultListNavigationItem.Drop += OnListDrop;
 
+        foreach (NavigationViewItem item in new[] { MyDayNavigationItem, ImportantNavigationItem })
+        {
+            item.AllowDrop = true;
+            item.DragOver += OnSmartListDragOver;
+            item.DragLeave += OnSmartListDragLeave;
+            item.Drop += OnSmartListDrop;
+        }
+
     }
 
     public ShellViewModel ViewModel { get; }
@@ -639,6 +647,48 @@ public sealed partial class ShellPage : Page
         {
             args.AcceptedOperation = DataPackageOperation.Move;
         }
+    }
+
+    private void OnSmartListDragOver(object sender, DragEventArgs args)
+    {
+        args.Handled = true;
+        if (!args.DataView.Contains(TaskListView.TaskDragFormat))
+        {
+            args.AcceptedOperation = DataPackageOperation.None;
+            args.DragUIOverride.Clear();
+            return;
+        }
+
+        args.AcceptedOperation = DataPackageOperation.Move;
+        args.DragUIOverride.Caption = _resources.GetString(
+            ReferenceEquals(sender, MyDayNavigationItem) ? "Drop_AddToMyDay" : "Drop_MarkImportant");
+        args.DragUIOverride.IsCaptionVisible = true;
+    }
+
+    private void OnSmartListDragLeave(object sender, DragEventArgs args)
+    {
+        args.DragUIOverride.Clear();
+    }
+
+    private async void OnSmartListDrop(object sender, DragEventArgs args)
+    {
+        if (!args.DataView.Contains(TaskListView.TaskDragFormat)) return;
+        args.Handled = true;
+        args.AcceptedOperation = DataPackageOperation.Move;
+        var deferral = args.GetDeferral();
+        try
+        {
+            object value = await args.DataView.GetDataAsync(TaskListView.TaskDragFormat);
+            if (value is string uids)
+            {
+                await ViewModel.TaskList.AddDroppedTasksAsync(
+                    uids.Split('\n', StringSplitOptions.RemoveEmptyEntries),
+                    ReferenceEquals(sender, MyDayNavigationItem)
+                        ? Wintodo.Core.Queries.ListQueryKind.MyDay
+                        : Wintodo.Core.Queries.ListQueryKind.Important);
+            }
+        }
+        finally { deferral.Complete(); }
     }
 
     private async void OnListDrop(object sender, DragEventArgs args)

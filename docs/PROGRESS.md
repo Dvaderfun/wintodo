@@ -20,8 +20,8 @@ As of 2026-10-10:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 165, Data 83, Sync 9 — 257/257,
-  zero skipped on the UX-09 closure run.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 165, Data 85, Sync 9 — 259/259,
+  zero skipped on the UX-11 closure run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** Final app name and
@@ -49,8 +49,10 @@ As of 2026-10-10:
 - **UX-09:** Complete: Extended selection, bulk actions, atomic writes, one
   delete undo entry and multi-task navigation drag. Multi-select 7/7, M3 10/10
   plus restart, M8 17/17, stability 3/3; Debug/Release builds and 257 tests pass.
-- **Next:** UX-11 navigation drops is independent and ready; UX-13 is now
-  unblocked by UX-09. Keep the UX-02 composer
+- **UX-11:** Complete: My Day and Important accept single/multi-task drops,
+  set rather than toggle, and retain original lists. M5 9/9 plus three restart
+  checks, M8 17/17 and 259 tests pass; Debug/Release builds are clean.
+- **Next:** UX-13 is ready, with UX-07/UX-09 complete. Keep the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -2269,3 +2271,37 @@ remains in progress; no open row is reported as passed.
   existing fixture's initialization; fresh full suite passes 257/257. Pool
   cleanup isolation is tracked in UX-PLAN's Parking lot for separate work.
 - UX-02 composer/performance and earlier manual/AOT deferrals remain open.
+
+## UX-11 — Drop tasks on My Day and Important          2026-10-10
+
+**Gate: PASS**
+- Debug/Release x64 warnings-as-errors builds: zero warnings/errors.
+  Core 165, Data 85, Sync 9: 259/259 tests, zero skipped. Two new batch cases
+  prove repeated drops retain membership/importance, original lists and
+  unrelated tasks without extra changes or notifications.
+- Expanded M5 run-20261010-200852: 9/9 plus 3/3 restart checks. Single and
+  repeated drops work for both targets; a two-task selection gains both
+  properties, stays in Beta, and survives restart. Interactive-control audit
+  remains clean. Existing search, clock rollover and sort checks pass.
+- M8 run-20261010-201030: 17/17, accessibility zero errors and four contrast
+  palettes. WinUI code review: no remaining Error/Warning findings.
+
+**Shipped**
+- My Day/Important accept only task drags; localized platform drag captions
+  describe the target action and clear on leaving. Drop handlers hold an async
+  deferral while reading the UID payload and applying the action.
+- TaskListViewModel reuses ApplyTaskBatchAsync to set MyDayDate from IClock
+  or mark importance, honoring starred-to-top preferences. Repeating a drop
+  keeps the property set. Existing multi-task payloads are supported atomically.
+- M5 coverage extended for drops, original-list retention and restart.
+  Updated its stale VSTest invocation to the repository's MTP command.
+  DESIGN, architecture and testing guide document the shipped behavior.
+
+**Validation notes / deviations**
+- First M5 run loaded the old phase-one suite before the bulk check was added;
+  new restart expectations then failed. Complete final rerun passes all checks.
+- Reviewed post-drop and restart screenshots. Screen/record capture omitted
+  the Windows drag overlay, so those captures are not visual caption proof;
+  caption properties were checked against the restored project API and review.
+- No new dependency, migration, control, AutomationId or accepted decision.
+  Earlier owner-run Narrator/AOT and UX-02 composer/performance gates remain open.

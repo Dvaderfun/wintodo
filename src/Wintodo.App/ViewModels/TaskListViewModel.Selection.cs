@@ -57,6 +57,19 @@ public sealed partial class TaskListViewModel
         NavigationDataChanged?.Invoke();
     }
 
+    internal async Task AddDroppedTasksAsync(IReadOnlyList<string> uids, Core.Queries.ListQueryKind target)
+    {
+        TaskBatchAction action = target switch
+        {
+            Core.Queries.ListQueryKind.MyDay => TaskBatchAction.AddToMyDay,
+            Core.Queries.ListQueryKind.Important => TaskBatchAction.MarkImportant,
+            _ => throw new ArgumentOutOfRangeException(nameof(target)),
+        };
+        await _taskStore.ApplyTaskBatchAsync(uids, action, moveStarredToTop: _preferences.MoveStarredToTop);
+        await ReloadAsync();
+        NavigationDataChanged?.Invoke();
+    }
+
     [RelayCommand]
     private async Task MoveSelectionAsync(long listId) =>
         await ApplySelectionAsync(TaskBatchAction.Move, destinationListId: listId);

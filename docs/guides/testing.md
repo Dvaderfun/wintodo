@@ -58,7 +58,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-multiselect-gate.ps1` | Ctrl/Shift selection, SelectionPattern and detail visibility, bulk importance/My Day/due date/completion, move, delete/undo, Ctrl+A and Esc |
 | `run-completion-motion-gate.ps1 -BaselineTimings <timings.json>` | 200 tasks / 20 lists: 15 in-process UIA placement samples versus a matched UX-07 baseline from `run-completion-measure.ps1`, screenshot/video, uncompletion, star and undo. `-TestReducedMotion` temporarily changes Windows Animation effects: obtain owner permission first; checks three instant placements and verifies restoration in `finally`. |
 | `run-m4-gate.ps1` | Detail pane fields and restart persistence |
-| `run-m5-gate.ps1` | Smart lists, search, sort, restart |
+| `run-m5-gate.ps1` | Smart lists, search, sort; single/repeated/multi-task drops on My Day and Important, original-list retention and restart persistence |
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |
 | `run-m7-gate.ps1` | Reminders, toasts, badge, jump list (`-VerifyToastCompletion`, `-VerifyToastSnooze`) |
 | `run-m8-gate.ps1` | Design, responsive layout, all four Windows contrast palettes (selected/unselected custom list, search border and header focus), accessibility audit |

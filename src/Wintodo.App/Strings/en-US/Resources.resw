@@ -1124,4 +1124,7 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <data name="Shortcut20_Action" xml:space="preserve"><value>Select all tasks in the current group</value></data>
   <data name="Shortcut21_Key" xml:space="preserve"><value>Shift+↑ / Shift+↓</value></data>
   <data name="Shortcut21_Action" xml:space="preserve"><value>Extend task selection</value></data>
+  <!-- UX-11 -->
+  <data name="Drop_AddToMyDay" xml:space="preserve"><value>Add to My Day</value></data>
+  <data name="Drop_MarkImportant" xml:space="preserve"><value>Mark as important</value></data>
 </root>
