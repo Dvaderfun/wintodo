@@ -21,7 +21,7 @@ As of 2026-10-10:
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
   Tests (xunit v3 on Microsoft Testing Platform): Core 165, Data 67, Sync 9 — 241/241,
-  zero skipped on the UX-07 closure run.
+  zero skipped on the UX-08 implementation run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** Final app name and
@@ -42,7 +42,11 @@ As of 2026-10-10:
 - **UX-07:** Stable grouped collections with keyed diffs; exact task selection,
   completion focus and middle-of-list viewport checks pass (3/3). M3/M5/M8 pass;
   FD before/after measurements recorded; no AOT runtime claim.
-- **Next:** UX-08 completion motion or UX-09 multi-select, keeping the UX-02 composer
+- **UX-08:** Visual-state completion/check fade, spring, star and undo motion implemented;
+  stability 3/3, M3 10/10 plus restart, M8 17/17 and 241/241 tests pass.
+  Completion timing acceptance remains failed; Windows animation-off verification
+  awaits permission for its temporary OS setting change. Package remains in progress.
+- **Next:** Close UX-08's timing/reduced-motion rows, then UX-09 multi-select, keeping the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -2094,3 +2098,72 @@ stability 3/3; M3 10/10 plus restart; M5 6/6 plus restart 2/2; M8 17/17.
   retaining the cached task object. Completion motion remains UX-08.
 - Local scratch databases were used because Windows Sandbox is disabled.
   UX-02 composer/performance rows and owner-run manual gates remain open.
+
+## UX-08 — Completion and row motion          2026-10-10
+
+**Gate:** PARTIAL — Debug and Release x64 warnings-as-errors builds clean; 241/241 unit tests
+(Core 165, Data 67, Sync 9), zero skipped; stability 3/3; M3 10/10 plus restart;
+M8 17/17. Completion performance acceptance FAIL; reduced-motion Windows test
+SKIPPED pending owner authorization for a temporary OS setting change. UX-08
+remains in progress; no open row is reported as passed.
+
+**Shipped**
+- Completion/check fades use explicit visual-state transitions (100/200 ms),
+  with immediate strikethrough; the circle spring keeps damping 0.6 / 40 ms.
+  Star bounce follows visual-state changes. Row recycling resets scale,
+  opacity and glyph state without replaying completion for a different task.
+- Completion/uncompletion restores built-in row add/delete/reorder transitions
+  specifically at the grouped move, retaining UX-07 selection/viewport capture.
+  The existing 250 ms completion hold is skipped when animations are disabled;
+  the list now observes UISettings.AnimationsEnabledChanged while open and also
+  skips delayed viewport restoration when effects are off.
+- Undo snackbar slides up 24 px and fades over 200 ms, stays loaded for its
+  200 ms exit after the existing five-second lifetime, then unloads. Explicit
+  storyboards and composition motion honor the Windows animation setting;
+  setting changes marshal through DispatcherQueue, with loaded/unloaded cleanup.
+- Dedicated motion gate seeds 200 tasks / 20 lists, checks timing/placement,
+  uncompletion, importance and snackbar auto-dismissal, and writes screenshots
+  and an MP4/frame bundle. Its optional -TestReducedMotion requires owner
+  permission, toggles client-area animation only temporarily, restores in finally,
+  and measures placement via UIA in one process to expose a retained 250 ms delay.
+
+**Evidence and review**
+- Motion functional checks 3/3 in
+  tests/ui/artifacts/completion-motion/run-20261010-184420/results.json.
+  Screenshot sequence reviewed: [active](../tests/ui/artifacts/completion-motion/run-20261010-184420/01-active.png),
+  [completed](../tests/ui/artifacts/completion-motion/run-20261010-184420/02-completed.png),
+  [placement](../tests/ui/artifacts/completion-motion/run-20261010-184420/03-completion-placement.png),
+  [important](../tests/ui/artifacts/completion-motion/run-20261010-184420/04-important.png),
+  [undo](../tests/ui/artifacts/completion-motion/run-20261010-184420/05-undo.png).
+  The [MP4](../tests/ui/artifacts/completion-motion/run-20261010-184420/completion.mp4)
+  is delivered/playable (360 frames), but WGC held stale images during motion;
+  screenshot sequence is the accepted evidence format, not that video's timing.
+  A screen-capture trial failed to start; earlier recorder stderr handling was fixed.
+- M3: tests/ui/artifacts/m3/run-20261010-184608, 10/10 plus restart.
+  Initial stability/M8: list-stability/run-20261010-184006 (3/3, 10 px anchor
+  shift), m8/run-20261010-184056 (17/17), under tests/ui/artifacts. Screenshot
+  contact sheets reviewed for layout, focus and all four contrast palettes.
+- /winui-code-review: no remaining Error/Warning findings after fixing recycled
+  spring replay and stopping in-flight explicit motion on an OS setting change.
+  App-scoped find-api verified API shapes; WinUIAnalyzer ran with zero warnings.
+  No new dependencies, reflection, strings, schema, theme tokens or AutomationId
+  changes. AOT runtime validation remains under the existing M9 owner deferral.
+
+**Open rows / deviations**
+- PERF.md retains failed historical comparisons (905 ms vs 830 ms isolated).
+  Fresh matched medians 1074.956 ms after vs 1071.996 ms before (+2.960 ms)
+  still do not satisfy strict no-regression acceptance; no tolerance was invented.
+- Reduced-motion functional verification awaits permission to change a Windows
+  setting outside the repo, as AGENTS.md requires. The gate is implemented but
+  its optional path has not run; Windows Animation effects were left unchanged.
+- Local scratch databases used because Windows Sandbox is unavailable.
+  UX-02 composer/performance rows and earlier owner-run manual gates remain open.
+
+**Final verification**
+- Final stability run: tests/ui/artifacts/list-stability/run-20261010-185209,
+  3/3, zero viewport-anchor shift, exact focused completed task 101; screenshots
+  reviewed. Final M8: tests/ui/artifacts/m8/run-20261010-185248, 17/17;
+  all screenshot states reviewed. Debug/Release x64 both zero warnings/errors.
+- The committed recorder readiness handshake now waits for recording-started
+  output; this last harness-only fix is syntax-checked, not a newly passed motion
+  gate. The existing functional screenshot evidence remains from run-184420.
