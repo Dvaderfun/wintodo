@@ -261,6 +261,12 @@ start a drag with the task UID, and the list handles drops at an active-row
 boundary. Completed rows and non-manual lists cannot be reordered. The view
 model applies the move and persists order after the routed drop has finished.
 
+Task mutations update stable grouped collections in place. Group header counts,
+names and expansion bind to observable metadata. Selection stays on a completed
+task as it moves into Completed; its group expands to keep it addressable.
+Viewport restoration cancels on new input, and preserves keyboard focus even
+when the selected completed container is virtualized outside the viewport.
+
 **Element budget: 12 or fewer visual elements.** Every element costs working set
 × visible rows × recycling headroom. Do not add decorative borders.
 
