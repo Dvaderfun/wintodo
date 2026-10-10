@@ -12,6 +12,7 @@ param(
 )
 
 $ErrorActionPreference = "Continue"
+$PSNativeCommandUseErrorActionPreference = $true
 $pass = 0
 $fail = 0
 $results = @()
@@ -33,6 +34,7 @@ function Test-UI {
     param([string]$Name, [scriptblock]$Script)
 
     try {
+        $ErrorActionPreference = "Stop"
         $output = & $Script 2>&1
         if ($LASTEXITCODE -eq 0) {
             $script:pass++
@@ -60,14 +62,34 @@ Test-UI "Navigation sync status exists" {
 }
 Test-UI "Open Settings" {
     winapp ui invoke "Todo.Nav.Settings" -w $mainHwnd
-    winapp ui wait-for "Todo.Settings.Sync.Server" -w $mainHwnd -t 5000
+    winapp ui wait-for "Todo.Settings.Sync.Configure" -w $mainHwnd -t 5000
 }
 Take-Screenshot "01-sync-disconnected.png"
 
-Test-UI "Enter CalDAV account" {
+Test-UI "Configure dialog enables submit and clears password on cancel" {
+    winapp ui invoke "Todo.Settings.Sync.Configure" -w $mainHwnd
+    winapp ui wait-for "Todo.Settings.Sync.Connect" -w $mainHwnd -p IsEnabled --value "False" -t 3000
     winapp ui set-value "Todo.Settings.Sync.Server" "http://127.0.0.1:$ServerPort/" -w $mainHwnd
     winapp ui set-value "Todo.Settings.Sync.Username" "alice" -w $mainHwnd
     winapp ui send-keys "secret" --target "Todo.Settings.Sync.Password" -w $mainHwnd --via send-input
+    winapp ui wait-for "Todo.Settings.Sync.Connect" -w $mainHwnd -p IsEnabled --value "True" -t 3000
+    Take-Screenshot "01a-connect-dialog.png"
+    winapp ui invoke "Todo.Dialog.CalDav.Cancel" -w $mainHwnd
+    winapp ui invoke "Todo.Settings.Sync.Configure" -w $mainHwnd
+    winapp ui wait-for "Todo.Settings.Sync.Server" -w $mainHwnd --value "http://127.0.0.1:$ServerPort/" -t 3000
+    winapp ui wait-for "Todo.Settings.Sync.Connect" -w $mainHwnd -p IsEnabled --value "False" -t 3000
+}
+Test-UI "Failed connect remains in the dialog and allows retry" {
+    winapp ui set-value "Todo.Settings.Sync.Server" "invalid server address" -w $mainHwnd
+    winapp ui send-keys "secret" --target "Todo.Settings.Sync.Password" -w $mainHwnd --via send-input
+    winapp ui invoke "Todo.Settings.Sync.Connect" -w $mainHwnd
+    winapp ui wait-for "Todo.Dialog.CalDav.Error" -w $mainHwnd -t 5000
+    winapp ui wait-for "Todo.Settings.Sync.Connect" -w $mainHwnd -p IsEnabled --value "True" -t 3000
+    Take-Screenshot "01b-connect-error.png"
+}
+Test-UI "Enter CalDAV account" {
+    winapp ui set-value "Todo.Settings.Sync.Server" "http://127.0.0.1:$ServerPort/" -w $mainHwnd
+    winapp ui set-value "Todo.Settings.Sync.Username" "alice" -w $mainHwnd
     winapp ui wait-for "Todo.Settings.Sync.Connect" -w $mainHwnd -p IsEnabled --value "True" -t 3000
 }
 Test-UI "Connect and discover VTODO list" {
@@ -145,7 +167,7 @@ Test-UI "New sync controls expose AutomationIds" {
 }
 Test-UI "Disconnect removes the account surface" {
     winapp ui invoke "Todo.Settings.Sync.Disconnect" -w $mainHwnd
-    winapp ui wait-for "Todo.Settings.Sync.Server" -w $mainHwnd -t 5000
+    winapp ui wait-for "Todo.Settings.Sync.Configure" -w $mainHwnd -t 5000
     winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $mainHwnd --value "Not connected" -t 5000
 }
 Take-Screenshot "03-sync-disconnected-again.png"

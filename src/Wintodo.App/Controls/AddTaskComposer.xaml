@@ -49,6 +49,20 @@
                     </VisualState.Setters>
                 </VisualState>
             </VisualStateGroup>
+            <VisualStateGroup x:Name="ActionLayoutStates">
+                <VisualState x:Name="CompactActions">
+                    <VisualState.Setters>
+                        <Setter Target="InlineOptions.Visibility" Value="Collapsed" />
+                        <Setter Target="CompactOptionsButton.Visibility" Value="Visible" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="InlineActions">
+                    <VisualState.Setters>
+                        <Setter Target="InlineOptions.Visibility" Value="Visible" />
+                        <Setter Target="CompactOptionsButton.Visibility" Value="Collapsed" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
         <Grid
             x:Name="ComposerGrid"
@@ -117,6 +131,7 @@
             <StackPanel
                 x:Name="ComposerActions"
                 Grid.Column="2"
+                Loaded="OnComposerActionsLoaded"
                 VerticalAlignment="Center"
                 Orientation="Horizontal"
                 Spacing="4"
@@ -127,135 +142,189 @@
                     </TransitionCollection>
                 </StackPanel.ChildrenTransitions>
 
+                <StackPanel x:Name="InlineOptions" Orientation="Horizontal" Spacing="4">
+                    <DropDownButton
+                        x:Name="TargetListButton"
+                        x:Uid="ComposerListButton"
+                        AutomationProperties.AutomationId="Todo.Composer.ListButton"
+                        Style="{StaticResource ComposerChipStyle}"
+                        Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.IsComposerTargetVisible), Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE8FD;" />
+                            <TextBlock
+                                MaxWidth="120"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.ComposerTargetLabel, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout
+                                x:Name="TargetListFlyout"
+                                Opening="OnTargetListFlyoutOpening" />
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+                    <DropDownButton
+                        x:Name="DueDateButton"
+                        x:Uid="ComposerDueButton"
+                        AutomationProperties.AutomationId="Todo.Composer.DueDateButton"
+                        Style="{StaticResource ComposerChipStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE787;" />
+                            <TextBlock
+                                MaxWidth="72"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.ComposerDueLabel, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.HasComposerDue), Mode=OneWay}" />
+                        </StackPanel>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem
+                                    x:Uid="ComposerDueToday"
+                                    AutomationProperties.AutomationId="Todo.Composer.DueToday"
+                                    Command="{x:Bind ViewModel.SetComposerDueCommand, Mode=OneTime}"
+                                    CommandParameter="Today" />
+                                <MenuFlyoutItem
+                                    x:Uid="ComposerDueTomorrow"
+                                    AutomationProperties.AutomationId="Todo.Composer.DueTomorrow"
+                                    Command="{x:Bind ViewModel.SetComposerDueCommand, Mode=OneTime}"
+                                    CommandParameter="Tomorrow" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem
+                                    x:Uid="ComposerDueClear"
+                                    AutomationProperties.AutomationId="Todo.Composer.DueClear"
+                                    Command="{x:Bind ViewModel.SetComposerDueCommand, Mode=OneTime}"
+                                    CommandParameter="Clear" />
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+                    <DropDownButton
+                        x:Name="ReminderButton"
+                        x:Uid="ComposerReminderButton"
+                        AutomationProperties.AutomationId="Todo.Composer.ReminderButton"
+                        Style="{StaticResource ComposerChipStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE7ED;" />
+                            <TextBlock
+                                MaxWidth="72"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.ComposerReminderLabel, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.HasComposerReminder), Mode=OneWay}" />
+                        </StackPanel>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem
+                                    x:Uid="ComposerReminderLater"
+                                    AutomationProperties.AutomationId="Todo.Composer.ReminderLater"
+                                    Command="{x:Bind ViewModel.SetComposerReminderCommand, Mode=OneTime}"
+                                    CommandParameter="LaterToday" />
+                                <MenuFlyoutItem
+                                    x:Uid="ComposerReminderTomorrow"
+                                    AutomationProperties.AutomationId="Todo.Composer.ReminderTomorrow"
+                                    Command="{x:Bind ViewModel.SetComposerReminderCommand, Mode=OneTime}"
+                                    CommandParameter="TomorrowMorning" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem
+                                    x:Uid="ComposerReminderClear"
+                                    AutomationProperties.AutomationId="Todo.Composer.ReminderClear"
+                                    Command="{x:Bind ViewModel.SetComposerReminderCommand, Mode=OneTime}"
+                                    CommandParameter="Clear" />
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+                    <DropDownButton
+                        x:Name="RepeatButton"
+                        x:Uid="ComposerRepeatButton"
+                        AutomationProperties.AutomationId="Todo.Composer.RepeatButton"
+                        Style="{StaticResource ComposerChipStyle}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="&#xE8EE;" />
+                            <TextBlock
+                                MaxWidth="72"
+                                Style="{StaticResource CaptionTextBlockStyle}"
+                                Text="{x:Bind ViewModel.ComposerRepeatLabel, Mode=OneWay}"
+                                TextTrimming="CharacterEllipsis"
+                                Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.HasComposerRepeat), Mode=OneWay}" />
+                        </StackPanel>
+                        <DropDownButton.Flyout>
+                            <MenuFlyout>
+                                <MenuFlyoutItem
+                                    x:Uid="ComposerRepeatDaily"
+                                    AutomationProperties.AutomationId="Todo.Composer.RepeatDaily"
+                                    Command="{x:Bind ViewModel.SetComposerRepeatCommand, Mode=OneTime}"
+                                    CommandParameter="Daily" />
+                                <MenuFlyoutItem
+                                    x:Uid="ComposerRepeatWeekly"
+                                    AutomationProperties.AutomationId="Todo.Composer.RepeatWeekly"
+                                    Command="{x:Bind ViewModel.SetComposerRepeatCommand, Mode=OneTime}"
+                                    CommandParameter="Weekly" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem
+                                    x:Uid="ComposerRepeatClear"
+                                    AutomationProperties.AutomationId="Todo.Composer.RepeatClear"
+                                    Command="{x:Bind ViewModel.SetComposerRepeatCommand, Mode=OneTime}"
+                                    CommandParameter="Clear" />
+                            </MenuFlyout>
+                        </DropDownButton.Flyout>
+                    </DropDownButton>
+
+                    <Rectangle
+                        Width="1"
+                        Height="20"
+                        Margin="4,0"
+                        VerticalAlignment="Center"
+                        Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                </StackPanel>
+
                 <DropDownButton
-                    x:Name="TargetListButton"
-                    x:Uid="ComposerListButton"
-                    AutomationProperties.AutomationId="Todo.Composer.ListButton"
+                    x:Name="CompactOptionsButton"
+                    x:Uid="ComposerOptionsButton"
+                    AutomationProperties.AutomationId="Todo.Composer.OptionsButton"
                     Style="{StaticResource ComposerChipStyle}"
-                    Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.IsComposerTargetVisible), Mode=OneWay}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE8FD;" />
-                        <TextBlock
-                            MaxWidth="120"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ComposerTargetLabel, Mode=OneWay}"
-                            TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
+                    Visibility="Collapsed">
+                    <FontIcon Glyph="&#xE712;" />
                     <DropDownButton.Flyout>
-                        <MenuFlyout
-                            x:Name="TargetListFlyout"
-                            Opening="OnTargetListFlyoutOpening" />
-                    </DropDownButton.Flyout>
-                </DropDownButton>
-
-                <DropDownButton
-                    x:Name="DueDateButton"
-                    x:Uid="ComposerDueButton"
-                    AutomationProperties.AutomationId="Todo.Composer.DueDateButton"
-                    Style="{StaticResource ComposerChipStyle}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE787;" />
-                        <TextBlock
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ComposerDueLabel, Mode=OneWay}"
-                            Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.HasComposerDue), Mode=OneWay}" />
-                    </StackPanel>
-                    <DropDownButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem
-                                x:Uid="ComposerDueToday"
-                                AutomationProperties.AutomationId="Todo.Composer.DueToday"
-                                Command="{x:Bind ViewModel.SetComposerDueCommand, Mode=OneTime}"
-                                CommandParameter="Today" />
-                            <MenuFlyoutItem
-                                x:Uid="ComposerDueTomorrow"
-                                AutomationProperties.AutomationId="Todo.Composer.DueTomorrow"
-                                Command="{x:Bind ViewModel.SetComposerDueCommand, Mode=OneTime}"
-                                CommandParameter="Tomorrow" />
-                            <MenuFlyoutSeparator />
-                            <MenuFlyoutItem
-                                x:Uid="ComposerDueClear"
-                                AutomationProperties.AutomationId="Todo.Composer.DueClear"
-                                Command="{x:Bind ViewModel.SetComposerDueCommand, Mode=OneTime}"
-                                CommandParameter="Clear" />
+                        <MenuFlyout Opening="OnCompactOptionsOpening">
+                            <MenuFlyoutSubItem
+                                x:Name="CompactTargetList"
+                                x:Uid="ComposerOptionsList"
+                                AutomationProperties.AutomationId="Todo.Composer.Options.List"
+                                Text="{x:Bind ViewModel.ComposerTargetLabel, Mode=OneWay}"
+                                Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.IsComposerTargetVisible), Mode=OneWay}" />
+                            <MenuFlyoutSubItem x:Uid="ComposerOptionsDue" AutomationProperties.AutomationId="Todo.Composer.Options.Due">
+                                <MenuFlyoutItem x:Uid="ComposerDueToday" AutomationProperties.AutomationId="Todo.Composer.Options.DueToday"
+                                    Command="{x:Bind ViewModel.SetComposerDueCommand, Mode=OneTime}" CommandParameter="Today" />
+                                <MenuFlyoutItem x:Uid="ComposerDueTomorrow" AutomationProperties.AutomationId="Todo.Composer.Options.DueTomorrow"
+                                    Command="{x:Bind ViewModel.SetComposerDueCommand, Mode=OneTime}" CommandParameter="Tomorrow" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem x:Uid="ComposerDueClear" AutomationProperties.AutomationId="Todo.Composer.Options.DueClear"
+                                    Command="{x:Bind ViewModel.SetComposerDueCommand, Mode=OneTime}" CommandParameter="Clear" />
+                            </MenuFlyoutSubItem>
+                            <MenuFlyoutSubItem x:Uid="ComposerOptionsReminder" AutomationProperties.AutomationId="Todo.Composer.Options.Reminder">
+                                <MenuFlyoutItem x:Uid="ComposerReminderLater" AutomationProperties.AutomationId="Todo.Composer.Options.ReminderLater"
+                                    Command="{x:Bind ViewModel.SetComposerReminderCommand, Mode=OneTime}" CommandParameter="LaterToday" />
+                                <MenuFlyoutItem x:Uid="ComposerReminderTomorrow" AutomationProperties.AutomationId="Todo.Composer.Options.ReminderTomorrow"
+                                    Command="{x:Bind ViewModel.SetComposerReminderCommand, Mode=OneTime}" CommandParameter="TomorrowMorning" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem x:Uid="ComposerReminderClear" AutomationProperties.AutomationId="Todo.Composer.Options.ReminderClear"
+                                    Command="{x:Bind ViewModel.SetComposerReminderCommand, Mode=OneTime}" CommandParameter="Clear" />
+                            </MenuFlyoutSubItem>
+                            <MenuFlyoutSubItem x:Uid="ComposerOptionsRepeat" AutomationProperties.AutomationId="Todo.Composer.Options.Repeat">
+                                <MenuFlyoutItem x:Uid="ComposerRepeatDaily" AutomationProperties.AutomationId="Todo.Composer.Options.RepeatDaily"
+                                    Command="{x:Bind ViewModel.SetComposerRepeatCommand, Mode=OneTime}" CommandParameter="Daily" />
+                                <MenuFlyoutItem x:Uid="ComposerRepeatWeekly" AutomationProperties.AutomationId="Todo.Composer.Options.RepeatWeekly"
+                                    Command="{x:Bind ViewModel.SetComposerRepeatCommand, Mode=OneTime}" CommandParameter="Weekly" />
+                                <MenuFlyoutSeparator />
+                                <MenuFlyoutItem x:Uid="ComposerRepeatClear" AutomationProperties.AutomationId="Todo.Composer.Options.RepeatClear"
+                                    Command="{x:Bind ViewModel.SetComposerRepeatCommand, Mode=OneTime}" CommandParameter="Clear" />
+                            </MenuFlyoutSubItem>
                         </MenuFlyout>
                     </DropDownButton.Flyout>
                 </DropDownButton>
-
-                <DropDownButton
-                    x:Name="ReminderButton"
-                    x:Uid="ComposerReminderButton"
-                    AutomationProperties.AutomationId="Todo.Composer.ReminderButton"
-                    Style="{StaticResource ComposerChipStyle}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE7ED;" />
-                        <TextBlock
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ComposerReminderLabel, Mode=OneWay}"
-                            Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.HasComposerReminder), Mode=OneWay}" />
-                    </StackPanel>
-                    <DropDownButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem
-                                x:Uid="ComposerReminderLater"
-                                AutomationProperties.AutomationId="Todo.Composer.ReminderLater"
-                                Command="{x:Bind ViewModel.SetComposerReminderCommand, Mode=OneTime}"
-                                CommandParameter="LaterToday" />
-                            <MenuFlyoutItem
-                                x:Uid="ComposerReminderTomorrow"
-                                AutomationProperties.AutomationId="Todo.Composer.ReminderTomorrow"
-                                Command="{x:Bind ViewModel.SetComposerReminderCommand, Mode=OneTime}"
-                                CommandParameter="TomorrowMorning" />
-                            <MenuFlyoutSeparator />
-                            <MenuFlyoutItem
-                                x:Uid="ComposerReminderClear"
-                                AutomationProperties.AutomationId="Todo.Composer.ReminderClear"
-                                Command="{x:Bind ViewModel.SetComposerReminderCommand, Mode=OneTime}"
-                                CommandParameter="Clear" />
-                        </MenuFlyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
-
-                <DropDownButton
-                    x:Name="RepeatButton"
-                    x:Uid="ComposerRepeatButton"
-                    AutomationProperties.AutomationId="Todo.Composer.RepeatButton"
-                    Style="{StaticResource ComposerChipStyle}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE8EE;" />
-                        <TextBlock
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ComposerRepeatLabel, Mode=OneWay}"
-                            Visibility="{x:Bind local:AddTaskComposer.BoolToVisibility(ViewModel.HasComposerRepeat), Mode=OneWay}" />
-                    </StackPanel>
-                    <DropDownButton.Flyout>
-                        <MenuFlyout>
-                            <MenuFlyoutItem
-                                x:Uid="ComposerRepeatDaily"
-                                AutomationProperties.AutomationId="Todo.Composer.RepeatDaily"
-                                Command="{x:Bind ViewModel.SetComposerRepeatCommand, Mode=OneTime}"
-                                CommandParameter="Daily" />
-                            <MenuFlyoutItem
-                                x:Uid="ComposerRepeatWeekly"
-                                AutomationProperties.AutomationId="Todo.Composer.RepeatWeekly"
-                                Command="{x:Bind ViewModel.SetComposerRepeatCommand, Mode=OneTime}"
-                                CommandParameter="Weekly" />
-                            <MenuFlyoutSeparator />
-                            <MenuFlyoutItem
-                                x:Uid="ComposerRepeatClear"
-                                AutomationProperties.AutomationId="Todo.Composer.RepeatClear"
-                                Command="{x:Bind ViewModel.SetComposerRepeatCommand, Mode=OneTime}"
-                                CommandParameter="Clear" />
-                        </MenuFlyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
-
-                <Rectangle
-                    Width="1"
-                    Height="20"
-                    Margin="4,0"
-                    VerticalAlignment="Center"
-                    Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
                 <Button
                     x:Name="AddTaskButton"

@@ -1,3 +1,5 @@
+param([switch]$Aot)
+
 $ErrorActionPreference = "Stop"
 
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
@@ -5,6 +7,9 @@ $appDirectory = Join-Path $repositoryRoot (
     "src\Wintodo.App\bin\x64\Debug\" +
     "net10.0-windows10.0.26100.0\win-x64"
 )
+if ($Aot) {
+    $appDirectory = Join-Path $repositoryRoot "publish\aot\win-x64"
+}
 $artifactDirectory = Join-Path $PSScriptRoot (
     "artifacts\m13\run-" + [DateTime]::UtcNow.ToString("yyyyMMdd-HHmmss")
 )

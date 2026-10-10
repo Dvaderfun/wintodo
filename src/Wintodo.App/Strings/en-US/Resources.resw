@@ -945,6 +945,14 @@
   <data name="SettingsSyncUsername.Header" xml:space="preserve"><value>Username</value></data>
   <data name="SettingsSyncPassword.Header" xml:space="preserve"><value>Password or app password</value></data>
   <data name="SettingsSyncConnectLabel.Text" xml:space="preserve"><value>Connect</value></data>
+  <data name="SettingsSyncConfigureLabel.Text" xml:space="preserve"><value>Configure</value></data>
+  <data name="SettingsSyncConfigureButton.AutomationProperties.Name" xml:space="preserve"><value>Configure CalDAV account</value></data>
+  <data name="CalDavDialog.Title" xml:space="preserve"><value>Connect a CalDAV account</value></data>
+  <data name="CalDavDialog.PrimaryButtonText" xml:space="preserve"><value>Connect</value></data>
+  <data name="CalDavDialog.CloseButtonText" xml:space="preserve"><value>Cancel</value></data>
+  <data name="CalDavDialogIntro.Text" xml:space="preserve"><value>Enter the address of a task-compatible CalDAV server and the credentials for your account.</value></data>
+  <data name="CalDavDialogError.Title" xml:space="preserve"><value>Could not connect</value></data>
+  <data name="CalDavDialogBusyLabel.Text" xml:space="preserve"><value>Connecting…</value></data>
   <data name="SettingsSyncAccountCard.Header" xml:space="preserve"><value>Connected account</value></data>
   <data name="SettingsSyncAccountCard.Description" xml:space="preserve"><value>Changes synchronize automatically and when the app resumes.</value></data>
   <data name="SettingsSyncNowLabel.Text" xml:space="preserve"><value>Sync now</value></data>
@@ -1005,4 +1013,22 @@
   <data name="ListIconChoice_Note" xml:space="preserve"><value>Note</value></data>
   <data name="ListIconChoice_Money" xml:space="preserve"><value>Money</value></data>
   <data name="ListIconChoice_Gift" xml:space="preserve"><value>Gift</value></data>
+  <data name="ComposerOptionsButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Task options</value>
+  </data>
+  <data name="ComposerOptionsButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Task options</value>
+  </data>
+  <data name="ComposerOptionsList.AutomationProperties.Name" xml:space="preserve">
+    <value>Add to list</value>
+  </data>
+  <data name="ComposerOptionsDue.Text" xml:space="preserve">
+    <value>Due date</value>
+  </data>
+  <data name="ComposerOptionsReminder.Text" xml:space="preserve">
+    <value>Remind me</value>
+  </data>
+  <data name="ComposerOptionsRepeat.Text" xml:space="preserve">
+    <value>Repeat</value>
+  </data>
 </root>
