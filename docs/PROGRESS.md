@@ -27,6 +27,9 @@ As of 2026-10-11:
 - **Known gaps:** Final app name and
   MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
+- **UI execution:** Main-machine automation disabled by default. Legacy UI and
+  performance scripts require session opt-in; Sandbox/VM migration remains open.
+  Build/unit-test work continues on the host. Never fall back to host UI silently.
 - **UX-02:** Complete: Tasks settings 9/9, composer 3/3, clean Debug/Release
   builds and 259/259 tests. Baseline harness targeting/focus failures corrected;
   existing smart-list/FTS performance checks pass without budget changes.
@@ -2540,3 +2543,32 @@ it has not been implemented or silently excluded from package acceptance.
 Final dedicated undo rerun also passes 7/7 with no title-save settling delay:
 `tests/ui/artifacts/undo/run-20261010-233937/`. Immediate title edits are preserved
 through undo; all previously listed required gates remain passing.
+
+## Tooling — Protect the owner's working desktop          2026-10-11
+
+**Gate: PASS (guard verification)** — all 36 UI/performance scripts reject execution
+at their first statement without `WINTODO_ALLOW_LOCAL_UI=1`. Verified with
+PowerShell 7; 35 UI scripts also verified with Windows PowerShell 5.1 (the existing
+performance script uses PowerShell 7 syntax). No fixture setup, app launch, UI
+input or system-setting change ran during verification. Parser/diff checks pass.
+
+**Shipped**
+- Owner reported cursor/focus disruption from local visual gates. Recorded the
+  main-machine policy in AGENTS.md and the testing guide: prefer an isolated VM
+  or Sandbox; leave UI gates pending if isolation is unavailable; never silently
+  fall back to host automation or set the opt-in without session permission.
+- Guarded all 35 UI entry scripts (including direct suites and UIA measurement
+  helpers) plus `scripts/Measure-Perf.ps1`. Loopback CalDAV server excluded because
+  it does not drive desktop input. Builds and unit tests remain available.
+- Testing guide explains process-only opt-in/restoration, guest PID/HWND routing,
+  direct UIA/native helper execution inside the guest, fixture/artifact transfer,
+  and guest process cleanup. It explicitly states legacy gates are local-only.
+
+**Remaining**
+- Sandbox snapshot reports no running/input-ready target; WindowsSandbox.exe is
+  absent on this machine. No Windows feature was enabled. Enablement requires
+  owner action/permission (UAC and potentially restart).
+- Migrate/validate gates for an isolated desktop, or run the current suite inside
+  a dedicated Windows VM. Adding `--on sandbox` only to launch is insufficient
+  because direct UIA/input, paths, server helpers and cleanup still use the host.
+- Prior UI gate results remain recorded; no isolated gate PASS is claimed.

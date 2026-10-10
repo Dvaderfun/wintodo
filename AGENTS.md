@@ -68,6 +68,13 @@ searching with coding. More: [docs/guides/ai-tooling.md](docs/guides/ai-tooling.
 ## Hard rules — never violate
 
 **Build and run**
+- This is the owner's main machine. Never run UI automation, synthetic mouse/
+  keyboard input, or UI-driven performance/contrast tests on the host desktop
+  without explicit permission for that test session. Prefer Windows Sandbox or
+  a dedicated VM; if isolation is unavailable, leave UI gates pending and continue
+  builds/unit tests. Never silently fall back to local. Never set
+  `WINTODO_ALLOW_LOCAL_UI=1` without that permission. Legacy UI scripts are local
+  and guarded; adding `--on sandbox` only to launch is insufficient.
 - Never run the packaged `.exe` directly. Use `BuildAndRun.ps1` or `winapp run`.
 - Never add `<WindowsPackageType>None</WindowsPackageType>`. Never delete `Package.appxmanifest`.
 - Never target `AnyCPU`. x64 or ARM64 only.

@@ -8,6 +8,11 @@ param(
     [switch]$SkipScrollGate,
     [string]$Milestone = "M9"
 )
+# Local desktop input requires explicit owner permission for this session.
+if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1') {
+    throw 'Local UI automation is disabled on this main machine. Use an isolated VM/Sandbox, or obtain owner permission for this session before setting WINTODO_ALLOW_LOCAL_UI=1. See docs/guides/testing.md.'
+}
+
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
