@@ -25,6 +25,12 @@ through `winapp run`, samples working set, reads the startup stage trace, and
 appends dated rows to `docs/PERF.md`. Run it on the reference machine recorded
 in ADR-008, plugged in, with nothing else heavy running.
 
+The harness uses Microsoft Testing Platform filters and live output to seed the
+databases and capture query timings. Repeated runs append rows rather than
+replacing historical measurements. Budget failures return a non-zero exit after
+the complete matrix and scroll results have been recorded; read `summary.json`
+even when the process fails. An aborted run is not a passed gate.
+
 If a row misses a budget, add a note under the table explaining the cause and
 the fix. Do not relax a budget without a new ADR.
 

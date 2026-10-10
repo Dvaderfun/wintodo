@@ -127,11 +127,12 @@ function Seed-Database {
     try {
         Invoke-DotNet -Arguments @(
             "test",
+            "--project",
             (Join-Path $repositoryRoot "tests\Wintodo.Data.Tests"),
             "-c", "Release",
             "-p:Platform=x64",
-            "--filter",
-            "FullyQualifiedName~PerformanceFixtureTests.SeedRequestedPerformanceDatabase",
+            "--filter-method",
+            "*PerformanceFixtureTests.SeedRequestedPerformanceDatabase",
             "--no-build",
             "--no-restore"
         ) -FailureMessage "Performance database seeding failed."
@@ -496,11 +497,13 @@ function Measure-DataAccess {
     $logPath = Join-Path $artifactDirectory "data-access.log"
     $arguments = @(
         "test",
+        "--project",
         (Join-Path $repositoryRoot "tests\Wintodo.Data.Tests"),
         "-c", "Release",
         "-p:Platform=x64",
-        "--filter", "FullyQualifiedName~SmartListPerformanceTests",
-        "--logger", "console;verbosity=detailed",
+        "--filter-class", "*SmartListPerformanceTests",
+        "--output", "Detailed",
+        "--show-live-output", "on",
         "--no-build",
         "--no-restore"
     )
@@ -579,19 +582,13 @@ function Write-PerfRows {
             "$(Format-NullableMeasurement $result.WorkingSet10MinMb ' MB') | " +
             "$($DataAccess.QueryMaxMs.ToString('F3', $invariantCulture)) ms | " +
             "$($DataAccess.SearchMs.ToString('F3', $invariantCulture)) ms |"
-        $pattern = "(?m)^\| [^|]+ \| " + [regex]::Escape($Milestone) +
-            " \| " + [regex]::Escape($result.Build) + " \| " +
-            [regex]::Escape($taskText) + " \|.*$"
-        if ([regex]::IsMatch($content, $pattern)) {
-            $content = [regex]::Replace($content, $pattern, $row)
-        }
-        else {
-            $marker = [regex]::new("(?m)\r?\n\r?\n\*\*Build\*\*")
-            $content = $marker.Replace(
-                $content,
-                "`r`n$row`r`n`r`n**Build**",
-                1)
-        }
+        # Each measurement is evidence, including a failed run before a fix.
+        # Never replace an earlier row for the same milestone and dataset.
+        $marker = [regex]::new("(?m)\r?\n\r?\n\*\*Build\*\*")
+        $content = $marker.Replace(
+            $content,
+            "`r`n$row`r`n`r`n**Build**",
+            1)
     }
 
     $content = $content.TrimEnd("`r", "`n") + "`r`n"
@@ -657,3 +654,8 @@ if ($scrollResults.Count -gt 0) {
     $scrollResults | Format-Table -AutoSize
 }
 Write-Host "Summary: $summaryPath"
+if ($matrix.Where({ -not $_.BudgetPassed }).Count -gt 0 -or
+    -not $dataAccess.QueryPassed -or -not $dataAccess.SearchPassed -or
+    $scrollResults.Where({ $_.Build -eq "AOT" -and -not $_.Passed }).Count -gt 0) {
+    throw "Performance gate failed. Measurements were preserved in $summaryPath and docs/PERF.md."
+}

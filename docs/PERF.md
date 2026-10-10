@@ -130,3 +130,23 @@ result rows.
 | Smart list | My Day | Important | Planned | All | Completed |
 |---|---:|---:|---:|---:|---:|
 | Query time | 0.689 ms | 0.961 ms | 0.660 ms | 0.634 ms | 0.904 ms |
+
+## 2026-10-10 — M9 idle run blocked before runtime measurements
+
+The requested full AOT command stopped in data-access setup because the old
+VSTest filter selected zero tests under MTP. The harness was repaired and its
+seeding/timing parsing verified. No new matrix row exists for this attempt.
+Historical rows above are retained unchanged.
+
+The host was plugged in and matched ADR-008's CPU, but repeated CPU samples
+showed 76–100% use with Zed, Rust compilation, ingest tests and Windows Search
+active. An idle window was requested but not established. For **each** of
+0 / 5,000 / 20,000 tasks, startup, +2 s, +30 s and +10 min working set are
+**not measured** in this attempt; scroll is **not measured**. Budget gating
+and leak diagnosis are pending the full idle run. No sample is passed or
+waived and no budget is relaxed. ARM64 runtime perf is **not measured** on x64.
+
+A separate AOT startup check exposed an unsupported ItemsRepeater vector and
+was fixed; the published x64 M8 rerun passed 14/14 automated checks. The
+republished x64 layout is 220.17 MB (260 MB size ceiling), with a 16.69 MB
+executable. These are size/build checks, not replacement memory measurements.
