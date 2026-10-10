@@ -20,12 +20,11 @@ As of 2026-10-10:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 159, Data 66, Sync 9 — 234/234,
-  zero skipped on the UX-06 closure run.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 165, Data 67, Sync 9 — 241/241,
+  zero skipped on the UX-07 closure run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
-- **Known gaps:** the task list clears and refills its bound collection instead
-  of diff-updating (`ARCHITECTURE.md`, Known divergences). Final app name and
+- **Known gaps:** Final app name and
   MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **UX-02:** Tasks settings implemented; dedicated gate passes 9/9. Composer
@@ -40,7 +39,10 @@ As of 2026-10-10:
   70 extraction cases, 10 reorder cases and 16 SQLite parity cases pass.
   Grouped task drag fixed; M3 10/10 plus restart order, M5 8/8 and M8 17/17.
   Package complete.
-- **Next:** UX-07 in-place task list updates, keeping the UX-02 composer
+- **UX-07:** Stable grouped collections with keyed diffs; exact task selection,
+  completion focus and middle-of-list viewport checks pass (3/3). M3/M5/M8 pass;
+  FD before/after measurements recorded; no AOT runtime claim.
+- **Next:** UX-08 completion motion or UX-09 multi-select, keeping the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -2021,3 +2023,74 @@ M3 10/10 plus new restart-order check; M5 6/6 plus restart 2/2; M8 17/17.
 - Local gates used scratch databases because Windows Sandbox is disabled.
   No Native AOT/ARM64 runtime or performance claims. UX-02 composer/performance,
   M9 owner deferral and manual gate rows remain open. UX-07 is now unblocked.
+
+## UX-07 — In-place task list updates          2026-10-10
+
+**Gate:** PASS — Debug and Release x64 warnings-as-errors builds, zero warnings
+and errors; 241/241 unit tests (Core 165, Data 67, Sync 9), zero skipped;
+stability 3/3; M3 10/10 plus restart; M5 6/6 plus restart 2/2; M8 17/17.
+
+**Shipped**
+- Core SequenceDiff computes insert/remove/minimal retained-key moves via a
+  longest increasing subsequence. Six tests exercise 600 generated pairs,
+  minimal single-item moves in 10,000 rows, unchanged input and linear append
+  of 10,000 initial rows. App applies operations to cached row objects and
+  stable group collections; VisibleItems/TaskGroups no longer Clear/refill.
+- Observable group metadata and TaskGroupHeader preserve counts, titles,
+  accessible names and expansion without resetting CollectionViewSource.
+  Hidden headers are collapsed; completed selection expands its group.
+- TaskGroupCollection explicitly implements IObservableVector so optimized
+  Release accepts grouped sources. Native move notifications are removal then
+  insertion after each real mutation. AllowUnsafeBlocks is required only for
+  CsWinRT-generated vtables; no handwritten unsafe code, reflection, dependency
+  or schema change. Existing IList<object> boundary is retained.
+- View coordinates collection mutation with selection/focus preservation and
+  bounded viewport restoration, cancelling on new keyboard/pointer input.
+  Capture precedes completion state/height changes. Restore first returns the
+  saved offset, then corrects the realized unchanged anchor after layout settles.
+  Failure paths release synchronization. List switches reset their viewport;
+  same-query refreshes preserve it. Alt+Up/Down preview handling avoids native
+  ListView navigation consuming the reorder gesture.
+- Stability gate seeds 200 tasks, verifies selection near task 100, checks
+  Ctrl+I and Alt+Down, completes with Space, verifies scroll within one row,
+  queries UIA FocusedElement for the exact completed task ID, then uses Space
+  again to prove selection still targets that same task.
+- Architecture, DESIGN, testing/performance guides and PERF rows updated.
+
+**Evidence and review**
+- Final stability: tests/ui/artifacts/list-stability/run-20261010-174852,
+  3/3; anchor delta 10 physical pixels versus a 54-pixel row tolerance;
+  completion-focus.json matches the completed task 099. All four screenshots
+  reviewed. Earlier failed trials and intermediate passes do not constitute
+  final evidence; temporary file diagnostics were removed.
+- M3: tests/ui/artifacts/m3/run-20261010-174456, 10/10 plus restart; three
+  screenshots reviewed. M5: tests/ui/artifacts/m5/run-20261010-174600, 8/8;
+  three screenshots reviewed. Its untracked runner copy adapts the existing
+  obsolete VSTest invocation to MTP; behavior assertions are unchanged.
+- M8: tests/ui/artifacts/m8/run-20261010-174636, 17/17; all 21 PNGs reviewed
+  via contact sheet. No new clipping or contrast regression. Existing Settings
+  transition screenshot limitation remains; it is not content visual proof.
+- PERF baseline: tests/ui/artifacts/perf/20261010-163503. After:
+  tests/ui/artifacts/perf/20261010-172322. 10k scroll 99.584 -> 99.559 fps,
+  zero drops/callback allocations in both; queries 1.346 -> 1.071 ms;
+  search 1.977 -> 2.550 ms. FD startup is slower and is recorded without a
+  speedup claim. AOT runtime and +10 minute memory remain M9 owner-deferred.
+- Debug UIA interaction baseline/after: 387.712/419.613 -> 454.109/466.064 ms
+  list round trips; checkbox completion 899.328 -> 830.239 ms. CLI overhead
+  included. No isolated render latency claim.
+- One full-suite attempt hit an existing SQLite disposed pooled-handle failure;
+  unnecessary global pool clearing was removed from the new seed fixture.
+  Subsequent full suites passed 241/241.
+- winui-code-review: nothing above informational in final changed code. Correct
+  WinRT notification sequencing and completion failure cleanup were addressed
+  before the final gates. No new user-facing strings or navigation pattern.
+
+**Deviations / carried forward**
+- The briefly requested list-focus exception is unnecessary: FocusedElement
+  proved that the original exact completed-row focus requirement is met even
+  when the normal CLI search cannot find its virtualized container. No plan
+  exception or ADR was made.
+- Native vectors lack Move; App translates Core's move to remove/insert while
+  retaining the cached task object. Completion motion remains UX-08.
+- Local scratch databases were used because Windows Sandbox is disabled.
+  UX-02 composer/performance rows and owner-run manual gates remain open.

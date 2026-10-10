@@ -38,7 +38,8 @@ src/
     Ical/              IcalReader / IcalWriter / IcalUnknownCodec (verbatim passthrough)
     Queries/           ListQuery (smart-list and filter descriptors)
     Presentation/      TaskGrouping (ordered UID groups), TaskSorting (query sort terms/comparison),
-                       TaskMetadataLine (subtitle parts), display-culture/date helpers
+                       TaskMetadataLine (subtitle parts), SequenceDiff (keyed collection operations),
+                       display-culture/date helpers
     Services/          interfaces: ITaskStore, ISyncStore, ISettingsStore, ICredentialStore, IClock; TaskPreferences
   Wintodo.Data/        net10.0, Core + Microsoft.Data.Sqlite, AOT-compatible
     Migrations/        NNN_*.sql, embedded resources, forward-only
@@ -96,6 +97,10 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
   define sort terms shared with the SQLite query builder, and return unformatted
   subtitle parts. The App maps these to localised group headers, cached row view
   models and metadata text, preserving UI selection and completed expansion.
+- Bound groups and rows update through Core SequenceDiff insert/remove/move
+  operations. Stable TaskGroupCollection instances explicitly implement
+  IObservableVector for Release/AOT projection. Group headers bind to observable
+  metadata; the view preserves selection, focus and the viewport around updates.
 - Responsive breakpoints are `VisualStateManager` states (`docs/DESIGN.md` §6).
 
 ## Layers and data flow
@@ -152,5 +157,4 @@ to `PasswordVault` via `PasswordVaultCredentialStore` — never SQLite.
 |---|---|---|
 | §3: `Microsoft.Extensions.DependencyInjection` | Manual wiring in `App.OnLaunched` | Fewer dependencies, AOT-trivial. Fine at this size. |
 | §5: `Views/` with `ShellPage`, `SettingsPage` | `Pages/ShellPage`, `Controls/*`, `SettingsView` control | Settings is in-shell, not `Frame`-navigated. |
-| §6.4: diff-update bound collections, never `Clear()` + refill | `TaskListViewModel.RebuildVisibleItems` clears and refills `VisibleItems` | Candidate perf work; measure before changing. |
 | §5: `Wintodo.Data` / `Wintodo.Core` only | Plus `Wintodo.Sync` (M13) | Planned in M13, missing from the §5 tree. |

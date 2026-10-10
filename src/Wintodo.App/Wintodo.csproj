@@ -1,5 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- Required by CsWinRT's generated IObservableVector vtables; no handwritten unsafe code. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>WinExe</OutputType>
     <RootNamespace>Wintodo</RootNamespace>
     <ApplicationManifest>app.manifest</ApplicationManifest>

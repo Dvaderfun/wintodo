@@ -49,6 +49,5 @@ often broken:
 - One `DispatcherQueueTimer` in the app; reminders are OS-scheduled.
 - No reflection anywhere — it breaks Native AOT.
 
-Known gap: the task list clears and refills its bound collection instead of
-diff-updating it (`ARCHITECTURE.md`, Known divergences). Measure before and
-after if you change it.
+UX-07 replaces task-list resets with keyed collection diffs. Its before/after
+rows in PERF.md distinguish framework-dependent timings from AOT gates.

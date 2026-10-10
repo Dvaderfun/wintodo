@@ -157,86 +157,7 @@
         <DataTemplate
             x:Key="GroupHeaderTemplate"
             x:DataType="x:Object">
-            <Grid
-                MinHeight="{x:Bind local:TaskListView.GroupHeaderMinHeightForItems((x:Object)), Mode=OneTime}"
-                AutomationProperties.AccessibilityView="Raw">
-                <Grid
-                    Margin="0,8,0,0"
-                    ColumnSpacing="8"
-                    Visibility="{x:Bind local:TaskListView.NamedGroupVisibilityForItems((x:Object)), Mode=OneTime}">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock
-                        AutomationProperties.AutomationId="{x:Bind local:TaskListView.GroupAutomationId((x:Object)), Mode=OneTime}"
-                        Foreground="{x:Bind local:TaskListView.GroupHeaderBrushForItems((x:Object)), Mode=OneTime}"
-                        Style="{StaticResource BodyStrongTextBlockStyle}"
-                        Text="{x:Bind local:TaskListView.GroupTitle((x:Object)), Mode=OneTime}" />
-                    <TextBlock
-                        Grid.Column="1"
-                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                        Style="{StaticResource CaptionTextBlockStyle}"
-                        Text="{x:Bind local:TaskListView.GroupHeaderCount((x:Object)), Mode=OneTime}" />
-                </Grid>
-                <ToggleButton
-                    Margin="0,16,0,8"
-                    MinHeight="40"
-                    Padding="12,0"
-                    HorizontalAlignment="Left"
-                    HorizontalContentAlignment="Left"
-                    VerticalContentAlignment="Center"
-                    AutomationProperties.AutomationId="{x:Bind local:TaskListView.GroupAutomationId((x:Object)), Mode=OneTime}"
-                    AutomationProperties.Name="{x:Bind local:TaskListView.GroupAccessibleName((x:Object)), Mode=OneTime}"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    Command="{x:Bind local:TaskListView.GroupToggleCommand((x:Object)), Mode=OneTime}"
-                    Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                    IsChecked="{x:Bind local:TaskListView.GroupIsExpanded((x:Object)), Mode=OneTime}"
-                    Style="{StaticResource TaskSubtleToggleButtonStyle}"
-                    Visibility="{x:Bind local:TaskListView.CompletedGroupVisibilityForItems((x:Object)), Mode=OneTime}">
-                    <!--
-                        These must be real brushes, not StaticResource aliases.
-                        A header container is recycled every time the group is
-                        expanded again, and the ThemeResource update pass cannot
-                        dereference an alias entry: it resolves to Unknown and
-                        XAML fail-fasts with "Invalid attribute value Unknown
-                        for property Foreground" (0x800F1001).
-                    -->
-                    <ToggleButton.Resources>
-                        <SolidColorBrush x:Key="ToggleButtonBackgroundPointerOver" Color="{ThemeResource CardBackgroundFillColorSecondary}" />
-                        <SolidColorBrush x:Key="ToggleButtonBackgroundPressed" Color="{ThemeResource SubtleFillColorTertiary}" />
-                        <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="{ThemeResource CardBackgroundFillColorDefault}" />
-                        <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{ThemeResource CardBackgroundFillColorSecondary}" />
-                        <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="{ThemeResource SubtleFillColorTertiary}" />
-                        <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="{ThemeResource TextFillColorPrimary}" />
-                        <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="{ThemeResource TextFillColorPrimary}" />
-                        <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="{ThemeResource TextFillColorSecondary}" />
-                    </ToggleButton.Resources>
-                    <Grid ColumnSpacing="8">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="16" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <FontIcon
-                            Grid.Column="0"
-                            FontFamily="{ThemeResource SymbolThemeFontFamily}"
-                            FontSize="{ThemeResource ControlContentThemeFontSize}"
-                            Glyph="{x:Bind local:TaskListView.GroupCompletedChevron((x:Object)), Mode=OneTime}" />
-                        <TextBlock
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Style="{StaticResource BodyStrongTextBlockStyle}"
-                            Text="{x:Bind local:TaskListView.GroupTitle((x:Object)), Mode=OneTime}" />
-                        <TextBlock
-                            Grid.Column="2"
-                            VerticalAlignment="Center"
-                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                            Style="{StaticResource CaptionTextBlockStyle}"
-                            Text="{x:Bind local:TaskListView.GroupHeaderCount((x:Object)), Mode=OneTime}" />
-                    </Grid>
-                </ToggleButton>
-            </Grid>
+            <controls:TaskGroupHeader ViewModel="{x:Bind local:TaskListView.GroupMetadata((x:Object)), Mode=OneTime}" />
         </DataTemplate>
     </UserControl.Resources>
 
@@ -734,6 +655,7 @@
                 DragItemsCompleted="OnDragItemsCompleted"
                 DragItemsStarting="OnDragItemsStarting"
                 IsItemClickEnabled="False"
+                IsTabStop="True"
                 ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                 ItemsSource="{x:Bind TasksCollectionViewSource.View, Mode=OneWay}"
                 ItemTemplate="{StaticResource TaskRowTemplate}"

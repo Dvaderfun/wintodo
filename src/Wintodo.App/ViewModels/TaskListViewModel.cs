@@ -24,6 +24,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         new(StringComparer.Ordinal);
     private readonly List<TaskItemViewModel> _activeTasks = [];
     private readonly List<TaskItemViewModel> _completedTasks = [];
+    private readonly Dictionary<string, TaskListGroupViewModel> _groupCache = new(StringComparer.Ordinal);
     private IReadOnlyList<ShellListItemViewModel> _lists = [];
     private ShellListItemViewModel? _selectedList;
     private ListQuery? _currentQuery;
@@ -72,6 +73,8 @@ public sealed partial class TaskListViewModel : ObservableObject
     }
 
     internal event Action? NavigationDataChanged;
+    internal event Action<bool>? VisibleItemsUpdating;
+    internal event Action? VisibleItemsUpdated;
 
     internal event Action<ShellListItemViewModel>? DeleteListRequested;
 
@@ -91,8 +94,8 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     public ObservableCollection<TaskListEntryViewModel> VisibleItems { get; } = [];
 
-    [ObservableProperty]
-    public partial IList<object> TaskGroups { get; set; } = new List<object>();
+    private readonly TaskGroupCollection _taskGroups = [];
+    public IList<object> TaskGroups => _taskGroups;
 
     public ObservableCollection<MoveTargetViewModel> MoveTargets { get; } = [];
 
@@ -552,8 +555,8 @@ public sealed partial class TaskListViewModel : ObservableObject
                 _activeTasks.Remove(item);
                 _completedTasks.Remove(item);
                 InsertManualItem(item.IsCompleted ? _completedTasks : _activeTasks, item);
-                RebuildVisibleItems();
             }
+            RebuildVisibleItems();
             if (navigationCountsChanged)
             {
                 NavigationDataChanged?.Invoke();
@@ -566,6 +569,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         {
             _activeTasks.Remove(item);
             InsertBySortOrder(_completedTasks, item);
+            if (ReferenceEquals(SelectedTask, item)) _completedExpanded = true;
         }
         else
         {
@@ -1074,7 +1078,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         NavigationDataChanged?.Invoke();
     }
 
-    private async Task LoadAsync(ListQuery query, CancellationToken cancellationToken)
+    private async Task LoadAsync(ListQuery query, CancellationToken cancellationToken, bool preserveViewport = false)
     {
         _currentQuery = query;
         int loadVersion = ++_loadVersion;
@@ -1089,7 +1093,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         _completedTasks.Clear();
         LoadTaskCollections(tasks, highlightText: string.Empty);
 
-        RebuildVisibleItems();
+        RebuildVisibleItems(preserveViewport);
     }
 
     private void LoadTaskCollections(
@@ -1118,7 +1122,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         return _currentQuery is null
             ? Task.CompletedTask
-            : LoadAsync(_currentQuery, cancellationToken);
+            : LoadAsync(_currentQuery, cancellationToken, preserveViewport: true);
     }
 
     private TaskItemViewModel GetOrCreateItem(TodoTask task)
@@ -1150,53 +1154,64 @@ public sealed partial class TaskListViewModel : ObservableObject
     private async Task ToggleTaskCompletionAsync(TaskItemViewModel item)
     {
         await Task.Yield();
-        if (item.IsCompleted)
+        VisibleItemsUpdating?.Invoke(true);
+        try
         {
-            await _taskStore.UncompleteTaskAsync(item.Uid);
-            item.Model.Status = Wintodo.Core.Models.TaskStatus.NeedsAction;
-            item.Model.PercentComplete = 0;
-            item.Model.CompletedAt = null;
-            item.IsCompleted = false;
-            item.CompletionDateText = string.Empty;
-            _completedTasks.Remove(item);
-            InsertBySortOrder(_activeTasks, item);
+            if (item.IsCompleted)
+            {
+                await _taskStore.UncompleteTaskAsync(item.Uid);
+                item.Model.Status = Wintodo.Core.Models.TaskStatus.NeedsAction;
+                item.Model.PercentComplete = 0;
+                item.Model.CompletedAt = null;
+                item.IsCompleted = false;
+                item.CompletionDateText = string.Empty;
+                _completedTasks.Remove(item);
+                InsertBySortOrder(_activeTasks, item);
+                UpdateItemDisplay(item);
+                RebuildVisibleItems(viewportAlreadyCaptured: true);
+                CompletionAnnouncement = string.Format(
+                    DisplayCulture.Current,
+                    _resources.GetString("Task_UncompletionNotification"),
+                    item.Summary);
+                TaskCompletionChanged?.Invoke(item);
+                return;
+            }
+
+            await _taskStore.CompleteTaskAsync(item.Uid);
+            TodoTask updated = await _taskStore.GetTaskAsync(item.Uid)
+                ?? throw new InvalidOperationException($"Task '{item.Uid}' disappeared after completion.");
+            item.Model = updated;
+            item.IsCompleted =
+                updated.Status == Wintodo.Core.Models.TaskStatus.Completed;
             UpdateItemDisplay(item);
-            RebuildVisibleItems();
             CompletionAnnouncement = string.Format(
                 DisplayCulture.Current,
-                _resources.GetString("Task_UncompletionNotification"),
+                item.IsCompleted
+                    ? _resources.GetString("Task_CompletionNotification")
+                    : _resources.GetString("Task_UncompletionNotification"),
                 item.Summary);
             TaskCompletionChanged?.Invoke(item);
-            return;
-        }
+            if (!item.IsCompleted)
+            {
+                VisibleItemsUpdated?.Invoke();
+                return;
+            }
 
-        await _taskStore.CompleteTaskAsync(item.Uid);
-        TodoTask updated = await _taskStore.GetTaskAsync(item.Uid)
-            ?? throw new InvalidOperationException($"Task '{item.Uid}' disappeared after completion.");
-        item.Model = updated;
-        item.IsCompleted =
-            updated.Status == Wintodo.Core.Models.TaskStatus.Completed;
-        UpdateItemDisplay(item);
-        CompletionAnnouncement = string.Format(
-            DisplayCulture.Current,
-            item.IsCompleted
-                ? _resources.GetString("Task_CompletionNotification")
-                : _resources.GetString("Task_UncompletionNotification"),
-            item.Summary);
-        TaskCompletionChanged?.Invoke(item);
-        if (!item.IsCompleted)
+            if (AnimationsEnabled)
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(250));
+            }
+
+            _activeTasks.Remove(item);
+            InsertBySortOrder(_completedTasks, item);
+            if (ReferenceEquals(SelectedTask, item)) _completedExpanded = true;
+            RebuildVisibleItems(viewportAlreadyCaptured: true);
+        }
+        catch
         {
-            return;
+            VisibleItemsUpdated?.Invoke();
+            throw;
         }
-
-        if (AnimationsEnabled)
-        {
-            await Task.Delay(TimeSpan.FromMilliseconds(250));
-        }
-
-        _activeTasks.Remove(item);
-        InsertBySortOrder(_completedTasks, item);
-        RebuildVisibleItems();
     }
 
     private async Task ToggleTaskImportanceAsync(TaskItemViewModel item)
@@ -1317,11 +1332,9 @@ public sealed partial class TaskListViewModel : ObservableObject
         _undoCancellation = null;
     }
 
-    private void RebuildVisibleItems()
+    private void RebuildVisibleItems(bool preserveViewport = true, bool viewportAlreadyCaptured = false)
     {
         TaskItemViewModel? selected = SelectedTask;
-        VisibleItems.Clear();
-        TaskGroups.Clear();
 
         IReadOnlyList<TaskGroup> groups = TaskGrouping.Build(
             _currentQuery,
@@ -1333,35 +1346,61 @@ public sealed partial class TaskListViewModel : ObservableObject
             _preferences.FirstDayOfWeek,
             _lists.Select(list => new TaskGroupList(list.Id, list.Uid, list.SortOrder)).ToArray(),
             _completedExpanded);
-        foreach (TaskGroup descriptor in groups)
+        if (!viewportAlreadyCaptured) VisibleItemsUpdating?.Invoke(preserveViewport);
+        try
         {
-            TaskListGroupViewModel group = CreateTaskGroup(descriptor);
-            foreach (string uid in descriptor.TaskUids)
+            var targetGroups = new List<object>(groups.Count);
+            var targetItems = new List<TaskListEntryViewModel>();
+            foreach (TaskGroup descriptor in groups)
             {
-                TaskItemViewModel item = _itemCache[uid];
-                group.Items.Add(item);
-                VisibleItems.Add(item);
+                string key = $"{descriptor.Kind}:{descriptor.Key}";
+                if (!_groupCache.TryGetValue(key, out TaskListGroupViewModel? group))
+                {
+                    group = CreateTaskGroup(descriptor);
+                    _groupCache.Add(key, group);
+                }
+                group.HeaderCount = descriptor.Count;
+                group.IsExpanded = descriptor.IsExpanded;
+                if (descriptor.Kind == TaskGroupKind.Completed)
+                {
+                    group.AccessibleName = string.Format(DisplayCulture.Current,
+                        _resources.GetString("CompletedHeader_AccessibleName"), descriptor.Count);
+                }
+                else if (descriptor.Kind == TaskGroupKind.Search)
+                {
+                    group.Title = FindListName(descriptor.ListId!.Value) ?? string.Empty;
+                }
+                ApplySequence(group.Items,
+                    descriptor.TaskUids.Select(uid => (object)_itemCache[uid]).ToArray());
+                targetGroups.Add(group.Items);
+                foreach (string uid in descriptor.TaskUids) targetItems.Add(_itemCache[uid]);
             }
-            TaskGroups.Add(group.Items);
+            ApplySequence(_taskGroups, targetGroups);
+            ApplySequence(VisibleItems, targetItems);
+            int activeCount = _activeTasks.Count;
+            bool activeCountChanged = ActiveCount != activeCount;
+            ActiveCount = activeCount;
+            IsEmpty = _activeTasks.Count == 0 && _completedTasks.Count == 0;
+            SelectedTask = selected is not null && VisibleItems.Contains(selected) ? selected : null;
+            if (activeCountChanged) NavigationDataChanged?.Invoke();
         }
+        finally
+        {
+            VisibleItemsUpdated?.Invoke();
+        }
+    }
 
-        int activeCount = _activeTasks.Count;
-        bool activeCountChanged = ActiveCount != activeCount;
-        ActiveCount = activeCount;
-        IsEmpty = _activeTasks.Count == 0 && _completedTasks.Count == 0;
-        if (selected is not null && VisibleItems.Contains(selected))
+    private static void ApplySequence<T>(ObservableCollection<T> collection, IReadOnlyList<T> target)
+        where T : notnull
+    {
+        foreach (SequenceChange<T> change in SequenceDiff.Build(collection, target))
         {
-            SelectedTask = selected;
-        }
-        else
-        {
-            SelectedTask = null;
-        }
-
-        TaskGroups = new List<object>(TaskGroups);
-        if (activeCountChanged)
-        {
-            NavigationDataChanged?.Invoke();
+            switch (change.Kind)
+            {
+                case SequenceChangeKind.Insert: collection.Insert(change.Index, change.Key); break;
+                case SequenceChangeKind.Remove: collection.RemoveAt(change.Index); break;
+                case SequenceChangeKind.Move: collection.Move(change.Index, change.Destination); break;
+            }
         }
     }
 
@@ -1381,7 +1420,7 @@ public sealed partial class TaskListViewModel : ObservableObject
                 toggle: ToggleCompletedAsync,
                 accessibleName: string.Format(DisplayCulture.Current,
                     _resources.GetString("CompletedHeader_AccessibleName"), group.Count))
-                { CountOverride = group.Count, IsExpanded = group.IsExpanded },
+                { HeaderCount = group.Count, IsExpanded = group.IsExpanded },
             _ => throw new InvalidOperationException("Unknown task group kind."),
         };
     }

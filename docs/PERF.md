@@ -168,3 +168,49 @@ matrix above. The existing smart-list budget stays at 5 ms.
 
 Failures varied across query types while the query implementation was unchanged.
 No budget adjustment or query-performance claim is made by UX-02.
+
+### UX-07 baseline — 2026-10-10
+
+Measured before product edits at commit 680ada9. The existing Measure-Perf
+harness ran with -Builds FD -TaskCounts 5000 -SkipBuild -SkipTenMinuteSample;
+the short-run results are recorded here because that switch disables its main
+table append. Native AOT runtime and the ten-minute sample remain deferred.
+
+| Build | Tasks / lists | Cold interactive | Warm interactive | Cold app work | Warm app work | WS +2s | WS +30s | Query max | Search | 10k scroll | Dropped | Callback bytes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FD Release | 5,000 / 20 | 2517.653 ms | 1780.171 ms | 1273.081 ms | 848.551 ms | 212.62 MB | 239.12 MB | 1.346 ms | 1.977 ms | 99.584 fps | 0 | 0 |
+
+Evidence: tests/ui/artifacts/perf/20261010-163503/summary.json.
+FD startup/memory are recorded, not AOT-gated. Query/search and scroll pass.
+
+A separate UI Automation round-trip measurement used Debug x64, 200 tasks
+across 20 lists: list switches 387.712 ms and 419.613 ms; completing the first
+row through its checkbox to the Completed header 899.328 ms. Timings include
+winapp command startup, UIA dispatch and waits; they are not isolated render
+latency or an AOT performance claim. Evidence:
+tests/ui/artifacts/ux07-baseline-20261010-163907/timings.json. Initial Release
+interaction attempts failed to reach detail/completed state and were discarded;
+Debug before/after uses the same scratch fixture and gesture.
+
+### UX-07 after — 2026-10-10
+
+| Build | Tasks / lists | Cold interactive | Warm interactive | Cold app work | Warm app work | WS +2s | WS +30s | Query max | Search | 10k scroll | Dropped | Callback bytes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| FD Release | 5,000 / 20 | 2820.088 ms | 2486.231 ms | 1276.309 ms | 1299.840 ms | 214.26 MB | 238.46 MB | 1.071 ms | 2.550 ms | 99.559 fps | 0 | 0 |
+
+Evidence: tests/ui/artifacts/perf/20261010-172322/summary.json. Same short-run
+arguments as baseline. Queries/search and scroll meet PLAN §7. Working set is
+0.66 MB lower at +30 s. FD total and warm startup work are slower in this run;
+FD startup is not gated per ADR-008 and this is not an AOT performance claim.
+Native AOT and +10 minute samples remain under the owner's existing M9 deferral.
+Initial after attempts aborted at the observable CollectionViewSource ABI;
+they are not measurements. An explicit source-generated IObservableVector
+fixed Release startup before these rows were taken.
+
+Matched Debug interaction round trips (same 200 tasks / 20 lists and checkbox
+gesture): list switches 454.109 ms and 466.064 ms; completion to Completed header
+830.239 ms. Evidence: tests/ui/artifacts/ux07-after-20261010-173834/timings.json.
+Compared with baseline, completion decreased by 69.089 ms; list round trips
+increased by 66.397/46.451 ms. CLI/UIA overhead is included; no isolated UI
+latency or overall speedup claim. The correctness gate separately proves
+middle-of-list selection, focus and one-row scroll tolerance.

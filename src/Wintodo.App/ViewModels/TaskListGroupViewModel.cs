@@ -1,4 +1,6 @@
 using System.Runtime.CompilerServices;
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
 namespace Wintodo.ViewModels;
@@ -10,7 +12,7 @@ public enum TaskListGroupKind
     Completed,
 }
 
-public sealed partial class TaskListGroupViewModel
+public sealed partial class TaskListGroupViewModel : ObservableObject
 {
     private static readonly ConditionalWeakTable<object, TaskListGroupViewModel>
         Metadata = new();
@@ -30,27 +32,29 @@ public sealed partial class TaskListGroupViewModel
         IsCritical = isCritical;
         AccessibleName = accessibleName ?? title;
         _toggle = toggle;
-        Items = new List<object>();
+        Items = new TaskGroupCollection();
         Metadata.Add(Items, this);
     }
 
-    internal IList<object> Items { get; }
+    internal TaskGroupCollection Items { get; }
 
     public TaskListGroupKind Kind { get; }
 
-    public string Title { get; }
+    [ObservableProperty]
+    public partial string Title { get; set; }
 
     public string AutomationId { get; }
 
-    public string AccessibleName { get; }
+    [ObservableProperty]
+    public partial string AccessibleName { get; set; }
 
     public bool IsCritical { get; }
 
-    public int HeaderCount => CountOverride ?? Items.Count;
+    [ObservableProperty]
+    public partial int HeaderCount { get; set; }
 
-    internal int? CountOverride { get; set; }
-
-    public bool IsExpanded { get; set; }
+    [ObservableProperty]
+    public partial bool IsExpanded { get; set; }
 
     internal static TaskListGroupViewModel GetMetadata(object items)
     {

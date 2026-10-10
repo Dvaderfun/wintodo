@@ -20,6 +20,15 @@ public sealed partial class TaskListView : UserControl
     private readonly HashSet<TaskItemViewModel> _observedTaskItems = [];
     private bool _isSynchronizingSelection;
     private string? _draggedTaskUid;
+    private ScrollViewer? _tasksScrollViewer;
+    private double _savedVerticalOffset;
+    private TaskItemViewModel? _savedSelectedTask;
+    private string? _savedFocusedTaskUid;
+    private int _updateVersion;
+    private bool _restoringTaskFocus;
+    private Microsoft.UI.Xaml.Media.Animation.TransitionCollection? _savedTransitions;
+    private TaskItemViewModel? _viewportAnchor;
+    private double _viewportAnchorY;
 
     public static readonly DependencyProperty ViewModelProperty =
         DependencyProperty.Register(
@@ -31,6 +40,9 @@ public sealed partial class TaskListView : UserControl
     public TaskListView()
     {
         InitializeComponent();
+        TasksList.BringIntoViewRequested += OnTaskBringIntoViewRequested;
+        TasksList.PointerPressed += OnTaskPointerInteraction;
+        TasksList.PointerWheelChanged += OnTaskPointerInteraction;
     }
 
     public TaskListViewModel ViewModel
@@ -143,6 +155,12 @@ public sealed partial class TaskListView : UserControl
         return TaskListGroupViewModel.GetMetadata(items).IsExpanded;
     }
 
+    public static Visibility GroupHeaderVisibility(TaskListGroupKind kind) =>
+        kind == TaskListGroupKind.Hidden ? Visibility.Collapsed : Visibility.Visible;
+
+    public static TaskListGroupViewModel GroupMetadata(object items) =>
+        TaskListGroupViewModel.GetMetadata(items);
+
     public static string GroupCompletedChevron(object items)
     {
         return CompletedChevron(GroupIsExpanded(items));
@@ -197,6 +215,8 @@ public sealed partial class TaskListView : UserControl
                 view.OnVisibleItemsCollectionChanged;
             oldViewModel.TaskCompletionChanged -= view.OnTaskCompletionChanged;
             oldViewModel.ListIconChanged -= view.OnListIconChanged;
+            oldViewModel.VisibleItemsUpdating -= view.OnVisibleItemsUpdating;
+            oldViewModel.VisibleItemsUpdated -= view.OnVisibleItemsUpdated;
         }
 
         if (args.NewValue is TaskListViewModel newViewModel)
@@ -207,6 +227,8 @@ public sealed partial class TaskListView : UserControl
                 view.OnVisibleItemsCollectionChanged;
             newViewModel.TaskCompletionChanged += view.OnTaskCompletionChanged;
             newViewModel.ListIconChanged += view.OnListIconChanged;
+            newViewModel.VisibleItemsUpdating += view.OnVisibleItemsUpdating;
+            newViewModel.VisibleItemsUpdated += view.OnVisibleItemsUpdated;
             newViewModel.AnimationsEnabled = view._uiSettings.AnimationsEnabled;
             ScrollPerformanceProbe.TryStart(newViewModel.VisibleItems.Count);
         }
@@ -235,11 +257,6 @@ public sealed partial class TaskListView : UserControl
         else if (args.PropertyName == nameof(TaskListViewModel.Title))
         {
             AnimateListSwitch();
-        }
-        else if (args.PropertyName == nameof(TaskListViewModel.TaskGroups))
-        {
-            TasksCollectionViewSource.Source = null;
-            TasksCollectionViewSource.Source = ViewModel.TaskGroups;
         }
     }
 
@@ -335,6 +352,141 @@ public sealed partial class TaskListView : UserControl
         ViewModel.SelectedTask = selectedTask;
         selectedTask.IsSelected = true;
         TaskOpenRequested?.Invoke(selectedTask);
+    }
+
+    private void OnVisibleItemsUpdating(bool preserveViewport)
+    {
+        _savedTransitions ??= TasksList.ItemContainerTransitions;
+        TasksList.ItemContainerTransitions = null;
+        _isSynchronizingSelection = true;
+        _tasksScrollViewer ??= FindScrollViewer(TasksList);
+        _restoringTaskFocus = true;
+        if (_tasksScrollViewer is not null) _tasksScrollViewer.BringIntoViewOnFocusChange = false;
+        _savedVerticalOffset = _tasksScrollViewer?.VerticalOffset ?? 0;
+        _savedSelectedTask = ViewModel.SelectedTask;
+        _viewportAnchor = null;
+        foreach (TaskItemViewModel item in ViewModel.VisibleItems.OfType<TaskItemViewModel>())
+        {
+            if (ReferenceEquals(item, _savedSelectedTask) || TasksList.ContainerFromItem(item) is not ListViewItem row) continue;
+            double y = row.TransformToVisual(TasksList).TransformPoint(new Windows.Foundation.Point()).Y;
+            if (row.ActualHeight > 0 && row.ActualWidth > 0
+                && y > 4 && y + row.ActualHeight < TasksList.ActualHeight)
+            {
+                _viewportAnchor = item;
+                _viewportAnchorY = y;
+                break;
+            }
+        }
+        _savedFocusedTaskUid = null;
+        DependencyObject? focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        while (focused is not null && !ReferenceEquals(focused, TasksList))
+        {
+            if (focused is ListViewItem container
+                && TasksList.ItemFromContainer(container) is TaskItemViewModel item)
+            {
+                _savedFocusedTaskUid = item.Uid;
+                break;
+            }
+            focused = VisualTreeHelper.GetParent(focused);
+        }
+        // Arrow navigation focuses the ListView itself while selecting a row.
+        if (ReferenceEquals(focused, TasksList)) _savedFocusedTaskUid = _savedSelectedTask?.Uid;
+        if (!preserveViewport)
+        {
+            _savedVerticalOffset = 0;
+            _savedSelectedTask = null;
+            _savedFocusedTaskUid = null;
+            _viewportAnchor = null;
+        }
+    }
+
+    private void OnVisibleItemsUpdated()
+    {
+        int version = ++_updateVersion;
+        TaskItemViewModel? selected = _savedSelectedTask;
+        string? focusedUid = _savedFocusedTaskUid;
+        TaskItemViewModel? anchor = _viewportAnchor;
+        double anchorY = _viewportAnchorY;
+        if (selected is not null && ViewModel.VisibleItems.Contains(selected))
+        {
+            TasksList.SelectedItem = selected;
+            selected.IsSelected = true;
+        }
+        else if (selected is not null)
+        {
+            selected.IsSelected = false;
+            TasksList.SelectedItems.Clear();
+            TaskCloseRequested?.Invoke();
+        }
+        _isSynchronizingSelection = false;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (version != _updateVersion) return;
+            _isSynchronizingSelection = true;
+            try
+            {
+                TasksList.UpdateLayout();
+                TaskItemViewModel? focusItem = ViewModel.VisibleItems.OfType<TaskItemViewModel>()
+                    .FirstOrDefault(item => item.Uid == focusedUid);
+                if (focusItem is not null)
+                {
+                    _restoringTaskFocus = true;
+                    if (_tasksScrollViewer is not null) _tasksScrollViewer.BringIntoViewOnFocusChange = false;
+                    if (TasksList.ContainerFromItem(focusItem) is ListViewItem container)
+                        container.Focus(FocusState.Programmatic);
+                    else
+                        TasksList.Focus(FocusState.Programmatic);
+                }
+                _ = RestoreViewportAfterTransitionAsync(version, anchor, anchorY);
+            }
+            finally { _isSynchronizingSelection = false; }
+        });
+    }
+
+    private async Task RestoreViewportAfterTransitionAsync(int version, TaskItemViewModel? anchor, double anchorY)
+    {
+        double offset = _savedVerticalOffset;
+        await Task.Delay(TimeSpan.FromMilliseconds(500));
+        if (version != _updateVersion) return;
+        _restoringTaskFocus = true;
+        if (_tasksScrollViewer is not null)
+        {
+            _tasksScrollViewer.BringIntoViewOnFocusChange = false;
+            _tasksScrollViewer.ChangeView(null, offset, null, disableAnimation: true);
+            await Task.Delay(TimeSpan.FromMilliseconds(200));
+            if (version != _updateVersion) return;
+            TasksList.UpdateLayout();
+            if (anchor is not null && TasksList.ContainerFromItem(anchor) is ListViewItem row)
+            {
+                double y = row.TransformToVisual(TasksList).TransformPoint(new Windows.Foundation.Point()).Y;
+                _tasksScrollViewer.ChangeView(null, _tasksScrollViewer.VerticalOffset + y - anchorY, null, disableAnimation: true);
+            }
+        }
+        TasksList.ItemContainerTransitions = _savedTransitions;
+    }
+    private void OnTaskBringIntoViewRequested(UIElement sender, BringIntoViewRequestedEventArgs args)
+    {
+        if (_restoringTaskFocus) args.Handled = true;
+    }
+
+    private void OnTaskPointerInteraction(object sender, PointerRoutedEventArgs args)
+    {
+        ++_updateVersion;
+        _restoringTaskFocus = false;
+        TasksList.ItemContainerTransitions = _savedTransitions ?? TasksList.ItemContainerTransitions;
+        if (_tasksScrollViewer is not null) _tasksScrollViewer.BringIntoViewOnFocusChange = true;
+    }
+
+    private static ScrollViewer? FindScrollViewer(DependencyObject root)
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, i);
+            if (child is ScrollViewer viewer) return viewer;
+            ScrollViewer? found = FindScrollViewer(child);
+            if (found is not null) return found;
+        }
+        return null;
     }
 
     private void OnContainerContentChanging(
@@ -621,6 +773,17 @@ public sealed partial class TaskListView : UserControl
 
     private void OnTasksListPreviewKeyDown(object sender, KeyRoutedEventArgs args)
     {
+        ++_updateVersion;
+        _restoringTaskFocus = false;
+        TasksList.ItemContainerTransitions = _savedTransitions ?? TasksList.ItemContainerTransitions;
+        if (_tasksScrollViewer is not null) _tasksScrollViewer.BringIntoViewOnFocusChange = true;
+        if (ViewModel.SelectedTask is not null && args.Key is VirtualKey.Up or VirtualKey.Down
+            && (GetKeyState(0x12) & 0x8000) != 0)
+        {
+            (args.Key == VirtualKey.Up ? ViewModel.MoveSelectedUpCommand : ViewModel.MoveSelectedDownCommand).Execute(null);
+            args.Handled = true;
+            return;
+        }
         if (args.Key != VirtualKey.Space || ViewModel.SelectedTask is null)
         {
             return;
@@ -629,6 +792,9 @@ public sealed partial class TaskListView : UserControl
         ViewModel.ToggleSelectedCompletionCommand.Execute(null);
         args.Handled = true;
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern short GetKeyState(int virtualKey);
 
     private void OnToggleImportanceAccelerator(
         KeyboardAccelerator sender,
