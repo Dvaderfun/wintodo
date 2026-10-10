@@ -123,9 +123,9 @@ searching with coding. More: [docs/guides/ai-tooling.md](docs/guides/ai-tooling.
 
 | Need to… | Go to |
 |---|---|
-| Change shell layout, panes, navigation | `src/Wintodo.App/Pages/ShellPage.xaml`, `ViewModels/ShellViewModel*.cs`, DESIGN §2–§5 |
-| Change the task list or a row | `Controls/TaskListView`, `Controls/TaskRow`, `ViewModels/TaskListViewModel.cs` |
-| Change the detail pane | `Controls/TaskDetailView`, `ViewModels/TaskDetailViewModel.cs`, DESIGN §5 |
+| Change shell layout, panes, navigation | `src/Wintodo.App/Pages/ShellPage.xaml`, `Pages/ShellPage.*.cs`, `ViewModels/ShellViewModel*.cs`, DESIGN §2–§5 |
+| Change the task list or a row | `Controls/TaskListView`, `Controls/TaskRow`, `ViewModels/TaskListViewModel*.cs` |
+| Change the detail pane | `Controls/TaskDetailView`, `ViewModels/TaskDetailViewModel*.cs`, DESIGN §5 |
 | Add or change a theme resource | `src/Wintodo.App/Themes/Colors.xaml`, DESIGN §9 |
 | Add a user-visible string | `src/Wintodo.App/Strings/en-US/Resources.resw` |
 | Change the schema | `src/Wintodo.Data/Migrations/`, [migrations guide](docs/guides/migrations.md) |
