@@ -61,7 +61,7 @@ this dependency exception does not mark those gates passed.
 | UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | ready |
 | UX-11 | Drop tasks on My Day and Important | B | S | — | ShellPage | done (41b1946; M5 9/9 + restart, M8 17/17) |
 | UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | ready |
-| UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | in progress (Codex/main; split implemented, full gate closure open) |
+| UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | in progress (efa09c2; split implemented, full gate closure open) |
 | UX-14 | 🔒 Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | awaiting owner |
 | UX-15 | 🔒 Quieter placeholder when a list has no icon | B | S | — | TaskListView | awaiting owner |
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | awaiting owner |
