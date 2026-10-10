@@ -435,6 +435,12 @@ and a `Setter` would fight the binding.
 | Attachments | Row per file: 16 px glyph + name (ellipsised) + size in caption + remove. Click opens with the shell |
 | Footer | Pinned to the bottom, `CaptionTextBlockStyle` / `TextFillColorSecondaryBrush` created-date on the left, `Delete` (`E74D`) 32 × 32 icon button on the right |
 
+The steps `ListView` owns drag initiation and the reorder drop target; do not
+set `CanDrag` or `AllowDrop` on its individual containers. Its source is an
+observable collection so native reorder operations update the displayed order
+before the drag-completed handler persists it. Add/delete updates that collection
+in place.
+
 Deleting a task always confirms first — from the row context menu, the `Delete`
 key, or the detail footer. One `ContentDialog` (`Todo.Dialog.DeleteTask`) names
 the task, defaults to **Cancel**, and only then runs the delete plus its undo
@@ -671,6 +677,13 @@ Each empty state is `x:Load`-deferred.
   get wrong on a card background.
 - Minimum hit target 32 × 32 for every interactive element, including the
   completion circle and star.
+
+Display dates, times, numbers and weekday names use the culture named by the
+MRT-resolved `App_FormattingCulture` string, initialised before view models or
+Windows integration services are created. Each translation sets that resource
+to its own language tag; a missing or invalid tag falls back to
+`CultureInfo.CurrentUICulture`. Planned's week start continues to follow the
+Windows regional format until the Tasks preference is implemented (UX-02).
 
 ---
 

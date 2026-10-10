@@ -7,8 +7,10 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.Core.Models;
+using Wintodo.Core.Presentation;
 using Wintodo.Core.Queries;
 using Wintodo.Core.Services;
+using Wintodo.Services;
 
 namespace Wintodo.ViewModels;
 
@@ -392,7 +394,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         HasSubtitle = false;
         EmptyGlyph = "\uE721";
         EmptyTitle = string.Format(
-            CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             _resources.GetString("Empty_SearchTitle"),
             _searchText);
         EmptySubtitle = _resources.GetString("Empty_SearchSubtitle");
@@ -1109,7 +1111,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             UpdateItemDisplay(item);
             RebuildVisibleItems();
             CompletionAnnouncement = string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Task_UncompletionNotification"),
                 item.Summary);
             TaskCompletionChanged?.Invoke(item);
@@ -1124,7 +1126,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             updated.Status == Wintodo.Core.Models.TaskStatus.Completed;
         UpdateItemDisplay(item);
         CompletionAnnouncement = string.Format(
-            CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             item.IsCompleted
                 ? _resources.GetString("Task_CompletionNotification")
                 : _resources.GetString("Task_UncompletionNotification"),
@@ -1229,7 +1231,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         _undoCancellation = new CancellationTokenSource();
         _lastDeletedTaskUid = item.Uid;
         UndoMessage = string.Format(
-            CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             _resources.GetString("Undo_TaskDeleted"),
             item.Summary);
         IsUndoVisible = true;
@@ -1287,7 +1289,7 @@ public sealed partial class TaskListViewModel : ObservableObject
                     "Todo.List.CompletedHeader",
                     toggle: ToggleCompletedAsync,
                     accessibleName: string.Format(
-                        CultureInfo.CurrentCulture,
+                        DisplayCulture.Current,
                         _resources.GetString("CompletedHeader_AccessibleName"),
                         _completedTasks.Count))
                 {
@@ -1459,6 +1461,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             return "Tomorrow";
         }
 
+        // Keep the regional week start until UX-02 adds an explicit preference.
         DayOfWeek firstDayOfWeek =
             CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
         int currentDayIndex =
@@ -1513,7 +1516,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         item.CompletionDateText = task.CompletedAt is null
             ? string.Empty
             : string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Task_Metadata_Completed"),
                 task.CompletedAt.Value.ToLocalTime());
 
@@ -1521,7 +1524,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         if (task.Due is not null)
         {
             accessibleParts.Add(string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Task_Accessible_Due"),
                 FormatDueDate(task.Due.Value)));
         }
@@ -1535,7 +1538,7 @@ public sealed partial class TaskListViewModel : ObservableObject
         if (!string.IsNullOrEmpty(accessibleListName))
         {
             accessibleParts.Add(string.Format(
-                CultureInfo.CurrentCulture,
+                DisplayCulture.Current,
                 _resources.GetString("Task_Accessible_InList"),
                 accessibleListName));
         }
@@ -1732,7 +1735,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         DateTime local =
             TimeZoneInfo.ConvertTime(reminder, _clock.LocalTimeZone).DateTime;
-        string time = local.ToString("t", CultureInfo.CurrentCulture);
+        string time = local.ToString("t", DisplayCulture.Current);
         return DateOnly.FromDateTime(local) == _clock.Today
             ? time
             : $"{FormatDueDate(reminder)} {time}";
@@ -1743,15 +1746,13 @@ public sealed partial class TaskListViewModel : ObservableObject
         DateTime localDue =
             TimeZoneInfo.ConvertTime(due, _clock.LocalTimeZone).DateTime;
         DateOnly date = DateOnly.FromDateTime(localDue);
-        int dayOffset = date.DayNumber - _clock.Today.DayNumber;
-        return dayOffset switch
-        {
-            -1 => _resources.GetString("Task_Metadata_Yesterday"),
-            0 => _resources.GetString("Task_Metadata_Today"),
-            1 => _resources.GetString("Task_Metadata_Tomorrow"),
-            >= 2 and <= 7 => localDue.ToString("dddd", CultureInfo.CurrentCulture),
-            _ => localDue.ToString("d MMM", CultureInfo.CurrentCulture),
-        };
+        return TaskDateLabels.FormatListDue(
+            date,
+            _clock,
+            DisplayCulture.Current,
+            _resources.GetString("Task_Metadata_Yesterday"),
+            _resources.GetString("Task_Metadata_Today"),
+            _resources.GetString("Task_Metadata_Tomorrow"));
     }
 
     private string FormatSortLabel(SortMode sortMode, bool descending)
@@ -1761,7 +1762,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             ? _resources.GetString("Sort_Descending")
             : _resources.GetString("Sort_Ascending");
         return string.Format(
-            CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             _resources.GetString("Sort_Label"),
             mode,
             direction);
@@ -1782,7 +1783,7 @@ public sealed partial class TaskListViewModel : ObservableObject
 
     private string FormatToday()
     {
-        return _clock.Today.ToString("D", CultureInfo.CurrentCulture);
+        return _clock.Today.ToString("D", DisplayCulture.Current);
     }
 
     private static DateTimeOffset StartOfLocalDay(DateOnly date)

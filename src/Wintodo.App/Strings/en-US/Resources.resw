@@ -1031,4 +1031,9 @@
   <data name="ComposerOptionsRepeat.Text" xml:space="preserve">
     <value>Repeat</value>
   </data>
+  <!-- UX-01 -->
+  <data name="App_FormattingCulture" xml:space="preserve">
+    <value>en-US</value>
+    <comment>Every future language folder must set this to its own language tag so dates and text match the language resolved by MRT.</comment>
+  </data>
 </root>

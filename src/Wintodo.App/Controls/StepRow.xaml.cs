@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.ViewModels;
+using Wintodo.Services;
 
 namespace Wintodo.Controls;
 
@@ -47,7 +48,7 @@ public sealed partial class StepRow : UserControl
     public static string DeleteName(string summary)
     {
         return string.Format(
-            System.Globalization.CultureInfo.CurrentCulture,
+            DisplayCulture.Current,
             StringResources.GetString("Detail_DeleteStep"),
             summary);
     }
