@@ -737,6 +737,11 @@ while a request runs. A failed connection keeps the dialog open with an inline
 error; success dismisses it and reveals account/sync controls. Settings action
 buttons share a 152 DIP minimum width.
 
+The navigation footer shows sync status only when a CalDAV account exists.
+It appears after connecting and remains visible for syncing, offline and error
+states until the account is disconnected. Settings → Sync is always available
+to configure the first account.
+
 ---
 
 ## 13. Do not

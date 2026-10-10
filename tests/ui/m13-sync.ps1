@@ -57,8 +57,10 @@ function Take-Screenshot {
         Out-Null
 }
 
-Test-UI "Navigation sync status exists" {
-    winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $mainHwnd --value "Not connected" -t 5000
+Test-UI "Fresh database hides the navigation sync status" {
+    winapp ui wait-for "Todo.Nav.Settings" -w $mainHwnd -t 5000
+    winapp ui wait-for "Todo.Nav.SyncStatus" -w $mainHwnd --gone -t 5000
+    winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $mainHwnd --gone -t 5000
 }
 Test-UI "Open Settings" {
     winapp ui invoke "Todo.Nav.Settings" -w $mainHwnd
@@ -85,6 +87,7 @@ Test-UI "Failed connect remains in the dialog and allows retry" {
     winapp ui invoke "Todo.Settings.Sync.Connect" -w $mainHwnd
     winapp ui wait-for "Todo.Dialog.CalDav.Error" -w $mainHwnd -t 5000
     winapp ui wait-for "Todo.Settings.Sync.Connect" -w $mainHwnd -p IsEnabled --value "True" -t 3000
+    winapp ui wait-for "Todo.Nav.SyncStatus" -w $mainHwnd --gone -t 3000
     Take-Screenshot "01b-connect-error.png"
 }
 Test-UI "Enter CalDAV account" {
@@ -96,6 +99,8 @@ Test-UI "Connect and discover VTODO list" {
     winapp ui invoke "Todo.Settings.Sync.Connect" -w $mainHwnd
     winapp ui wait-for "Todo.Settings.Sync.Account" -w $mainHwnd --value "alice" -t 10000
     winapp ui wait-for "Todo.Settings.Sync.Status" -w $mainHwnd --value "Up to date" -t 10000
+    winapp ui wait-for "Todo.Nav.SyncStatus" -w $mainHwnd -p IsOffscreen --value "False" -t 5000
+    winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $mainHwnd --value "Up to date" -t 5000
     $toggle = (winapp ui search "Todo.Settings.Sync.List." -w $mainHwnd --json 2>$null |
         ConvertFrom-Json).matches |
         Where-Object { $_.automationId -match "^Todo\.Settings\.Sync\.List\." } |
@@ -165,10 +170,11 @@ Test-UI "New sync controls expose AutomationIds" {
         if ($LASTEXITCODE -ne 0) { throw "$automationId was not found." }
     }
 }
-Test-UI "Disconnect removes the account surface" {
+Test-UI "Disconnect removes the account surface and navigation sync status" {
     winapp ui invoke "Todo.Settings.Sync.Disconnect" -w $mainHwnd
     winapp ui wait-for "Todo.Settings.Sync.Configure" -w $mainHwnd -t 5000
-    winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $mainHwnd --value "Not connected" -t 5000
+    winapp ui wait-for "Todo.Nav.SyncStatus" -w $mainHwnd --gone -t 5000
+    winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $mainHwnd --gone -t 5000
 }
 Take-Screenshot "03-sync-disconnected-again.png"
 

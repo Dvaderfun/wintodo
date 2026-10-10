@@ -21,7 +21,7 @@ As of 2026-10-10:
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
   Tests (xunit v3 on Microsoft Testing Platform): Core 79, Data 49, Sync 9 — 137/137,
-  zero skipped on the UX-04 run.
+  zero skipped on the UX-05 run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** the task list clears and refills its bound collection instead
@@ -34,7 +34,9 @@ As of 2026-10-10:
   database location/size, repository and offline licences. M7 preflight and M8 pass.
 - **UX-04:** High-contrast navigation dots, search borders and header chrome
   fixed. Expanded M8 passes 17/17 across all four Windows contrast palettes.
-- **Next:** continue Phase A polish (UX-05), keeping the UX-02 composer
+- **UX-05:** Sync footer hidden until an account exists; connect, failed-connect,
+  restart and disconnect checks pass in M13 (11/11). M8 passes 17/17.
+- **Next:** UX-06 list presentation extraction, keeping the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -1870,3 +1872,34 @@ and errors; 137/137 unit tests, zero skipped; expanded M8 17/17.
 - Native AOT/ARM64 runtime and performance gates were not run for this UI
   patch. UX-02 composer/performance checks and earlier owner-run rows remain
   open; no performance claim or accepted-decision change.
+
+## UX-05 — Hide sync status until configured          2026-10-10
+
+**Gate:** PASS — Debug and Release x64 builds with `-warnaserror`, zero warnings
+and errors; 137/137 unit tests, zero skipped; M13 11/11; M8 17/17.
+
+**Shipped**
+- The sync footer's Visibility uses an explicit OneWay x:Bind to the existing
+  IsSyncConnected account-presence property through ShellPage.BoolToVisibility.
+  It collapses before configuration and after disconnect, appears after
+  connecting and restores on restart. Settings → Sync remains available.
+- M13 asserts footer absence on a fresh database and after a failed connection,
+  visibility and Up to date after connecting, restoration on restart and
+  absence of both the footer item and its text after disconnect.
+- DESIGN §12 and the testing guide document the visibility lifecycle.
+
+**Evidence and review**
+- `tests/ui/artifacts/m13/run-20261010-154756`: 11/11, loopback CalDAV;
+  disconnected/connected/disconnected-again screenshots reviewed.
+- `tests/ui/artifacts/m8/run-20261010-154852`: 17/17; accessibility audits at
+  zero missing AutomationIds, all four contrast palettes and original
+  appearance restoration pass. Selected-list screenshots reviewed in every
+  contrast palette; Settings stays visible with the sync footer collapsed.
+- `winui-code-review`: no findings above informational. No new view-model
+  state, commands, dependencies, strings, converters or reflection. Existing
+  AutomationIds and connected/syncing/error status rendering remain intact.
+
+**Deviations / carried forward**
+- Native AOT/ARM64 runtime, live Radicale/Nextcloud convergence and performance
+  gates were not run for this visibility patch. UX-02 composer/performance
+  checks and earlier owner-run rows remain open. No accepted-decision change.

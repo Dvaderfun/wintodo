@@ -274,7 +274,8 @@
                     x:Name="SyncStatusNavigationItem"
                     AutomationProperties.AutomationId="Todo.Nav.SyncStatus"
                     IsEnabled="False"
-                    SelectsOnInvoked="False">
+                    SelectsOnInvoked="False"
+                    Visibility="{x:Bind local:ShellPage.BoolToVisibility(ViewModel.IsSyncConnected), Mode=OneWay}">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="{x:Bind ViewModel.SyncStatusGlyph, Mode=OneWay}" />
                     </NavigationViewItem.Icon>
