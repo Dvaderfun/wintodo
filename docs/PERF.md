@@ -327,3 +327,26 @@ Evidence under `tests/ui/artifacts/closure-20261011/`: `motion-before`,
 `motion-after`, `motion-before-repeat`, `motion-after-repeat`, and
 `motion-ux07-baseline` (placement-timings.json, results.json and recording).
 UX-13 remains in progress; no full motion-gate PASS is claimed.
+
+### UX-13 fresh timing comparison — 2026-10-11
+
+Pre-refactor `ca140a8` and current `f3da981`, Debug x64, matching fresh
+200-task / 20-list fixtures. Same prewarmed in-process UIA placement method,
+15 samples with one warm-up excluded; Windows animation effects enabled.
+
+| Run | Baseline median / mean | Candidate median / mean | Result |
+|---|---|---|---|
+| First pair; unit tests overlapped candidate measurement | 333.237 / 335.275 ms | 339.097 / 348.061 ms | FAIL retained |
+| Sequential pair without concurrent builds/tests | 333.070 / 335.488 ms | 332.412 / 331.688 ms | Strict timing PASS |
+
+Thresholds and earlier failure records are unchanged. No product or harness
+source changed. The quiet pair passes both required comparisons; this is gate
+evidence, not a statistical speedup or Native AOT latency claim. Five motion
+checks pass; reduced motion is SKIPPED pending explicit permission to temporarily
+change Windows Animation effects. No system setting was changed.
+
+Evidence: `tests/ui/artifacts/ux13-final-before/timings.json`,
+`ux13-final-after/placement-timings.json`, `ux13-quiet-before/timings.json`,
+and `ux13-quiet-after/placement-timings.json`, `results.json`, `completion.mp4`
+and screenshot sequence. UX-13 remains in progress pending reduced motion and
+acknowledgement of the separately corrected harnesses.

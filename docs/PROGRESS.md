@@ -59,8 +59,10 @@ As of 2026-10-11:
   M3/M4/M5/M7/M8/M13, multi-select, navigation and notification settings pass.
   Stability passes on repeat. Baseline harness failures corrected separately:
   M6 7/7, list icons 10/10, Tasks settings 9/9 and composer 3/3 now pass.
-  Motion visuals pass; timing/reduced-motion acceptance remains open.
-- **Next:** Close UX-13's remaining motion validation, then UX-10 undo, via
+  Motion visuals and the strict fresh timing comparison pass; reduced-motion
+  validation and acknowledgement of the corrected harnesses remain open.
+- **Next:** Close UX-13's reduced-motion validation and harness acknowledgement,
+  then UX-10 undo, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
@@ -2426,3 +2428,37 @@ notification-settings proof remains applicable to identical app source.
   are not unchanged scripts. No acceptance criterion silently rewritten.
 - UX-02 is closed. UX-10 undo is the next feature; its optional completion
   snackbar requires a DESIGN note and owner acknowledgement before implementation.
+
+## UX-13 — Fresh completion timing validation          2026-10-11
+
+**Gate: PARTIAL** — strict fresh timing comparison PASS, all five motion checks
+run with animation effects enabled PASS, Debug warnings-as-errors build clean,
+259/259 unit tests PASS with zero skipped. Reduced motion SKIPPED pending explicit
+owner permission; the runner's printed PASS includes this skip and does not
+establish full package acceptance. No app or test harness source changed.
+
+**Evidence**
+- Sequential pre-refactor `ca140a8` / current `f3da981` Debug x64 runs, matching
+  200-task / 20-list fixtures, 15 prewarmed UIA placement samples and one excluded
+  warm-up: baseline median/mean 333.070/335.488 ms, candidate 332.412/331.688 ms.
+  Both candidate values are below baseline; the strict threshold is unchanged.
+- Completion/uncompletion placement, importance feedback, and undo snackbar
+  entrance/automatic dismissal pass. Screenshots, recording and results are in
+  `tests/ui/artifacts/ux13-quiet-after/`; the matching baseline is in
+  `tests/ui/artifacts/ux13-quiet-before/timings.json`.
+- The preceding candidate run failed at 339.097/348.061 ms versus baseline
+  333.237/335.275 ms. Unit tests ran concurrently with part of that candidate
+  measurement. That failure is retained under `ux13-final-before/` and
+  `ux13-final-after/`; the subsequent comparison ran without concurrent builds
+  or tests. Earlier failed comparisons remain in the history and PERF.md.
+- Existing functional and structural/review proof remains applicable to unchanged
+  product source. No new Native AOT or statistical speedup claim.
+
+**Remaining work**
+- Run the reduced-motion gate after permission for temporarily disabling Windows
+  Animation effects; verify and record restoration of the original setting.
+- Obtain acknowledgement that UX-13's "all UI gates pass unchanged" means
+  unchanged product behavior, accepting the separately corrected harnesses in
+  `40a1a34`: [ADR-011](adr/ADR-011-ux13-validation-harnesses.md). This clarification
+  is proposed only; the package remains in progress.
+- UX-10 has not been claimed or implemented while UX-13 closure remains pending.
