@@ -21,7 +21,7 @@ As of 2026-10-10:
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
   Tests (xunit v3 on Microsoft Testing Platform): Core 79, Data 49, Sync 9 — 137/137,
-  zero skipped on the final UX-03 run.
+  zero skipped on the UX-04 run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** the task list clears and refills its bound collection instead
@@ -32,7 +32,9 @@ As of 2026-10-10:
   regression gate remains partial (1/3), so the package is still in progress.
 - **UX-03:** Notifications/Data/About complete: reminder toggle and snooze,
   database location/size, repository and offline licences. M7 preflight and M8 pass.
-- **Next:** continue Phase A polish (UX-04/UX-05), keeping the UX-02 composer
+- **UX-04:** High-contrast navigation dots, search borders and header chrome
+  fixed. Expanded M8 passes 17/17 across all four Windows contrast palettes.
+- **Next:** continue Phase A polish (UX-05), keeping the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -1826,3 +1828,45 @@ settings gate 6/6, M7 automated preflight PASS, M8 14/14.
 - Full licence texts open from a bundled file, keeping the in-page list compact.
 - M7 reboot and toast-action owner checks, Native AOT runtime and ARM64 runtime
   were not run. No performance claim or budget change.
+
+## UX-04 — High-contrast fixes          2026-10-10
+
+**Gate:** PASS — Debug and Release x64 builds with `-warnaserror`, zero warnings
+and errors; 137/137 unit tests, zero skipped; expanded M8 17/17.
+
+**Shipped**
+- Custom-list dots use WindowText when unselected and HighlightText when
+  selected in High Contrast. A callback on each navigation item's IsSelected
+  dependency property updates the brush immediately, including rebuilt items.
+  Light/Dark retain the selected list palette; emoji icons are unchanged.
+- Wide and compact search boxes use a theme-resource border: zero thickness
+  in Light/Dark, 1 px WindowText in High Contrast.
+- Header icon/title buttons have zero resting border thickness in High
+  Contrast. Native focus visuals and contrast adjustments remain enabled.
+- M8 now switches all four shipped Windows contrast schemes using their
+  localised names, verifies the applied system colours, captures custom lists
+  selected/unselected and both header focus states, and restores and verifies
+  original flags, scheme and system colours in cleanup. Empty accessibility
+  trees and failed captures are errors.
+- DESIGN §§1.1, 9.5 and 11 and the testing guide document the changes.
+
+**Evidence and review**
+- `tests/ui/artifacts/m8/run-20261010-153423`: 17/17. All 16 contrast images
+  reviewed: dots and search borders visible in Aquatic, Desert, Dusk and
+  Night sky; header controls borderless at rest with clear focus outlines.
+- Authored-control accessibility audits pass with zero missing AutomationIds,
+  including selected/unselected contrast states. Existing minimum-hit-target
+  checks also pass.
+- `winui-code-review`: no findings above informational in changed code;
+  selection callback APIs checked against the restored app project. No new
+  dependencies, runtime bindings, reflection or user-facing strings.
+
+**Deviations / carried forward**
+- Earlier expanded gate attempts failed while the test harness was being
+  corrected: SetSysColors alone did not refresh WinUI, a shipped Dusk file
+  has an unrelated malformed MenuText value, and legacy scheme names differ
+  from current theme-file names. The final run uses actual theme switches and
+  validates Window, WindowText, Highlight and HighlightText without skips.
+- Native AOT/ARM64 runtime and performance gates were not run for this UI
+  patch. UX-02 composer/performance checks and earlier owner-run rows remain
+  open; no performance claim or accepted-decision change.

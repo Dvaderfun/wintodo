@@ -467,6 +467,10 @@ public sealed partial class ShellPage : Page
         navigationItem.DragStarting += OnListDragStarting;
         navigationItem.DragOver += OnNavigationDragOver;
         navigationItem.Drop += OnListDrop;
+        navigationItem.RegisterPropertyChangedCallback(
+            NavigationViewItem.IsSelectedProperty,
+            OnUserListSelectionChanged);
+        RefreshUserListAccentBrush(navigationItem, list, _isHighContrast);
         _navigationItems[list.NavigationKey] = navigationItem;
         return navigationItem;
     }
@@ -1877,17 +1881,39 @@ public sealed partial class ShellPage : Page
 
     private void RefreshUserListAccentBrushes(bool isHighContrast)
     {
-        Brush? highContrastBrush = isHighContrast
-            ? ResolveBrush("SystemColorHighlightColorBrush")
-            : null;
         foreach (ShellListItemViewModel list in ViewModel.UserLists)
         {
-            if (_navigationItems.TryGetValue(list.NavigationKey, out NavigationViewItem? item)
-                && item.Content is Grid { Children.Count: > 0 } content
-                && content.Children[0] is Ellipse dot)
+            if (_navigationItems.TryGetValue(list.NavigationKey, out NavigationViewItem? item))
             {
-                dot.Fill = highContrastBrush ?? ResolveBrush(list.AccentResourceKey);
+                RefreshUserListAccentBrush(item, list, isHighContrast);
             }
+        }
+    }
+
+    private void OnUserListSelectionChanged(DependencyObject sender, DependencyProperty property)
+    {
+        if (sender is NavigationViewItem { Tag: string navigationKey } item
+            && ViewModel.UserLists.FirstOrDefault(list => list.NavigationKey == navigationKey)
+                is { } list)
+        {
+            RefreshUserListAccentBrush(item, list, _isHighContrast);
+        }
+    }
+
+    private void RefreshUserListAccentBrush(
+        NavigationViewItem item,
+        ShellListItemViewModel list,
+        bool isHighContrast)
+    {
+        if (item.Content is Grid { Children.Count: > 0 } content
+            && content.Children[0] is Ellipse dot)
+        {
+            string resourceKey = isHighContrast
+                ? item.IsSelected
+                    ? "SystemColorHighlightTextColorBrush"
+                    : "SystemColorWindowTextColorBrush"
+                : list.AccentResourceKey;
+            dot.Fill = ResolveBrush(resourceKey);
         }
     }
 

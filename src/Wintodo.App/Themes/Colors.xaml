@@ -5,6 +5,9 @@
 
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
+            <Thickness x:Key="ListHeaderButtonBorderThickness">1</Thickness>
+            <Thickness x:Key="TitleSearchBorderThickness">0</Thickness>
+            <StaticResource x:Key="TitleSearchBorderBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
             <StaticResource
                 x:Key="ShellDetailBackgroundBrush"
                 ResourceKey="SolidBackgroundFillColorTertiaryBrush" />
@@ -36,6 +39,9 @@
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
+            <Thickness x:Key="ListHeaderButtonBorderThickness">1</Thickness>
+            <Thickness x:Key="TitleSearchBorderThickness">0</Thickness>
+            <StaticResource x:Key="TitleSearchBorderBrush" ResourceKey="ControlStrokeColorDefaultBrush" />
             <StaticResource
                 x:Key="ShellDetailBackgroundBrush"
                 ResourceKey="SolidBackgroundFillColorTertiaryBrush" />
@@ -67,6 +73,9 @@
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="HighContrast">
+            <Thickness x:Key="ListHeaderButtonBorderThickness">0</Thickness>
+            <Thickness x:Key="TitleSearchBorderThickness">1</Thickness>
+            <StaticResource x:Key="TitleSearchBorderBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource
                 x:Key="ShellDetailBackgroundBrush"
                 ResourceKey="SystemColorWindowColorBrush" />

@@ -295,6 +295,7 @@
                         MinWidth="0"
                         Padding="0"
                         AutomationProperties.AutomationId="Todo.List.IconPickerButton"
+                        BorderThickness="{ThemeResource ListHeaderButtonBorderThickness}"
                         Style="{StaticResource SubtleButtonStyle}"
                         Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.CanEditSelectedList), Mode=OneWay}">
                         <Grid>
@@ -361,6 +362,7 @@
                         HorizontalAlignment="Left"
                         Padding="8,0"
                         AutomationProperties.AutomationId="Todo.List.TitleButton"
+                        BorderThickness="{ThemeResource ListHeaderButtonBorderThickness}"
                         Command="{x:Bind ViewModel.BeginRenameListCommand, Mode=OneTime}"
                         Style="{StaticResource SubtleButtonStyle}"
                         Visibility="{x:Bind local:TaskListView.TitleButtonVisibility(ViewModel.CanEditSelectedList, ViewModel.IsRenamingList), Mode=OneWay}">
