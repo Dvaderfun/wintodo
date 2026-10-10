@@ -129,6 +129,7 @@ function Take-Screenshot {
     }
 
     & winapp $arguments 2>$null | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Screenshot failed: $Name" }
 }
 
 function Get-DescendantElements {
@@ -157,6 +158,7 @@ function Assert-AuthoredControlsHaveIds {
         -not ($_.type -eq "Button" -and -not $_.name) -and
         -not ($_.type -eq "MenuItem" -and [string]::IsNullOrWhiteSpace($_.className))
     })
+    if ($authored.Count -eq 0) { throw "No authored controls were audited." }
     $missingId = @($authored | Where-Object {
         [string]::IsNullOrWhiteSpace($_.automationId)
     })
@@ -199,6 +201,16 @@ public static class WintodoM8ThemeNative
         uint parameter,
         ref HIGHCONTRAST value,
         uint flags);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetSysColor(int index);
+
+    [DllImport("user32.dll")]
+    public static extern bool SetSysColors(int count, int[] indices, uint[] colors);
+
+    [DllImport("shlwapi.dll", CharSet = CharSet.Unicode)]
+    public static extern int SHLoadIndirectString(
+        string source, System.Text.StringBuilder output, uint size, IntPtr reserved);
 }
 "@
 }
@@ -491,36 +503,85 @@ Test-UI "Visible authored controls pass the AutomationId audit" {
 }
 
 $originalHighContrast = Get-HighContrast
-$highContrastScheme = if ($originalHighContrast.Scheme) {
-    $originalHighContrast.Scheme
-} else {
-    "High Contrast Black"
-}
+$colorIndices = [int[]](0..30)
+$originalColors = [uint32[]]@($colorIndices | ForEach-Object {
+    [WintodoM8ThemeNative]::GetSysColor($_)
+})
+# Use the shipped theme files so this covers the four Windows palettes even
+# when scheme display names are localised or the current scheme was customised.
+$contrastThemes = @(
+    @{ Name = "Aquatic"; File = "hc1.theme"; SchemeId = 2107 },
+    @{ Name = "Desert"; File = "hcwhite.theme"; SchemeId = 2104 },
+    @{ Name = "Dusk"; File = "hc2.theme"; SchemeId = 2108 },
+    @{ Name = "Night sky"; File = "hcblack.theme"; SchemeId = 2103 }
+)
+$checkedColors = @{ Window = 5; WindowText = 8; Hilight = 13; HilightText = 14 }
 try {
-    Test-UI "High Contrast keeps authored controls visible and accessible" {
-        Set-HighContrast `
-            -Flags ($originalHighContrast.Flags -bor $highContrastOn) `
-            -Scheme $highContrastScheme
-        winapp ui invoke "Todo.Nav.MyDay" -w $mainHwnd | Out-Null
-        Invoke-UserList "M8 Gate"
-        winapp ui wait-for "Todo.List.MenuButton" -w $mainHwnd -t 5000 | Out-Null
-        winapp ui focus "Todo.List.MenuButton" -w $mainHwnd | Out-Null
-        Assert-AuthoredControlsHaveIds
-        Take-Screenshot "05-high-contrast.png"
+    foreach ($theme in $contrastThemes) {
+        Test-UI "High Contrast $($theme.Name): selected/unselected list and search" {
+            $schemeName = [Text.StringBuilder]::new(256)
+            if ([WintodoM8ThemeNative]::SHLoadIndirectString(
+                "@themeui.dll,-$($theme.SchemeId)", $schemeName, 256, [IntPtr]::Zero) -ne 0) {
+                throw "Could not resolve the localised contrast scheme name."
+            }
+            Set-HighContrast `
+                -Flags ($originalHighContrast.Flags -band (-bnot $highContrastOn)) `
+                -Scheme $originalHighContrast.Scheme
+            Set-HighContrast `
+                -Flags ($originalHighContrast.Flags -bor $highContrastOn) `
+                -Scheme $schemeName.ToString()
+            $themePath = Join-Path $env:SystemRoot "Resources\Ease of Access Themes\$($theme.File)"
+            $themeText = Get-Content -LiteralPath $themePath -Raw
+            foreach ($colorName in $checkedColors.Keys) {
+                $match = [regex]::Match($themeText, "(?m)^$colorName=(\d+) (\d+) (\d+)\r?$")
+                if (-not $match.Success) { throw "Theme colour missing: $colorName" }
+                $expectedColor = [uint32]([int]$match.Groups[1].Value -bor
+                    ([int]$match.Groups[2].Value -shl 8) -bor
+                    ([int]$match.Groups[3].Value -shl 16))
+                if ([WintodoM8ThemeNative]::GetSysColor($checkedColors[$colorName]) -ne $expectedColor) {
+                    throw "$($theme.Name) system colour $colorName was not applied."
+                }
+            }
+            if (-not ((Get-HighContrast).Flags -band $highContrastOn)) {
+                throw "High Contrast is not enabled."
+            }
+            winapp ui invoke "Todo.Nav.MyDay" -w $mainHwnd | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "Could not select My Day." }
+            Assert-AuthoredControlsHaveIds
+            $prefix = "05-high-contrast-" + $theme.Name.Replace(" ", "-").ToLowerInvariant()
+            Take-Screenshot "$prefix-unselected.png"
+            Invoke-UserList "M8 Gate"
+            winapp ui wait-for "Todo.TitleBar.SearchBox" -w $mainHwnd -t 5000 | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "Search is missing." }
+            Assert-AuthoredControlsHaveIds
+            Take-Screenshot "$prefix-selected.png"
+            foreach ($controlId in @("Todo.List.IconPickerButton", "Todo.List.TitleButton")) {
+                winapp ui focus $controlId -w $mainHwnd | Out-Null
+                if ($LASTEXITCODE -ne 0) { throw "Could not focus $controlId." }
+                Take-Screenshot "$prefix-$($controlId.Split('.')[-1])-focused.png"
+            }
+        }
     }
 } finally {
     Set-HighContrast `
         -Flags $originalHighContrast.Flags `
         -Scheme $originalHighContrast.Scheme
+    if (-not [WintodoM8ThemeNative]::SetSysColors(31, $colorIndices, $originalColors)) {
+        throw "Could not restore original system colours."
+    }
 }
 
 $restoredHighContrast = Get-HighContrast
-if ($restoredHighContrast.Flags -ne $originalHighContrast.Flags) {
+if ($restoredHighContrast.Flags -ne $originalHighContrast.Flags -or
+    $restoredHighContrast.Scheme -ne $originalHighContrast.Scheme -or
+    @($colorIndices | Where-Object {
+        [WintodoM8ThemeNative]::GetSysColor($_) -ne $originalColors[$_]
+    }).Count -ne 0) {
     $fail++
     $results += @{
         name = "Original High Contrast state is restored"
         status = "FAIL"
-        detail = "The original flags were not restored."
+        detail = "The original flags, scheme or system colours were not restored."
     }
 } else {
     $pass++

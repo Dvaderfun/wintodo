@@ -74,6 +74,8 @@ Height 48. Three regions inside the `TitleBar` control:
 - Search box: centred, `AutoSuggestBox`, `PlaceholderText="Search"`, query icon
   `Search`, corner radius `ControlCornerRadius`, background
   `ControlFillColorDefaultBrush`, no border until focus.
+  High Contrast keeps a 1 px `SystemColorWindowTextColorBrush` border on both
+  the wide search box and the compact search flyout.
 - Below 900 px window width the search box collapses to a 32 × 32 icon button
   that expands the box as a flyout (§6).
 
@@ -632,7 +634,9 @@ An emoji icon is optional metadata independent of the list theme colour.
   the list name plus its nonzero incomplete-task count.
 - The default Tasks list always renders Home and cannot receive a custom icon.
 - Emoji are user content and retain their native colour in High Contrast. The
-  fallback dot continues to use `SystemColorHighlightColorBrush`.
+  fallback dot uses `SystemColorWindowTextColorBrush` when unselected and
+  `SystemColorHighlightTextColorBrush` when selected; it follows the navigation
+  item's selection state.
 
 ---
 
@@ -675,6 +679,8 @@ Each empty state is `x:Load`-deferred.
 - Focus visuals must be visible on every surface in all three themes —
   check the completion circle and the star specifically, they are the easiest to
   get wrong on a card background.
+- The list header's icon picker and title button have no resting border in
+  High Contrast. Their system keyboard focus outlines remain visible.
 - Minimum hit target 32 × 32 for every interactive element, including the
   completion circle and star.
 

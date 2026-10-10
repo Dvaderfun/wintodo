@@ -42,7 +42,7 @@ stops the app. Artifacts (results JSON, screenshots, UI trees) are gitignored.
 
 ```powershell
 dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
-.\tests\ui\run-m8-gate.ps1                        # design + accessibility, 14 checks
+.\tests\ui\run-m8-gate.ps1                        # design + accessibility, 17 checks
 .\tests\ui\run-composer-layout-gate.ps1           # detail-open/narrow input, options, resize; -Aot for publish
 .\tests\ui\run-navigation-startup-gate.ps1       # one selected category on first launch, restart and hover
 .\tests\ui\run-m5-gate.ps1                        # smart lists, search, restart
@@ -58,7 +58,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-m5-gate.ps1` | Smart lists, search, sort, restart |
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |
 | `run-m7-gate.ps1` | Reminders, toasts, badge, jump list (`-VerifyToastCompletion`, `-VerifyToastSnooze`) |
-| `run-m8-gate.ps1` | Design, responsive layout, High Contrast, accessibility audit |
+| `run-m8-gate.ps1` | Design, responsive layout, all four Windows contrast palettes (selected/unselected custom list, search border and header focus), accessibility audit |
 | `run-m13-gate.ps1` | CalDAV Configure dialog, cancel/retry, sync, list toggles (`-Aot` for published x64) |
 | `run-notification-settings-gate.ps1` | Reminder enable/disable, actual scheduled payload defaults, restart, Data/About and accessibility |
 | `run-settings-gate.ps1` | Tasks settings, immediate delete/undo, restart, reminder default, ordering and accessibility |
