@@ -1095,4 +1095,33 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <data name="SettingsReadLicencesButton.Content" xml:space="preserve"><value>Read licence notices</value></data>
   <data name="Settings_LicencesOpenFailed" xml:space="preserve"><value>Couldn’t open licence notices.</value></data>
   <data name="SettingsLicenceNoticesCard.Header" xml:space="preserve"><value>Licence notices</value></data>
+  <!-- UX-09 -->
+  <data name="Selection_Count" xml:space="preserve"><value>{0} tasks selected</value></data>
+  <data name="Selection_Complete" xml:space="preserve"><value>Mark {0} tasks complete</value></data>
+  <data name="Selection_Uncomplete" xml:space="preserve"><value>Mark {0} tasks incomplete</value></data>
+  <data name="Selection_Important" xml:space="preserve"><value>Mark {0} tasks important</value></data>
+  <data name="Selection_Unimportant" xml:space="preserve"><value>Remove importance from {0} tasks</value></data>
+  <data name="Selection_MyDay" xml:space="preserve"><value>Add {0} tasks to My Day</value></data>
+  <data name="Selection_RemoveMyDay" xml:space="preserve"><value>Remove {0} tasks from My Day</value></data>
+  <data name="Selection_Due" xml:space="preserve"><value>Set due date</value></data>
+  <data name="Selection_Today" xml:space="preserve"><value>Today</value></data>
+  <data name="Selection_Tomorrow" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="Selection_Pick" xml:space="preserve"><value>Pick a date</value></data>
+  <data name="Selection_Move" xml:space="preserve"><value>Move {0} tasks to</value></data>
+  <data name="Selection_Delete" xml:space="preserve"><value>Delete {0} tasks</value></data>
+  <data name="Selection_Count_Single" xml:space="preserve"><value>1 task selected</value></data>
+  <data name="Selection_Complete_Single" xml:space="preserve"><value>Mark task complete</value></data>
+  <data name="Selection_Uncomplete_Single" xml:space="preserve"><value>Mark task incomplete</value></data>
+  <data name="Selection_Important_Single" xml:space="preserve"><value>Mark task important</value></data>
+  <data name="Selection_Unimportant_Single" xml:space="preserve"><value>Remove importance</value></data>
+  <data name="Selection_MyDay_Single" xml:space="preserve"><value>Add to My Day</value></data>
+  <data name="Selection_RemoveMyDay_Single" xml:space="preserve"><value>Remove from My Day</value></data>
+  <data name="Selection_Move_Single" xml:space="preserve"><value>Move to</value></data>
+  <data name="Selection_Delete_Single" xml:space="preserve"><value>Delete task</value></data>
+  <data name="Undo_TasksDeleted" xml:space="preserve"><value>Deleted {0} tasks</value></data>
+  <data name="DeleteTasksDialog_Message" xml:space="preserve"><value>Delete {0} selected tasks?</value></data>
+  <data name="Shortcut20_Key" xml:space="preserve"><value>Ctrl+A</value></data>
+  <data name="Shortcut20_Action" xml:space="preserve"><value>Select all tasks in the current group</value></data>
+  <data name="Shortcut21_Key" xml:space="preserve"><value>Shift+↑ / Shift+↓</value></data>
+  <data name="Shortcut21_Action" xml:space="preserve"><value>Extend task selection</value></data>
 </root>

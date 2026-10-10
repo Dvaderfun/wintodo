@@ -20,9 +20,12 @@ public sealed partial class TaskListView : UserControl
     private readonly HashSet<TaskItemViewModel> _observedTaskItems = [];
     private bool _isSynchronizingSelection;
     private string? _draggedTaskUid;
+    private TaskItemViewModel[] _dragSelection = [];
     private ScrollViewer? _tasksScrollViewer;
     private double _savedVerticalOffset;
     private TaskItemViewModel? _savedSelectedTask;
+    private TaskItemViewModel[] _savedSelection = [];
+    private TaskItemViewModel? _selectionAnchor;
     private string? _savedFocusedTaskUid;
     private int _updateVersion;
     private bool _restoringTaskFocus;
@@ -196,7 +199,7 @@ public sealed partial class TaskListView : UserControl
             }
 
             TasksList.SelectedItems.Clear();
-            ViewModel.SelectedTask = null;
+            ViewModel.SetSelection([]);
         }
         finally
         {
@@ -216,6 +219,7 @@ public sealed partial class TaskListView : UserControl
             oldViewModel.VisibleItems.CollectionChanged -=
                 view.OnVisibleItemsCollectionChanged;
             oldViewModel.TaskCompletionChanged -= view.OnTaskCompletionChanged;
+            oldViewModel.DueDatePickerRequested -= view.OnDueDatePickerRequested;
             oldViewModel.ListIconChanged -= view.OnListIconChanged;
             oldViewModel.VisibleItemsUpdating -= view.OnVisibleItemsUpdating;
             oldViewModel.VisibleItemsUpdated -= view.OnVisibleItemsUpdated;
@@ -229,6 +233,7 @@ public sealed partial class TaskListView : UserControl
             newViewModel.VisibleItems.CollectionChanged +=
                 view.OnVisibleItemsCollectionChanged;
             newViewModel.TaskCompletionChanged += view.OnTaskCompletionChanged;
+            newViewModel.DueDatePickerRequested += view.OnDueDatePickerRequested;
             newViewModel.ListIconChanged += view.OnListIconChanged;
             newViewModel.VisibleItemsUpdating += view.OnVisibleItemsUpdating;
             newViewModel.VisibleItemsUpdated += view.OnVisibleItemsUpdated;
@@ -394,46 +399,37 @@ public sealed partial class TaskListView : UserControl
             return;
         }
 
-        foreach (TaskItemViewModel removed in args.RemovedItems.OfType<TaskItemViewModel>())
-        {
-            removed.IsSelected = false;
-        }
-
-        TaskItemViewModel? selectedTask =
-            args.AddedItems.OfType<TaskItemViewModel>().LastOrDefault();
-        if (selectedTask is null)
-        {
-            if (TasksList.SelectedItems.Count == 0)
-            {
-                ViewModel.SelectedTask = null;
-                TaskCloseRequested?.Invoke();
-            }
-
-            return;
-        }
-
-        _isSynchronizingSelection = true;
-        try
-        {
-            foreach (TaskItemViewModel task in
-                     TasksList.SelectedItems
-                         .OfType<TaskItemViewModel>()
-                         .Where(task => !ReferenceEquals(task, selectedTask))
-                         .ToArray())
-            {
-                task.IsSelected = false;
-                TasksList.SelectedItems.Remove(task);
-            }
-        }
-        finally
-        {
-            _isSynchronizingSelection = false;
-        }
-
-        ViewModel.SelectedTask = selectedTask;
-        selectedTask.IsSelected = true;
-        TaskOpenRequested?.Invoke(selectedTask);
+        SynchronizeSelection();
     }
+
+    private void SynchronizeSelection(bool updateDetail = true)
+    {
+        ViewModel.SetSelection(TasksList.SelectedItems.OfType<TaskItemViewModel>());
+        if (updateDetail)
+        {
+            if (ViewModel.SelectedTask is { } selected)
+                TaskOpenRequested?.Invoke(selected);
+            else TaskCloseRequested?.Invoke();
+        }
+        AutomationPeer? peer = FrameworkElementAutomationPeer.FromElement(TasksList)
+            ?? FrameworkElementAutomationPeer.CreatePeerForElement(TasksList);
+        peer?.RaiseNotificationEvent(AutomationNotificationKind.Other,
+            AutomationNotificationProcessing.MostRecent,
+            ViewModel.SelectionLabel("Selection_Count"), "Wintodo.Selection");
+    }
+
+    internal void SelectContextRow(TaskItemViewModel row)
+    {
+        if (!TasksList.SelectedItems.Contains(row)) TasksList.SelectedItem = row;
+    }
+
+    internal void CaptureDragSelection(TaskItemViewModel row)
+    {
+        _dragSelection = ViewModel.ActionTargets(row);
+    }
+
+    private TaskItemViewModel[] DragSelection(TaskItemViewModel row) =>
+        _dragSelection.Contains(row) ? _dragSelection : ViewModel.ActionTargets(row);
 
     private void OnVisibleItemsUpdating(bool preserveViewport)
     {
@@ -445,6 +441,7 @@ public sealed partial class TaskListView : UserControl
         if (_tasksScrollViewer is not null) _tasksScrollViewer.BringIntoViewOnFocusChange = false;
         _savedVerticalOffset = _tasksScrollViewer?.VerticalOffset ?? 0;
         _savedSelectedTask = ViewModel.SelectedTask;
+        _savedSelection = ViewModel.SelectedTasks.ToArray();
         _viewportAnchor = null;
         foreach (TaskItemViewModel item in ViewModel.VisibleItems.OfType<TaskItemViewModel>())
         {
@@ -476,6 +473,7 @@ public sealed partial class TaskListView : UserControl
         {
             _savedVerticalOffset = 0;
             _savedSelectedTask = null;
+            _savedSelection = [];
             _savedFocusedTaskUid = null;
             _viewportAnchor = null;
         }
@@ -484,22 +482,16 @@ public sealed partial class TaskListView : UserControl
     private void OnVisibleItemsUpdated()
     {
         int version = ++_updateVersion;
-        TaskItemViewModel? selected = _savedSelectedTask;
         string? focusedUid = _savedFocusedTaskUid;
         TaskItemViewModel? anchor = _viewportAnchor;
         double anchorY = _viewportAnchorY;
-        if (selected is not null && ViewModel.VisibleItems.Contains(selected))
-        {
-            TasksList.SelectedItem = selected;
-            selected.IsSelected = true;
-        }
-        else if (selected is not null)
-        {
-            selected.IsSelected = false;
-            TasksList.SelectedItems.Clear();
-            TaskCloseRequested?.Invoke();
-        }
+        TaskItemViewModel[] restored = _savedSelection.Where(ViewModel.VisibleItems.Contains).ToArray();
+        foreach (TaskItemViewModel item in TasksList.SelectedItems.OfType<TaskItemViewModel>().ToArray())
+            if (!restored.Contains(item)) TasksList.SelectedItems.Remove(item);
+        foreach (TaskItemViewModel item in restored)
+            if (!TasksList.SelectedItems.Contains(item)) TasksList.SelectedItems.Add(item);
         _isSynchronizingSelection = false;
+        SynchronizeSelection(updateDetail: _savedSelection.Length > 0 && restored.Length != _savedSelection.Length);
         DispatcherQueue.TryEnqueue(() =>
         {
             if (version != _updateVersion) return;
@@ -640,14 +632,15 @@ public sealed partial class TaskListView : UserControl
         DragItemsStartingEventArgs args)
     {
         TaskItemViewModel? task = args.Items.OfType<TaskItemViewModel>().FirstOrDefault();
-        if (task is null || task.IsCompleted || args.Items.Count != 1)
+        if (task is null)
         {
             args.Cancel = true;
             return;
         }
 
-        _draggedTaskUid = task.Uid;
-        args.Data.SetData(TaskDragFormat, task.Uid);
+        TaskItemViewModel[] selection = DragSelection(task);
+        _draggedTaskUid = selection.Length == 1 && !task.IsCompleted ? task.Uid : null;
+        args.Data.SetData(TaskDragFormat, string.Join("\n", selection.Select(item => item.Uid)));
         args.Data.RequestedOperation = DataPackageOperation.Move;
     }
 
@@ -656,27 +649,29 @@ public sealed partial class TaskListView : UserControl
         DragItemsCompletedEventArgs args)
     {
         _draggedTaskUid = null;
+        _dragSelection = [];
         HideTaskInsertionIndicator();
     }
 
     private void OnTaskContainerDragStarting(UIElement sender, DragStartingEventArgs args)
     {
         if (sender is not ListViewItem container
-            || TasksList.ItemFromContainer(container) is not TaskItemViewModel task
-            || task.IsCompleted || !ViewModel.CanReorderTasks)
+            || TasksList.ItemFromContainer(container) is not TaskItemViewModel task)
         {
             args.Cancel = true;
             return;
         }
 
-        _draggedTaskUid = task.Uid;
-        args.Data.SetData(TaskDragFormat, task.Uid);
+        TaskItemViewModel[] selection = DragSelection(task);
+        _draggedTaskUid = selection.Length == 1 && !task.IsCompleted ? task.Uid : null;
+        args.Data.SetData(TaskDragFormat, string.Join("\n", selection.Select(item => item.Uid)));
         args.Data.RequestedOperation = DataPackageOperation.Move;
     }
 
     private void OnTaskContainerDropCompleted(UIElement sender, DropCompletedEventArgs args)
     {
         _draggedTaskUid = null;
+        _dragSelection = [];
         HideTaskInsertionIndicator();
     }
 
@@ -835,8 +830,10 @@ public sealed partial class TaskListView : UserControl
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+
+        if (IsTextInputFocused()) return;
         ViewModel.ToggleSelectedCompletionCommand.Execute(null);
-        args.Handled = ViewModel.SelectedTask is not null;
+        args.Handled = ViewModel.SelectionCount > 0;
     }
 
     private void OnOpenDetailAccelerator(
@@ -858,6 +855,46 @@ public sealed partial class TaskListView : UserControl
         _restoringTaskFocus = false;
         TasksList.ItemContainerTransitions = _savedTransitions ?? TasksList.ItemContainerTransitions;
         if (_tasksScrollViewer is not null) _tasksScrollViewer.BringIntoViewOnFocusChange = true;
+        if (IsTextInputFocused()) return;
+        if (args.Key == VirtualKey.A && (GetKeyState(0x11) & 0x8000) != 0)
+        {
+            TaskItemViewModel? current = FocusedTask() ?? ViewModel.SelectedTasks.LastOrDefault();
+            object? group = ViewModel.TaskGroups.FirstOrDefault(items =>
+                ((System.Collections.IEnumerable)items).Cast<object>().Contains(current!));
+            _isSynchronizingSelection = true;
+            TasksList.SelectedItems.Clear();
+            IEnumerable<TaskItemViewModel> items = group is System.Collections.IEnumerable sequence
+                ? sequence.Cast<object>().OfType<TaskItemViewModel>()
+                : ViewModel.VisibleItems.OfType<TaskItemViewModel>();
+            foreach (TaskItemViewModel item in items) TasksList.SelectedItems.Add(item);
+            _isSynchronizingSelection = false;
+            SynchronizeSelection();
+            args.Handled = true;
+            return;
+        }
+        if (args.Key is VirtualKey.Up or VirtualKey.Down && (GetKeyState(0x10) & 0x8000) != 0)
+        {
+            TaskItemViewModel? current = FocusedTask() ?? ViewModel.SelectedTasks.LastOrDefault();
+            _selectionAnchor ??= current;
+            if (current is not null && _selectionAnchor is not null)
+            {
+                int next = Math.Clamp(TasksList.Items.IndexOf(current) + (args.Key == VirtualKey.Down ? 1 : -1),
+                    0, TasksList.Items.Count - 1);
+                int anchor = TasksList.Items.IndexOf(_selectionAnchor);
+                _isSynchronizingSelection = true;
+                TasksList.SelectedItems.Clear();
+                for (int i = Math.Min(anchor, next); i <= Math.Max(anchor, next); i++)
+                    TasksList.SelectedItems.Add(TasksList.Items[i]);
+                _isSynchronizingSelection = false;
+                SynchronizeSelection();
+                TasksList.ScrollIntoView(TasksList.Items[next]);
+                TasksList.UpdateLayout();
+                (TasksList.ContainerFromIndex(next) as ListViewItem)?.Focus(FocusState.Keyboard);
+                args.Handled = true;
+                return;
+            }
+        }
+        else _selectionAnchor = null;
         if (ViewModel.SelectedTask is not null && args.Key is VirtualKey.Up or VirtualKey.Down
             && (GetKeyState(0x12) & 0x8000) != 0)
         {
@@ -865,13 +902,47 @@ public sealed partial class TaskListView : UserControl
             args.Handled = true;
             return;
         }
-        if (args.Key != VirtualKey.Space || ViewModel.SelectedTask is null)
+        if (args.Key != VirtualKey.Space || ViewModel.SelectionCount == 0 || IsTextInputFocused())
         {
             return;
         }
 
         ViewModel.ToggleSelectedCompletionCommand.Execute(null);
         args.Handled = true;
+    }
+
+    private TaskItemViewModel? FocusedTask()
+    {
+        DependencyObject? focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        while (focused is not null && !ReferenceEquals(focused, TasksList))
+        {
+            if (focused is ListViewItem row) return TasksList.ItemFromContainer(row) as TaskItemViewModel;
+            focused = VisualTreeHelper.GetParent(focused);
+        }
+        return null;
+    }
+
+    private async void OnDueDatePickerRequested()
+    {
+        TaskItemViewModel[] selection = ViewModel.SelectedTasks.ToArray();
+        await Task.Yield();
+        var resources = new Microsoft.Windows.ApplicationModel.Resources.ResourceLoader();
+        var picker = new CalendarDatePicker
+        {
+            Header = resources.GetString("Selection_Due"),
+            PlaceholderText = resources.GetString("Selection_Pick"),
+            Language = Wintodo.Services.DisplayCulture.Current.Name,
+            FirstDayOfWeek = (Windows.Globalization.DayOfWeek)ViewModel.FirstDayOfWeek,
+        };
+        AutomationProperties.SetAutomationId(picker, "Todo.List.SelectionDuePicker");
+        var flyout = new Flyout { Content = picker };
+        picker.DateChanged += async (_, _) =>
+        {
+            if (picker.Date is not { } date) return;
+            flyout.Hide();
+            await ViewModel.SetTasksDueDateAsync(selection, DateOnly.FromDateTime(date.DateTime));
+        };
+        flyout.ShowAt(TasksList);
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
@@ -881,24 +952,30 @@ public sealed partial class TaskListView : UserControl
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+
+        if (IsTextInputFocused()) return;
         ViewModel.ToggleSelectedImportanceCommand.Execute(null);
-        args.Handled = ViewModel.SelectedTask is not null;
+        args.Handled = ViewModel.SelectionCount > 0;
     }
 
     private void OnToggleMyDayAccelerator(
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+
+        if (IsTextInputFocused()) return;
         ViewModel.ToggleSelectedMyDayCommand.Execute(null);
-        args.Handled = ViewModel.SelectedTask is not null;
+        args.Handled = ViewModel.SelectionCount > 0;
     }
 
     private void OnDeleteAccelerator(
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+
+        if (IsTextInputFocused()) return;
         ViewModel.DeleteSelectedTaskCommand.Execute(null);
-        args.Handled = ViewModel.SelectedTask is not null;
+        args.Handled = ViewModel.SelectionCount > 0;
     }
 
     private void OnUndoAccelerator(
@@ -948,14 +1025,14 @@ public sealed partial class TaskListView : UserControl
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
-        args.Handled = MoveSelection(-1);
+        if ((GetKeyState(0x10) & 0x8000) == 0) args.Handled = MoveSelection(-1);
     }
 
     private void OnSelectNextAccelerator(
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
-        args.Handled = MoveSelection(1);
+        if ((GetKeyState(0x10) & 0x8000) == 0) args.Handled = MoveSelection(1);
     }
 
     private bool MoveSelection(int offset)

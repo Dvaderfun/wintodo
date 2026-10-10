@@ -20,8 +20,8 @@ As of 2026-10-10:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 165, Data 67, Sync 9 — 241/241,
-  zero skipped on the UX-08 closure run.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 165, Data 83, Sync 9 — 257/257,
+  zero skipped on the UX-09 closure run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** Final app name and
@@ -46,7 +46,11 @@ As of 2026-10-10:
   Matched completion placement mean/median do not regress; animation-off commands
   skip the hold and Windows settings restoration is verified. Completion hit target
   stays 32 × 32; selected-task moves preserve viewport/focus. M3 remains passing.
-- **Next:** UX-09 multi-select, keeping the UX-02 composer
+- **UX-09:** Complete: Extended selection, bulk actions, atomic writes, one
+  delete undo entry and multi-task navigation drag. Multi-select 7/7, M3 10/10
+  plus restart, M8 17/17, stability 3/3; Debug/Release builds and 257 tests pass.
+- **Next:** UX-11 navigation drops is independent and ready; UX-13 is now
+  unblocked by UX-09. Keep the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -2219,3 +2223,49 @@ remains in progress; no open row is reported as passed.
   and frame bundle are delivered (360 samples, 68 changing images).
 - UX-08 is complete. UX-09 is next; UX-02 and earlier manual/AOT deferrals are
   unchanged. Local testing used scratch databases because Sandbox is unavailable.
+
+## UX-09 — Real multi-select and bulk actions          2026-10-10
+
+**Gate: PASS**
+- Debug and Release x64 warnings-as-errors builds: zero warnings/errors.
+  Unit tests 257/257, zero skipped; 15 new Data batch cases plus one UI fixture.
+- Multi-select run-20261010-200259: 7/7. Ctrl-select three, detail hides,
+  native SelectionPattern reports three items and CanSelectMultiple; bulk
+  importance/My Day/due date, completion/uncompletion, Shift-click five and
+  context move, Shift-arrow two/delete/one undo, Ctrl+A/Esc, two-task nav drag.
+- M3 run-20261010-195821: 10/10 plus restart order persistence.
+  M8 run-20261010-195916: 17/17, accessibility zero errors and all four contrast
+  palettes. Stability run-20261010-200208: 3/3, exact focus, 10 px anchor shift.
+- WinUI code review: no remaining Error/Warning findings. Selection and shortcut
+  screenshots reviewed; project-scoped APIs, WinUIAnalyzer and AOT analyzers run.
+  Native AOT runtime and Narrator listening gates remain owner-deferred.
+
+**Shipped**
+- Extended native selection with a read-only selected-task snapshot/count,
+  native selection announcements, group-scoped Ctrl+A, Shift-arrow ranges, Esc.
+  Detail opens only for one task; asynchronous detail loads cannot reopen it
+  after selection changes. Stable diffs restore all surviving selected tasks
+  without reloading unchanged detail or moving its viewport.
+- Count-aware context actions for completion, importance, My Day, due date,
+  move and delete. Pick a date uses a localized CalendarDatePicker flyout.
+  Keyboard bulk commands preserve text-input behavior; shortcuts dialog extended.
+- ApplyTaskBatchAsync performs field-level changes in one writer transaction,
+  with one change-log row per changed UID and one committed notification.
+  Duplicate UIDs are deduplicated; failures roll back; recurrence/alarms and
+  unrelated metadata/collections are preserved. No dependency or schema change.
+- Bulk delete snapshots the tasks for confirmation and produces one undo entry
+  restoring the whole selection. Multi-task drag snapshots selection before the
+  row press changes it; single-task manual reorder retains its existing path.
+- Architecture, data model, DESIGN and testing guide updated.
+
+**Validation notes / deviations**
+- Initial stability run exposed a 96 px completion scroll regression; retaining
+  unchanged detail and selection fixed it (final shift 10 px). Failed evidence
+  is retained. No accepted design or architecture decision changed.
+- WinApp CLI click releases held modifier keys. The gate injects Ctrl/Shift
+  and mouse together; virtual-key codes avoid the active regional layout's
+  letter-key lookup. Nav selectors are refreshed after task-count rebuilds.
+- One full-suite run hit an intermittent SQLite disposed handle during an
+  existing fixture's initialization; fresh full suite passes 257/257. Pool
+  cleanup isolation is tracked in UX-PLAN's Parking lot for separate work.
+- UX-02 composer/performance and earlier manual/AOT deferrals remain open.

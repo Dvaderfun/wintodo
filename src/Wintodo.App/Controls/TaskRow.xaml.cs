@@ -30,6 +30,7 @@ public sealed partial class TaskRow : UserControl
     {
         InitializeComponent();
         RowContextFlyout.Opening += OnContextFlyoutOpening;
+        PointerPressed += (_, _) => FindTaskListView().CaptureDragSelection(ViewModel);
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -346,58 +347,70 @@ public sealed partial class TaskRow : UserControl
 
     private void OnContextFlyoutOpening(object? sender, object args)
     {
+        TaskListView host = FindTaskListView();
+        host.SelectContextRow(ViewModel);
+        TaskListViewModel list = host.ViewModel;
         RowContextFlyout.Items.Clear();
+        MenuFlyoutItem Action(string key, string id, System.Windows.Input.ICommand command, object? parameter = null)
+        {
+            var item = new MenuFlyoutItem
+            {
+                Text = list.SelectionLabel(key),
+                Command = command,
+                CommandParameter = parameter,
+            };
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(item, id);
+            return item;
+        }
+
+        RowContextFlyout.Items.Add(Action(list.SelectedTasks.All(item => item.IsCompleted)
+            ? "Selection_Uncomplete" : "Selection_Complete", "Todo.Row.Selection.Complete",
+            list.ToggleSelectedCompletionCommand));
+        RowContextFlyout.Items.Add(Action(list.SelectedTasks.All(item => item.IsImportant)
+            ? "Selection_Unimportant" : "Selection_Important", "Todo.Row.Selection.Important",
+            list.ToggleSelectedImportanceCommand));
+        RowContextFlyout.Items.Add(Action(list.SelectionIsInMyDay
+            ? "Selection_RemoveMyDay" : "Selection_MyDay", "Todo.Row.Selection.MyDay",
+            list.ToggleSelectedMyDayCommand));
+        var dueSubItem = new MenuFlyoutSubItem { Text = list.SelectionLabel("Selection_Due") };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(dueSubItem, "Todo.Row.Selection.Due");
+        foreach (string choice in new[] { "Today", "Tomorrow", "Pick" })
+            dueSubItem.Items.Add(Action("Selection_" + choice, "Todo.Row.Selection.Due." + choice,
+                list.SetSelectionDueCommand, choice));
+        RowContextFlyout.Items.Add(dueSubItem);
         var moveSubItem = new MenuFlyoutSubItem
         {
-            Text = StringResources.GetString("Task_MoveTo"),
+            Text = list.SelectionLabel("Selection_Move"),
             Icon = new FontIcon { Glyph = "\uE8DE" },
         };
-        foreach (MoveTargetViewModel target in FindTaskListViewModel().MoveTargets)
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(moveSubItem, "Todo.Row.Selection.Move");
+        foreach (MoveTargetViewModel target in list.MoveTargets)
         {
-            if (target.ListId == ViewModel.ListId)
-            {
-                continue;
-            }
-
+            if (list.SelectedTasks.All(item => item.ListId == target.ListId)) continue;
             var item = new MenuFlyoutItem
             {
                 Text = target.DisplayName,
-                Command = ViewModel.MoveCommand,
+                Command = list.MoveSelectionCommand,
                 CommandParameter = target.ListId,
             };
-            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(
-                item,
-                target.AutomationId);
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(item, target.AutomationId);
             moveSubItem.Items.Add(item);
         }
-
         RowContextFlyout.Items.Add(moveSubItem);
         RowContextFlyout.Items.Add(new MenuFlyoutSeparator());
-        var deleteItem = new MenuFlyoutItem
-        {
-            Text = StringResources.GetString("Task_Delete"),
-            Icon = new FontIcon { Glyph = "\uE74D" },
-            Command = ViewModel.DeleteCommand,
-        };
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetAutomationId(
-            deleteItem,
-            $"Todo.Row.Delete.{ViewModel.Uid}");
+        var deleteItem = Action("Selection_Delete", $"Todo.Row.Delete.{ViewModel.Uid}", list.DeleteSelectedTaskCommand);
+        deleteItem.Icon = new FontIcon { Glyph = "\uE74D" };
         RowContextFlyout.Items.Add(deleteItem);
     }
 
-    private TaskListViewModel FindTaskListViewModel()
+    private TaskListView FindTaskListView()
     {
         DependencyObject? current = this;
         while (current is not null)
         {
-            if (current is TaskListView taskList)
-            {
-                return taskList.ViewModel;
-            }
-
+            if (current is TaskListView taskList) return taskList;
             current = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(current);
         }
-
         throw new InvalidOperationException("TaskRow is not hosted by TaskListView.");
     }
 

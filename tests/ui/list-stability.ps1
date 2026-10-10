@@ -52,7 +52,7 @@ try {
     $before = Row $anchorTitle
     Capture '01-before.png'
     Check 'Ctrl+I keeps selected row and focus' {
-        Ui @('send-keys', 'ctrl+i', '--via', 'send-input') | Out-Null
+        Ui @('send-keys', 'ctrl+vk=0x49', '--via', 'send-input') | Out-Null
         Start-Sleep -Milliseconds 500
         $current = (Ui @('search', $selectedUid, '--type', 'ListItem', '--json') | ConvertFrom-Json).matches | Select-Object -First 1
         $props = Properties $current

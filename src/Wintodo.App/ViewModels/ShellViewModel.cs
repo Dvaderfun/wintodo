@@ -45,7 +45,9 @@ public sealed partial class ShellViewModel : ObservableObject
     private bool _areWindowsSettingsLoaded;
     private bool _isApplyingStartupTaskState;
     private TaskItemViewModel? _pendingRowDelete;
+    private IReadOnlyList<TaskItemViewModel>? _pendingBulkDelete;
     private bool _isDetailDeletePending;
+    private int _detailOpenVersion;
     private CancellationTokenSource? _detailPaneWidthDebounce;
     private int _navigationCountRefreshVersion;
 
@@ -72,6 +74,7 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList.ExportListRequested += OnExportListRequested;
         TaskList.ShortcutsRequested += OnShortcutsRequested;
         TaskList.DeleteTaskRequested += OnRowDeleteRequested;
+        TaskList.DeleteTasksRequested += OnRowsDeleteRequested;
         TaskList.CustomListIconRequested += OnCustomListIconRequested;
         TaskList.BackgroundThemeChanged += OnBackgroundThemeChanged;
         Detail = new TaskDetailViewModel(taskStore, clock, Preferences);
@@ -476,13 +479,16 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskItemViewModel task,
         CancellationToken cancellationToken = default)
     {
+        int version = ++_detailOpenVersion;
         await Detail.LoadAsync(task.Uid, cancellationToken);
+        if (version != _detailOpenVersion || TaskList.SelectionCount != 1) return;
         IsDetailPaneLoaded = true;
         IsDetailPaneOpen = true;
     }
 
     internal void CloseDetail()
     {
+        ++_detailOpenVersion;
         IsDetailPaneOpen = false;
     }
 
@@ -977,13 +983,26 @@ public sealed partial class ShellViewModel : ObservableObject
 
     private void OnRowDeleteRequested(TaskItemViewModel item)
     {
+        _pendingBulkDelete = null;
         _pendingRowDelete = item;
         _isDetailDeletePending = false;
         DeleteTaskRequested?.Invoke(item.Summary);
     }
 
+    private void OnRowsDeleteRequested(IReadOnlyList<TaskItemViewModel> items)
+    {
+        if (items.Count == 1) { OnRowDeleteRequested(items[0]); return; }
+        _pendingRowDelete = null;
+        _isDetailDeletePending = false;
+        _pendingBulkDelete = items.ToArray();
+        DeleteTaskRequested?.Invoke(string.Empty);
+    }
+
+    internal int PendingDeleteCount => _pendingBulkDelete?.Count ?? 1;
+
     private void OnDetailDeleteRequested(string summary)
     {
+        _pendingBulkDelete = null;
         _pendingRowDelete = null;
         _isDetailDeletePending = true;
         DeleteTaskRequested?.Invoke(summary);
@@ -993,8 +1012,14 @@ public sealed partial class ShellViewModel : ObservableObject
         CancellationToken cancellationToken = default)
     {
         TaskItemViewModel? row = _pendingRowDelete;
+        IReadOnlyList<TaskItemViewModel>? bulk = _pendingBulkDelete;
         bool isDetail = _isDetailDeletePending;
         CancelDeleteTask();
+        if (bulk is not null)
+        {
+            await TaskList.ConfirmDeleteTasksAsync(bulk, cancellationToken);
+            return;
+        }
         if (row is not null)
         {
             await TaskList.ConfirmDeleteTaskAsync(row, cancellationToken);
@@ -1009,6 +1034,7 @@ public sealed partial class ShellViewModel : ObservableObject
 
     internal void CancelDeleteTask()
     {
+        _pendingBulkDelete = null;
         _pendingRowDelete = null;
         _isDetailDeletePending = false;
     }

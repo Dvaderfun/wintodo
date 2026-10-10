@@ -678,7 +678,7 @@
                 Grid.RowSpan="3"
                 AutomationProperties.AutomationId="Todo.List.Tasks"
                 AllowDrop="{x:Bind ViewModel.CanReorderTasks, Mode=OneWay}"
-                CanDragItems="{x:Bind ViewModel.CanReorderTasks, Mode=OneWay}"
+                CanDragItems="True"
                 ContainerContentChanging="OnContainerContentChanging"
                 DragOver="OnTaskDragOver"
                 DragLeave="OnTaskDragLeave"
@@ -692,7 +692,7 @@
                 ItemTemplate="{StaticResource TaskRowTemplate}"
                 PreviewKeyDown="OnTasksListPreviewKeyDown"
                 SelectionChanged="OnTaskSelectionChanged"
-                SelectionMode="Multiple">
+                SelectionMode="Extended">
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <ItemsStackPanel AreStickyGroupHeadersEnabled="True" />
