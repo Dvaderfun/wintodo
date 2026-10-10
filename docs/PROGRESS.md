@@ -2314,6 +2314,7 @@ remains in progress; no open row is reported as passed.
   caption properties were checked against the restored project API and review.
 - No new dependency, migration, control, AutomationId or accepted decision.
   Earlier owner-run Narrator/AOT and UX-02 composer/performance gates remain open.
+
 ## UX-13 — Split oversized code-behind and view models          2026-10-10
 
 **Gate: PARTIAL — source refactor implemented; full UI acceptance open**
