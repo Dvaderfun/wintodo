@@ -21,7 +21,7 @@ As of 2026-10-10:
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
   Tests (xunit v3 on Microsoft Testing Platform): Core 165, Data 67, Sync 9 — 241/241,
-  zero skipped on the UX-08 implementation run.
+  zero skipped on the UX-08 closure run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** Final app name and
@@ -42,11 +42,11 @@ As of 2026-10-10:
 - **UX-07:** Stable grouped collections with keyed diffs; exact task selection,
   completion focus and middle-of-list viewport checks pass (3/3). M3/M5/M8 pass;
   FD before/after measurements recorded; no AOT runtime claim.
-- **UX-08:** Visual-state completion/check fade, spring, star and undo motion implemented;
-  stability 3/3, M3 10/10 plus restart, M8 17/17 and 241/241 tests pass.
-  Completion timing acceptance remains failed; Windows animation-off verification
-  awaits permission for its temporary OS setting change. Package remains in progress.
-- **Next:** Close UX-08's timing/reduced-motion rows, then UX-09 multi-select, keeping the UX-02 composer
+- **UX-08:** Complete: motion 7/7, stability 3/3, M8 17/17 and 241/241 tests pass.
+  Matched completion placement mean/median do not regress; animation-off commands
+  skip the hold and Windows settings restoration is verified. Completion hit target
+  stays 32 × 32; selected-task moves preserve viewport/focus. M3 remains passing.
+- **Next:** UX-09 multi-select, keeping the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -2167,3 +2167,55 @@ remains in progress; no open row is reported as passed.
 - The committed recorder readiness handshake now waits for recording-started
   output; this last harness-only fix is syntax-checked, not a newly passed motion
   gate. The existing functional screenshot evidence remains from run-184420.
+
+## UX-08 — Completion motion closure          2026-10-10
+
+**Fixes and proof**
+- Owner authorized the temporary Windows Animation effects toggle and restoration
+  by instructing completion of both remaining checks. First run exposed a real
+  stale cached setting: completed state arrived immediately but the grouped move
+  retained its 250 ms hold. TaskListView now supplies a live setting function to
+  the completion command. The three-sample reduced-motion proof checks actual
+  row placement and reads back the original Windows setting after restoration.
+- Replaced the historical CLI/header-only acceptance proxy with 15 prewarmed,
+  single-process UIA samples through actual completed row placement. Baseline
+  d6038f2: median 338.447 ms, mean 339.532 ms. First fixed comparison: median
+  336.355 ms, mean 335.017 ms. A full motion gate passes 7/7 at run-20261010-190628;
+  earlier failed CLI results remain diagnostics in PERF.md. Strict mean/median
+  comparisons remain, with no motion-duration or budget tolerance change.
+- Regression runs exposed native move transitions pulling a selected completed
+  task's viewport toward its virtualized container (96/172 px anchor shifts).
+  Preserve UX-07's transition suppression when selection is preserved; visible
+  unselected checkbox moves animate, with circle/text feedback on both paths.
+  Final stability run-20261010-191627 passes 3/3 with a 10 px anchor shift and
+  exact focus on completed task 099. Failed experimental scroll-restoration
+  changes and temporary trace code were removed; no extra restoration machinery
+  ships. This tradeoff is documented in DESIGN §7.
+- M8 exposed the completion spring shrinking its interactive checkbox below
+  32x32. Apply the spring only to the decorative 20 px circle; checkbox dimensions
+  remain fixed. No new visual element, token, dependency, string or AutomationId.
+- WinUI code review: no remaining Error/Warning findings; app-scoped API lookup,
+  AOT analyzers and WinUIAnalyzer run. Source changes preserve command/MVVM
+  boundaries; the live setting function keeps Windows settings in the view.
+  AOT runtime and earlier owner-run manual gates remain deferred as before.
+
+**Gate: PASS — closure**
+- Debug/Release x64 warnings-as-errors builds: zero warnings/errors. Unit tests
+  241/241, zero skipped. Final M8 run-20261010-191924: 17/17; contrast screenshots
+  reviewed. Stability run-20261010-191627: 3/3, exact focus, 10 px anchor shift;
+  reviewed. Existing M3 10/10 plus restart remains the task-loop regression proof.
+- Final motion run-20261010-192117: 7/7. Placement median 331.759 ms and mean
+  335.079 ms both below the matched baseline 338.447 / 339.532 ms. Animation-off
+  placements 63.434, 88.270, 67.703 ms, with no 250 ms hold; original=1/restored=1.
+  Original Windows setting verified after testing. No budget relaxation, motion
+  duration change or AOT performance claim. Previous failed runs remain recorded.
+- Reviewed [active](../tests/ui/artifacts/completion-motion/run-20261010-192117/01-active.png),
+  [completed](../tests/ui/artifacts/completion-motion/run-20261010-192117/02-completed.png),
+  [placement](../tests/ui/artifacts/completion-motion/run-20261010-192117/03-completion-placement.png),
+  [star](../tests/ui/artifacts/completion-motion/run-20261010-192117/04-important.png),
+  [undo](../tests/ui/artifacts/completion-motion/run-20261010-192117/05-undo.png) and
+  [reduced motion](../tests/ui/artifacts/completion-motion/run-20261010-192117/06-reduced-motion.png).
+  [Completion video](../tests/ui/artifacts/completion-motion/run-20261010-192117/completion.mp4)
+  and frame bundle are delivered (360 samples, 68 changing images).
+- UX-08 is complete. UX-09 is next; UX-02 and earlier manual/AOT deferrals are
+  unchanged. Local testing used scratch databases because Sandbox is unavailable.

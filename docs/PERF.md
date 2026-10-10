@@ -239,3 +239,49 @@ artifacts directory. Earlier aborted baseline runs (collapsed header / lost
 foreground focus) are not timing measurements. A subsequent screen-capture
 attempt measured 1280.704 ms and failed to start recording; it is not a passed gate.
 No new AOT or memory claim; M9 remains owner-deferred.
+
+### UX-08 closure: completion placement and reduced motion — 2026-10-10
+
+**PASS.** Matched Debug x64 UIA completion measurements at UX-07 d6038f2 and the
+UX-08 closure build use 200 tasks / 20 lists, an expanded Completed section and
+15 repetitions after one excluded warm-up. Measure from a prewarmed UIA toggle
+until the realized task is below Completed; allow transitions to settle between
+completion/uncompletion. CLI process startup is outside these timings. Both mean
+and median must not increase; no tolerance or motion-duration change was applied.
+
+| Run | Median placement | Mean placement | Result |
+|---|---|---|---|
+| UX-07 d6038f2 baseline | 338.447 ms | 339.532 ms | Baseline |
+| UX-08 fixed build, investigation | 336.355 ms | 335.017 ms | PASS |
+| UX-08 final motion gate | 333.307 ms | 336.008 ms | PASS |
+| Animation effects off, 3 samples | 67.188 ms | 74.277 ms | PASS; all below 250 ms |
+
+Reduced-motion samples: 62.785, 92.858, 67.188 ms. State feedback arrives in the
+same observation as placement (61.348, 91.813, 66.187 ms). Windows setting read-back
+is original=1, restored=1. A live setting query removed the stale cached flag that
+kept the 250 ms completion hold after Animation effects was turned off. Initial
+owner-authorized trial failed at 352.070 ms and restored its setting; it remains
+failed evidence, followed by the fix and passing runs.
+
+Evidence: tests/ui/artifacts/ux08-closure-before/timings.json,
+ux08-closure-after/timings.json and completion-motion/run-20261010-190628/
+placement-timings.json, reduced-motion-timing.json, animation-setting.json.
+Reusable harnesses: tests/ui/measure-completion.ps1 and run-completion-measure.ps1.
+The baseline was built in an isolated d6038f2 worktree; no baseline product edits.
+
+Historical CLI/header-only failures above remain recorded. The final diagnostic
+is 877.751 ms against the historical 830.239 ms, but that comparison includes CLI
+startup and stops on header existence, not completed row placement. Its few-ms
+increase was not evidence of a render regression. The repeatable matched placement
+check replaces that unsuitable acceptance proxy while preserving strict mean and
+median comparisons. No AOT/memory or statistical speedup claim; M9 remains deferred.
+
+Final artifact after viewport/hit-target fixes:
+completion-motion/run-20261010-192117. Median placement 331.759 ms, mean 335.079 ms;
+both below baseline 338.447/339.532 ms, PASS. Reduced-motion placements 63.434,
+88.270, 67.703 ms (median 67.703, mean 73.135), setting original=1/restored=1, PASS.
+CLI diagnostic 882.989 ms is retained separately. Final motion gate 7/7, M8 17/17
+and stability 3/3; 10 px viewport anchor shift versus one-row tolerance. Native
+row transitions remain suppressed when preserving selected-task focus to avoid
+viewport movement toward a virtualized Completed row. The checkbox stays 32x32
+while its decorative circle springs. No AOT/memory measurement was made.

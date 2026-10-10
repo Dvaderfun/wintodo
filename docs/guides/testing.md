@@ -55,7 +55,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `m2-shell.ps1`, `m2-theme.ps1` | Shell layout, Light/Dark/High Contrast |
 | `run-m3-gate.ps1` / `m3-lists-tasks.ps1` / `m3-restart.ps1` | List CRUD, add/complete/reorder/delete/undo tasks and drag-order persistence after restart; runner uses a fresh database with delete confirmation off |
 | `run-list-stability-gate.ps1` | 200-task middle-of-list fixture: Ctrl+I and Alt+Down retain selection/focus; completion keeps viewport within one row, exact completed-row focus, and Space restores that same task |
-| `run-completion-motion-gate.ps1` | 200 tasks / 20 lists: completion timing versus UX-07, screenshot sequence and video, Completed placement/uncompletion, star and undo auto-dismissal. `-TestReducedMotion` temporarily changes Windows Animation effects: obtain owner permission first; restores the original setting in `finally`. Timing/reduced-motion rows remain open for UX-08. |
+| `run-completion-motion-gate.ps1 -BaselineTimings <timings.json>` | 200 tasks / 20 lists: 15 in-process UIA placement samples versus a matched UX-07 baseline from `run-completion-measure.ps1`, screenshot/video, uncompletion, star and undo. `-TestReducedMotion` temporarily changes Windows Animation effects: obtain owner permission first; checks three instant placements and verifies restoration in `finally`. |
 | `run-m4-gate.ps1` | Detail pane fields and restart persistence |
 | `run-m5-gate.ps1` | Smart lists, search, sort, restart |
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |

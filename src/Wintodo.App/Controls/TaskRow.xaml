@@ -137,6 +137,7 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center">
             <Grid
+                x:Name="CompletionCircle"
                 Width="20"
                 Height="20"
                 IsHitTestVisible="False">
