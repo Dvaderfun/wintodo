@@ -712,6 +712,18 @@ table: `tasks.confirm_before_delete` (default `true`),
 The ordering preferences apply to manually sorted real lists and root tasks.
 Turning off confirmation skips the task dialog; the undo snackbar still appears.
 
+Notification preferences share one typed `NotificationPreferences` instance
+between Settings and Windows integration: `notifications.enabled` defaults to
+`true`; `notifications.default_snooze` accepts `10`, `60` or `tomorrow`
+(default `10`). Disabling removes scheduled notifications while preserving
+stored alarms. Re-enabling reschedules them; changing snooze updates the
+preselection in pending toast payloads. Launch at login stays in Notifications.
+
+Data shows the resolved database path and file size from `StoreStats`, with
+a Show in Explorer command. About includes the repository link and locally
+bundled package/licence list and a command opening full notices from a bundled
+text file; both work offline.
+
 The disconnected CalDAV card offers a Configure command opening a credential
 ContentDialog. Server and username drafts survive reopening; passwords clear
 when the dialog closes. Connect is disabled until all fields are filled and

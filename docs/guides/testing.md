@@ -60,6 +60,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-m7-gate.ps1` | Reminders, toasts, badge, jump list (`-VerifyToastCompletion`, `-VerifyToastSnooze`) |
 | `run-m8-gate.ps1` | Design, responsive layout, High Contrast, accessibility audit |
 | `run-m13-gate.ps1` | CalDAV Configure dialog, cancel/retry, sync, list toggles (`-Aot` for published x64) |
+| `run-notification-settings-gate.ps1` | Reminder enable/disable, actual scheduled payload defaults, restart, Data/About and accessibility |
 | `run-settings-gate.ps1` | Tasks settings, immediate delete/undo, restart, reminder default, ordering and accessibility |
 | `run-list-icon-gate.ps1` | Emoji list icons and navigation counts |
 

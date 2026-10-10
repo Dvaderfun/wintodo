@@ -37,6 +37,7 @@ public sealed partial class SqliteTaskStore
         return ExecuteReadAsync(
             connection => new StoreStats
             {
+                DatabasePath = _databasePath,
                 SchemaVersion = checked((int)ReadInt64(
                     connection,
                     "SELECT COALESCE(MAX(version), 0) FROM schema_version;")),

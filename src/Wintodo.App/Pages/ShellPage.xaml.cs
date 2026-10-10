@@ -73,7 +73,8 @@ public sealed partial class ShellPage : Page
             clock,
             stateService,
             startupTaskService,
-            syncService);
+            syncService,
+            windowsIntegration);
         KeyboardShortcuts = CreateKeyboardShortcuts();
         InitializeComponent();
         AddPunctuationAccelerators();

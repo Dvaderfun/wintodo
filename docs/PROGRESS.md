@@ -20,8 +20,8 @@ As of 2026-10-10:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 74, Data 47, Sync 9 — 130/130
-  on one isolated full run; latest run 129/130 (My Day 5.041 ms against 5 ms).
+  Tests (xunit v3 on Microsoft Testing Platform): Core 79, Data 49, Sync 9 — 137/137,
+  zero skipped on the final UX-03 run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** the task list clears and refills its bound collection instead
@@ -30,8 +30,10 @@ As of 2026-10-10:
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **UX-02:** Tasks settings implemented; dedicated gate passes 9/9. Composer
   regression gate remains partial (1/3), so the package is still in progress.
-- **Next:** UX-03 Notifications/Data/About (owner approved moving on); keep
-  UX-02 composer/performance gaps tracked. Continue app polish via
+- **UX-03:** Notifications/Data/About complete: reminder toggle and snooze,
+  database location/size, repository and offline licences. M7 preflight and M8 pass.
+- **Next:** continue Phase A polish (UX-04/UX-05), keeping the UX-02 composer
+  regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
@@ -1773,3 +1775,54 @@ captures are scroll/capture states, not new layout defects.
   5.041 ms against 5 ms. The earlier isolated 130/130 pass is retained as evidence,
   not substituted for the final result. Native AOT, ARM64 runtime and owner-only
   manual gates were not run.
+
+
+## UX-03 — Settings: Notifications, Data, About          2026-10-10
+
+**Gate:** PASS — Debug x64 warnings-as-errors build, zero warnings/errors;
+137/137 unit tests (Core 79, Data 49, Sync 9), zero skipped. Dedicated notification
+settings gate 6/6, M7 automated preflight PASS, M8 14/14.
+
+**Shipped**
+- Notifications contains reminder enablement (default true), default snooze
+  (10 minutes / 1 hour / tomorrow) and the existing launch-at-login control.
+  One Core `NotificationPreferences` instance is shared by Settings and Windows
+  integration, loaded before scheduling on regular and background activations.
+- Disabling removes scheduled toasts without deleting stored alarms. Re-enabling
+  reschedules them. Snooze changes rebuild pending payloads with the selected
+  `defaultInput`. Scheduling is queued off the UI callback and serialized by
+  the existing refresh gate; setting/scheduling failures show an InfoBar.
+- Data shows the resolved database path and file size through `StoreStats`;
+  Show in Explorer uses a command with separately passed arguments.
+- About retains version, adds the repository link, a package/licence expander
+  and a command opening bundled `Assets/ThirdPartyNotices.txt`. No network is
+  needed to read notices. Licences come from installed package metadata and
+  bundled terms; build/test tools are identified as such.
+- Seven new test cases cover notification defaults, parsing, persistence and
+  database stats. M7 runner now uses the repository's current MTP test flags.
+- DESIGN §12, architecture and testing index updated. No schema migration,
+  dependency, credential change or accepted-decision change.
+
+**Evidence and review**
+- `tests/ui/artifacts/notification-settings/run-20261010-151409`: six passing
+  checks; actual scheduled-toast XML proves removal/restoration and all snooze
+  defaults, including restart. Accessibility audit: 33 controls, zero errors.
+- `tests/ui/artifacts/m7/run-20261010-151102`: UI + schedule-tag/badge preflight.
+- `tests/ui/artifacts/m8/run-20261010-151445`: 14/14, all six PNGs reviewed.
+  Existing high-contrast colours remain UX-04 work; Settings screenshot captures
+  a navigation transition, so dedicated screenshots provide section evidence.
+- Dedicated images reviewed, including actual licence list visibility. The
+  list extends below the viewport in its scrolling page; Data/About controls
+  and list text are legible. Earlier header-only expander implementation was
+  replaced with the working ItemsSource/ItemTemplate pattern.
+- `winui-code-review`: no findings above informational in changed code.
+
+**Deviations / carried forward**
+- Owner explicitly approved proceeding despite UX-02's open broader gates;
+  its composer regression remains tracked and is not reported as passed.
+- WinApp UIA toggle/scroll invocation stalled on this machine; the dedicated
+  gate uses clicks and wheel input with value, visibility and schedule assertions.
+  The final gate passes without skipping those assertions.
+- Full licence texts open from a bundled file, keeping the in-page list compact.
+- M7 reboot and toast-action owner checks, Native AOT runtime and ARM64 runtime
+  were not run. No performance claim or budget change.

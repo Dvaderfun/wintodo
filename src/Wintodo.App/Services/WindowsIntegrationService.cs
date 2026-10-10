@@ -43,12 +43,17 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
     {
         _store = store;
         _clock = clock;
+        NotificationPreferences = new NotificationPreferences(store);
 #if DEBUG
         _debugDatabasePath = debugDatabasePath;
 #endif
     }
 
     internal static string JumpListNewTaskArgument => NewTaskArgument;
+
+    internal NotificationPreferences NotificationPreferences { get; }
+
+    internal event Action<Exception>? NotificationSettingsFailed;
 
     internal static string JumpListOpenListPrefix => OpenListArgumentPrefix;
 
@@ -60,6 +65,8 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         }
 
         _isInitialized = true;
+        await NotificationPreferences.LoadAsync(cancellationToken);
+        NotificationPreferences.PropertyChanged += OnNotificationPreferencesChanged;
         _store.StoreChanged += OnStoreChanged;
         await RefreshAsync(cancellationToken);
     }
@@ -164,6 +171,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         }
 
         _isDisposed = true;
+        NotificationPreferences.PropertyChanged -= OnNotificationPreferencesChanged;
         _store.StoreChanged -= OnStoreChanged;
         lock (_refreshSync)
         {
@@ -175,6 +183,38 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         await _refreshGate.WaitAsync();
         _refreshGate.Release();
         _refreshGate.Dispose();
+    }
+
+    private void OnNotificationPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        // ToastNotifier can synchronously enter Windows COM APIs. Keep that work
+        // out of a XAML/UI Automation toggle callback, even if saves finish inline.
+        _ = Task.Run(RefreshAfterPreferenceChangeAsync);
+    }
+
+    private async Task RefreshAfterPreferenceChangeAsync()
+    {
+        try
+        {
+            await NotificationPreferences.FlushAsync();
+            await _refreshGate.WaitAsync();
+            try
+            {
+                if (!_isDisposed)
+                {
+                    await RefreshScheduledRemindersAsync(CancellationToken.None);
+                }
+            }
+            finally
+            {
+                _refreshGate.Release();
+            }
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"WINTODO_NOTIFICATION_SETTINGS_ERROR={exception}");
+            NotificationSettingsFailed?.Invoke(exception);
+        }
     }
 
     private void OnStoreChanged(object? sender, StoreChangedEventArgs args)
@@ -225,6 +265,21 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
     private async Task RefreshScheduledRemindersAsync(
         CancellationToken cancellationToken)
     {
+        ToastNotifier notifier = CreateScheduledToastNotifier();
+        IReadOnlyList<ScheduledToastNotification> scheduled =
+            notifier.GetScheduledToastNotifications();
+        if (!NotificationPreferences.Enabled)
+        {
+            foreach (ScheduledToastNotification notification in scheduled)
+            {
+                notifier.RemoveFromSchedule(notification);
+            }
+#if DEBUG
+            WriteGateNotificationState(notifier);
+#endif
+            return;
+        }
+
         IReadOnlyList<PendingReminder> pending =
             await _store.GetPendingRemindersAsync(
                 DateTimeOffset.MaxValue,
@@ -232,9 +287,6 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         pending = pending
             .Where(reminder => reminder.Alarm.Action == AlarmAction.Display)
             .ToArray();
-        ToastNotifier notifier = CreateScheduledToastNotifier();
-        IReadOnlyList<ScheduledToastNotification> scheduled =
-            notifier.GetScheduledToastNotifications();
         var desiredKeys = pending
             .Select(reminder => (reminder.Alarm.Uid, reminder.TaskUid))
             .ToHashSet();
@@ -280,7 +332,9 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
 
             bool matchesExisting = existing is not null
                 && (existing.DeliveryTime - reminder.EffectiveTrigger).Duration()
-                    < TimeSpan.FromSeconds(1);
+                    < TimeSpan.FromSeconds(1)
+                && (existing.Content.SelectSingleNode("//input[@id='snooze']") as XmlElement)?
+                    .GetAttribute("defaultInput") == NotificationPreferences.DefaultSnooze;
             if (matchesExisting)
             {
                 if (!string.Equals(
@@ -318,7 +372,31 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
                 reminder.TaskUid,
                 cancellationToken);
         }
+#if DEBUG
+        WriteGateNotificationState(notifier);
+#endif
     }
+
+#if DEBUG
+    private void WriteGateNotificationState(ToastNotifier notifier)
+    {
+        // Only the existing m7-gate.db harness opts into this evidence file.
+        if (string.IsNullOrWhiteSpace(_debugDatabasePath))
+        {
+            return;
+        }
+
+        var state = new System.Xml.Linq.XElement("scheduled",
+            notifier.GetScheduledToastNotifications().Select(notification =>
+                new System.Xml.Linq.XElement("notification",
+                    new System.Xml.Linq.XAttribute("tag", notification.Tag),
+                    new System.Xml.Linq.XAttribute("group", notification.Group),
+                    System.Xml.Linq.XElement.Parse(notification.Content.GetXml()))));
+        string path = Path.Combine(Path.GetDirectoryName(_debugDatabasePath)!, "notification-state.xml");
+        File.WriteAllText(path + ".tmp", state.ToString());
+        File.Move(path + ".tmp", path, overwrite: true);
+    }
+#endif
 
     private AppNotification BuildNotification(PendingReminder reminder)
     {
@@ -352,7 +430,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
                 .AddItem("10", _resources.GetString("Notification_Snooze10Minutes"))
                 .AddItem("60", _resources.GetString("Notification_SnoozeOneHour"))
                 .AddItem("tomorrow", _resources.GetString("Notification_SnoozeTomorrow"))
-                .SetSelectedItem("10"))
+                .SetSelectedItem(NotificationPreferences.DefaultSnooze))
             .AddButton(completeButton)
             .AddButton(snoozeButton)
             .SetScenario(AppNotificationScenario.Reminder);

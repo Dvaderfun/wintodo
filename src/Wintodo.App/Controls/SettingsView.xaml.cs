@@ -35,12 +35,33 @@ public sealed partial class SettingsView : UserControl
             new ResourceLoader().GetString("Settings_WeekStartSystem"),
             .. DisplayCulture.Current.DateTimeFormat.DayNames,
         ];
+        LicenceSections = [new ResourceLoader().GetString("SettingsLicencesText/Text")];
         InitializeComponent();
     }
 
     public string VersionText { get; }
 
     public string[] WeekStartOptions { get; }
+
+    public string[] LicenceSections { get; }
+
+    private void OnLicencesExpanderLoaded(object sender, RoutedEventArgs args)
+    {
+        DispatcherQueue.TryEnqueue(() => AssignLicenceExpanderId(LicencesExpander));
+    }
+
+    private static void AssignLicenceExpanderId(DependencyObject root)
+    {
+        for (int index = 0; index < VisualTreeHelper.GetChildrenCount(root); index++)
+        {
+            DependencyObject child = VisualTreeHelper.GetChild(root, index);
+            if (child is Expander)
+            {
+                AutomationProperties.SetAutomationId(child, "Todo.Settings.About.Licences.Toggle");
+            }
+            AssignLicenceExpanderId(child);
+        }
+    }
 
     public ShellViewModel ViewModel
     {
