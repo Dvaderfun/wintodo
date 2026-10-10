@@ -21,7 +21,7 @@ As of 2026-10-10:
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
   Tests (xunit v3 on Microsoft Testing Platform): Core 165, Data 85, Sync 9 — 259/259,
-  zero skipped on the UX-11 closure run.
+  zero skipped on the UX-13 refactor validation run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** Final app name and
@@ -52,7 +52,16 @@ As of 2026-10-10:
 - **UX-11:** Complete: My Day and Important accept single/multi-task drops,
   set rather than toggle, and retain original lists. M5 9/9 plus three restart
   checks, M8 17/17 and 259 tests pass; Debug/Release builds are clean.
-- **Next:** UX-13 is ready, with UX-07/UX-09 complete. Keep the UX-02 composer
+- **UX-13:** Source split implemented: all 39 Pages/ViewModels C# files are
+  below 600 lines (largest 516); 587 declarations verified unchanged, with export
+  filename policy and quick-add fallback moved into ShellViewModel. Build/tests,
+  M3/M4/M5/M7/M8/M13, multi-select, navigation and notification settings pass.
+  Stability passes on repeat. Full gate closure remains open: M6 picker, list-icon
+  zero count, Tasks reminder restart and composer resize failures reproduce on
+  the unchanged baseline; transfer diagnostic with current picker type passes 7/7.
+  Motion visuals pass; the measured timing comparison fails and reduced-motion
+  testing was skipped. No performance acceptance is claimed.
+- **Next:** Close UX-13's remaining validation rows. Keep the UX-02 composer
   regression and earlier variable performance checks tracked, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -2305,3 +2314,53 @@ remains in progress; no open row is reported as passed.
   caption properties were checked against the restored project API and review.
 - No new dependency, migration, control, AutomationId or accepted decision.
   Earlier owner-run Narrator/AOT and UX-02 composer/performance gates remain open.
+## UX-13 — Split oversized code-behind and view models          2026-10-10
+
+**Gate: PARTIAL — source refactor implemented; full UI acceptance open**
+- Before/after Debug x64 warnings-as-errors builds and 259/259 unit tests pass,
+  zero skipped. Release x64 build: zero warnings/errors. No XAML, resource,
+  dependency, schema, binding name or AutomationId changes.
+- All 39 C# files under Pages/ViewModels are below 600 lines; largest is
+  ShellPage.Navigation.cs at 516. Roslyn comparison verifies 587 declarations
+  unchanged, with no lost/duplicate members. Three forwarding call sites change
+  only to delegate filename policy and quick-add fallback to ShellViewModel.
+- Original UI scripts were run unchanged: M3 10/10 plus restart; M4 9/9 plus
+  restart; M5 9/9 plus three restart checks; M7 automated preflight; M8 17/17;
+  M13 11/11; multi-select 7/7; navigation startup 4/4; notification settings 5/5.
+  Stability first failed (96 px anchor shift), then passed 3/3 on an unchanged
+  repeat (39 px shift); baseline also passes 3/3. Results are retained under
+  tests/ui/artifacts/ux13-gates.
+- M6 fails 2/7 on baseline and refactor: original script requires SplitButton
+  for the current picker Open button. A temporary diagnostic changing only that
+  type match to accept Button passes all 7 import/export/error checks. Original
+  gate unchanged and still open.
+- List-icon 9/10 (zero-count/new-task row), Tasks settings 8/9 (reminder time
+  after restart), and composer 2/3 (resize back to inline options) fail identically
+  in the pre-refactor checkout. Tracked in UX-PLAN Parking lot, outside this
+  move-only package. No acceptance exception or unrelated fix was introduced.
+- Motion visuals pass: completion/uncompletion, star and undo. Timing comparison
+  fails: baseline median/mean 333.895/335.080 ms; refactor 338.667/339.298 ms.
+  Reduced motion skipped; no Windows animation-setting change or performance
+  claim. This is not a full motion-gate PASS.
+- Manual simplify and WinUI review: no remaining Error/Warning findings in the
+  structural changes; imports narrowed, no extra abstractions, existing command,
+  theme, accessibility and AOT behavior retained. Reviewed M4 restart and M8
+  shortcuts screenshots. Native AOT runtime and owner-run manual rows not rerun.
+
+**Shipped**
+- ShellPage area partials: Navigation, Dialogs, Accelerators, Theme, Transfers
+  and Lifecycle. The main code-behind contains composition and view wiring.
+- ShellViewModel area partials: Navigation, Dialogs, Appearance and Transfers,
+  retaining existing Settings/Sync. Export filename normalization/disambiguation
+  and quick-add fallback choice moved from page to view model unchanged.
+- TaskListViewModel partials: Loading, Lists, Composer, Tasks and Presentation,
+  retaining Selection. TaskDetailViewModel partials: Tasks, Dates, Recurrence,
+  Attachments and Persistence. Shared state and initialization remain in base
+  files to preserve field initialization order and generated property behavior.
+- ARCHITECTURE and AGENTS navigation pointers updated. Temporary Roslyn tooling
+  and diagnostic copies stay under ignored test artifacts, not in the app.
+
+**Deviations / remaining work**
+- UX-13 stays in progress: its strict "all UI gates pass unchanged" acceptance
+  is not satisfied. Baseline failures and motion validation remain explicit;
+  the refactor does not silently weaken gates or change accepted decisions.

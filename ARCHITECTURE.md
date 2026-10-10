@@ -50,10 +50,13 @@ src/
   Wintodo.App/         the WinUI app; the only project with XAML or Windows APIs
     App.xaml.cs        composition root, activation routing (launch / toast / startup task)
     MainWindow.xaml    Mica, title bar, root Frame hosting ShellPage
-    Pages/             ShellPage (NavigationView + list + detail + settings host)
+    Pages/             ShellPage (composition + view wiring), with Navigation, Dialogs,
+                       Accelerators, Theme, Transfers and Lifecycle partials
     Controls/          TaskListView, TaskDetailView, TaskRow, StepRow, AddTaskComposer,
                        SettingsView, ResponsiveTitleSearch, TitleEditBox, ScrollPerformanceProbe
-    ViewModels/        ShellViewModel(.Sync), TaskListViewModel, TaskDetailViewModel, item VMs
+    ViewModels/        ShellViewModel (+ Navigation/Dialogs/Appearance/Transfers/Settings/Sync),
+                       TaskListViewModel (+ Loading/Lists/Composer/Tasks/Presentation/Selection),
+                       TaskDetailViewModel (+ Tasks/Dates/Recurrence/Attachments/Persistence), item VMs
     Services/          WindowsIntegrationService (toasts, badge, jump list), StartupTaskService,
                        PasswordVaultCredentialStore, ShellStateService, FileBackedClock
     Themes/Colors.xaml Light / Dark / HighContrast dictionaries
@@ -67,6 +70,12 @@ scripts/               Measure-Perf.ps1, Publish-Aot.ps1, Update-AgentSkills.ps1
 ```
 
 ### Dependency rules
+
+Shell and view-model partials keep the same runtime classes and binding/handler
+names. Each C# file under Pages/ViewModels stays below 600 lines. The base files
+hold the shared object graph and observable state; area partials hold operations.
+Shell transfer filename policy and quick-add fallback choice belong to
+ShellViewModel; file pickers, drag events and dialog rendering stay in the page.
 
 ```
 Wintodo.App ──► Wintodo.Data ──► Wintodo.Core
