@@ -44,7 +44,7 @@ same time, check the **Touches** column:
 
 | ID | Title | Phase | Size | Depends on | Touches (hot files) | Status |
 |---|---|---|---|---|---|---|
-| UX-01 | Dates and times in the UI language | A | S | — | TaskDetailVM, TaskListVM | in progress (Codex/main; implementation verified, M4 step-drag gate open) |
+| UX-01 | Dates and times in the UI language | A | S | — | TaskDetailVM, TaskListVM | done (252f8e6) |
 | UX-02 | Settings infrastructure + **Tasks** section (confirm before delete) | A | M | — | SettingsView, ShellVM, ShellPage | ready |
 | UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | ready |
 | UX-04 | High-contrast fixes | A | S | — | ShellPage | ready |
