@@ -23,6 +23,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private readonly ITaskStore _taskStore;
     private readonly IClock _clock;
     private readonly TaskPreferences _preferences;
+    private readonly UndoService _undo;
     private readonly ResourceLoader _resources = new();
     private readonly SemaphoreSlim _saveGate = new(1, 1);
     private CancellationTokenSource? _saveCancellation;
@@ -30,11 +31,12 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private bool _isLoading;
     private int _loadVersion;
 
-    internal TaskDetailViewModel(ITaskStore taskStore, IClock clock, TaskPreferences preferences)
+    internal TaskDetailViewModel(ITaskStore taskStore, IClock clock, TaskPreferences preferences, UndoService undo)
     {
         _taskStore = taskStore;
         _clock = clock;
         _preferences = preferences;
+        _undo = undo;
         preferences.PropertyChanged += OnPreferencesChanged;
         MyDayLabel = _resources.GetString("Detail_AddToMyDay");
         ReminderLabel = _resources.GetString("Detail_RemindMe");

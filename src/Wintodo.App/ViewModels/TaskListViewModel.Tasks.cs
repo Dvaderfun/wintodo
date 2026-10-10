@@ -122,7 +122,6 @@ public sealed partial class TaskListViewModel
         _activeTasks.Remove(item);
         _completedTasks.Remove(item);
         RebuildVisibleItems();
-        BeginUndo([item]);
         NavigationDataChanged?.Invoke();
     }
 
@@ -182,24 +181,23 @@ public sealed partial class TaskListViewModel
 
     private bool CanUndoDelete()
     {
-        return IsUndoVisible && _lastDeletedTaskUids is not null;
+        return _undo.CanUndo;
     }
 
     [RelayCommand(CanExecute = nameof(CanUndoDelete))]
     private async Task UndoDeleteAsync()
     {
-        await Task.Yield();
-        IReadOnlyList<string>? uids = _lastDeletedTaskUids;
-        if (uids is null)
+        try
         {
-            return;
+            if (UndoPreparing is not null) await UndoPreparing();
+            if (await _undo.UndoAsync() && UndoCompleted is not null) await UndoCompleted();
         }
-
-        _undoCancellation?.Cancel();
-        await _taskStore.ApplyTaskBatchAsync(uids, TaskBatchAction.Restore);
-        CloseUndo();
-        await ReloadAsync();
-        NavigationDataChanged?.Invoke();
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.WriteLine(exception);
+            UndoMessage = _resources.GetString("Undo_Failed");
+            IsUndoVisible = true;
+        }
     }
 
     private async Task ToggleTaskCompletionAsync(TaskItemViewModel item)
@@ -310,7 +308,9 @@ public sealed partial class TaskListViewModel
     private async Task MoveTaskAsync(TaskItemViewModel item, long destinationListId)
     {
         await Task.Yield();
+        var states = await _taskStore.CaptureTaskUndoAsync([item.Uid], TaskUndoFields.List);
         await _taskStore.MoveTaskAsync(item.Uid, destinationListId);
+        RecordTaskUndo(states, "Undo_TaskMoved");
         await ReloadAsync();
         NavigationDataChanged?.Invoke();
     }
@@ -344,40 +344,6 @@ public sealed partial class TaskListViewModel
         _activeTasks.Insert(destination, item);
         RebuildVisibleItems();
         await PersistVisibleOrderAsync();
-    }
-
-    private void BeginUndo(IReadOnlyList<TaskItemViewModel> items)
-    {
-        _undoCancellation?.Cancel();
-        _undoCancellation?.Dispose();
-        _undoCancellation = new CancellationTokenSource();
-        _lastDeletedTaskUids = items.Select(item => item.Uid).ToArray();
-        UndoMessage = string.Format(
-            DisplayCulture.Current,
-            _resources.GetString(items.Count == 1 ? "Undo_TaskDeleted" : "Undo_TasksDeleted"),
-            items.Count == 1 ? items[0].Summary : items.Count);
-        IsUndoVisible = true;
-        _ = DismissUndoAsync(_undoCancellation.Token);
-    }
-
-    private async Task DismissUndoAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-            CloseUndo();
-        }
-        catch (OperationCanceledException)
-        {
-        }
-    }
-
-    private void CloseUndo()
-    {
-        _lastDeletedTaskUids = null;
-        IsUndoVisible = false;
-        _undoCancellation?.Dispose();
-        _undoCancellation = null;
     }
 
 }

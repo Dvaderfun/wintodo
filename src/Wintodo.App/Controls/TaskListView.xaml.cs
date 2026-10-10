@@ -982,7 +982,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (ViewModel.UndoDeleteCommand.CanExecute(null))
+        if (!IsTextInputFocused() && ViewModel.UndoDeleteCommand.CanExecute(null))
         {
             ViewModel.UndoDeleteCommand.Execute(null);
             args.Handled = true;

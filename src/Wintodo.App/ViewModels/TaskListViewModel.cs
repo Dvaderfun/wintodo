@@ -32,7 +32,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     private string _searchText = string.Empty;
     private bool _completedExpanded;
     private int _loadVersion;
-    private IReadOnlyList<string>? _lastDeletedTaskUids;
+    private readonly UndoService _undo;
     private CancellationTokenSource? _undoCancellation;
     private DateTimeOffset? _composerDue;
     private DateTimeOffset? _composerReminder;
@@ -44,11 +44,13 @@ public sealed partial class TaskListViewModel : ObservableObject
     private string? _selectedNavigationKey;
     private string? _selectedBackgroundSettingKey;
 
-    internal TaskListViewModel(ITaskStore taskStore, IClock clock, TaskPreferences preferences)
+    internal TaskListViewModel(ITaskStore taskStore, IClock clock, TaskPreferences preferences, UndoService undo)
     {
         _taskStore = taskStore;
         _clock = clock;
         _preferences = preferences;
+        _undo = undo;
+        _undo.Changed += OnUndoChanged;
         preferences.PropertyChanged += OnPreferencesChanged;
         _lastObservedToday = clock.Today;
         Title = _resources.GetString("Shell_MyDayTitle");
@@ -221,7 +223,6 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial TaskItemViewModel? SelectedTask { get; set; }
 
     [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(UndoDeleteCommand))]
     public partial bool IsUndoVisible { get; set; }
 
     [ObservableProperty]
@@ -254,6 +255,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     internal void SetLists(IReadOnlyList<ShellListItemViewModel> lists)
     {
         _lists = lists;
+        if (_selectedList is not null) _selectedList = lists.FirstOrDefault(list => list.Id == _selectedList.Id);
         MoveTargets.Clear();
         foreach (ShellListItemViewModel list in lists)
         {

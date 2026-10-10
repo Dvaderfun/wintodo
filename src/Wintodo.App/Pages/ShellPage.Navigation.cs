@@ -490,9 +490,9 @@ public sealed partial class ShellPage
         }
     }
 
-    private void OnNavigationRequested(string navigationKey)
+    private async void OnNavigationRequested(string navigationKey)
     {
-        ShellNavigation.SelectedItem = ResolveNavigationItem(navigationKey);
+        await SelectNavigationAsync(ResolveNavigationItem(navigationKey), CancellationToken.None);
     }
 
     private object ResolveNavigationItem(string navigationKey)

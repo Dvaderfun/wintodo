@@ -19,7 +19,7 @@ function Test-UI {
     )
 
     try {
-        $output = & $Script 2>&1
+        $output = & $Script
         if ($LASTEXITCODE -eq 0) {
             $script:pass++
             $script:results += @{ name = $Name; status = "PASS" }
@@ -314,19 +314,20 @@ Test-UI "Attachment picker copies a local file" {
         "M4 attachment round-trip",
         [System.Text.Encoding]::UTF8)
 
-    $mainWindow = winapp ui list-windows -a $AppPid --json 2>$null |
-        ConvertFrom-Json |
+    $appWindows = winapp ui list-windows -a $AppPid --json | ConvertFrom-Json
+    $mainWindow = @($appWindows) |
         Where-Object { $_.title -eq "Wintodo" } |
         Select-Object -First 1
     winapp ui invoke "Todo.Detail.AddFile" -a $AppPid
     $picker = $null
     for ($attempt = 0; $attempt -lt 10; $attempt++) {
         Start-Sleep -Milliseconds 500
-        $picker = winapp ui list-windows --json 2>$null |
-            ConvertFrom-Json |
+        $allWindows = winapp ui list-windows --json | ConvertFrom-Json
+        $picker = @($allWindows) |
             Where-Object {
                 $_.ownerHwnd -eq $mainWindow.hwnd -and
-                $_.hwnd -ne $mainWindow.hwnd
+                $_.hwnd -ne $mainWindow.hwnd -and
+                $_.className -eq '#32770'
             } |
             Select-Object -First 1
         if ($picker) {
@@ -337,27 +338,15 @@ Test-UI "Attachment picker copies a local file" {
         throw "File picker window was not found."
     }
 
-    $fileNameEdit = (
-        winapp ui search "1148" -w $picker.hwnd --json |
-            ConvertFrom-Json
-    ).matches |
-        Where-Object { $_.type -eq "Edit" } |
-        Select-Object -First 1
-    $openButton = (
-        winapp ui search "1" -w $picker.hwnd --json |
-            ConvertFrom-Json
-    ).matches |
-        Where-Object {
-            $_.type -eq "SplitButton" -and
-            $_.automationId -eq "1"
-        } |
-        Select-Object -First 1
+    $fileNameEdit = (winapp ui search '1148' -a $AppPid -w $picker.hwnd --type Edit --json | ConvertFrom-Json).matches | Select-Object -First 1
+    $openButton = (winapp ui search '1' -a $AppPid -w $picker.hwnd --type SplitButton --json | ConvertFrom-Json).matches |
+        Where-Object automationId -eq '1' | Select-Object -First 1
     if (-not $fileNameEdit -or -not $openButton) {
         throw "File picker controls were not found."
     }
 
-    winapp ui set-value $fileNameEdit.selector $attachmentPath -w $picker.hwnd
-    winapp ui click $openButton.selector -w $picker.hwnd
+    winapp ui set-value $fileNameEdit.selector $attachmentPath -a $AppPid -w $picker.hwnd
+    winapp ui click $openButton.selector -a $AppPid -w $picker.hwnd
     $attachment = $null
     for ($attempt = 0; $attempt -lt 10 -and -not $attachment; $attempt++) {
         Start-Sleep -Milliseconds 300

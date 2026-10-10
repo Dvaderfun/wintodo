@@ -511,6 +511,9 @@ The window minimum is 640 × 480, so no state below that is needed.
 
 ## 7. Motion
 
+<!-- UX-10 proposal, pending owner acknowledgement: Completing from a list row
+shows a 5 s "Completed · Undo" snackbar; completion in the detail pane stays quiet. -->
+
 Prefer built-in theme transitions — they respect the user's reduce-motion
 setting automatically. For explicit animations, check
 `UISettings.AnimationsEnabled` and skip when false.
@@ -575,6 +578,12 @@ reachable from the list menu and from `Ctrl+?`.
 | `Ctrl+Z` | Undo the last destructive action |
 | `Alt+↑` / `Alt+↓` | Move the selected task up/down in manual sort order |
 | `Tab` / `Shift+Tab` | *(M11)* Demote / promote a task in the tree |
+
+Undo uses one session history of at most 20 entries for task/list/step deletion,
+task moves, cleared due/reminder/repeat fields, and bulk actions. The five-second
+snackbar shows the newest entry; expiry hides it but Ctrl+Z retains the history.
+Switching lists retains history. Text editors keep their native Ctrl+Z behavior.
+Remote sync changes discard affected entries. Failed reverts remain retryable.
 
 `Esc` ordering matters — implement it as an explicit fall-through chain, not
 three competing handlers.

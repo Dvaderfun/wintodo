@@ -202,7 +202,7 @@ public sealed partial class TaskListViewModel
         CancellationToken cancellationToken = default)
     {
         await _taskStore.DeleteListAsync(list.Id, cancellationToken);
-        if (ReferenceEquals(_selectedList, list))
+        if (_selectedList?.Id == list.Id)
         {
             _selectedList = null;
             _currentQuery = null;
@@ -214,7 +214,9 @@ public sealed partial class TaskListViewModel
         long destinationListId,
         CancellationToken cancellationToken = default)
     {
+        var states = await _taskStore.CaptureTaskUndoAsync([taskUid], Core.Services.TaskUndoFields.List, cancellationToken);
         await _taskStore.MoveTaskAsync(taskUid, destinationListId, cancellationToken: cancellationToken);
+        RecordTaskUndo(states, "Undo_TaskMoved");
         await ReloadAsync(cancellationToken);
     }
 

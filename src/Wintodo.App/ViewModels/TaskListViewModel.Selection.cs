@@ -43,8 +43,10 @@ public sealed partial class TaskListViewModel
         string[] uids = SelectedTasks.Select(item => item.Uid).ToArray();
         if (uids.Length == 0) return;
         await Task.Yield();
+        var states = await _taskStore.CaptureTaskUndoAsync(uids, UndoFields(action));
         await _taskStore.ApplyTaskBatchAsync(uids, action, date: date,
             destinationListId: destinationListId, moveStarredToTop: _preferences.MoveStarredToTop);
+        RecordTaskUndo(states, action == TaskBatchAction.Move ? "Undo_TaskMoved" : "Undo_TasksChanged");
         if (action == TaskBatchAction.Complete) _completedExpanded = true;
         await ReloadAsync();
         NavigationDataChanged?.Invoke();
@@ -52,7 +54,9 @@ public sealed partial class TaskListViewModel
 
     internal async Task MoveTasksToListAsync(IReadOnlyList<string> uids, long listId)
     {
+        var states = await _taskStore.CaptureTaskUndoAsync(uids, TaskUndoFields.List);
         await _taskStore.ApplyTaskBatchAsync(uids, TaskBatchAction.Move, destinationListId: listId);
+        RecordTaskUndo(states, "Undo_TaskMoved");
         await ReloadAsync();
         NavigationDataChanged?.Invoke();
     }
@@ -84,8 +88,10 @@ public sealed partial class TaskListViewModel
 
     internal async Task SetTasksDueDateAsync(IReadOnlyList<TaskItemViewModel> items, DateOnly date)
     {
+        var states = await _taskStore.CaptureTaskUndoAsync(items.Select(item => item.Uid).ToArray(), TaskUndoFields.Due);
         await _taskStore.ApplyTaskBatchAsync(items.Select(item => item.Uid).ToArray(),
             TaskBatchAction.SetDueDate, date: date);
+        RecordTaskUndo(states, "Undo_TasksChanged");
         await ReloadAsync();
         NavigationDataChanged?.Invoke();
     }
@@ -94,6 +100,7 @@ public sealed partial class TaskListViewModel
         CancellationToken cancellationToken = default)
     {
         string[] uids = items.Select(item => item.Uid).ToArray();
+        var states = await _taskStore.CaptureTaskUndoAsync(uids, TaskUndoFields.Deleted, cancellationToken);
         await _taskStore.ApplyTaskBatchAsync(uids, TaskBatchAction.Delete, cancellationToken);
         foreach (TaskItemViewModel item in items)
         {
@@ -101,7 +108,7 @@ public sealed partial class TaskListViewModel
             _completedTasks.Remove(item);
         }
         RebuildVisibleItems();
-        BeginUndo(items);
+        RecordTaskUndo(states, items.Count == 1 ? "Undo_TaskDeleted" : "Undo_TasksDeleted");
         NavigationDataChanged?.Invoke();
     }
 }

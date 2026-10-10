@@ -13,6 +13,48 @@ namespace Wintodo.Sync.Tests;
 public sealed class CalDavSyncServiceTests
 {
     [Fact]
+    public async Task RestoredList_RecreatesCollectionBeforePushingItsTasks()
+    {
+        await using SyncFixture f = await SyncFixture.CreateAsync();
+        var ct = TestContext.Current.CancellationToken;
+        (Account account, TodoList list) = await f.CreateMappedListAsync();
+        TodoTask task = await f.Store.CreateTaskAsync(new TodoTask { ListId = list.Id, Summary = "Restore remotely" }, ct);
+        await f.Store.DeleteListAsync(list.Id, ct);
+        SyncChange deletion = Assert.Single(await f.Store.GetPendingSyncChangesAsync(account.Id, ct),
+            change => change.EntityType == SyncEntityType.List);
+        await f.Store.MarkListChangeSyncedAsync(deletion.Id, list.Uid, null, ct);
+        await f.Store.RestoreListAsync(list.Id, ct);
+        using var handler = new RestoreHandler();
+        using var http = new HttpClient(handler);
+        using var sync = new CalDavSyncService(f.Store, new FakeCredentialStore(), f.Clock, http);
+        SyncRunResult result = await sync.SyncAccountAsync(account, ct);
+        Assert.Equal(SyncRunStatus.Success, result.Status);
+        Assert.Equal(new[] { "MKCALENDAR", "PUT" }, handler.Writes);
+        Assert.Contains("Restore remotely", handler.Payload);
+        Assert.Empty(await f.Store.GetPendingSyncChangesAsync(account.Id, ct));
+        TodoTask restored = (await f.Store.GetTaskAsync(task.Uid, ct))!;
+        Assert.Contains(list.Uid, restored.RemoteHref!);
+        Assert.False(restored.IsDirty);
+    }
+
+    private sealed class RestoreHandler : HttpMessageHandler
+    {
+        internal List<string> Writes { get; } = [];
+        internal string Payload { get; private set; } = string.Empty;
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            string method = request.Method.Method;
+            if (method == "PROPFIND") return new HttpResponseMessage(HttpStatusCode.MultiStatus)
+            { Content = new StringContent("<d:multistatus xmlns:d=\"DAV:\"/>") };
+            Writes.Add(method);
+            if (method == "PUT") Payload = await request.Content!.ReadAsStringAsync(cancellationToken);
+            var response = new HttpResponseMessage(HttpStatusCode.Created);
+            if (method == "PUT") response.Headers.ETag = new EntityTagHeaderValue("\"restored\"");
+            return response;
+        }
+    }
+
+    [Fact]
     public async Task TwoClients_ConvergeAndDetectConcurrentEdits()
     {
         using var server = new InMemoryCalDavHandler();

@@ -20,8 +20,8 @@ As of 2026-10-11:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 165, Data 85, Sync 9 — 259/259,
-  zero skipped on the UX-13 refactor validation run.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 169, Data 91, Sync 10 — 270/270,
+  zero skipped on the UX-10 validation run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** Final app name and
@@ -61,9 +61,15 @@ As of 2026-10-11:
   M6 7/7, list icons 10/10, Tasks settings 9/9 and composer 3/3 now pass.
   Complete: motion 7/7 with strict fresh timing PASS, reduced motion and Windows
   setting restoration verified; corrected harnesses acknowledged under ADR-011.
-- **Next:** UX-10 undo, via
+- **Next:** Settle UX-10's optional row-completion snackbar, then UX-12, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
+
+- **UX-10:** Shared 20-entry undo history implemented for task/list/step deletion,
+  moves, bulk actions and cleared due/reminder/repeat fields. Undo 7/7, multi-select
+  7/7, M3 10/10 + restart, M4 9/9 + restart, M13 11/11; 270/270 tests pass.
+  M8 17/17 after correcting the customised-palette harness;
+  optional row-completion snackbar awaits owner acknowledgement of DESIGN §7.
 
 ---
 
@@ -2481,3 +2487,56 @@ Windows Animation effects restored and read back as original=1, restored=1.
 **Deviations**
 - Literal unchanged-script criterion clarified by accepted ADR-011. Earlier
   failures remain recorded. UX-13 is complete; UX-10 is next.
+
+## UX-10 — Shared destructive-action undo          2026-10-11
+
+**Gate: PARTIAL** — implemented actions pass dedicated undo 7/7, multi-select
+7/7, M3 10/10 + restart, M4 9/9 + restart, M13 11/11, M8 17/17. Debug/Release
+x64 warnings-as-errors builds clean; 270/270 unit tests pass, zero skipped.
+Optional single-row completion snackbar awaits the owner's DESIGN §7 answer;
+it has not been implemented or silently excluded from package acceptance.
+
+**Shipped**
+- Shared Core UndoService, bounded to 20 session entries. Snackbar expiry hides
+  feedback while Ctrl+Z retains history across navigation. Reverts are serialized;
+  failure retains the entry for retry. Text editors retain native Ctrl+Z.
+- Task/list/step deletion, moves, bulk actions and due/reminder/repeat clears
+  record field-specific undo snapshots. Pending detail edits flush before undo;
+  newer titles/notes, unknown iCalendar properties and remote versions survive.
+- Atomic store restores log changes and notify once. Recurring bulk completion
+  restores dates, shifted reminders and occurrence count; ordinary completion
+  restore retains later dates/reminders. Remote store changes invalidate entries.
+- Migration 003 records tasks actually removed by list deletion. List restore
+  retains earlier deletions, restores steps and lists together, and recreates a
+  pushed CalDAV collection before uploading its tasks. ADR-012 records the design.
+- Stable list IDs replace stale instance comparisons after navigation refresh.
+- Unit additions: stack limit/order/retry/concurrency/invalidation, list restore
+  membership/idempotence, field isolation/rollback, recurrence/alarms, remote
+  notification provenance, version-two migration preservation/backup and CalDAV
+  MKCALENDAR-before-PUT behavior.
+- WinUI review: no findings above informational. No new dependency, reflection,
+  renamed AutomationId or product XAML added; Pages/ViewModels remain below 600 lines.
+
+**Validation and deviations**
+- Evidence: `tests/ui/artifacts/undo/run-20261010-231852/`,
+  `multiselect/run-20261010-233217/`, `m3/run-20261010-232001/`,
+  `m4/run-20261010-233439/`, `m13/run-20261010-232137/`,
+  `m8/run-20261010-233730/`. Each includes its gate results/screenshots.
+- M4 baseline harness needed explicit enumeration of Windows PowerShell JSON
+  window arrays and typed picker searches; no attachment behavior changed.
+  Earlier attempts failed 6/9 because a mis-targeted picker remained open.
+- M8 twice failed 14/17 because SPI retained customised colours; the harness now
+  applies/verifies colours from shipped Windows theme files and restores/verifies
+  originals in finally. The corrected suite passes 17/17. No theme rules changed.
+- One 269/270 unit run hit the pre-existing SQLite pool-disposal race in unrelated
+  iCalendar setup; subsequent full run passes 270/270. Earlier failures retained.
+- No Native AOT/runtime performance or live-server convergence claim.
+
+**Remaining**
+- Owner answer to optional "Completed · Undo" proposal in DESIGN §7. Include and
+  validate it if accepted; record its explicit omission if declined. UX-10 stays
+  in progress until this scope decision is resolved.
+
+Final dedicated undo rerun also passes 7/7 with no title-save settling delay:
+`tests/ui/artifacts/undo/run-20261010-233937/`. Immediate title edits are preserved
+through undo; all previously listed required gates remain passing.

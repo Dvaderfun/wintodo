@@ -456,6 +456,9 @@ public sealed partial class SqliteTaskStore
                         SET is_deleted = 1, modified_utc = @modifiedUtc
                         WHERE id = @listId AND is_deleted = 0;
 
+                        INSERT OR IGNORE INTO list_deleted_tasks(list_id, task_uid)
+                        SELECT @listId, uid FROM tasks WHERE list_id = @listId AND is_deleted = 0;
+
                         UPDATE tasks
                         SET is_deleted = 1, is_dirty = 1,
                             modified_utc = @modifiedUtc, sequence = sequence + 1

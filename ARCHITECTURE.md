@@ -41,6 +41,7 @@ src/
                        TaskMetadataLine (subtitle parts), SequenceDiff (keyed collection operations),
                        display-culture/date helpers
     Services/          interfaces: ITaskStore, ISyncStore, ISettingsStore, ICredentialStore, IClock; TaskPreferences
+                       UndoService (session history), TaskUndoState (field restore snapshot)
   Wintodo.Data/        net10.0, Core + Microsoft.Data.Sqlite, AOT-compatible
     Migrations/        NNN_*.sql, embedded resources, forward-only
     Mapping/           SqliteMapper (row <-> model)
@@ -119,6 +120,14 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
   Navigation drops onto My Day or Important use that same batch path to set
   membership/importance for the dragged UIDs while retaining their real lists.
 - Responsive breakpoints are `VisualStateManager` states (`docs/DESIGN.md` §6).
+- ShellViewModel owns a shared 20-entry UndoService for list/detail destructive
+  actions. Snackbar expiry hides the message; Ctrl+Z retains history across lists.
+  Undo flushes pending detail edits, restores only captured fields atomically,
+  then refreshes navigation and the open detail pane. Remote StoreChanged events
+  invalidate affected entries; local writes and push acknowledgements retain them.
+  List deletion records task membership in migration 003; restore retains earlier
+  task deletions and queues CalDAV collection creation before task uploads when
+  the collection delete has already been pushed.
 
 ## Layers and data flow
 

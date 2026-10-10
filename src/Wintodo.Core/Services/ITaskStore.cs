@@ -64,6 +64,8 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IAsyncDisposable
 
     Task DeleteListAsync(long listId, CancellationToken cancellationToken = default);
 
+    Task RestoreListAsync(long listId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<ListGroup>> GetGroupsAsync(CancellationToken cancellationToken = default);
 
     Task<ListGroup> CreateGroupAsync(string name, CancellationToken cancellationToken = default);
@@ -89,6 +91,11 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IAsyncDisposable
     Task DeleteTaskAsync(string uid, CancellationToken cancellationToken = default);
 
     Task RestoreTaskAsync(string uid, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TaskUndoState>> CaptureTaskUndoAsync(
+        IReadOnlyList<string> uids, TaskUndoFields fields, CancellationToken cancellationToken = default);
+
+    Task RestoreTaskFieldsAsync(IReadOnlyList<TaskUndoState> states, CancellationToken cancellationToken = default);
 
     /// <summary>Commits the entire selection together and raises one store change event.</summary>
     Task ApplyTaskBatchAsync(

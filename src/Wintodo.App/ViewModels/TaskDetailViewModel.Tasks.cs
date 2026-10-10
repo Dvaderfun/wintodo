@@ -135,7 +135,9 @@ public sealed partial class TaskDetailViewModel
         }
 
         string uid = _model.Uid;
+        var states = await _taskStore.CaptureTaskUndoAsync([uid], Core.Services.TaskUndoFields.Deleted, cancellationToken);
         await _taskStore.DeleteTaskAsync(uid, cancellationToken);
+        RecordUndo(states, "Undo_TaskDeleted");
         TaskDeleted?.Invoke(uid);
         CloseRequested?.Invoke();
     }
@@ -178,7 +180,9 @@ public sealed partial class TaskDetailViewModel
 
     private async Task DeleteStepAsync(StepItemViewModel item)
     {
+        var states = await _taskStore.CaptureTaskUndoAsync([item.Uid], Core.Services.TaskUndoFields.Deleted);
         await _taskStore.DeleteTaskAsync(item.Uid);
+        RecordUndo(states, "Undo_StepDeleted");
         Steps.Remove(item);
         TaskChanged?.Invoke(CloneTask(_model!));
     }
