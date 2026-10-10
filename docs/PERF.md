@@ -350,3 +350,17 @@ Evidence: `tests/ui/artifacts/ux13-final-before/timings.json`,
 and `ux13-quiet-after/placement-timings.json`, `results.json`, `completion.mp4`
 and screenshot sequence. UX-13 remains in progress pending reduced motion and
 acknowledgement of the separately corrected harnesses.
+
+### UX-13 authorized reduced-motion closure — 2026-10-11
+
+Debug x64, 200 tasks / 20 lists. Motion gate 7/7, zero skipped. Completion
+median/mean 332.018/332.204 ms versus fresh baseline 333.070/335.488 ms: PASS.
+With Windows Animation effects off, placement samples 67.143, 92.222, 64.366 ms
+(median 67.143, mean 74.577 ms) are all below the 250 ms animation hold.
+Original Animation effects value 1 restored and verified as 1 in finally.
+Owner authorized this setting change and acknowledged ADR-011 on 2026-10-11.
+
+Evidence: `tests/ui/artifacts/ux13-approved-motion/placement-timings.json`,
+`reduced-motion-timing.json`, `animation-setting.json`, `results.json`,
+`completion.mp4` and screenshots. All historical failures retained;
+no threshold change, statistical speedup or Native AOT claim. UX-13 complete.

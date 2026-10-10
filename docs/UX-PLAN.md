@@ -61,7 +61,7 @@ this dependency exception does not mark those gates passed.
 | UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | ready |
 | UX-11 | Drop tasks on My Day and Important | B | S | — | ShellPage | done (41b1946; M5 9/9 + restart, M8 17/17) |
 | UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | ready |
-| UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | in progress (efa09c2; fresh timing PASS, reduced motion/harness acknowledgement open) |
+| UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | done (efa09c2; motion 7/7, ADR-011 accepted) |
 | UX-14 | 🔒 Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | awaiting owner |
 | UX-15 | 🔒 Quieter placeholder when a list has no icon | B | S | — | TaskListView | awaiting owner |
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | awaiting owner |
@@ -542,7 +542,8 @@ behaviour sits in code-behind, where it can't be tested.
 
 **Acceptance.**
 - No file over ~600 lines in `Pages/` or `ViewModels/`.
-- All UI gates pass unchanged.
+- All UI gates pass with unchanged product behavior; separately corrected harnesses
+  in `40a1a34` are accepted by the owner under ADR-011. Assertions and budgets remain unchanged.
 - `/simplify` and `/winui-code-review` are clean.
 
 ### UX-20 — Close the open manual gate rows (owner-run)
