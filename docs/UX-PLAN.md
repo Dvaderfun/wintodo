@@ -50,7 +50,7 @@ this dependency exception does not mark those gates passed.
 | ID | Title | Phase | Size | Depends on | Touches (hot files) | Status |
 |---|---|---|---|---|---|---|
 | UX-01 | Dates and times in the UI language | A | S | — | TaskDetailVM, TaskListVM | done (252f8e6) |
-| UX-02 | Settings infrastructure + **Tasks** section (confirm before delete) | A | M | — | SettingsView, ShellVM, ShellPage | done (closure follow-up; settings 9/9, composer 3/3, 259 tests) |
+| UX-02 | Settings infrastructure + **Tasks** section (confirm before delete) | A | M | — | SettingsView, ShellVM, ShellPage | done (40a1a34; settings 9/9, composer 3/3, 259 tests) |
 | UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | done (09aa070) |
 | UX-04 | High-contrast fixes | A | S | — | ShellPage | done (71f6434) |
 | UX-05 | Hide the sync status until sync is configured | A | S | — | ShellPage.xaml, ShellVM.Sync | done (07fbcdc) |
