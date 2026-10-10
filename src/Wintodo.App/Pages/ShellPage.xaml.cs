@@ -730,6 +730,11 @@ public sealed partial class ShellPage : Page
 
     private async void OnDeleteTaskRequested(string summary)
     {
+        if (!ViewModel.Preferences.ConfirmBeforeDelete)
+        {
+            await ViewModel.ConfirmDeleteTaskAsync();
+            return;
+        }
         ViewModel.IsDeleteTaskDialogLoaded = true;
         await Task.Yield();
         DeleteTaskDialog.XamlRoot = XamlRoot;

@@ -78,9 +78,9 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IAsyncDisposable
 
     Task<TodoTask?> GetTaskAsync(string uid, CancellationToken cancellationToken = default);
 
-    Task<TodoTask> CreateTaskAsync(TodoTask task, CancellationToken cancellationToken = default);
+    Task<TodoTask> CreateTaskAsync(TodoTask task, CancellationToken cancellationToken = default, bool addToTop = false);
 
-    Task UpdateTaskAsync(TodoTask task, CancellationToken cancellationToken = default);
+    Task UpdateTaskAsync(TodoTask task, CancellationToken cancellationToken = default, bool moveStarredToTop = false);
 
     Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default);
 

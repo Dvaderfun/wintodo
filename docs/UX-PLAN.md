@@ -45,7 +45,7 @@ same time, check the **Touches** column:
 | ID | Title | Phase | Size | Depends on | Touches (hot files) | Status |
 |---|---|---|---|---|---|---|
 | UX-01 | Dates and times in the UI language | A | S | — | TaskDetailVM, TaskListVM | done (252f8e6) |
-| UX-02 | Settings infrastructure + **Tasks** section (confirm before delete) | A | M | — | SettingsView, ShellVM, ShellPage | in progress (Codex/main) |
+| UX-02 | Settings infrastructure + **Tasks** section (confirm before delete) | A | M | — | SettingsView, ShellVM, ShellPage | in progress (Codex/main; settings gate PASS; composer/perf gates open) |
 | UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | ready |
 | UX-04 | High-contrast fixes | A | S | — | ShellPage | ready |
 | UX-05 | Hide the sync status until sync is configured | A | S | — | ShellPage.xaml, ShellVM.Sync | ready |
@@ -614,3 +614,7 @@ file reference.
 
 - Placeholder app icon in the title bar and assets: belongs to M10 (final
   name/identity, PLAN §10 open item).
+
+- UX-02 validation: composer gate loses `Todo.Composer.OptionsButton` after adding
+  a task through compact options (2/3 checks fail). Settings gate passes 9/9;
+  startup crash from VSM targeting unloaded actions fixed separately.

@@ -146,6 +146,8 @@ public sealed partial class TaskDetailView : UserControl
         }
     }
 
+    public static Windows.Globalization.DayOfWeek ToCalendarDay(DayOfWeek day) => (Windows.Globalization.DayOfWeek)day;
+
     private void OnShowDuePickerRequested()
     {
         FlyoutBase.ShowAttachedFlyout(DueButton);

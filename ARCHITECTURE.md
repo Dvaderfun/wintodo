@@ -37,7 +37,7 @@ src/
     Recurrence/        RRULE parse/serialise + ComputeNext
     Ical/              IcalReader / IcalWriter / IcalUnknownCodec (verbatim passthrough)
     Queries/           ListQuery (smart-list and filter descriptors)
-    Services/          interfaces: ITaskStore, ISyncStore, ISettingsStore, ICredentialStore, IClock
+    Services/          interfaces: ITaskStore, ISyncStore, ISettingsStore, ICredentialStore, IClock; TaskPreferences
   Wintodo.Data/        net10.0, Core + Microsoft.Data.Sqlite, AOT-compatible
     Migrations/        NNN_*.sql, embedded resources, forward-only
     Mapping/           SqliteMapper (row <-> model)
@@ -87,6 +87,9 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
 - Settings is `SettingsView`, an `x:Load`-deferred control inside `ShellPage`
   toggled by `ShellViewModel.IsSettingsVisible` (the `NavigationView`'s built-in
   settings item is off).
+- Tasks settings share one Core `TaskPreferences` instance between Settings, list
+  and detail view models. It validates values, queues persistence and notifies
+  consumers; task ordering options are explicit store parameters.
 - Responsive breakpoints are `VisualStateManager` states (`docs/DESIGN.md` §6).
 
 ## Layers and data flow
