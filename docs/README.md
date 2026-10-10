@@ -25,6 +25,7 @@ Read what the task needs, not everything. Start from `AGENTS.md`, then
 - [guides/testing.md](guides/testing.md) — unit tests, UI gate scripts, AutomationIds, writing a new gate
 - [guides/migrations.md](guides/migrations.md) — adding a SQLite schema migration
 - [guides/performance.md](guides/performance.md) — measuring, recording, and the budget rules
+- [guides/packaging.md](guides/packaging.md) — unsigned tag artifacts, placeholder identity, local test signatures and open release gates
 - [guides/ai-tooling.md](guides/ai-tooling.md) — instruction files, vendored skills, WinApp CLI, MCP servers
 
 ## Fixtures

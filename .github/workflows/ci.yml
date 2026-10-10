@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ['v*']
   pull_request:
 
 concurrency:
@@ -39,3 +40,67 @@ jobs:
         with:
           name: test-results
           path: TestResults/
+
+  release:
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    needs: build-and-test
+    runs-on: windows-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: x64
+            arch: x64
+          - platform: ARM64
+            arch: arm64
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Locate the Native AOT toolchain (x64 host, target architecture)
+        run: |
+          $installer = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer'
+          $vswhere = Join-Path $installer 'vswhere.exe'
+          $component = if ('${{ matrix.arch }}' -eq 'arm64') {
+            'Microsoft.VisualStudio.Component.VC.Tools.ARM64'
+          } else {
+            'Microsoft.VisualStudio.Component.VC.Tools.x86.x64'
+          }
+          $installation = & $vswhere -latest -products '*' -requires $component -property installationPath
+          if ($LASTEXITCODE -ne 0 -or -not $installation) {
+            throw "Native AOT toolchain is missing: $component"
+          }
+          $installer | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Publish Native AOT (self-contained, warnings as errors)
+        run: ./scripts/Publish-Aot.ps1 -Platforms ${{ matrix.platform }}
+
+      - name: Build unsigned MSIX with the restored WinApp CLI
+        run: |
+          [xml]$packages = Get-Content Directory.Packages.props
+          $version = ($packages.Project.ItemGroup.PackageVersion |
+            Where-Object Include -eq 'Microsoft.Windows.SDK.BuildTools.WinApp').Version
+          $cli = Join-Path $env:USERPROFILE ".nuget/packages/microsoft.windows.sdk.buildtools.winapp/$version/tools/win-x64/winapp.exe"
+          if (-not (Test-Path -LiteralPath $cli)) { throw 'Restored WinApp CLI was not found.' }
+          $output = Join-Path $PWD 'publish/msix/Wintodo-${{ matrix.arch }}.msix'
+          New-Item -ItemType Directory -Force -Path (Split-Path -Parent $output) | Out-Null
+          & $cli package src/Wintodo.App/Wintodo.csproj --arch ${{ matrix.arch }} --no-sign --self-contained `
+            -p Platform=${{ matrix.platform }} -p PublishAot=true -p SelfContained=true `
+            -p PublishTrimmed=true -p PublishReadyToRun=false -p TreatWarningsAsErrors=true --output $output
+          if ($LASTEXITCODE -ne 0) { throw 'Unsigned MSIX packaging failed.' }
+          if (-not (Test-Path -LiteralPath $output)) { throw 'MSIX artifact was not produced.' }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: M10-unsigned-${{ matrix.arch }}
+          path: |
+            publish/msix/Wintodo-${{ matrix.arch }}.msix
+            publish/aot/summary.json
+          if-no-files-found: error

@@ -14,7 +14,7 @@ As of 2026-10-10:
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | BLOCKED | Full idle perf matrix pending (host busy); AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | not started | — |
+| M10 Packaging and release | GROUNDWORK | Unsigned tag CI added; final identity/signing, Store assets and clean-VM install/uninstall gates pending |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
@@ -26,8 +26,8 @@ As of 2026-10-10:
 - **Known gaps:** the task list clears and refills its bound collection instead
   of diff-updating (`ARCHITECTURE.md`, Known divergences). Final app name and
   MSIX publisher are still undecided.
-- **Next:** obtain a full idle window for M9; M10 groundwork may proceed while
-  M9 is blocked, per the owner's 2026-10-10 instruction.
+- **Next:** obtain a full idle window for M9; choose the final name/publisher
+  before production signing and M10 clean-VM gates.
 
 ---
 
@@ -1492,3 +1492,47 @@ manual Narrator check remain open; 14/14 automation is not full visual signoff.
 `winui-code-review` of the targeted collection change found no issue above
 informational. Existing uncommitted settings edits were preserved and excluded
 from this milestone commit.
+
+## 2026-10-10 — M10 unsigned packaging groundwork
+
+**Scope: groundwork shipped; release gate OPEN.** Started after M9 was recorded
+as blocked on the required idle window, as authorized by the owner.
+
+Reviewed `Package.appxmanifest`: only `runFullTrust`, no
+`broadFileSystemAccess`. Toast COM and optional startup extensions retained.
+Name `5826186B-4750-4C22-BC50-B5DD1EED9CA5`, publisher `CN=AppPublisher`, app
+name and version unchanged. Final name/publisher remain the owner's decision.
+
+CI now accepts `v*` tag pushes and has a separate x64/ARM64 release matrix,
+after build/test succeeds. It verifies target MSVC tools, AOT-publishes through
+`Publish-Aot.ps1`, builds unsigned MSIX using the centrally pinned restored
+WinApp CLI, and uploads architecture-specific packages and size summaries.
+No signing credentials, certificate trust, app installation or GitHub Release
+publication in CI. Tag workflow execution is **not measured/not run** locally;
+no tag was created. Validated YAML trigger/condition/matrix and PowerShell
+syntax, and ran the real local publish/package commands for both architectures.
+
+CLI 0.7.1 packaging without explicit AOT properties hit CsWinRT IL2081 trim
+errors. Explicit `PublishAot=true`, `SelfContained=true`, `PublishTrimmed=true`,
+`PublishReadyToRun=false` and warnings-as-errors packaged cleanly; those are
+recorded in CI and `docs/guides/packaging.md`, with no warning suppression.
+Both package payloads were inspected: matching PE architecture, no managed CLR
+header, PRI present, unchanged placeholder identity, only `runFullTrust`, no
+signature. Unsigned x64 MSIX **54.07 MB**, ARM64 **52.56 MB**. AOT layouts:
+x64 **220.17 MB**, ARM64 **225.69 MB**, both below the 260 MB size ceiling;
+ARM64 runtime performance is **not measured**.
+
+Generated an ignored local test certificate matching the placeholder publisher
+and signed a separate x64 package copy successfully (**54.09 MB**). Certificate
+was not installed/trusted; no install/uninstall gate attempted. Production
+signing, final Store assets, clean-VM install/launch and uninstall cleanup are
+**pending**, not passed. No accepted ADR or budget was changed.
+
+Final requested checks: `dotnet build Wintodo.sln -p:Platform=x64 -warnaserror`
+passed with zero warnings/errors; `dotnet test Wintodo.sln -p:Platform=x64`
+passed **102/102**, zero skipped; `tests/ui/run-m8-gate.ps1` passed **14/14
+automated checks** (`tests/ui/artifacts/m8/run-20261010-110304/results.json`).
+All six final screenshots reviewed; the existing settings/background visual
+coverage gaps recorded in M9 persist, so no full visual gate claimed.
+`winui-code-review` of the targeted fix found no issue above informational.
+Existing settings/CodeGraph working-tree changes excluded from both commits.
