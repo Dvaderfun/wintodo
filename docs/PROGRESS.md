@@ -30,7 +30,8 @@ As of 2026-10-10:
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **UX-02:** Tasks settings implemented; dedicated gate passes 9/9. Composer
   regression gate remains partial (1/3), so the package is still in progress.
-- **Next:** close the UX-02 composer regression, then continue app polish via
+- **Next:** UX-03 Notifications/Data/About (owner approved moving on); keep
+  UX-02 composer/performance gaps tracked. Continue app polish via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 

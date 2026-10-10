@@ -42,11 +42,16 @@ same time, check the **Touches** column:
 
 ## Status
 
+Owner acknowledged proceeding to UX-03 on 2026-10-10 with UX-02's dedicated
+settings gate passing. UX-02's composer/performance gates remain open and tracked;
+this dependency exception does not mark those gates passed.
+
+
 | ID | Title | Phase | Size | Depends on | Touches (hot files) | Status |
 |---|---|---|---|---|---|---|
 | UX-01 | Dates and times in the UI language | A | S | — | TaskDetailVM, TaskListVM | done (252f8e6) |
 | UX-02 | Settings infrastructure + **Tasks** section (confirm before delete) | A | M | — | SettingsView, ShellVM, ShellPage | in progress (Codex/main; settings gate PASS; composer/perf gates open) |
-| UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | ready |
+| UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | in progress (Codex/main) |
 | UX-04 | High-contrast fixes | A | S | — | ShellPage | ready |
 | UX-05 | Hide the sync status until sync is configured | A | S | — | ShellPage.xaml, ShellVM.Sync | ready |
 | UX-06 | Move list presentation logic into Core, with unit tests | B | M | — | TaskListVM | ready |
