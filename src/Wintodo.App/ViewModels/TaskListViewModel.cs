@@ -233,7 +233,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     [ObservableProperty]
     public partial bool IsCompactDensity { get; set; }
 
-    internal bool AnimationsEnabled { get; set; } = true;
+    internal Func<bool> AreAnimationsEnabled { get; set; } = static () => true;
 
     internal ListColor SelectedColor => _selectedList?.Color ?? ListColor.Blue;
 
@@ -1199,7 +1199,7 @@ public sealed partial class TaskListViewModel : ObservableObject
                 return;
             }
 
-            if (AnimationsEnabled)
+            if (AreAnimationsEnabled())
             {
                 await Task.Delay(TimeSpan.FromMilliseconds(250));
             }

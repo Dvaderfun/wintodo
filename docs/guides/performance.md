@@ -52,7 +52,12 @@ often broken:
 UX-07 replaces task-list resets with keyed collection diffs. Its before/after
 rows in PERF.md distinguish framework-dependent timings from AOT gates.
 
-UX-08's completion gate measures the same Debug checkbox-to-Completed-header
-round trip as UX-07, including CLI startup/UIA overhead. Its failed historical
-comparison and fresh five-sample before/after comparison are recorded in PERF.md;
-the strict no-regression acceptance remains open. These are not AOT timings.
+UX-08's completion gate compares 15 prewarmed, in-process UI Automation samples
+from toggle input until the realized task moves below Completed. A baseline from
+`run-completion-measure.ps1 -AppDirectory <UX-07 Debug output> -ArtifactDirectory <fresh directory>`
+is supplied to `run-completion-motion-gate.ps1 -BaselineTimings <timings.json>`.
+Both mean and median must not increase. Run baseline and candidate sequentially
+with the same 200-task / 20-list fixture and Windows animation setting; exclude
+one warm-up and allow transitions to settle between gestures. The historical
+CLI/header-only round trips remain in PERF.md as diagnostics, not render or AOT
+latency. That old method includes process startup and can stop before placement.

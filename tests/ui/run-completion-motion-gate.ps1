@@ -1,5 +1,6 @@
-param([switch]$TestReducedMotion, [string]$ArtifactDirectory)
+param([Parameter(Mandatory)][string]$BaselineTimings, [switch]$TestReducedMotion, [string]$ArtifactDirectory)
 $ErrorActionPreference = 'Stop'
+$BaselineTimings = (Resolve-Path -LiteralPath $BaselineTimings).Path
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if (-not $ArtifactDirectory) {
     $ArtifactDirectory = Join-Path $PSScriptRoot ('artifacts\completion-motion\run-' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss'))
@@ -21,7 +22,7 @@ $app = Join-Path $root 'src\Wintodo.App\bin\x64\Debug\net10.0-windows10.0.26100.
 $launch = winapp run $app --detach --json -- --database-path $db | ConvertFrom-Json
 if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) { throw 'Motion gate launch failed.' }
 try {
-    & (Join-Path $PSScriptRoot 'completion-motion.ps1') -AppPid $launch.ProcessId -ArtifactDirectory $ArtifactDirectory -TestReducedMotion:$TestReducedMotion
+    & (Join-Path $PSScriptRoot 'completion-motion.ps1') -AppPid $launch.ProcessId -ArtifactDirectory $ArtifactDirectory -BaselineTimings $BaselineTimings -TestReducedMotion:$TestReducedMotion
     if ($LASTEXITCODE -ne 0) { throw 'Completion motion gate failed.' }
 } finally { Stop-Process -Id $launch.ProcessId -ErrorAction SilentlyContinue }
 Write-Host "Completion motion gate: PASS — $ArtifactDirectory"

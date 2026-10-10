@@ -513,9 +513,14 @@ Connected animations are **not** used — there is no page navigation to connect
 Completion/check fades and undo entrance/exit are visual-state transitions.
 The row resets motion when recycled; circle springs and star bounces follow
 visual-state changes. The list observes Windows animation-setting changes while
-open, skips the completion/viewport delays when effects are disabled, and enables
+open, reads the current setting for each completion command, skips the
+completion/viewport delays when effects are disabled, and enables
 the built-in row transitions specifically for completion moves while retaining
-the viewport capture from §3.3. The snackbar remains loaded for its exit fade.
+the viewport capture from §3.3. When preserving selection, the grouped move is
+instant so native transition scrolling cannot pull a focused completed task into
+view; circle/text feedback remains animated. The snackbar remains loaded for its exit fade.
+The circle spring transforms the decorative 20 px circle only; its interactive
+32 × 32 checkbox remains fixed throughout completion feedback.
 
 ---
 

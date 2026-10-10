@@ -298,7 +298,7 @@ public sealed partial class TaskRow : UserControl
             TaskContent.Opacity = ViewModel.IsCompleted ? 0.6 : 1;
             CompletionGlyph.Opacity = ViewModel.IsCompleted ? 1 : 0;
         }
-        foreach (UIElement element in new UIElement[] { CompletionHost, ImportanceButton })
+        foreach (UIElement element in new UIElement[] { CompletionCircle, ImportanceButton })
         {
             Visual visual = ElementCompositionPreview.GetElementVisual(element);
             visual.StopAnimation("Scale");
@@ -316,8 +316,9 @@ public sealed partial class TaskRow : UserControl
             return;
         }
 
-        Visual visual = ElementCompositionPreview.GetElementVisual(CompletionHost);
-        visual.CenterPoint = new Vector3(16, 16, 0);
+        // Animate only the decoration; the checkbox retains its 32x32 hit target.
+        Visual visual = ElementCompositionPreview.GetElementVisual(CompletionCircle);
+        visual.CenterPoint = new Vector3(10, 10, 0);
         SpringVector3NaturalMotionAnimation animation = visual.Compositor.CreateSpringVector3Animation();
         animation.InitialValue = new Vector3(0.8f, 0.8f, 1);
         animation.FinalValue = Vector3.One;

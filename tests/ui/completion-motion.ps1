@@ -1,4 +1,5 @@
-param([Parameter(Mandatory)][int]$AppPid, [Parameter(Mandatory)][string]$ArtifactDirectory, [switch]$TestReducedMotion)
+param([Parameter(Mandatory)][int]$AppPid, [Parameter(Mandatory)][string]$ArtifactDirectory,
+    [Parameter(Mandatory)][string]$BaselineTimings, [switch]$TestReducedMotion)
 $ErrorActionPreference = 'Stop'
 $results = [Collections.Generic.List[object]]::new()
 $screenshots = [Collections.Generic.List[string]]::new()
@@ -30,18 +31,29 @@ function TaskRow([string]$Uid) {
 try {
     Ui @('wait-for', 'Todo.Row.CompleteToggle.perf-task-00001', '-t', '10000') | Out-Null
     Capture '01-active.png'
-    # Same fixture and gesture as the UX-07 Debug completion performance row.
-    Check 'Completion round trip does not regress UX-07' {
+    # Retain the old CLI round trip as a diagnostic. CLI startup and a header
+    # appearing before layout are insufficient proof of completion performance.
+    Check 'CLI completion diagnostic reaches Completed' {
         $timer = [Diagnostics.Stopwatch]::StartNew()
         Ui @('click', 'Todo.Row.CompleteToggle.perf-task-00001') | Out-Null
         Ui @('wait-for', 'Todo.List.CompletedHeader', '-t', '5000') | Out-Null
         $timer.Stop()
         $timings.Add(@{action='Completion to Completed header';elapsedMs=$timer.Elapsed.TotalMilliseconds;baselineMs=830.2392})
-        if ($timer.Elapsed.TotalMilliseconds -gt 830.2392) { throw "Completion regression: $($timer.Elapsed.TotalMilliseconds) ms > 830.2392 ms." }
     }
-    Ui @('invoke', 'Todo.List.CompletedHeader') | Out-Null
+    Ui @('invoke', 'Todo.List.CompletedHeader', '--action', 'toggle-on') | Out-Null
     Ui @('wait-for', 'Todo.Row.CompleteToggle.perf-task-00001', '--value', 'On', '-t', '5000') | Out-Null
     Capture '02-completed.png'
+    Check 'Completion placement does not regress matched UX-07 baseline' {
+        $baseline = Get-Content -LiteralPath $BaselineTimings -Raw | ConvertFrom-Json
+        $currentPath = Join-Path $ArtifactDirectory 'placement-timings.json'
+        & powershell.exe -NoProfile -File (Join-Path $PSScriptRoot 'measure-completion.ps1') -AppPid $AppPid -Output $currentPath -SampleCount 15
+        if ($LASTEXITCODE -ne 0) { throw 'Completion measurement failed.' }
+        $current = Get-Content -LiteralPath $currentPath -Raw | ConvertFrom-Json
+        if ($baseline.sampleCount -ne 15 -or $baseline.method -ne $current.method) { throw 'Baseline must use the same method and 15 samples.' }
+        if ($current.medianMs -gt $baseline.medianMs -or $current.meanMs -gt $baseline.meanMs) {
+            throw "Completion regression: median $($current.medianMs)/$($baseline.medianMs), mean $($current.meanMs)/$($baseline.meanMs) ms."
+        }
+    }
     # A single recording workflow also owns all interactions, so capture cannot
     # block the gestures it is meant to record. Jobs do not open console windows.
     $video = Join-Path $ArtifactDirectory 'completion.mp4'
@@ -105,40 +117,14 @@ public static class WintodoMotionSettings {
         if (-not [WintodoMotionSettings]::SystemParametersInfo(0x1042,0,[ref]$value,0)) { throw 'Cannot read animation setting.' }
         $originalAnimations = $value
         if (-not [WintodoMotionSettings]::SetAnimation(0x1043,0,[IntPtr]::Zero,2)) { throw 'Cannot disable animation effects.' }
+        $value = 1
+        if (-not [WintodoMotionSettings]::SystemParametersInfo(0x1042,0,[ref]$value,0) -or $value -ne 0) { throw 'Animation effects did not turn off.' }
         Start-Sleep -Milliseconds 500
         Check 'Reduced motion completion moves instantly while app stays open' {
             # UIA in one process avoids CLI startup hiding the 250 ms delay.
-            $measureScript = @'
-param([int]$TargetPid)
-Add-Type -AssemblyName UIAutomationClient
-$root = [System.Windows.Automation.AutomationElement]::RootElement
-$app = $root.FindFirst([System.Windows.Automation.TreeScope]::Children,
-    [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ProcessIdProperty,$TargetPid))
-function Find([string]$id) {
-    $app.FindFirst([System.Windows.Automation.TreeScope]::Descendants,
-        [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty,$id))
-}
-$toggle = Find 'Todo.Row.CompleteToggle.perf-task-00041'
-$row = Find 'Todo.Row.perf-task-00041'
-$header = Find 'Todo.List.CompletedHeader'
-if (-not $toggle -or -not $row -or -not $header) { throw 'Reduced motion fixture not visible.' }
-$timer = [Diagnostics.Stopwatch]::StartNew()
-([System.Windows.Automation.TogglePattern]$toggle.GetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern)).Toggle()
-do {
-    $row = Find 'Todo.Row.perf-task-00041'
-    $header = Find 'Todo.List.CompletedHeader'
-    if ($row -and $row.Current.BoundingRectangle.Top -gt $header.Current.BoundingRectangle.Top) { break }
-    Start-Sleep -Milliseconds 5
-} while ($timer.ElapsedMilliseconds -lt 1500)
-$timer.Stop()
-@{elapsedMs=$timer.Elapsed.TotalMilliseconds} | ConvertTo-Json
-if ($timer.ElapsedMilliseconds -ge 250) { throw 'Reduced motion retained a completion delay.' }
-'@
-            $path = Join-Path $ArtifactDirectory 'measure-reduced-motion.ps1'
-            $measureScript | Set-Content $path
-            $measurement = & powershell.exe -NoProfile -File $path -TargetPid $AppPid
-            if ($LASTEXITCODE -ne 0) { throw "Reduced motion measurement failed: $measurement" }
-            $measurement | Set-Content (Join-Path $ArtifactDirectory 'reduced-motion-timing.json')
+            & powershell.exe -NoProfile -File (Join-Path $PSScriptRoot 'measure-completion.ps1') -AppPid $AppPid -Output (Join-Path $ArtifactDirectory 'reduced-motion-timing.json') -SampleCount 3 -ReducedMotion
+            if ($LASTEXITCODE -ne 0) { throw 'Reduced motion measurement failed.' }
+            Ui @('click', 'Todo.Row.CompleteToggle.perf-task-00041') | Out-Null
             Ui @('wait-for', 'Todo.Row.CompleteToggle.perf-task-00041', '--value', 'On', '-t', '2000') | Out-Null
             Capture '06-reduced-motion.png'
         }
@@ -148,7 +134,13 @@ finally {
     if ($null -ne $originalAnimations) {
         if (-not [WintodoMotionSettings]::SetAnimation(0x1043,0,[IntPtr]::new($originalAnimations),2)) {
             $results.Add(@{name='Restore animation setting';status='FAIL'})
-        } else { $results.Add(@{name='Restore animation setting';status='PASS'}) }
+        } else {
+            $restored = -1
+            $readBack = [WintodoMotionSettings]::SystemParametersInfo(0x1042,0,[ref]$restored,0)
+            @{original=$originalAnimations;restored=$restored} | ConvertTo-Json | Set-Content (Join-Path $ArtifactDirectory 'animation-setting.json')
+            if (-not $readBack -or $restored -ne $originalAnimations) { $results.Add(@{name='Restore animation setting';status='FAIL'}) }
+            else { $results.Add(@{name='Restore animation setting';status='PASS'}) }
+        }
     }
     if ($recordJob) { Stop-Job $recordJob; Remove-Job $recordJob }
     winapp ui yield | Out-Null

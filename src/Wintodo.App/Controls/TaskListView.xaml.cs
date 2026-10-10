@@ -233,7 +233,7 @@ public sealed partial class TaskListView : UserControl
             newViewModel.VisibleItemsUpdating += view.OnVisibleItemsUpdating;
             newViewModel.VisibleItemsUpdated += view.OnVisibleItemsUpdated;
             newViewModel.CompletionReordering += view.OnCompletionReordering;
-            newViewModel.AnimationsEnabled = view._uiSettings.AnimationsEnabled;
+            newViewModel.AreAnimationsEnabled = () => view._uiSettings.AnimationsEnabled;
             ScrollPerformanceProbe.TryStart(newViewModel.VisibleItems.Count);
         }
         else
@@ -271,7 +271,6 @@ public sealed partial class TaskListView : UserControl
     private void OnLoaded(object sender, RoutedEventArgs args)
     {
         _uiSettings.AnimationsEnabledChanged += OnAnimationsEnabledChanged;
-        if (ViewModel is not null) ViewModel.AnimationsEnabled = _uiSettings.AnimationsEnabled;
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs args)
@@ -284,7 +283,6 @@ public sealed partial class TaskListView : UserControl
         DispatcherQueue.TryEnqueue(() =>
         {
             if (!IsLoaded || ViewModel is null) return;
-            ViewModel.AnimationsEnabled = _uiSettings.AnimationsEnabled;
             if (!_uiSettings.AnimationsEnabled)
             {
                 foreach (VisualTransition transition in UndoStates.Transitions)
@@ -303,7 +301,11 @@ public sealed partial class TaskListView : UserControl
     {
         // UX-07 suppresses transitions for ordinary diffs. Completion needs the
         // built-in add/delete/reorder motion while retaining its viewport capture.
-        TasksList.ItemContainerTransitions = _uiSettings.AnimationsEnabled ? _savedTransitions : null;
+        // A selected task can move to a virtualized Completed container. Native
+        // transitions then compete with restoring its focus and scroll anchor.
+        // Keep that offscreen move instant; visible checkbox moves still animate.
+        TasksList.ItemContainerTransitions = _uiSettings.AnimationsEnabled
+            && _savedSelectedTask is null ? _savedTransitions : null;
     }
 
     public static readonly DependencyProperty IsUndoLoadedProperty = DependencyProperty.Register(
