@@ -88,3 +88,8 @@ breaks a gate — search `tests/ui/` before you change an id.
 `.github/workflows/ci.yml` builds x64 Debug with warnings as errors and runs the
 three test projects (TRX + coverage uploaded as artifacts) on `windows-latest`. UI gates are local-only: they need an
 interactive desktop session and Developer Mode.
+
+On `v*` tag pushes, a separate release job publishes Native AOT and packages
+unsigned x64 and ARM64 MSIX artifacts after build/test succeeds. Main pushes
+and PRs do not run that job. Production signing and install/uninstall gates
+remain open; see [packaging.md](packaging.md).
