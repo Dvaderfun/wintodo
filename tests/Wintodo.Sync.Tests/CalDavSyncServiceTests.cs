@@ -37,36 +37,36 @@ public sealed class CalDavSyncServiceTests
         {
             ListId = firstList.Id,
             Summary = "Shared task",
-        });
-        Assert.Equal(SyncRunStatus.Success, (await firstSync.SyncAccountAsync(firstAccount)).Status);
-        Assert.Equal(SyncRunStatus.Success, (await secondSync.SyncAccountAsync(secondAccount)).Status);
-        TodoTask secondCopy = (await second.Store.GetTaskForSyncAsync(created.Uid))!;
+        }, TestContext.Current.CancellationToken);
+        Assert.Equal(SyncRunStatus.Success, (await firstSync.SyncAccountAsync(firstAccount, TestContext.Current.CancellationToken)).Status);
+        Assert.Equal(SyncRunStatus.Success, (await secondSync.SyncAccountAsync(secondAccount, TestContext.Current.CancellationToken)).Status);
+        TodoTask secondCopy = (await second.Store.GetTaskForSyncAsync(created.Uid, TestContext.Current.CancellationToken))!;
         Assert.Equal("Shared task", secondCopy.Summary);
 
-        TodoTask firstCopy = (await first.Store.GetTaskForSyncAsync(created.Uid))!;
+        TodoTask firstCopy = (await first.Store.GetTaskForSyncAsync(created.Uid, TestContext.Current.CancellationToken))!;
         firstCopy.Summary = "Completed remotely";
         firstCopy.Status = Wintodo.Core.Models.TaskStatus.Completed;
         firstCopy.PercentComplete = 100;
-        await first.Store.UpdateTaskAsync(firstCopy);
-        Assert.Equal(SyncRunStatus.Success, (await firstSync.SyncAccountAsync(firstAccount)).Status);
+        await first.Store.UpdateTaskAsync(firstCopy, TestContext.Current.CancellationToken);
+        Assert.Equal(SyncRunStatus.Success, (await firstSync.SyncAccountAsync(firstAccount, TestContext.Current.CancellationToken)).Status);
 
         secondCopy.Summary = "Concurrent local edit";
-        await second.Store.UpdateTaskAsync(secondCopy);
-        SyncRunResult conflictResult = await secondSync.SyncAccountAsync(secondAccount);
+        await second.Store.UpdateTaskAsync(secondCopy, TestContext.Current.CancellationToken);
+        SyncRunResult conflictResult = await secondSync.SyncAccountAsync(secondAccount, TestContext.Current.CancellationToken);
         SyncConflict conflict = Assert.Single(conflictResult.Conflicts);
         Assert.Equal(SyncRunStatus.AttentionRequired, conflictResult.Status);
         Assert.Equal("Concurrent local edit", conflict.LocalTask.Summary);
         Assert.Equal("Completed remotely", conflict.RemoteTask!.Summary);
 
-        await secondSync.ResolveConflictAsync(conflict, SyncConflictChoice.KeepTheirs);
-        TodoTask resolved = (await second.Store.GetTaskForSyncAsync(created.Uid))!;
+        await secondSync.ResolveConflictAsync(conflict, SyncConflictChoice.KeepTheirs, TestContext.Current.CancellationToken);
+        TodoTask resolved = (await second.Store.GetTaskForSyncAsync(created.Uid, TestContext.Current.CancellationToken))!;
         Assert.Equal("Completed remotely", resolved.Summary);
         Assert.Equal(Wintodo.Core.Models.TaskStatus.Completed, resolved.Status);
 
-        await second.Store.DeleteTaskAsync(created.Uid);
-        Assert.Equal(SyncRunStatus.Success, (await secondSync.SyncAccountAsync(secondAccount)).Status);
-        Assert.Equal(SyncRunStatus.Success, (await firstSync.SyncAccountAsync(firstAccount)).Status);
-        Assert.True((await first.Store.GetTaskForSyncAsync(created.Uid))!.IsDeleted);
+        await second.Store.DeleteTaskAsync(created.Uid, TestContext.Current.CancellationToken);
+        Assert.Equal(SyncRunStatus.Success, (await secondSync.SyncAccountAsync(secondAccount, TestContext.Current.CancellationToken)).Status);
+        Assert.Equal(SyncRunStatus.Success, (await firstSync.SyncAccountAsync(firstAccount, TestContext.Current.CancellationToken)).Status);
+        Assert.True((await first.Store.GetTaskForSyncAsync(created.Uid, TestContext.Current.CancellationToken))!.IsDeleted);
     }
 
     private sealed class SyncFixture : IAsyncDisposable

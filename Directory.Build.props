@@ -17,12 +17,4 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
-
-  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Wintodo'">
-    <Analyzer Include="$(MSBuildThisFileDirectory)analyzer\Microsoft.WindowsAppSDK.Analyzers.dll" />
-  </ItemGroup>
-
-  <Import
-    Project="$(MSBuildThisFileDirectory)analyzer\Microsoft.WindowsAppSDK.Analyzers.targets"
-    Condition="'$(MSBuildProjectName)' == 'Wintodo' And Exists('$(MSBuildThisFileDirectory)analyzer\Microsoft.WindowsAppSDK.Analyzers.targets')" />
 </Project>

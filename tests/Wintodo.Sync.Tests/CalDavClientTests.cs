@@ -46,11 +46,11 @@ public sealed class CalDavClientTests
         var client = new CalDavClient(httpClient);
         var account = CreateAccount();
 
-        CalDavDiscovery discovery = await client.DiscoverAsync(account, "secret");
+        CalDavDiscovery discovery = await client.DiscoverAsync(account, "secret", TestContext.Current.CancellationToken);
         account.PrincipalUrl = discovery.PrincipalUrl.AbsoluteUri;
         account.HomeSetUrl = discovery.HomeSetUrl.AbsoluteUri;
         IReadOnlyList<CalDavCollection> collections =
-            await client.GetCollectionsAsync(account, "secret");
+            await client.GetCollectionsAsync(account, "secret", TestContext.Current.CancellationToken);
 
         CalDavCollection collection = Assert.Single(collections);
         Assert.Equal("https://dav.example/calendars/alice/tasks/", collection.Url.AbsoluteUri);
@@ -84,18 +84,20 @@ public sealed class CalDavClientTests
             SyncToken = "token-1",
         };
 
-        CalDavDelta delta = await client.GetCollectionDeltaAsync(account, "secret", list);
+        CalDavDelta delta = await client.GetCollectionDeltaAsync(account, "secret", list, TestContext.Current.CancellationToken);
         CalDavWriteResult put = await client.PutTaskAsync(
             account,
             "secret",
             new Uri("https://dav.example/cal/tasks/one.ics"),
             Encoding.UTF8.GetBytes("BEGIN:VCALENDAR\r\nEND:VCALENDAR\r\n"),
-            "\"v2\"");
+            "\"v2\"",
+            TestContext.Current.CancellationToken);
         CalDavWriteResult delete = await client.DeleteTaskAsync(
             account,
             "secret",
             new Uri("https://dav.example/cal/tasks/one.ics"),
-            "\"v3\"");
+            "\"v3\"",
+            TestContext.Current.CancellationToken);
 
         Assert.Equal("token-2", delta.SyncToken);
         Assert.Equal(2, delta.Resources.Count);
@@ -133,7 +135,7 @@ public sealed class CalDavClientTests
             RemoteCTag = "ctag-1",
         };
 
-        CalDavDelta delta = await client.GetCollectionDeltaAsync(CreateAccount(), "secret", list);
+        CalDavDelta delta = await client.GetCollectionDeltaAsync(CreateAccount(), "secret", list, TestContext.Current.CancellationToken);
 
         Assert.True(delta.IsFullSnapshot);
         Assert.Equal("ctag-2", delta.CTag);

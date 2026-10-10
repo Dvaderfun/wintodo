@@ -1,6 +1,38 @@
 # Progress log
 
-One entry per milestone. Append, never rewrite history.
+## Current state
+
+_Maintained summary — update it whenever an entry below changes it. Everything
+under "History" is append-only._
+
+As of 2026-10-10:
+
+| Milestone | Status | Open gate rows |
+|---|---|---|
+| M0–M5 | PASS | — (M3 passed with an owner-approved perf tolerance) |
+| M6 iCalendar interop | AUTOMATED PASS | One-time hand import into Nextcloud Tasks or Thunderbird |
+| M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
+| M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
+| M9 Native AOT | OPEN | +10 min idle working-set sample never measured; ARM64 runtime perf not measured |
+| M10 Packaging and release | not started | — |
+| M11 Deep subtasks | not started | — |
+| M12 Tags and saved filters | not started | — |
+| M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
+
+- **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 50, Data 43, Sync 9 — 102/102.
+- **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
+  win-dev-skills v0.7.1 vendored (ADR-010).
+- **Known gaps:** the task list clears and refills its bound collection instead
+  of diff-updating (`ARCHITECTURE.md`, Known divergences). Final app name and
+  MSIX publisher are still undecided.
+- **Next:** close the M9 +10 min sample, then M10.
+
+---
+
+## History
+
+One entry per milestone or change. Append, never rewrite history.
 
 Template:
 
@@ -21,7 +53,6 @@ Template:
 
 ---
 
-_No milestones completed yet. M0 has not started._
 
 ## M0 — Setup and scaffold          2026-07-30
 
@@ -1318,3 +1349,102 @@ warnings and every flow below was verified by hand in the packaged app.
   focus returning to the button afterwards. Alignment was measured from window
   captures rather than judged by eye — the caret centre moved from 3px above the
   card centre to within half a pixel of it.
+
+## Post-M13 — AI-friendly repo docs and toolchain 0.7          2026-10-10
+
+**Gate:** PASS for this change. `dotnet build Wintodo.sln` Debug and Release x64
+with `-warnaserror` completed with zero warnings; `dotnet test` passed 102/102
+(Core 50, Data 43, Sync 9); `BuildAndRun.ps1` built and launched the packaged
+app through WinApp CLI 0.7.1 project mode against a scratch database, and the M0
+smoke suite passed 4/4 against it; and `scripts/Publish-Aot.ps1 -Platforms x64`
+published Native AOT with zero warnings (16.68 MB binary, 212.20 MB publish
+folder). Feature UI gates (M4–M8, M13) were not re-run:
+the only app-code change is a behaviour-preserving extraction in
+`WindowsIntegrationService`.
+
+**Shipped** ([ADR-010](adr/ADR-010-ai-friendly-repo-docs.md))
+- `AGENTS.md` rewritten as a short, agent-neutral entry point (read order,
+  commands, definition of done, hard rules, where-things-are); `CLAUDE.md`
+  imports it. Mandatory per-session reading drops from about 110 KB to
+  `AGENTS.md` + `ARCHITECTURE.md` + this summary.
+- New `ARCHITECTURE.md` describing the code as built, with a known-divergences
+  table against `PLAN.md` §3/§5/§6.
+- `docs/README.md` index; `docs/adr/README.md` index and template; ADR-001…007
+  moved verbatim out of `PLAN.md` §2; `docs/guides/` with build-and-run,
+  testing, migrations, performance and ai-tooling guides.
+- `PLAN.md` keeps scope, §7 budgets and milestones; §0, §2, §4, §5 and the §10
+  XAML risk now point to the new docs. Section numbers unchanged.
+- This file gained the "Current state" summary above; the stale "no milestones"
+  placeholder was removed.
+- win-dev-skills v0.7.1 vendored into `.agents/skills/` and mirrored into
+  `.claude/skills/` by the new `scripts/Update-AgentSkills.ps1`.
+- WinApp CLI upgraded 0.5.0 → 0.7.1 on the owner's machine (owner approved).
+  `Microsoft.Windows.SDK.BuildTools.WinApp` 0.5.0 → 0.7.1.
+- The copied `analyzer/` DLL and its `Directory.Build.props` wiring were
+  replaced by the `Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer` 0.7.1 NuGet
+  package, so plain `dotnet build`, `winapp run`, the IDE and CI all run it.
+- `BuildAndRun.ps1` is now a thin wrapper over project-mode `winapp run`
+  (upstream 0.7 removed the old wrapper). Old `-SkipRun` / `-UseMSBuild` flags
+  are gone; use `dotnet build` or `--no-launch`.
+- `.mcp.json` registers the Microsoft Learn MCP server.
+- `.github/workflows/ci.yml`: x64 build with warnings as errors plus the three
+  xunit projects on `windows-latest`.
+- Removed an empty stray `Microsoft.PowerShell.Core/` folder from the repo root.
+
+**Deviations from PLAN.md**
+- **WUI1001 suppressed** — the newer analyzer flags
+  `ToastNotificationManager.CreateToastNotifier()` and recommends
+  `AppNotificationManager`, which has no scheduling API. Scheduled reminder
+  toasts are the deliberate M7 design (`PLAN.md` M7, `AGENTS.md` allows
+  `Windows.UI.Notifications`). Both call sites now go through one
+  `CreateScheduledToastNotifier()` helper with a scoped `#pragma` and comment.
+  Remove the suppression if the Windows App SDK ships a scheduling API.
+- The repo-wide rule "suspect the last-edited `.xaml` on a silent build failure"
+  was retired: the underlying XAML-compiler bug is fixed in Windows App SDK
+  2.1.3 and later.
+
+**Known issues carried forward**
+- CI has not run on GitHub yet; the first push will be its first run.
+- Unchanged: M6 hand import, M7 reboot/badge checks, M8 Narrator check, M9
+  +10 min sample and ARM64 runtime, M13 live-server rows.
+
+## Post-M13 — Stack and library upgrades          2026-10-10
+
+**Gate:** PASS. Debug and Release x64 builds with `-warnaserror`: zero warnings.
+`dotnet test` 102/102 on xunit v3 / Microsoft Testing Platform, with TRX and
+coverage reports produced. `scripts/Publish-Aot.ps1 -Platforms x64`: Native AOT,
+zero warnings, 16.69 MB binary, 220.18 MB publish folder (was 212.20 MB; the
+Windows App SDK 2.5 runtime is larger; budget is ≤ 260 MB). M8 UI gate 14/14 on
+the Debug x64 build. Other UI gates and `Measure-Perf.ps1` were not re-run.
+
+**Shipped**
+- .NET SDK 10.0.302 → 10.0.401 (runtime 10.0.12), installed on the owner's
+  machine and pinned in `global.json`. .NET 11 is RC and STS, so the app stays on
+  the .NET 10 LTS line.
+- `Microsoft.WindowsAppSDK` 2.3.1 → 2.5.1 (bug fixes behind runtime-compatibility
+  switches; no breaking changes in the 2.4 / 2.5 release notes).
+- `Microsoft.Windows.SDK.BuildTools` 10.0.28000.2526 → .2705;
+  `Microsoft.Data.Sqlite` 10.0.10 → 10.0.12.
+- Tests moved from xunit 2.9.3 (final v2 release) to `xunit.v3` 4.0.2 on
+  Microsoft Testing Platform. `global.json` opts `dotnet test` into MTP; test
+  projects are `OutputType=Exe`. `Microsoft.NET.Test.Sdk`,
+  `xunit.runner.visualstudio` and `coverlet.collector` (VSTest-only) are replaced
+  by `Microsoft.Testing.Extensions.CodeCoverage` 18.12.0 and
+  `Microsoft.Testing.Extensions.TrxReport` 2.5.1. CI now runs
+  `dotnet test --solution … --report-trx --coverage`.
+- xunit v3's analyzer rule xUnit1051 (pass `TestContext.Current.CancellationToken`)
+  is fixed at all 307 call sites, not suppressed; 37 of them use a named
+  `cancellationToken:` argument because optional parameters precede it.
+- Already current, unchanged: `CommunityToolkit.Mvvm` 8.4.2,
+  `CommunityToolkit.WinUI.Controls.*` 8.2.251219 (8.3 is preview only),
+  `SQLitePCLRaw.bundle_e_sqlite3` 3.0.5, WinApp CLI / build tools / analyzer 0.7.1.
+
+**Deviations from PLAN.md**
+- None. PLAN §3 already allowed "2.3.1+ stable"; the stack table now records the
+  current versions and the test runner.
+
+**Known issues carried forward**
+- The .NET SDK installer asked for a reboot; builds and tests already run on
+  10.0.401.
+- Unchanged: M6 hand import, M7 reboot/badge checks, M8 Narrator check, M9
+  +10 min sample and ARM64 runtime, M13 live-server rows.

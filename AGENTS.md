@@ -1,114 +1,139 @@
-# AGENTS.md — operating rules
+# AGENTS.md
 
-Read this at the start of **every** session, before touching anything.
+Instructions for AI coding agents (Codex, Claude Code, Copilot, Cursor, Gemini…).
+Humans: start with [README.md](README.md).
 
-- **The plan is `PLAN.md`.** Work milestone by milestone. Do not skip ahead.
-- **Design spec is `docs/DESIGN.md`.** Read it before writing any XAML.
-- **Data spec is `docs/DATA-MODEL.md`.** Read it before writing model or storage code.
-- **Log every milestone** in `docs/PROGRESS.md`: what shipped, what deviated from
-  the plan, and why.
+## What this is
 
----
+**Wintodo** — a native, packaged WinUI 3 task manager for Windows. v1 is a faithful
+Microsoft To Do clone built on open standards (iCalendar `VTODO`, CalDAV) instead of
+Microsoft Graph. Native AOT, x64 + ARM64, MSIX. Implemented: M0–M9 and M13 (CalDAV
+sync), with some manual gate rows still open. Not started: M10 packaging, M11 deep
+subtasks, M12 tags. `Wintodo` is a placeholder name.
 
-## Toolchain
+## Read before changing code
 
-This project depends on Microsoft's `win-dev-skills` plugin. If it is not
-installed, install it first (`PLAN.md` §4). Codex has no "agents" concept —
-invoke skills by name: `/winui-setup`, `/winui-design`, `/winui-dev-workflow`,
-`/winui-code-review`, `/winui-ui-testing`, `/winui-packaging`.
+1. [ARCHITECTURE.md](ARCHITECTURE.md) — projects, dependency rules, data flow. **Mandatory.**
+2. [docs/PROGRESS.md](docs/PROGRESS.md) — read only the **Current state** section at the top.
+3. The spec for the area you touch — [docs/DESIGN.md](docs/DESIGN.md) before any XAML,
+   [docs/DATA-MODEL.md](docs/DATA-MODEL.md) before model or storage code.
+4. The guide for your task in [docs/guides/](docs/guides/) — index in [docs/README.md](docs/README.md).
+5. Milestone work: that milestone's section in [PLAN.md](PLAN.md) §8 (deliverables + gate).
+
+## Commands
+
+```powershell
+dotnet build Wintodo.sln -p:Platform=x64 -warnaserror   # build everything, analyzers on
+dotnet test  Wintodo.sln -p:Platform=x64                # Core + Data + Sync unit tests
+.\BuildAndRun.ps1                                       # build + launch attached (run async)
+.\BuildAndRun.ps1 --detach --json                       # launch, get PID for winapp ui
+.\tests\ui\run-m8-gate.ps1                              # a UI gate (needs a Debug x64 build)
+.\scripts\Publish-Aot.ps1                               # Native AOT publish, x64 + ARM64
+.\scripts\Measure-Perf.ps1 -Milestone <Mx>              # perf rows into docs/PERF.md
+winapp find-ui "<control or pattern>"                   # real WinUI samples before writing XAML
+```
+
+Details: [docs/guides/build-and-run.md](docs/guides/build-and-run.md),
+[docs/guides/testing.md](docs/guides/testing.md).
+
+## Definition of done
+
+- `dotnet build … -warnaserror` is clean and `dotnet test` passes.
+- New logic has unit tests (Core/Data/Sync). UI changes pass the affected `tests/ui` gate.
+- UI work went through `/winui-code-review` with nothing above informational.
+- Docs the change touched are updated; a new decision has an ADR in `docs/adr/`.
+- `docs/PROGRESS.md` has an entry: gate result, what shipped, deviations. Update
+  **Current state** if it changed.
+
+## Skills
+
+WinUI skills are vendored at a pinned tag in `.agents/skills/` (mirrored to
+`.claude/skills/`). Load the skill before the work, not after.
 
 | Situation | Skill |
 |---|---|
-| Machine prep, missing prerequisite | `/winui-setup` (user-invoked only) |
-| Building, running, diagnosing a build error | `/winui-dev-workflow` |
-| Any new page, any XAML, any theming question | `/winui-design` |
-| Before committing a milestone | `/winui-code-review` |
-| Verifying a milestone gate | `/winui-ui-testing` |
-| MSIX, signing, CI, Store | `/winui-packaging` |
+| Machine prep, missing prerequisite | `winui-setup` — **owner-invoked only** |
+| Building, running, build errors, crashes, AOT runs | `winui-dev-workflow` |
+| Any new XAML, control choice, theming question | `winui-design` |
+| Before committing UI work or a milestone | `winui-code-review` |
+| Writing or running a UI gate | `winui-ui-testing` |
+| MSIX, signing, release CI, Store | `winui-packaging` |
 
-Before writing XAML for a new surface, run the `winui-search.exe` bundled with
-`winui-design`: **one** batched `search` call listing every control you need
-(one focused query each), then `get` the best 3 IDs, then write the XAML from
-those real samples. Do not interleave searching with coding.
-
----
+Before writing XAML for a new surface: **one** batch of `winapp find-ui` queries for
+every control you need, `--id` the best few, then write XAML from those samples. Check
+API shapes with `winapp find-api … --project-dir src\Wintodo.App`. Do not interleave
+searching with coding. More: [docs/guides/ai-tooling.md](docs/guides/ai-tooling.md).
 
 ## Hard rules — never violate
 
 **Build and run**
-- Never run the packaged `.exe` directly. Always `BuildAndRun.ps1` or `winapp run`.
-- Invoke `BuildAndRun.ps1` **async** — it stays attached to the running app.
-- Never add `<WindowsPackageType>None</WindowsPackageType>` to work around a
-  launch failure.
-- Never delete `Package.appxmanifest`.
+- Never run the packaged `.exe` directly. Use `BuildAndRun.ps1` or `winapp run`.
+- Never add `<WindowsPackageType>None</WindowsPackageType>`. Never delete `Package.appxmanifest`.
 - Never target `AnyCPU`. x64 or ARM64 only.
-- Never pass `--version` to `dotnet add package` — take the latest stable.
-- When a build fails with no useful diagnostic, suspect the last-edited `.xaml`.
-  The XAML compiler under `dotnet build` swallows those errors; that is a known
-  gap, not a mystery. Do not thrash through unrelated guesses.
+- Never pass `--version` to `dotnet add package` — take the latest stable. Versions live
+  only in `Directory.Packages.props`.
+- `TreatWarningsAsErrors` is on. Fix warnings. Suppress only when the fix is impossible,
+  as narrowly as possible, with a comment, and record why in `docs/PROGRESS.md`.
 
 **Code**
 - `{x:Bind}` only, with an explicit `Mode`. Zero `{Binding}`.
-- Zero `IValueConverter`. Use `x:Bind` to static functions in code-behind.
-- Never `Converter={x:Null}` — it crashes at runtime.
+- Zero `IValueConverter` — `x:Bind` to static functions. Never `Converter={x:Null}`.
 - `TextBox` two-way bindings **must** include `UpdateSourceTrigger=PropertyChanged`.
-- Commands, not `Click`/`Tapped` handlers.
-- `VisualStateManager` for visual state, never code-behind property setting.
-- No reflection. No `Activator.CreateInstance`, no `Type.GetType`, no
-  assembly scanning, no reflection-based JSON. This app ships Native AOT at M9;
-  every reflective call is a time bomb.
-- `[ObservableProperty]` on **partial properties**, not the legacy field-backed
-  form — the WinUI analyzer flags the old pattern.
-- `DispatcherQueue` for UI marshalling. Never `Dispatcher`, never `CoreDispatcher`,
-  never `Window.Current`.
-- No UWP-era namespaces leaking into the app (`Windows.UI.Xaml.*`) except the
-  deliberate `Windows.UI.Notifications` scheduling path in M7 and
-  `Windows.Security.Credentials` in M13.
-- `TreatWarningsAsErrors` is on. Do not suppress a warning to get a green build —
-  fix it, or write down in `docs/PROGRESS.md` why suppression is correct.
+- Commands, not `Click`/`Tapped` handlers. `VisualStateManager` for visual state.
+- No reflection: no `Activator.CreateInstance`, `Type.GetType`, assembly scanning, or
+  reflection-based JSON (source-generated `JsonSerializerContext` only). Native AOT ships.
+- `[ObservableProperty]` on **partial properties**, not the field-backed form.
+- `DispatcherQueue` for UI marshalling. Never `Dispatcher`, `CoreDispatcher`, `Window.Current`.
+- No `Windows.UI.Xaml.*`. The only UWP-era APIs allowed: `Windows.UI.Notifications`
+  (scheduled toasts) and `Windows.Security.Credentials` (`PasswordVault`).
+- Anything time-dependent takes `IClock`. No `DateTimeOffset.Now` outside the clock.
+- Check every new dependency against the banned list in `PLAN.md` §3 and confirm it
+  is AOT-clean.
 
 **Design**
-- No hardcoded colours, corner radii, font sizes, or font weights.
+- No hardcoded colours, corner radii, font sizes, or font weights. Theme resources only.
 - Every spacing value is a multiple of 4.
-- Three theme dictionaries always: `Light`, `Dark`, `HighContrast`. Never
-  `x:Key="Default"`.
-- High-contrast dictionaries use only the 8 permitted `SystemColor*` brushes.
+- Three theme dictionaries: `Light`, `Dark`, `HighContrast`. Never `x:Key="Default"`.
+  High contrast uses only the 8 permitted `SystemColor*` brushes.
 - `AutomationProperties.AutomationId` on every interactive element, named
-  `Todo.<Area>.<Element>`. The UI test suite depends on these — treat them as API.
+  `Todo.<Area>.<Element>`. UI gates select by these — treat them as API.
+- Every user-visible string in `Strings/en-US/Resources.resw`.
+- v1 is a Microsoft To Do clone. Do not invent new navigation patterns.
 
 **Data**
 - Never store a credential in SQLite. `PasswordVault` only.
 - Never concatenate user input into SQL. Parameterised commands only.
 - Never destroy an iCalendar property you don't understand — round-trip it.
 - Soft delete plus a `change_log` row. Never hard-delete on a user action.
-
----
+- Schema changes are new forward migrations ([docs/guides/migrations.md](docs/guides/migrations.md)).
 
 ## Working style
 
-- Batch fixes. When a build produces 12 errors, read all 12, fix all 12, rebuild
-  once.
-- Do not add a dependency without checking it against the banned list in
-  `PLAN.md` §3 and confirming it is AOT-clean.
-- Do not "improve" the plan mid-milestone. If the plan is wrong, say so, write an
-  ADR in `docs/adr/`, get it acknowledged, then change it.
-- Do not report a milestone complete until its gate actually passes. If part of a
-  gate fails, say which part and why — a partial pass reported as a pass is worse
-  than a failure.
-- Measure, don't assume. Perf claims go in `docs/PERF.md` with real numbers from
-  `scripts/Measure-Perf.ps1`.
-- Commit per milestone at minimum, with a message naming the milestone.
-- Ask the human before: enabling Developer Mode (UAC), installing Visual Studio,
-  changing an ADR, or anything that touches their machine outside this repo.
+- Batch fixes: read all build errors, fix all, rebuild once.
+- Do not change the plan or an accepted decision silently. Say so, write an ADR,
+  get the owner's acknowledgement, then change it.
+- Never report a gate as passed unless it fully passed. Name what failed or was skipped.
+- Measure, don't assume. Perf claims need rows in `docs/PERF.md`.
+- Commit per milestone at minimum, naming the milestone.
+- Ask the owner before: enabling Developer Mode or Windows Sandbox (UAC), installing
+  Visual Studio, changing an ADR, or anything outside this repo.
 
----
+## Where things are
 
-## Project facts
-
-- Working directory: `the repository root`
-- `Wintodo` is a **placeholder name**. Keep every user-visible string in
-  `Strings/en-US/Resources.resw` so the rename is one find-replace plus a new
-  MSIX identity.
-- .NET SDK 10.0.302 is installed. Windows App SDK 2.3.1+ stable.
-- `winapp` CLI was **not** installed as of the last check — `/winui-setup` fixes that.
-- v1 is a Microsoft To Do clone. Do not invent new navigation patterns in v1.
+| Need to… | Go to |
+|---|---|
+| Change shell layout, panes, navigation | `src/Wintodo.App/Pages/ShellPage.xaml`, `ViewModels/ShellViewModel*.cs`, DESIGN §2–§5 |
+| Change the task list or a row | `Controls/TaskListView`, `Controls/TaskRow`, `ViewModels/TaskListViewModel.cs` |
+| Change the detail pane | `Controls/TaskDetailView`, `ViewModels/TaskDetailViewModel.cs`, DESIGN §5 |
+| Add or change a theme resource | `src/Wintodo.App/Themes/Colors.xaml`, DESIGN §9 |
+| Add a user-visible string | `src/Wintodo.App/Strings/en-US/Resources.resw` |
+| Change the schema | `src/Wintodo.Data/Migrations/`, [migrations guide](docs/guides/migrations.md) |
+| Change store queries | `src/Wintodo.Data/SqliteTaskStore.<Area>.cs`, `Wintodo.Core/Queries/` |
+| Change iCalendar import/export | `src/Wintodo.Core/Ical/`, `tests/fixtures/ical/`, DATA-MODEL §4 |
+| Change recurrence | `src/Wintodo.Core/Recurrence/RecurrenceRule.cs`, [ADR-006](docs/adr/ADR-006-recurrence-on-completion.md) |
+| Change CalDAV sync | `src/Wintodo.Sync/`, [ADR-002](docs/adr/ADR-002-caldav-webdav-sync.md) |
+| Toasts, badge, jump list, startup | `src/Wintodo.App/Services/WindowsIntegrationService.cs`, `StartupTaskService.cs` |
+| App startup and object graph | `src/Wintodo.App/App.xaml.cs` (`OnLaunched`) |
+| Perf budgets / measurement | `PLAN.md` §7, [performance guide](docs/guides/performance.md), `docs/PERF.md` |
+| Record a decision | [docs/adr/README.md](docs/adr/README.md) |
+| Update vendored skills | `scripts/Update-AgentSkills.ps1`, [ai-tooling guide](docs/guides/ai-tooling.md) |

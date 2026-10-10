@@ -232,7 +232,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         pending = pending
             .Where(reminder => reminder.Alarm.Action == AlarmAction.Display)
             .ToArray();
-        ToastNotifier notifier = ToastNotificationManager.CreateToastNotifier();
+        ToastNotifier notifier = CreateScheduledToastNotifier();
         IReadOnlyList<ScheduledToastNotification> scheduled =
             notifier.GetScheduledToastNotifications();
         var desiredKeys = pending
@@ -458,7 +458,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
 
     private async Task RemoveTaskNotificationsAsync(string taskUid)
     {
-        ToastNotifier notifier = ToastNotificationManager.CreateToastNotifier();
+        ToastNotifier notifier = CreateScheduledToastNotifier();
         foreach (ScheduledToastNotification notification in
                  notifier.GetScheduledToastNotifications())
         {
@@ -512,6 +512,14 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         TimeSpan offset = _clock.LocalTimeZone.GetUtcOffset(local);
         return new DateTimeOffset(local, offset);
     }
+
+    // AppNotificationManager has no scheduling API, so reminders deliberately use the
+    // UWP ScheduledToastNotification path (PLAN.md M7). WUI1001 recommends the
+    // replacement that cannot schedule; the suppression is recorded in docs/PROGRESS.md.
+#pragma warning disable WUI1001
+    private static ToastNotifier CreateScheduledToastNotifier() =>
+        ToastNotificationManager.CreateToastNotifier();
+#pragma warning restore WUI1001
 
     private static string GetArgument(
         IDictionary<string, string> arguments,

@@ -36,13 +36,14 @@ public sealed class SyncPersistenceTests
                 Href = "https://dav.example/cal/tasks/unknown.ics",
                 ETag = "\"v1\"",
             }],
-            []);
-        TodoTask local = (await fixture.Store.GetTaskForSyncAsync(remote.Uid))!;
+            [],
+            TestContext.Current.CancellationToken);
+        TodoTask local = (await fixture.Store.GetTaskForSyncAsync(remote.Uid, TestContext.Current.CancellationToken))!;
         local.Summary = "After edit";
-        await fixture.Store.UpdateTaskAsync(local);
+        await fixture.Store.UpdateTaskAsync(local, TestContext.Current.CancellationToken);
         byte[] payload = new IcalWriter(TimeZoneInfo.Utc).WriteCalendar(
             list,
-            [(await fixture.Store.GetTaskForSyncAsync(remote.Uid))!],
+            [(await fixture.Store.GetTaskForSyncAsync(remote.Uid, TestContext.Current.CancellationToken))!],
             fixture.Clock.UtcNow);
 
         string written = System.Text.Encoding.UTF8.GetString(payload);
@@ -59,7 +60,7 @@ public sealed class SyncPersistenceTests
         {
             ListId = list.Id,
             Summary = "Queue while offline",
-        });
+        }, TestContext.Current.CancellationToken);
         using var httpClient = new HttpClient(new ThrowingHandler());
         using var service = new CalDavSyncService(
             fixture.Store,
@@ -67,13 +68,13 @@ public sealed class SyncPersistenceTests
             fixture.Clock,
             httpClient);
 
-        SyncRunResult result = await service.SyncAccountAsync(account);
+        SyncRunResult result = await service.SyncAccountAsync(account, TestContext.Current.CancellationToken);
         IReadOnlyList<SyncChange> pending =
-            await fixture.Store.GetPendingSyncChangesAsync(account.Id);
+            await fixture.Store.GetPendingSyncChangesAsync(account.Id, TestContext.Current.CancellationToken);
 
         Assert.Equal(SyncRunStatus.Offline, result.Status);
         Assert.Contains(pending, change => change.EntityUid == task.Uid);
-        Assert.True((await fixture.Store.GetTaskForSyncAsync(task.Uid))!.IsDirty);
+        Assert.True((await fixture.Store.GetTaskForSyncAsync(task.Uid, TestContext.Current.CancellationToken))!.IsDirty);
     }
 
     [Fact]
@@ -85,22 +86,23 @@ public sealed class SyncPersistenceTests
         {
             ListId = list.Id,
             Summary = "First value",
-        });
+        }, TestContext.Current.CancellationToken);
         SyncChange snapshot = Assert.Single(
-            await fixture.Store.GetPendingSyncChangesAsync(account.Id),
+            await fixture.Store.GetPendingSyncChangesAsync(account.Id, TestContext.Current.CancellationToken),
             change => change.EntityUid == task.Uid);
         task.Summary = "Newer value";
-        await fixture.Store.UpdateTaskAsync(task);
+        await fixture.Store.UpdateTaskAsync(task, TestContext.Current.CancellationToken);
 
         await fixture.Store.MarkTaskChangeSyncedAsync(
             snapshot.Id,
             task.Uid,
             "https://dav.example/cal/tasks/task.ics",
-            "\"v1\"");
+            "\"v1\"",
+            TestContext.Current.CancellationToken);
 
-        TodoTask stored = (await fixture.Store.GetTaskForSyncAsync(task.Uid))!;
+        TodoTask stored = (await fixture.Store.GetTaskForSyncAsync(task.Uid, TestContext.Current.CancellationToken))!;
         IReadOnlyList<SyncChange> pending =
-            await fixture.Store.GetPendingSyncChangesAsync(account.Id);
+            await fixture.Store.GetPendingSyncChangesAsync(account.Id, TestContext.Current.CancellationToken);
         Assert.True(stored.IsDirty);
         Assert.Equal("Newer value", stored.Summary);
         Assert.Contains(pending, change => change.EntityUid == task.Uid);
@@ -126,16 +128,17 @@ public sealed class SyncPersistenceTests
                 Href = "https://dav.example/cal/tasks/conflict.ics",
                 ETag = "\"v1\"",
             }],
-            []);
-        TodoTask local = (await fixture.Store.GetTaskForSyncAsync(remote.Uid))!;
+            [],
+            TestContext.Current.CancellationToken);
+        TodoTask local = (await fixture.Store.GetTaskForSyncAsync(remote.Uid, TestContext.Current.CancellationToken))!;
         local.Summary = "Local value";
-        await fixture.Store.UpdateTaskAsync(local);
+        await fixture.Store.UpdateTaskAsync(local, TestContext.Current.CancellationToken);
         var conflict = new SyncConflict
         {
             AccountId = account.Id,
             ListId = list.Id,
             ListName = list.DisplayName,
-            LocalTask = (await fixture.Store.GetTaskForSyncAsync(remote.Uid))!,
+            LocalTask = (await fixture.Store.GetTaskForSyncAsync(remote.Uid, TestContext.Current.CancellationToken))!,
             RemoteTask = new TodoTask
             {
                 Uid = remote.Uid,
@@ -153,14 +156,14 @@ public sealed class SyncPersistenceTests
             fixture.Clock,
             httpClient);
 
-        await service.ResolveConflictAsync(conflict, SyncConflictChoice.KeepBoth);
+        await service.ResolveConflictAsync(conflict, SyncConflictChoice.KeepBoth, TestContext.Current.CancellationToken);
 
         IReadOnlyList<TodoTask> tasks = await fixture.Store.GetTasksAsync(new ListQuery
         {
             Kind = ListQueryKind.UserList,
             ListId = list.Id,
             IncludeCompleted = true,
-        });
+        }, TestContext.Current.CancellationToken);
         Assert.Equal(2, tasks.Count);
         Assert.Contains(tasks, task => task.Uid == remote.Uid && task.Summary == "Server value 2");
         TodoTask copy = Assert.Single(tasks, task => task.Uid != remote.Uid);
@@ -173,18 +176,19 @@ public sealed class SyncPersistenceTests
     {
         await using SyncFixture fixture = await SyncFixture.CreateAsync();
         (Account account, TodoList list) = await fixture.CreateMappedListAsync();
-        await fixture.Store.DeleteListAsync(list.Id);
+        await fixture.Store.DeleteListAsync(list.Id, TestContext.Current.CancellationToken);
 
         TodoList discovered = await fixture.Store.UpsertRemoteListAsync(
             account.Id,
             list.RemoteUrl!,
             list.DisplayName,
             "ctag-2",
-            "token-2");
+            "token-2",
+            TestContext.Current.CancellationToken);
 
         Assert.True(discovered.IsDeleted);
         SyncChange pending = Assert.Single(
-            await fixture.Store.GetPendingSyncChangesAsync(account.Id),
+            await fixture.Store.GetPendingSyncChangesAsync(account.Id, TestContext.Current.CancellationToken),
             change => change.EntityUid == list.Uid);
         Assert.Equal(ChangeOperation.Delete, pending.Operation);
         Assert.True(pending.List!.IsDeleted);

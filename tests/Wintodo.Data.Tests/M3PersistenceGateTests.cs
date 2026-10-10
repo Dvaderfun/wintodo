@@ -17,7 +17,7 @@ public sealed class M3PersistenceGateTests
 
         await using var connection = new SqliteConnection(
             $"Data Source={Path.GetFullPath(requestedPath)};Mode=ReadOnly");
-        await connection.OpenAsync();
+        await connection.OpenAsync(TestContext.Current.CancellationToken);
         await using (SqliteCommand listCommand = connection.CreateCommand())
         {
             listCommand.CommandText = """
@@ -27,7 +27,7 @@ public sealed class M3PersistenceGateTests
                 """;
             Assert.Equal(
                 (int)ListColor.Red,
-                Convert.ToInt32(await listCommand.ExecuteScalarAsync()));
+                Convert.ToInt32(await listCommand.ExecuteScalarAsync(TestContext.Current.CancellationToken)));
         }
 
         await using SqliteCommand command = connection.CreateCommand();
@@ -43,8 +43,8 @@ public sealed class M3PersistenceGateTests
             """;
         var active = new List<string>();
         var completed = new List<string>();
-        await using SqliteDataReader reader = await command.ExecuteReaderAsync();
-        while (await reader.ReadAsync())
+        await using SqliteDataReader reader = await command.ExecuteReaderAsync(TestContext.Current.CancellationToken);
+        while (await reader.ReadAsync(TestContext.Current.CancellationToken))
         {
             string summary = reader.GetString(0);
             if (reader.GetInt32(1) == (int)Wintodo.Core.Models.TaskStatus.Completed)

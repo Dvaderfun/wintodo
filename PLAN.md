@@ -1,20 +1,23 @@
 # Wintodo — Implementation Plan
 
-> **Audience:** OpenAI Codex (GPT 5.6 Sol) acting as the implementing agent.
-> **Working directory:** `the repository root`.
-> **Status:** approved plan, not yet started. Nothing exists in the repo yet.
+> **Audience:** any implementing agent (see `AGENTS.md`) and the human owner.
+> **Status:** approved plan, in progress. M0–M9 and M13 implemented (some gate rows
+> still open); M10–M12 not started.
+> Current state: top of `docs/PROGRESS.md`. Code as built: `ARCHITECTURE.md`.
+> Restructured by [ADR-010](docs/adr/ADR-010-ai-friendly-repo-docs.md): section
+> numbers are stable; moved sections are now pointers.
 
 ---
 
 ## 0. How to use this document
 
-1. Read this file end to end **before** running any command.
-2. Read `AGENTS.md` (operating rules — hard constraints, never violate).
-3. Read `docs/DESIGN.md` (visual spec) before writing any XAML.
-4. Read `docs/DATA-MODEL.md` before writing any storage or model code.
-5. Work milestone by milestone (M0 → M13). **Do not skip ahead.** Each milestone
-   has an acceptance gate. If the gate fails, fix before moving on.
-6. At the end of every milestone: update `docs/PROGRESS.md` with what shipped,
+1. `AGENTS.md` owns the reading order and the hard rules. Read it first.
+2. Read the milestone you are working on in §8 — its deliverables and gate —
+   plus §1 (scope) and §7 (budgets) when relevant. You do not need the rest of
+   this file to do a task.
+3. Work milestone by milestone. **Do not skip ahead.** Each milestone has an
+   acceptance gate. If the gate fails, fix before moving on.
+4. At the end of every milestone: update `docs/PROGRESS.md` with what shipped,
    what deviated from this plan, and why.
 
 `Wintodo` is a **placeholder name**. Final name is undecided. It appears as the
@@ -71,105 +74,21 @@ After parity, we iterate beyond To Do.
 Researched July 2026. These are locked decisions; changing them requires a new ADR
 in `docs/adr/`.
 
-### ADR-001 — Canonical task format: iCalendar `VTODO` (RFC 5545)
+Each decision is its own file in `docs/adr/` (moved verbatim from this section
+by ADR-010). Index and template: [`docs/adr/README.md`](docs/adr/README.md).
 
-`VTODO` is the only task format with real cross-vendor deployment. Everything we
-would ever want to sync with speaks it: Nextcloud Tasks, Radicale, Baïkal, SOGo,
-Fastmail, Thunderbird, Apple Reminders, Tasks.org (Android), DAVx⁵, todoman.
-
-Our domain model is a superset of `VTODO` and every field maps to a property.
-Anything we invent lives under an `X-WINTODO-*` property so it degrades to a
-no-op on other clients instead of corrupting them.
-
-### ADR-002 — Sync protocol (M13): CalDAV (RFC 4791) + WebDAV Sync (RFC 6578)
-
-- Discovery: `.well-known/caldav` → `current-user-principal` → `calendar-home-set`.
-- Collection enumeration: `PROPFIND` with `supported-calendar-component-set`,
-  filter to collections advertising `VTODO`.
-- Incremental sync: `sync-collection` `REPORT` (RFC 6578) with a stored
-  `sync-token`. Fallback for servers without it: `getctag` + `calendar-query`
-  `REPORT` returning `getetag`, then diff.
-- Conflict detection: per-resource `ETag`, `If-Match` on `PUT`, `If-None-Match: *`
-  on create.
-- Auth: HTTP Basic over TLS (app passwords — what Nextcloud/Fastmail actually
-  hand out), with an OAuth path deferred.
-- Alarms: RFC 9074 (`VALARM` with `UID`, `RELATED-TO` snooze relationships).
-
-### ADR-003 — JMAP is rejected for now
-
-`draft-ietf-jmap-tasks` reached revision 06 (Sept 2023) and **expired**;
-it is not an RFC. `draft-ietf-jmap-calendars` (rev 27) explicitly does **not**
-cover `VTODO`. Building on JMAP today means building on a dead draft with
-approximately zero server deployment for tasks. Revisit if it revives.
-
-### ADR-004 — JSCalendar (RFC 8984) shapes the *internal* model, not the wire
-
-RFC 8984 defines a `Task` object and is the modern, sane data model — nested
-`participants`, `alerts`, `locations`, proper `duration`/`recurrenceRules`.
-We shape our C# domain types after JSCalendar semantics (clearer than raw
-iCalendar) but we **serialise to `VTODO`** because that is what servers accept.
-The iCalendar↔JSCalendar conversion rules
-(`draft-ietf-calext-jscalendar-icalendar`, rev 23, still a draft) are our
-reference for the mapping table in `docs/DATA-MODEL.md`.
-
-### ADR-005 — De-facto interop conventions we must honour
-
-These are not in any RFC but every real client implements them. Getting them
-wrong makes us the app that breaks everyone else's data.
-
-| Convention | Meaning | Who uses it |
-|---|---|---|
-| `RELATED-TO;RELTYPE=PARENT:<uid>` | Subtask → parent link | Nextcloud Tasks, Tasks.org, Thunderbird, EM Task |
-| `X-APPLE-SORT-ORDER:<int>` | Manual sort position | Apple Reminders, Nextcloud Tasks, Tasks.org |
-| `CATEGORIES:a,b,c` | Tags | Nextcloud Tasks, Thunderbird, Tasks.org |
-| `PRIORITY` 1–4 / 5 / 6–9 | high / medium / low | Everyone |
-| `STATUS` + `PERCENT-COMPLETE` + `COMPLETED` | Completion state | Everyone |
-| **Unknown-property preservation** | Round-trip every property you don't understand | Mandatory. Non-negotiable. |
-
-Apple Reminders flattens `RELATED-TO` hierarchies to a single level — expected,
-document it in the sync UI, do not work around it.
-
-### ADR-006 — Recurrence handling on completion
-
-Microsoft To Do's model: completing a recurring task advances it to the next
-occurrence; the task itself never leaves the list.
-
-The v1 implementation: keep **one** master `VTODO` carrying `RRULE`. On
-completion, compute the next `DUE`/`DTSTART` from the rule, write the new dates,
-reset `STATUS` to `NEEDS-ACTION`, and append a row to a local
-`completion_history` table. This is what Tasks.org and Nextcloud Tasks do and is
-the most interoperable simple behaviour.
-
-Not doing: per-occurrence `RECURRENCE-ID` override instances. That is correct
-`VTODO` recurrence but is poorly supported by clients and adds a large amount of
-complexity for a v1. Revisit at M13 if server round-trips demand it.
-
-### ADR-007 — No iCalendar library dependency in v1
-
-`Ical.Net` v5 is the only serious .NET option; it is event-centric, its `VTODO`
-support is thin, and its Native AOT / trimming posture is unverified (targets
-listed as .NET 8 / .NET Standard). We do **not** take the dependency for v1.
-
-M6 ships a small purpose-built iCalendar reader/writer in
-`Wintodo.Core/Ical/` covering exactly the property set in `docs/DATA-MODEL.md`
-plus verbatim passthrough of everything else. Line unfolding, `\`-escaping,
-parameter parsing, `DATE` vs `DATE-TIME` vs `DATE-TIME;TZID`, and `RRULE`
-round-trip must be unit-tested against real exports from Nextcloud Tasks,
-Tasks.org and Apple Reminders (fixtures committed under `tests/fixtures/ical/`).
-Budget: ~700 lines plus tests. Re-evaluate `Ical.Net` at M13 only if the
-hand-rolled parser proves inadequate; the criteria are (a) it passes the AOT
-publish gate warning-free and (b) it round-trips the fixture corpus losslessly.
-
-### ADR-008 — Performance budgets re-baselined to the measured WinUI 3 floor
-
-The §7 startup and working-set budgets were locked before any WinUI 3 code
-existed and missed the measured Native AOT result by 1.7×–5.2×. A startup stage
-trace attributes 76–78% of startup to reaching the first rendered frame, most of
-it inside first-use XAML runtime and window construction, which is not reachable
-by app-side work. §7 is re-baselined against that floor, the startup gate is
-split into a total ceiling plus a gated app-work segment, and working-set gates
-move to the settled +30 s sample. Full reasoning, measured evidence, reference
-machine, and follow-ups: [`docs/adr/ADR-008-perf-budget-rebaseline.md`](docs/adr/ADR-008-perf-budget-rebaseline.md).
+| ADR | Decision |
+|---|---|
+| [ADR-001](docs/adr/ADR-001-ical-vtodo-canonical-format.md) | Canonical task format: iCalendar `VTODO` (RFC 5545) |
+| [ADR-002](docs/adr/ADR-002-caldav-webdav-sync.md) | Sync protocol (M13): CalDAV (RFC 4791) + WebDAV Sync (RFC 6578) |
+| [ADR-003](docs/adr/ADR-003-jmap-rejected.md) | JMAP is rejected for now |
+| [ADR-004](docs/adr/ADR-004-jscalendar-internal-model.md) | JSCalendar (RFC 8984) shapes the *internal* model, not the wire |
+| [ADR-005](docs/adr/ADR-005-interop-conventions.md) | De-facto interop conventions we must honour |
+| [ADR-006](docs/adr/ADR-006-recurrence-on-completion.md) | Recurrence handling on completion |
+| [ADR-007](docs/adr/ADR-007-no-icalendar-library.md) | No iCalendar library dependency in v1 |
+| [ADR-008](docs/adr/ADR-008-perf-budget-rebaseline.md) | Performance budgets re-baselined to the measured WinUI 3 floor |
+| [ADR-009](docs/adr/ADR-009-list-emoji-icons.md) | Optional emoji icons for user lists |
+| [ADR-010](docs/adr/ADR-010-ai-friendly-repo-docs.md) | AI-friendly repo layout, vendored skills, toolchain 0.7 |
 
 ---
 
@@ -177,18 +96,18 @@ machine, and follow-ups: [`docs/adr/ADR-008-perf-budget-rebaseline.md`](docs/adr
 
 | Layer | Choice | Why |
 |---|---|---|
-| UI framework | **WinUI (WinUI 3)**, Windows App SDK **2.3.1+ stable** | Current native Windows stack. Microsoft now writes "WinUI" for what was WinUI 3. |
-| Runtime | **.NET 10** (`net10.0-windows10.0.26100.0`) | Current LTS-class SDK on the machine (10.0.302 installed). Do not use .NET 11 previews. |
+| UI framework | **WinUI (WinUI 3)**, Windows App SDK **2.3.1+ stable** (2.5.1 since 2026-10-10) | Current native Windows stack. Microsoft now writes "WinUI" for what was WinUI 3. |
+| Runtime | **.NET 10** (`net10.0-windows10.0.26100.0`) | Current LTS. SDK pinned in `global.json` (10.0.401 since 2026-10-10). Do not use .NET 11 previews; .NET 11 is STS — stay on the LTS line. |
 | Language | C# 14 | Partial properties (required by the modern `[ObservableProperty]` pattern), collection expressions. |
 | Packaging | **Packaged MSIX**, x64 + ARM64 | Required for `winapp run`, toasts, jump lists, badges, Store. |
 | MVVM | `CommunityToolkit.Mvvm` 8.4+ | Source-generated, zero reflection, AOT-clean. Use **partial properties**, not the legacy field-backed `[ObservableProperty]` — the WinUI analyzer flags the old form. |
-| DI | `Microsoft.Extensions.DependencyInjection` | Explicit registration only. **No assembly scanning** (reflection = AOT break). |
+| DI | `Microsoft.Extensions.DependencyInjection` | Explicit registration only. **No assembly scanning** (reflection = AOT break). *As built: manual constructor wiring in `App.OnLaunched`, no container — see `ARCHITECTURE.md`.* |
 | Storage | `Microsoft.Data.Sqlite` + `SQLitePCLRaw.bundle_e_sqlite3` | Raw ADO.NET. Trim/AOT compatibility fixed in the .NET 8 wave. |
 | ORM | **None.** Hand-written mappers. | EF Core is reflection-heavy, costs startup time and tens of MB of working set. This app has ~8 tables. |
 | Search | SQLite **FTS5** | Ships in `bundle_e_sqlite3`. No extra dependency, no in-memory index. |
 | JSON | `System.Text.Json` **source-generated contexts only** | Settings + export only. `JsonSerializerContext`, never reflection-based overloads. |
 | Extra controls | `CommunityToolkit.WinUI.Controls.*` (Segmented, SettingsControls) | v8.2+ is AOT-clean. Pull individual packages, never the metapackage. |
-| Tests | `xunit` + `winapp ui` batch scripts | Unit tests for Core/Data; UI automation for the shell. |
+| Tests | `xunit` (v3 on Microsoft Testing Platform since 2026-10-10) + `winapp ui` batch scripts | Unit tests for Core/Data; UI automation for the shell. |
 
 **Banned dependencies** (each breaks AOT, RAM, or both): `Newtonsoft.Json`,
 EF Core, AutoMapper, any `Activator.CreateInstance`-based factory, any
@@ -231,133 +150,36 @@ from M9 onward.
 
 ## 4. Machine setup (M0 prerequisite work)
 
-### 4.1 Install `win-dev-skills` into Codex
+Moved and updated by ADR-010:
 
-The Microsoft `win-dev-skills` plugin is the source of truth for the WinUI inner
-loop. Install it first — the skills change how everything below is done.
-
-```powershell
-# Prereqs for the plugin system
-winget install --id Git.Git --exact --silent --accept-package-agreements --accept-source-agreements
-```
-
-Then, per the repo's Codex instructions: **add the `microsoft/win-dev-skills`
-marketplace, then enable the `winui` plugin from the plugin directory.** Codex
-has no "agents" concept, so the `winui-dev` orchestrator agent is not exposed —
-invoke the skills by name instead (`/winui-setup`, `/winui-design`,
-`/winui-dev-workflow`, …).
-
-If the marketplace flow is unavailable in the installed Codex build, fall back to
-a manual install — clone the repo and copy the skill folders into the Codex
-skills directory:
-
-```powershell
-git clone --depth 1 https://github.com/microsoft/win-dev-skills $env:TEMP\win-dev-skills
-# skills live at: $env:TEMP\win-dev-skills\plugins\winui\skills\*
-# copy each <skill-name>\ folder (SKILL.md + references\ + payload binaries)
-# into the Codex skills directory, preserving folder structure and the
-# bundled winui-search.exe / BuildAndRun.ps1 / analyzer DLL payloads.
-```
-
-Pin to a release tag if `main` proves unstable:
-`https://github.com/microsoft/win-dev-skills.git#v0.3.0`.
-
-The plugin is **preview / v0.x with no SemVer commitment** — skill names and
-layout can change under you. If a skill name in this plan does not resolve, list
-the installed skills and map by description rather than guessing.
-
-### 4.2 Run `/winui-setup`
-
-It is idempotent and checks before installing. It handles:
-
-| Tool | Minimum | Target |
-|---|---|---|
-| .NET SDK | 8.0 | 10.0 (**already present: 10.0.302**) |
-| WinApp CLI | 0.3 | latest (`winget install Microsoft.WinAppCLI`, then `winget upgrade`) — **not currently installed** |
-| WinUI 3 templates | any | latest (`dotnet new install Microsoft.WindowsAppSDK.WinUI.CSharp.Templates`) |
-| Developer Mode | enabled | enabled — **ask the human before triggering UAC** |
-
-Optional but recommended for the human to install (do **not** install it
-yourself — multi-GB): Visual Studio 2026 with the WinUI workload, which gives
-real XAML compiler diagnostics that `dotnet build` currently swallows.
-
-```powershell
-winget install Microsoft.VisualStudio.Community --override "--add Microsoft.VisualStudio.Workload.Universal"
-```
-
-### 4.3 Verify
-
-```powershell
-dotnet --list-sdks
-winapp --version                      # must parse >= 0.3
-dotnet new list winui                 # must include winui-mvvm
-(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock' -Name AllowDevelopmentWithoutDevLicense).AllowDevelopmentWithoutDevLicense  # 1
-```
+- Prerequisites, build, run, AOT publish: [`docs/guides/build-and-run.md`](docs/guides/build-and-run.md).
+- WinUI skills are vendored in the repo at a pinned win-dev-skills tag
+  (`.agents/skills/`, mirrored to `.claude/skills/`), refreshed with
+  `scripts/Update-AgentSkills.ps1`: [`docs/guides/ai-tooling.md`](docs/guides/ai-tooling.md).
+- Toolchain: .NET SDK 10.0.4xx, WinApp CLI **0.7+**, Developer Mode (ask the
+  human before triggering UAC). Visual Studio is optional.
 
 ---
 
 ## 5. Repository layout
 
-```
-wintodo/
-  Wintodo.sln
-  Directory.Build.props            # shared: TFM, nullable, AOT analyzers, warnings-as-errors
-  Directory.Packages.props         # central package version management
-  global.json                      # pin SDK 10.0.3xx, rollForward latestFeature
-  .editorconfig                    # style + analyzer severities
-  AGENTS.md                        # operating rules for Codex — read every session
-  PLAN.md                          # this file
-  README.md
-  docs/
-    DESIGN.md                      # visual spec — read before any XAML
-    DATA-MODEL.md                  # domain model, SQLite schema, VTODO mapping
-    PROGRESS.md                    # milestone log, written by the agent
-    PERF.md                        # measurement log: every run's numbers
-    adr/                           # architecture decision records, ADR-00N-*.md
-  src/
-    Wintodo.Core/                  # netstandard-free: net10.0, no UI references
-      Models/                      # TodoTask, TodoList, Step, Alarm, RecurrenceRule, ...
-      Recurrence/                  # RRULE parse + next-occurrence computation
-      Ical/                        # M6: iCalendar reader/writer
-      Queries/                     # smart-list + filter query descriptors
-      Services/                    # interfaces only (ITaskStore, IReminderScheduler, IClock)
-    Wintodo.Data/                  # net10.0, SQLite only, no UI references
-      Migrations/                  # 001_init.sql, 002_*.sql — embedded resources
-      SqliteTaskStore.cs
-      Mapping/                     # hand-written row <-> model mappers
-    Wintodo.App/                   # the WinUI 3 app — the only project with XAML
-      App.xaml(.cs)
-      MainWindow.xaml(.cs)
-      Views/
-        ShellPage.xaml             # NavigationView host
-        TaskListView.xaml          # centre pane
-        TaskDetailView.xaml        # right pane (x:Load deferred)
-        SettingsPage.xaml
-        Controls/                  # TaskRow, CompletionCircle, AddTaskComposer, DateChip, ...
-      ViewModels/
-      Themes/
-        Generic.xaml               # control styles
-        Colors.xaml                # Light / Dark / HighContrast dictionaries
-      Strings/en-US/Resources.resw
-      Assets/
-      Package.appxmanifest
-  tests/
-    Wintodo.Core.Tests/
-    Wintodo.Data.Tests/
-    fixtures/ical/                 # real exports from Nextcloud, Tasks.org, Apple
-    ui/                            # winapp ui batch scripts
-  scripts/
-    Measure-Perf.ps1               # working set + cold start, appends to docs/PERF.md
-    Publish-Aot.ps1                # release AOT publish + size report
-```
+The current tree, with what each folder holds, is in
+[`ARCHITECTURE.md`](ARCHITECTURE.md#projects). The original M0 tree is in git
+history. Since M0 the repo also gained `src/Wintodo.Sync/` (M13),
+`tests/Wintodo.Sync.Tests/`, `docs/guides/`, `docs/README.md`, `ARCHITECTURE.md`,
+`CLAUDE.md`, `.agents/skills/`, `.claude/skills/`, `.mcp.json` and `.github/workflows/`.
 
 Rules: `Wintodo.Core` references nothing but the BCL. `Wintodo.Data` references
-`Wintodo.Core` + `Microsoft.Data.Sqlite`. `Wintodo.App` references both. No
-project references point backwards. UI types never appear below `Wintodo.App`.
+`Wintodo.Core` + `Microsoft.Data.Sqlite`. `Wintodo.Sync` references `Wintodo.Core`
+only. `Wintodo.App` references all three. No project references point backwards.
+UI types never appear below `Wintodo.App`.
 
 ---
 
 ## 6. Architecture
+
+This section is the design rationale. The code as built, including where it
+diverges from this section, is [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ### 6.1 Shell composition
 
@@ -496,6 +318,10 @@ hydration, initial query — and is the row that a real regression trips.
 Each milestone: **Goal → Deliverables → Skills to invoke → Acceptance gate.**
 A milestone is done only when its gate passes. Record the result in
 `docs/PROGRESS.md`.
+
+Tooling named in completed milestones (`winui-search.exe`, installing skills into
+Codex, `BuildAndRun.ps1` flags) is as it was at the time. Current commands and
+skills are in `AGENTS.md` and `docs/guides/`.
 
 ---
 
@@ -917,8 +743,8 @@ reminders become untestable.
 
 | Risk | Mitigation |
 |---|---|
-| XAML compiler under `dotnet build` gives no diagnostic on malformed XAML | Always use `BuildAndRun.ps1` (prefers MSBuild). Ask the human to install VS 2026 + WinUI workload. When a build fails with no error text, suspect the last-edited `.xaml`, not the C#. |
-| `win-dev-skills` is preview v0.x, skill names can change | Pin to a tag if `main` breaks. Map by description if a name doesn't resolve. |
+| ~~XAML compiler under `dotnet build` gives no diagnostic on malformed XAML~~ | Retired by ADR-010: fixed in Windows App SDK 2.1.3; we are on 2.5.1. |
+| `win-dev-skills` is preview v0.x; skill names and tooling can change (0.7 removed `BuildAndRun.ps1` and the bundled analyzer) | Skills are vendored at a pinned tag; bump deliberately with `scripts/Update-AgentSkills.ps1` after reading the changelog. Map by description if a name doesn't resolve. |
 | Native AOT surfaces a broken dependency late | `IsAotCompatible` + analyzers from M0; a weekly `dotnet publish -p:PublishAot=true` check from M1. |
 | Scheduled toasts are a UWP-API workaround, not a first-class WinAppSDK feature | Isolate behind `IReminderScheduler`; if the SDK ships a real scheduling API, swap one implementation. |
 | Hand-rolled iCalendar parser has edge cases | Real-world fixture corpus + strict round-trip test at M6, long before network sync. |
@@ -934,10 +760,11 @@ Everything else is decided.
 
 | Topic | Where |
 |---|---|
-| Windows App SDK 2.3.1 release notes | https://learn.microsoft.com/windows/apps/windows-app-sdk/release-notes/windows-app-sdk-2-0 |
+| Windows App SDK 2.x release notes | https://learn.microsoft.com/windows/apps/windows-app-sdk/release-notes/windows-app-sdk-2-0 |
 | What's new for Windows developers | https://learn.microsoft.com/windows/apps/whats-new/whats-new-for-developers |
 | `win-dev-skills` | https://github.com/microsoft/win-dev-skills |
 | WinApp CLI | https://github.com/microsoft/winappcli |
+| Microsoft Learn MCP server | https://learn.microsoft.com/api/mcp |
 | WinUI title bar / `TitleBar` control | https://learn.microsoft.com/windows/apps/develop/title-bar |
 | Materials (Mica / Acrylic) | https://learn.microsoft.com/windows/apps/develop/ui/materials |
 | Windows app performance docs | https://learn.microsoft.com/windows/apps/develop/performance/ |

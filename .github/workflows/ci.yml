@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Wintodo.sln -p:Platform=x64
+
+      - name: Build (x64 Debug, warnings as errors, WinUI + AOT analyzers)
+        run: dotnet build Wintodo.sln -p:Platform=x64 -warnaserror --no-restore
+
+      - name: Unit tests (Core, Data, Sync — xunit v3 on Microsoft Testing Platform)
+        run: >
+          dotnet test --solution Wintodo.sln -p:Platform=x64 --no-build
+          --report-trx --coverage --results-directory ${{ github.workspace }}/TestResults
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: TestResults/

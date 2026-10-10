@@ -9,8 +9,8 @@ public sealed class TaskStoreTests
     public async Task TaskLifecycle_RoundTripsAllOwnedCollectionsAndSearches()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList source = await fixture.Store.CreateListAsync("Source");
-        TodoList destination = await fixture.Store.CreateListAsync("Destination");
+        TodoList source = await fixture.Store.CreateListAsync("Source", cancellationToken: TestContext.Current.CancellationToken);
+        TodoList destination = await fixture.Store.CreateListAsync("Destination", cancellationToken: TestContext.Current.CancellationToken);
         var task = new TodoTask
         {
             ListId = source.Id,
@@ -40,8 +40,8 @@ public sealed class TaskStoreTests
             MimeType = "text/csv",
         });
 
-        TodoTask created = await fixture.Store.CreateTaskAsync(task);
-        TodoTask stored = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(created.Uid));
+        TodoTask created = await fixture.Store.CreateTaskAsync(task, TestContext.Current.CancellationToken);
+        TodoTask stored = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(created.Uid, TestContext.Current.CancellationToken));
 
         Assert.True(stored.Id > 0);
         Assert.Equal(source.Id, stored.ListId);
@@ -50,7 +50,7 @@ public sealed class TaskStoreTests
         Assert.Single(stored.Alarms);
         Assert.Single(stored.Attachments);
         Assert.True(stored.IsDirty);
-        Assert.Single(await fixture.Store.SearchAsync("quarter rep"));
+        Assert.Single(await fixture.Store.SearchAsync("quarter rep", cancellationToken: TestContext.Current.CancellationToken));
 
         stored.Summary = "Publish quarterly report";
         stored.Description = "Final reviewed copy";
@@ -66,44 +66,44 @@ public sealed class TaskStoreTests
             RelativePath = "attachments/report.pdf",
             SizeBytes = 9000,
         });
-        await fixture.Store.UpdateTaskAsync(stored);
+        await fixture.Store.UpdateTaskAsync(stored, TestContext.Current.CancellationToken);
 
-        TodoTask updated = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(created.Uid));
+        TodoTask updated = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(created.Uid, TestContext.Current.CancellationToken));
         Assert.Equal("Publish quarterly report", updated.Summary);
         Assert.Equal("Published", Assert.Single(updated.Categories));
         Assert.Equal(1, updated.Sequence);
         Assert.Single(updated.Alarms);
         Assert.Single(updated.Attachments);
-        Assert.Single(await fixture.Store.SearchAsync("reviewed"));
+        Assert.Single(await fixture.Store.SearchAsync("reviewed", cancellationToken: TestContext.Current.CancellationToken));
 
-        await fixture.Store.ReorderTaskAsync(updated.Uid, 42.5);
-        await fixture.Store.MoveTaskAsync(updated.Uid, destination.Id);
-        TodoTask moved = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(updated.Uid));
+        await fixture.Store.ReorderTaskAsync(updated.Uid, 42.5, TestContext.Current.CancellationToken);
+        await fixture.Store.MoveTaskAsync(updated.Uid, destination.Id, cancellationToken: TestContext.Current.CancellationToken);
+        TodoTask moved = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(updated.Uid, TestContext.Current.CancellationToken));
         Assert.Equal(destination.Id, moved.ListId);
         Assert.Equal(1, moved.SortOrder);
 
-        await fixture.Store.DeleteTaskAsync(moved.Uid);
-        Assert.Null(await fixture.Store.GetTaskAsync(moved.Uid));
-        await fixture.Store.RestoreTaskAsync(moved.Uid);
-        Assert.NotNull(await fixture.Store.GetTaskAsync(moved.Uid));
+        await fixture.Store.DeleteTaskAsync(moved.Uid, TestContext.Current.CancellationToken);
+        Assert.Null(await fixture.Store.GetTaskAsync(moved.Uid, TestContext.Current.CancellationToken));
+        await fixture.Store.RestoreTaskAsync(moved.Uid, TestContext.Current.CancellationToken);
+        Assert.NotNull(await fixture.Store.GetTaskAsync(moved.Uid, TestContext.Current.CancellationToken));
     }
 
     [Fact]
     public async Task Steps_AreOrderedAndRemainInParentList()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList list = await fixture.Store.CreateListAsync("Project");
+        TodoList list = await fixture.Store.CreateListAsync("Project", cancellationToken: TestContext.Current.CancellationToken);
         TodoTask parent = await fixture.Store.CreateTaskAsync(new TodoTask
         {
             ListId = list.Id,
             Summary = "Ship release",
-        });
+        }, TestContext.Current.CancellationToken);
 
-        TodoTask first = await fixture.Store.AddStepAsync(parent.Uid, "Build");
-        TodoTask second = await fixture.Store.AddStepAsync(parent.Uid, "Test");
-        await fixture.Store.ReorderStepAsync(second.Uid, 0.5);
+        TodoTask first = await fixture.Store.AddStepAsync(parent.Uid, "Build", TestContext.Current.CancellationToken);
+        TodoTask second = await fixture.Store.AddStepAsync(parent.Uid, "Test", TestContext.Current.CancellationToken);
+        await fixture.Store.ReorderStepAsync(second.Uid, 0.5, TestContext.Current.CancellationToken);
 
-        IReadOnlyList<TodoTask> children = await fixture.Store.GetChildrenAsync(parent.Uid);
+        IReadOnlyList<TodoTask> children = await fixture.Store.GetChildrenAsync(parent.Uid, TestContext.Current.CancellationToken);
         Assert.Equal([second.Uid, first.Uid], children.Select(item => item.Uid));
         Assert.All(children, child =>
         {
@@ -116,7 +116,7 @@ public sealed class TaskStoreTests
     public async Task SmartListsAndSorts_ReturnExpectedTopLevelTasks()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList list = await fixture.Store.CreateListAsync("Inbox");
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: TestContext.Current.CancellationToken);
         TodoTask today = await AddTaskAsync(
             fixture,
             list.Id,
@@ -142,8 +142,8 @@ public sealed class TaskStoreTests
             "Completed",
             priority: 0,
             due: null);
-        await fixture.Store.CompleteTaskAsync(completed.Uid);
-        await fixture.Store.AddStepAsync(today.Uid, "Hidden child");
+        await fixture.Store.CompleteTaskAsync(completed.Uid, TestContext.Current.CancellationToken);
+        await fixture.Store.AddStepAsync(today.Uid, "Hidden child", TestContext.Current.CancellationToken);
 
         Assert.Equal(today.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
         Assert.Equal(important.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.Important)).Uid);
@@ -157,10 +157,10 @@ public sealed class TaskStoreTests
             SortMode = SortMode.Alphabetical,
             Filter = "a",
             Limit = 10,
-        });
+        }, TestContext.Current.CancellationToken);
         Assert.Equal(["Important", "Planned", "Today"], active.Select(item => item.Summary));
 
-        IReadOnlyList<TodoTask> listTasks = await fixture.Store.GetTasksAsync(ListQuery.ForList(list.Id));
+        IReadOnlyList<TodoTask> listTasks = await fixture.Store.GetTasksAsync(ListQuery.ForList(list.Id), TestContext.Current.CancellationToken);
         Assert.Equal(4, listTasks.Count);
     }
 
@@ -168,18 +168,18 @@ public sealed class TaskStoreTests
     public async Task CompleteAndUncomplete_NonRecurringTask_UpdatesStatus()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList list = await fixture.Store.CreateListAsync("Inbox");
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: TestContext.Current.CancellationToken);
         TodoTask task = await AddTaskAsync(fixture, list.Id, "One-off", 0, null);
 
-        await fixture.Store.CompleteTaskAsync(task.Uid);
-        TodoTask completed = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(task.Uid));
+        await fixture.Store.CompleteTaskAsync(task.Uid, TestContext.Current.CancellationToken);
+        TodoTask completed = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(task.Uid, TestContext.Current.CancellationToken));
         Assert.Equal(Wintodo.Core.Models.TaskStatus.Completed, completed.Status);
         Assert.Equal(100, completed.PercentComplete);
         Assert.Equal(fixture.Clock.UtcNow, completed.CompletedAt);
 
         fixture.Clock.UtcNow = fixture.Clock.UtcNow.AddMinutes(5);
-        await fixture.Store.UncompleteTaskAsync(task.Uid);
-        TodoTask reopened = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(task.Uid));
+        await fixture.Store.UncompleteTaskAsync(task.Uid, TestContext.Current.CancellationToken);
+        TodoTask reopened = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(task.Uid, TestContext.Current.CancellationToken));
         Assert.Equal(Wintodo.Core.Models.TaskStatus.NeedsAction, reopened.Status);
         Assert.Equal(0, reopened.PercentComplete);
         Assert.Null(reopened.CompletedAt);
@@ -189,19 +189,19 @@ public sealed class TaskStoreTests
     public async Task InvalidTaskData_IsRejected()
     {
         await using StoreFixture fixture = await StoreFixture.CreateAsync();
-        TodoList list = await fixture.Store.CreateListAsync("Inbox");
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: TestContext.Current.CancellationToken);
 
         await Assert.ThrowsAsync<ArgumentException>(
-            () => fixture.Store.CreateTaskAsync(new TodoTask { ListId = list.Id }));
+            () => fixture.Store.CreateTaskAsync(new TodoTask { ListId = list.Id }, TestContext.Current.CancellationToken));
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(
             () => fixture.Store.CreateTaskAsync(new TodoTask
             {
                 ListId = list.Id,
                 Summary = "Bad priority",
                 Priority = 10,
-            }));
+            }, TestContext.Current.CancellationToken));
         await Assert.ThrowsAsync<KeyNotFoundException>(
-            () => fixture.Store.MoveTaskAsync("missing", list.Id));
+            () => fixture.Store.MoveTaskAsync("missing", list.Id, cancellationToken: TestContext.Current.CancellationToken));
     }
 
     private static async Task<TodoTask> AddTaskAsync(

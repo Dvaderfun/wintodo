@@ -1,10 +1,28 @@
 # Wintodo
 
-Wintodo is a packaged WinUI task application targeting Microsoft To Do parity.
-The product plan is in `PLAN.md`; contributor and automation rules are in
-`AGENTS.md`.
+A native Windows task manager: a packaged WinUI 3 app that starts as a faithful
+Microsoft To Do clone, built on open standards (iCalendar `VTODO`, CalDAV)
+instead of a proprietary backend. Native AOT, x64 and ARM64. `Wintodo` is a
+placeholder name.
 
-## Build
+## Build and run
 
-Prerequisites are documented in `PLAN.md` section 4. Build and launch the app
-from the repository root with `.\BuildAndRun.ps1`.
+Prerequisites: .NET SDK 10.0.4xx, WinApp CLI 0.7+, Developer Mode.
+
+```powershell
+dotnet build Wintodo.sln -p:Platform=x64 -warnaserror
+dotnet test  Wintodo.sln -p:Platform=x64
+.\BuildAndRun.ps1
+```
+
+Details: [docs/guides/build-and-run.md](docs/guides/build-and-run.md).
+
+## Where to read next
+
+| You want | Read |
+|---|---|
+| How the code is organised | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| Product scope, milestones, budgets | [PLAN.md](PLAN.md) |
+| What is done and what is open | [docs/PROGRESS.md](docs/PROGRESS.md) — "Current state" |
+| Every other doc | [docs/README.md](docs/README.md) |
+| Rules for AI coding agents | [AGENTS.md](AGENTS.md) |

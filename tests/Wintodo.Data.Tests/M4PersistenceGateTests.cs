@@ -24,8 +24,8 @@ public sealed class M4PersistenceGateTests
         {
             await using (var store = new SqliteTaskStore(databasePath, clock))
             {
-                await store.InitializeAsync();
-                TodoList list = await store.CreateListAsync("M4 gate");
+                await store.InitializeAsync(TestContext.Current.CancellationToken);
+                TodoList list = await store.CreateListAsync("M4 gate", cancellationToken: TestContext.Current.CancellationToken);
                 TodoTask task = await store.CreateTaskAsync(new TodoTask
                 {
                     ListId = list.Id,
@@ -35,7 +35,7 @@ public sealed class M4PersistenceGateTests
                     Due = firstDue,
                     RRule = "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU",
                     MyDayDate = clock.Today,
-                });
+                }, TestContext.Current.CancellationToken);
                 taskUid = task.Uid;
                 task.Alarms.Add(new TaskAlarm
                 {
@@ -51,27 +51,27 @@ public sealed class M4PersistenceGateTests
                     MimeType = "text/plain",
                     Added = clock.UtcNow,
                 });
-                await store.UpdateTaskAsync(task);
+                await store.UpdateTaskAsync(task, TestContext.Current.CancellationToken);
 
-                TodoTask editedStep = await store.AddStepAsync(task.Uid, "Draft");
+                TodoTask editedStep = await store.AddStepAsync(task.Uid, "Draft", TestContext.Current.CancellationToken);
                 editedStep.Summary = "Draft release notes";
-                await store.UpdateTaskAsync(editedStep);
+                await store.UpdateTaskAsync(editedStep, TestContext.Current.CancellationToken);
                 editedStepUid = editedStep.Uid;
 
-                TodoTask completedStep = await store.AddStepAsync(task.Uid, "Run tests");
-                await store.CompleteTaskAsync(completedStep.Uid);
-                await store.ReorderStepAsync(completedStep.Uid, 0.5);
+                TodoTask completedStep = await store.AddStepAsync(task.Uid, "Run tests", TestContext.Current.CancellationToken);
+                await store.CompleteTaskAsync(completedStep.Uid, TestContext.Current.CancellationToken);
+                await store.ReorderStepAsync(completedStep.Uid, 0.5, TestContext.Current.CancellationToken);
                 completedStepUid = completedStep.Uid;
 
-                TodoTask deletedStep = await store.AddStepAsync(task.Uid, "Temporary");
-                await store.DeleteTaskAsync(deletedStep.Uid);
+                TodoTask deletedStep = await store.AddStepAsync(task.Uid, "Temporary", TestContext.Current.CancellationToken);
+                await store.DeleteTaskAsync(deletedStep.Uid, TestContext.Current.CancellationToken);
             }
 
             await using (var reopened = new SqliteTaskStore(databasePath, clock))
             {
-                await reopened.InitializeAsync();
+                await reopened.InitializeAsync(TestContext.Current.CancellationToken);
                 TodoTask stored = Assert.IsType<TodoTask>(
-                    await reopened.GetTaskAsync(taskUid));
+                    await reopened.GetTaskAsync(taskUid, TestContext.Current.CancellationToken));
                 Assert.Equal("Ship the detail pane", stored.Summary);
                 Assert.Equal("Round-trip the complete detail surface.", stored.Description);
                 Assert.Equal((int)TaskPriority.High, stored.Priority);
@@ -81,16 +81,16 @@ public sealed class M4PersistenceGateTests
                 Assert.Equal(firstDue.AddHours(-1), Assert.Single(stored.Alarms).Trigger);
                 Assert.Equal("gate.txt", Assert.Single(stored.Attachments).FileName);
 
-                IReadOnlyList<TodoTask> steps = await reopened.GetChildrenAsync(taskUid);
+                IReadOnlyList<TodoTask> steps = await reopened.GetChildrenAsync(taskUid, TestContext.Current.CancellationToken);
                 Assert.Equal([completedStepUid, editedStepUid], steps.Select(step => step.Uid));
                 Assert.Equal(
                     Wintodo.Core.Models.TaskStatus.Completed,
                     steps[0].Status);
                 Assert.Equal("Draft release notes", steps[1].Summary);
 
-                await reopened.CompleteTaskAsync(taskUid);
+                await reopened.CompleteTaskAsync(taskUid, TestContext.Current.CancellationToken);
                 TodoTask advanced = Assert.IsType<TodoTask>(
-                    await reopened.GetTaskAsync(taskUid));
+                    await reopened.GetTaskAsync(taskUid, TestContext.Current.CancellationToken));
                 Assert.Equal(firstDue.AddDays(14), advanced.Due);
                 Assert.Equal(
                     Wintodo.Core.Models.TaskStatus.NeedsAction,
@@ -98,12 +98,12 @@ public sealed class M4PersistenceGateTests
             }
 
             await using var connection = new SqliteConnection($"Data Source={databasePath}");
-            await connection.OpenAsync();
+            await connection.OpenAsync(TestContext.Current.CancellationToken);
             await using SqliteCommand command = connection.CreateCommand();
             command.CommandText =
                 "SELECT COUNT(*) FROM completion_history WHERE task_uid = @uid;";
             command.Parameters.AddWithValue("@uid", taskUid);
-            Assert.Equal(1L, Convert.ToInt64(await command.ExecuteScalarAsync()));
+            Assert.Equal(1L, Convert.ToInt64(await command.ExecuteScalarAsync(TestContext.Current.CancellationToken)));
         }
         finally
         {
