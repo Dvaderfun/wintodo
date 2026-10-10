@@ -1036,4 +1036,23 @@
     <value>en-US</value>
     <comment>Every future language folder must set this to its own language tag so dates and text match the language resolved by MRT.</comment>
   </data>
+  <!-- UX-02 -->
+  <data name="SettingsTasksHeader.Text" xml:space="preserve"><value>Tasks</value></data>
+  <data name="Settings_WeekStartSystem" xml:space="preserve"><value>Use system setting</value></data>
+  <data name="Settings_TasksSaveFailed" xml:space="preserve"><value>Couldn't save task settings. Please try again.</value></data>
+  <data name="SettingsTasksConfirmBeforeDeleteCard.Header" xml:space="preserve"><value>Confirm before deleting</value></data>
+  <data name="SettingsTasksConfirmBeforeDeleteCard.Description" xml:space="preserve"><value>Ask before deleting a task. Undo is always available.</value></data>
+  <data name="SettingsTasksConfirmBeforeDeleteControl.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Confirm before deleting</value></data>
+  <data name="SettingsTasksDefaultReminderTimeCard.Header" xml:space="preserve"><value>Default reminder time</value></data>
+  <data name="SettingsTasksDefaultReminderTimeCard.Description" xml:space="preserve"><value>Used for reminder pickers and tomorrow or next-week reminders.</value></data>
+  <data name="SettingsTasksDefaultReminderTimeControl.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Default reminder time</value></data>
+  <data name="SettingsTasksWeekStartCard.Header" xml:space="preserve"><value>Week starts on</value></data>
+  <data name="SettingsTasksWeekStartCard.Description" xml:space="preserve"><value>Used for calendars and Planned’s This week group.</value></data>
+  <data name="SettingsTasksWeekStartControl.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Week starts on</value></data>
+  <data name="SettingsTasksAddNewToTopCard.Header" xml:space="preserve"><value>Add new tasks to the top</value></data>
+  <data name="SettingsTasksAddNewToTopCard.Description" xml:space="preserve"><value>In manually sorted lists, place new tasks first.</value></data>
+  <data name="SettingsTasksAddNewToTopControl.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add new tasks to the top</value></data>
+  <data name="SettingsTasksMoveStarredToTopCard.Header" xml:space="preserve"><value>Move starred tasks to the top</value></data>
+  <data name="SettingsTasksMoveStarredToTopCard.Description" xml:space="preserve"><value>In manually sorted lists, place a task first when marked important.</value></data>
+  <data name="SettingsTasksMoveStarredToTopControl.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Move starred tasks to the top</value></data>
 </root>

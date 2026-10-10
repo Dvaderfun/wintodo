@@ -22,6 +22,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
     private readonly ITaskStore _taskStore;
     private readonly IClock _clock;
+    private readonly TaskPreferences _preferences;
     private readonly ResourceLoader _resources = new();
     private readonly SemaphoreSlim _saveGate = new(1, 1);
     private CancellationTokenSource? _saveCancellation;
@@ -29,10 +30,12 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private bool _isLoading;
     private int _loadVersion;
 
-    internal TaskDetailViewModel(ITaskStore taskStore, IClock clock)
+    internal TaskDetailViewModel(ITaskStore taskStore, IClock clock, TaskPreferences preferences)
     {
         _taskStore = taskStore;
         _clock = clock;
+        _preferences = preferences;
+        preferences.PropertyChanged += OnPreferencesChanged;
         MyDayLabel = _resources.GetString("Detail_AddToMyDay");
         ReminderLabel = _resources.GetString("Detail_RemindMe");
         DueLabel = _resources.GetString("Detail_AddDueDate");
@@ -53,6 +56,20 @@ public sealed partial class TaskDetailViewModel : ObservableObject
             _resources.GetString("Detail_Yearly"),
             _resources.GetString("Detail_Custom"),
         ];
+    }
+
+    public DayOfWeek FirstDayOfWeek => _preferences.FirstDayOfWeek;
+
+    private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(TaskPreferences.WeekStartIndex))
+        {
+            OnPropertyChanged(nameof(FirstDayOfWeek));
+        }
+        if (args.PropertyName == nameof(TaskPreferences.DefaultReminderTime) && !HasReminder)
+        {
+            PendingReminderTime = _preferences.DefaultReminderTime;
+        }
     }
 
     internal event Action? CloseRequested;
@@ -489,10 +506,10 @@ public sealed partial class TaskDetailViewModel : ObservableObject
             "Today" => localNow.AddHours(3),
             "Tomorrow" => CombineLocal(
                 StartOfLocalDay(_clock.Today.AddDays(1)),
-                new TimeSpan(9, 0, 0)),
+                _preferences.DefaultReminderTime),
             "NextWeek" => CombineLocal(
                 StartOfLocalDay(_clock.Today.AddDays(7)),
-                new TimeSpan(9, 0, 0)),
+                _preferences.DefaultReminderTime),
             _ => null,
         };
         if (reminder is null)
@@ -529,7 +546,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
         _model.Alarms.Clear();
         PendingReminderDate = null;
-        PendingReminderTime = new TimeSpan(9, 0, 0);
+        PendingReminderTime = _preferences.DefaultReminderTime;
         UpdateActionLabels();
         await PersistModelAsync();
     }
@@ -759,7 +776,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         TaskAlarm? reminder = task.Alarms.FirstOrDefault(alarm => !alarm.IsAcknowledged);
         PendingReminderDate = reminder?.Trigger?.ToLocalTime();
         PendingReminderTime =
-            reminder?.Trigger?.ToLocalTime().TimeOfDay ?? new TimeSpan(9, 0, 0);
+            reminder?.Trigger?.ToLocalTime().TimeOfDay ?? _preferences.DefaultReminderTime;
         ConfigureRepeatEditor(task.RRule);
         UpdateActionLabels();
         _isLoading = false;
@@ -1039,7 +1056,8 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         {
             TodoTask snapshot = CloneTask(current);
             snapshot.Summary = snapshot.Summary.Trim();
-            await _taskStore.UpdateTaskAsync(snapshot, cancellationToken);
+            await _taskStore.UpdateTaskAsync(snapshot, cancellationToken, moveStarredToTop: _preferences.MoveStarredToTop);
+            current.SortOrder = snapshot.SortOrder;
             current.Sequence = snapshot.Sequence;
             current.LastModified = snapshot.LastModified;
             CopyCollectionIdentities(snapshot, current);

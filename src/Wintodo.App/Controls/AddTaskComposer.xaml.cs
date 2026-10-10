@@ -56,6 +56,13 @@ public sealed partial class AddTaskComposer : UserControl
 
     private void UpdateActionLayout(double width)
     {
+        // The action subtree is x:Load-deferred while the composer is collapsed.
+        // A startup or detail-pane resize must not resolve setters into it yet.
+        if (InlineOptions is null || CompactOptionsButton is null)
+        {
+            return;
+        }
+
         // The detail pane can shrink this control while the window stays wide.
         VisualStateManager.GoToState(
             this,

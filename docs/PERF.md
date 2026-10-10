@@ -150,3 +150,21 @@ A separate AOT startup check exposed an unsupported ItemsRepeater vector and
 was fixed; the published x64 M8 rerun passed 14/14 automated checks. The
 republished x64 layout is 220.17 MB (260 MB size ceiling), with a 16.69 MB
 executable. These are size/build checks, not replacement memory measurements.
+
+
+### UX-02 unit-test timing checks — 2026-10-10
+
+These are Debug x64 unit-test measurements, separate from the app performance
+matrix above. The existing smart-list budget stays at 5 ms.
+
+| Run | 10,000-task query | Best warm time | Result |
+|---|---|---|---|
+| Initial full suite during build | My Day | 5.743 ms | FAIL |
+| Focused rerun during build | Planned | 6.506 ms | FAIL |
+| Full suite during UI gate | My Day | 5.811 ms | FAIL |
+| Full suite without build/UI | All five queries | within 5 ms | PASS, 130/130 suite |
+| Post-composer-fix suite during UI gate | Completed | 5.963 ms | FAIL |
+| Final full suite without UI | My Day | 5.041 ms | FAIL |
+
+Failures varied across query types while the query implementation was unchanged.
+No budget adjustment or query-performance claim is made by UX-02.

@@ -31,10 +31,16 @@ public sealed partial class SettingsView : UserControl
             version.Minor,
             version.Build,
             version.Revision);
+        WeekStartOptions = [
+            new ResourceLoader().GetString("Settings_WeekStartSystem"),
+            .. DisplayCulture.Current.DateTimeFormat.DayNames,
+        ];
         InitializeComponent();
     }
 
     public string VersionText { get; }
+
+    public string[] WeekStartOptions { get; }
 
     public ShellViewModel ViewModel
     {

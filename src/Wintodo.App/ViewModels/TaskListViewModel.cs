@@ -18,6 +18,7 @@ public sealed partial class TaskListViewModel : ObservableObject
 {
     private readonly ITaskStore _taskStore;
     private readonly IClock _clock;
+    private readonly TaskPreferences _preferences;
     private readonly ResourceLoader _resources = new();
     private readonly Dictionary<string, TaskItemViewModel> _itemCache =
         new(StringComparer.Ordinal);
@@ -42,10 +43,12 @@ public sealed partial class TaskListViewModel : ObservableObject
     private string? _selectedNavigationKey;
     private string? _selectedBackgroundSettingKey;
 
-    internal TaskListViewModel(ITaskStore taskStore, IClock clock)
+    internal TaskListViewModel(ITaskStore taskStore, IClock clock, TaskPreferences preferences)
     {
         _taskStore = taskStore;
         _clock = clock;
+        _preferences = preferences;
+        preferences.PropertyChanged += OnPreferencesChanged;
         _lastObservedToday = clock.Today;
         Title = _resources.GetString("Shell_MyDayTitle");
         Subtitle = FormatToday();
@@ -58,6 +61,14 @@ public sealed partial class TaskListViewModel : ObservableObject
         ComposerReminderLabel = _resources.GetString("Composer_RemindMe");
         ComposerRepeatLabel = _resources.GetString("Composer_Repeat");
         ListIconChoices = CreateListIconChoices(ChangeListIconCommand);
+    }
+
+    private void OnPreferencesChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(TaskPreferences.WeekStartIndex))
+        {
+            RebuildVisibleItems();
+        }
     }
 
     internal event Action? NavigationDataChanged;
@@ -509,6 +520,13 @@ public sealed partial class TaskListViewModel : ObservableObject
         UpdateItemDisplay(item);
         if (wasCompleted == item.IsCompleted)
         {
+            if (previous.SortOrder != task.SortOrder && _currentQuery?.SortMode == SortMode.Manual)
+            {
+                _activeTasks.Remove(item);
+                _completedTasks.Remove(item);
+                InsertManualItem(item.IsCompleted ? _completedTasks : _activeTasks, item);
+                RebuildVisibleItems();
+            }
             if (navigationCountsChanged)
             {
                 NavigationDataChanged?.Invoke();
@@ -588,7 +606,7 @@ public sealed partial class TaskListViewModel : ObservableObject
                 : (int)TaskPriority.Undefined,
             MyDayDate = _composerMyDay ? _clock.Today : null,
         };
-        TodoTask created = await _taskStore.CreateTaskAsync(task);
+        TodoTask created = await _taskStore.CreateTaskAsync(task, addToTop: _preferences.AddNewToTop);
         if (reminder is not null)
         {
             await _taskStore.SetAlarmAsync(
@@ -604,7 +622,14 @@ public sealed partial class TaskListViewModel : ObservableObject
         ResetComposer(collapse: false);
         TaskItemViewModel item = GetOrCreateItem(created);
         UpdateItemDisplay(item);
-        _activeTasks.Add(item);
+        if (_currentQuery?.SortMode == SortMode.Manual)
+        {
+            InsertManualItem(_activeTasks, item);
+        }
+        else
+        {
+            _activeTasks.Add(item);
+        }
         RebuildVisibleItems();
     }
 
@@ -644,9 +669,9 @@ public sealed partial class TaskListViewModel : ObservableObject
         {
             "LaterToday" => now.AddHours(3),
             "TomorrowMorning" => new DateTimeOffset(
-                _clock.Today.AddDays(1).ToDateTime(new TimeOnly(9, 0)),
+                _clock.Today.AddDays(1).ToDateTime(TimeOnly.FromTimeSpan(_preferences.DefaultReminderTime)),
                 TimeZoneInfo.Local.GetUtcOffset(
-                    _clock.Today.AddDays(1).ToDateTime(new TimeOnly(9, 0)))),
+                    _clock.Today.AddDays(1).ToDateTime(TimeOnly.FromTimeSpan(_preferences.DefaultReminderTime)))),
             _ => null,
         };
         UpdateComposerLabels();
@@ -1153,9 +1178,16 @@ public sealed partial class TaskListViewModel : ObservableObject
         item.Model.Priority = item.IsImportant
             ? (int)TaskPriority.Undefined
             : (int)TaskPriority.High;
-        await _taskStore.UpdateTaskAsync(item.Model);
+        await _taskStore.UpdateTaskAsync(item.Model, moveStarredToTop: _preferences.MoveStarredToTop);
         item.IsImportant = !item.IsImportant;
         UpdateItemDisplay(item);
+        if (_currentQuery?.SortMode == SortMode.Manual && _preferences.MoveStarredToTop && item.IsImportant)
+        {
+            _activeTasks.Remove(item);
+            _completedTasks.Remove(item);
+            InsertManualItem(item.IsCompleted ? _completedTasks : _activeTasks, item);
+            RebuildVisibleItems();
+        }
 
         if (_currentQuery?.Kind == ListQueryKind.Important && !item.IsImportant)
         {
@@ -1461,12 +1493,7 @@ public sealed partial class TaskListViewModel : ObservableObject
             return "Tomorrow";
         }
 
-        // Keep the regional week start until UX-02 adds an explicit preference.
-        DayOfWeek firstDayOfWeek =
-            CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
-        int currentDayIndex =
-            ((int)_clock.Today.DayOfWeek - (int)firstDayOfWeek + 7) % 7;
-        DateOnly endOfWeek = _clock.Today.AddDays(6 - currentDayIndex);
+        DateOnly endOfWeek = _preferences.EndOfWeek(_clock.Today);
         return dueDate <= endOfWeek ? "ThisWeek" : "Later";
     }
 
@@ -1790,6 +1817,15 @@ public sealed partial class TaskListViewModel : ObservableObject
     {
         DateTime local = date.ToDateTime(TimeOnly.MinValue);
         return new DateTimeOffset(local, TimeZoneInfo.Local.GetUtcOffset(local));
+    }
+
+    private void InsertManualItem(List<TaskItemViewModel> items, TaskItemViewModel item)
+    {
+        bool descending = _currentQuery?.SortDescending == true;
+        int index = items.FindIndex(candidate => descending
+            ? candidate.SortOrder < item.SortOrder
+            : candidate.SortOrder > item.SortOrder);
+        items.Insert(index < 0 ? items.Count : index, item);
     }
 
     private static void InsertBySortOrder(

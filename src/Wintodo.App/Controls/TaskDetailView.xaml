@@ -439,6 +439,7 @@
                             <Flyout>
                                 <StackPanel Width="280" Spacing="12">
                                     <CalendarDatePicker
+                                        FirstDayOfWeek="{x:Bind local:TaskDetailView.ToCalendarDay(ViewModel.FirstDayOfWeek), Mode=OneWay}"
                                         x:Uid="DetailReminderDatePicker"
                                         HorizontalAlignment="Stretch"
                                         AutomationProperties.AutomationId="Todo.Detail.ReminderDatePicker"
@@ -527,6 +528,7 @@
                             <Flyout>
                                 <StackPanel Width="280" Spacing="12">
                                     <CalendarDatePicker
+                                        FirstDayOfWeek="{x:Bind local:TaskDetailView.ToCalendarDay(ViewModel.FirstDayOfWeek), Mode=OneWay}"
                                         x:Uid="DetailDueDatePicker"
                                         HorizontalAlignment="Stretch"
                                         AutomationProperties.AutomationId="Todo.Detail.DueDatePicker"

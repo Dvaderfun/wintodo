@@ -20,14 +20,17 @@ As of 2026-10-10:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 67, Data 43, Sync 9 — 119/119.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 74, Data 47, Sync 9 — 130/130
+  on one isolated full run; latest run 129/130 (My Day 5.041 ms against 5 ms).
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** the task list clears and refills its bound collection instead
   of diff-updating (`ARCHITECTURE.md`, Known divergences). Final app name and
   MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
-- **Next:** continue app polish before release via the work packages in
+- **UX-02:** Tasks settings implemented; dedicated gate passes 9/9. Composer
+  regression gate remains partial (1/3), so the package is still in progress.
+- **Next:** close the UX-02 composer regression, then continue app polish via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
@@ -1722,3 +1725,50 @@ No XAML edits, dependencies, Windows feature enablement or perf claims.
 The previous UX-01 partial-gate history is retained above. Its parking-lot
 blocker is removed and UX-01 is done. Next package: UX-02 Tasks settings.
 M9 performance, ARM64 runtime and owner-run manual gates remain deferred/open.
+
+
+## UX-02 — Settings infrastructure + Tasks          2026-10-10
+
+**Gate:** PARTIAL — Debug x64 warnings-as-errors build clean. Dedicated Settings
+gate PASS 9/9 (`tests/ui/artifacts/settings/run-20261010-142634`), including
+all-five restart persistence, immediate Delete/Undo, confirmation/cancel,
+row/detail starring, configured reminder time, Planned grouping, calendar week
+start and zero-error authored-control accessibility audit (27 controls).
+All ten Settings PNGs reviewed: new cards, focus, reminder/calendar and dialog
+states are legible. Existing top-of-scroll partial Appearance row and tooltip
+captures are scroll/capture states, not new layout defects.
+
+**Shipped**
+- Shared Core `TaskPreferences`: typed defaults/validation, notifications,
+  ordered setting saves and visible persistence errors.
+- Tasks SettingsCards for confirm before delete (true), default reminder time
+  (09:00), regional/explicit week start, add new to top and move starred to top
+  (both false); values live in the existing settings table.
+- Task delete retains Undo with confirmation off. Reminder picker and
+  tomorrow/next-week shortcuts consume the configured time. Planned and both
+  calendar pickers consume week start.
+- Atomic store ordering options: root tasks in manual lists, both directions;
+  no setting reads inside the store. Row/detail updates reposition immediately.
+- Eleven new unit cases (Core 7, Data 4). Isolated full unit run passed 130/130,
+  zero skipped. Other runs hit variable existing 5-ms performance assertions,
+  and one hit an existing SQLite pool-disposal race; timings recorded in PERF.
+- DESIGN §8/§12, architecture and test index updated; no new dependency,
+  migration, credential change or ADR.
+- Crash investigation found a composer startup/detail-resize COM exception:
+  VSM tried to target unloaded `InlineOptions`. Added a narrow guard for the
+  deferred setter targets. Attached debug evidence:
+  `debug-25796-20261010-172423.log` (winapp dump directory).
+
+**Deviations and open verification**
+- Supporting composer crash fix is included because it blocked reminder/restart
+  verification. No navigation or design decision changed.
+- Composer regression gate remains PARTIAL 1/3: compact options disappear after
+  adding a task, then draft/resize checks cannot proceed. Latest evidence:
+  `tests/ui/artifacts/composer/run-20261010-143746`. Experimental harness changes
+  were reverted; package remains in progress and finding is in UX-PLAN parking lot.
+- Changed-code `winui-code-review`: no remaining binding, localization, MVVM,
+  SQL or AOT-pattern findings; completion is held by the named UI regression.
+- Final unit rerun: 129/130, zero skipped; only My Day timing failed at
+  5.041 ms against 5 ms. The earlier isolated 130/130 pass is retained as evidence,
+  not substituted for the final result. Native AOT, ARM64 runtime and owner-only
+  manual gates were not run.

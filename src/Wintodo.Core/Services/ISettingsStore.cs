@@ -2,6 +2,12 @@ namespace Wintodo.Core.Services;
 
 public interface ISettingsStore
 {
+    const string ConfirmBeforeDeleteKey = "tasks.confirm_before_delete";
+    const string DefaultReminderTimeKey = "tasks.default_reminder_time";
+    const string WeekStartKey = "tasks.week_start";
+    const string AddNewToTopKey = "tasks.add_new_to_top";
+    const string MoveStarredToTopKey = "tasks.move_starred_to_top";
+
     Task<string?> GetSettingAsync(
         string key,
         CancellationToken cancellationToken = default);

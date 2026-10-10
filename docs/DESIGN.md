@@ -441,8 +441,8 @@ observable collection so native reorder operations update the displayed order
 before the drag-completed handler persists it. Add/delete updates that collection
 in place.
 
-Deleting a task always confirms first — from the row context menu, the `Delete`
-key, or the detail footer. One `ContentDialog` (`Todo.Dialog.DeleteTask`) names
+Deleting a task confirms first when **Confirm before deleting** is on — from the
+row context menu, the `Delete` key, or the detail footer. One `ContentDialog` (`Todo.Dialog.DeleteTask`) names
 the task, defaults to **Cancel**, and only then runs the delete plus its undo
 snackbar. `Todo.Dialog.DeleteList` defaults to Cancel for the same reason.
 
@@ -521,7 +521,7 @@ reachable from the list menu and from `Ctrl+?`.
 | `Ctrl+Shift+D` | Open the due-date picker |
 | `Ctrl+Shift+R` | Open the reminder picker |
 | `F2` | Rename the selected list, or edit the selected task title inline |
-| `Delete` | Delete the selected task (confirmation dialog, then undo snackbar) |
+| `Delete` | Delete the selected task (dialog if *Confirm before deleting* is on, then undo snackbar) |
 | `Ctrl+Z` | Undo the last destructive action |
 | `Alt+↑` / `Alt+↓` | Move the selected task up/down in manual sort order |
 | `Tab` / `Shift+Tab` | *(M11)* Demote / promote a task in the tree |
@@ -682,8 +682,9 @@ Display dates, times, numbers and weekday names use the culture named by the
 MRT-resolved `App_FormattingCulture` string, initialised before view models or
 Windows integration services are created. Each translation sets that resource
 to its own language tag; a missing or invalid tag falls back to
-`CultureInfo.CurrentUICulture`. Planned's week start continues to follow the
-Windows regional format until the Tasks preference is implemented (UX-02).
+`CultureInfo.CurrentUICulture`. Planned and calendar pickers use the Tasks
+week-start preference;
+“Use system setting” follows the Windows regional format.
 
 ---
 
@@ -695,10 +696,21 @@ Page padding 36, section spacing 24.
 
 Sections: **Appearance** (theme: System/Light/Dark; density: Comfortable/Compact;
 show list backgrounds; colour fixed-category icons) · **Tasks** (default reminder time; week starts on;
-confirm before delete; move completed to bottom) · **My Day** (reset time —
+confirm before delete; add new tasks to the top; move starred tasks to the top) · **My Day** (reset time —
 default midnight) · **Notifications** (enable reminders; default snooze;
 launch at login) · **Data** (import `.ics`, export all, database location,
 database size) · **About** (version, GitHub link, licences).
+
+Completed tasks already have their own section (§3.6), so a “move completed
+to bottom” preference would be redundant.
+
+Tasks preferences are shared typed values loaded from the existing settings
+table: `tasks.confirm_before_delete` (default `true`),
+`tasks.default_reminder_time` (invariant `HH:mm`, default `09:00`),
+`tasks.week_start` (`system` or Sunday `0` through Saturday `6`),
+`tasks.add_new_to_top` and `tasks.move_starred_to_top` (both default `false`).
+The ordering preferences apply to manually sorted real lists and root tasks.
+Turning off confirmation skips the task dialog; the undo snackbar still appears.
 
 The disconnected CalDAV card offers a Configure command opening a credential
 ContentDialog. Server and username drafts survive reopening; passwords clear

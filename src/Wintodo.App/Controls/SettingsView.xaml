@@ -147,6 +147,39 @@
                     </StackPanel>
 
                     <StackPanel Spacing="4">
+                        <TextBlock x:Uid="SettingsTasksHeader" Style="{StaticResource SettingsGroupHeaderStyle}" />
+                        <InfoBar AutomationProperties.AutomationId="Todo.Settings.Tasks.Error"
+                            IsOpen="{x:Bind ViewModel.IsTaskPreferencesErrorOpen, Mode=TwoWay}"
+                            Message="{x:Bind ViewModel.TaskPreferencesErrorMessage, Mode=OneWay}" Severity="Error" />
+                        <settings:SettingsCard x:Uid="SettingsTasksConfirmBeforeDeleteCard">
+                            <ToggleSwitch x:Uid="SettingsTasksConfirmBeforeDeleteControl"
+                                AutomationProperties.AutomationId="Todo.Settings.Tasks.ConfirmBeforeDelete"
+                                IsOn="{x:Bind ViewModel.Preferences.ConfirmBeforeDelete, Mode=TwoWay, FallbackValue=True}" />
+                        </settings:SettingsCard>
+                        <settings:SettingsCard x:Uid="SettingsTasksDefaultReminderTimeCard">
+                            <TimePicker x:Uid="SettingsTasksDefaultReminderTimeControl"
+                                AutomationProperties.AutomationId="Todo.Settings.Tasks.DefaultReminderTime"
+                                Time="{x:Bind ViewModel.Preferences.DefaultReminderTime, Mode=TwoWay, FallbackValue=09:00:00}" />
+                        </settings:SettingsCard>
+                        <settings:SettingsCard x:Uid="SettingsTasksWeekStartCard">
+                            <ComboBox x:Uid="SettingsTasksWeekStartControl" MinWidth="200"
+                                AutomationProperties.AutomationId="Todo.Settings.Tasks.WeekStart"
+                                SelectedIndex="{x:Bind ViewModel.Preferences.WeekStartIndex, Mode=TwoWay, FallbackValue=0}"
+                                ItemsSource="{x:Bind WeekStartOptions, Mode=OneTime}" />
+                        </settings:SettingsCard>
+                        <settings:SettingsCard x:Uid="SettingsTasksAddNewToTopCard">
+                            <ToggleSwitch x:Uid="SettingsTasksAddNewToTopControl"
+                                AutomationProperties.AutomationId="Todo.Settings.Tasks.AddNewToTop"
+                                IsOn="{x:Bind ViewModel.Preferences.AddNewToTop, Mode=TwoWay, FallbackValue=False}" />
+                        </settings:SettingsCard>
+                        <settings:SettingsCard x:Uid="SettingsTasksMoveStarredToTopCard">
+                            <ToggleSwitch x:Uid="SettingsTasksMoveStarredToTopControl"
+                                AutomationProperties.AutomationId="Todo.Settings.Tasks.MoveStarredToTop"
+                                IsOn="{x:Bind ViewModel.Preferences.MoveStarredToTop, Mode=TwoWay, FallbackValue=False}" />
+                        </settings:SettingsCard>
+                    </StackPanel>
+
+                    <StackPanel Spacing="4">
                         <TextBlock
                             x:Uid="SettingsWindowsHeader"
                             Style="{StaticResource SettingsGroupHeaderStyle}" />

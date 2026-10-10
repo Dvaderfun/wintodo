@@ -60,7 +60,9 @@ public sealed partial class ShellViewModel : ObservableObject
         _stateService = stateService;
         _startupTaskService = startupTaskService;
         InitializeSync(syncService);
-        TaskList = new TaskListViewModel(taskStore, clock);
+        Preferences = new TaskPreferences(taskStore);
+        Preferences.SaveFailed += OnPreferencesSaveFailed;
+        TaskList = new TaskListViewModel(taskStore, clock, Preferences);
         TaskList.NavigationDataChanged += OnNavigationDataChanged;
         TaskList.DeleteListRequested += OnDeleteListRequested;
         TaskList.ExportListRequested += OnExportListRequested;
@@ -68,7 +70,7 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList.DeleteTaskRequested += OnRowDeleteRequested;
         TaskList.CustomListIconRequested += OnCustomListIconRequested;
         TaskList.BackgroundThemeChanged += OnBackgroundThemeChanged;
-        Detail = new TaskDetailViewModel(taskStore, clock);
+        Detail = new TaskDetailViewModel(taskStore, clock, Preferences);
         Detail.CloseRequested += CloseDetail;
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
         Detail.TaskDeleted += TaskList.ApplyDetailTaskDeleted;
@@ -103,6 +105,21 @@ public sealed partial class ShellViewModel : ObservableObject
 
     [ObservableProperty]
     public partial ShellListItemViewModel? DefaultList { get; set; }
+
+    public TaskPreferences Preferences { get; }
+
+    [ObservableProperty]
+    public partial bool IsTaskPreferencesErrorOpen { get; set; }
+
+    [ObservableProperty]
+    public partial string TaskPreferencesErrorMessage { get; set; } = string.Empty;
+
+    private void OnPreferencesSaveFailed(Exception exception)
+    {
+        Trace.WriteLine($"WINTODO_TASK_PREFERENCES_ERROR={exception}");
+        TaskPreferencesErrorMessage = _resources.GetString("Settings_TasksSaveFailed");
+        IsTaskPreferencesErrorOpen = true;
+    }
 
     public TaskListViewModel TaskList { get; }
 
@@ -240,6 +257,7 @@ public sealed partial class ShellViewModel : ObservableObject
 
     internal async Task<string> InitializeAsync(CancellationToken cancellationToken = default)
     {
+        await Preferences.LoadAsync(cancellationToken);
         await _taskStore.EnsureDefaultListAsync(
             _resources.GetString("DefaultList_Name"),
             cancellationToken);

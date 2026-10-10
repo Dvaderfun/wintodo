@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Microsoft.Data.Sqlite;
 using Wintodo.Core.Models;
@@ -92,7 +93,8 @@ public sealed partial class SqliteTaskStore
 
     public Task<TodoTask> CreateTaskAsync(
         TodoTask task,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool addToTop = false)
     {
         ValidateTask(task);
         return ExecuteWriteAsync(
@@ -100,6 +102,10 @@ public sealed partial class SqliteTaskStore
             {
                 GetListUid(connection, transaction, task.ListId);
                 PrepareNewTask(connection, transaction, task);
+                if (addToTop && task.ParentUid is null && IsManualList(connection, transaction, task.ListId))
+                {
+                    task.SortOrder = GetFirstTaskSortOrder(connection, transaction, task.ListId, task.Uid);
+                }
                 task.Id = InsertTask(connection, transaction, task);
                 ReplaceTaskCollections(connection, transaction, task);
                 LogChange(connection, transaction, TaskEntityType, task.Uid, ChangeOperation.Create);
@@ -109,7 +115,7 @@ public sealed partial class SqliteTaskStore
             cancellationToken);
     }
 
-    public Task UpdateTaskAsync(TodoTask task, CancellationToken cancellationToken = default)
+    public Task UpdateTaskAsync(TodoTask task, CancellationToken cancellationToken = default, bool moveStarredToTop = false)
     {
         ValidateTask(task);
         ArgumentException.ThrowIfNullOrWhiteSpace(task.Uid);
@@ -126,6 +132,12 @@ public sealed partial class SqliteTaskStore
                 task.LastModified = _clock.UtcNow;
                 task.Sequence = Math.Max(existing.Sequence, task.Sequence) + 1;
                 task.IsDirty = true;
+                if (moveStarredToTop && existing.Priority is not (>= 1 and <= 4)
+                    && task.Priority is >= 1 and <= 4 && task.ParentUid is null
+                    && IsManualList(connection, transaction, task.ListId))
+                {
+                    task.SortOrder = GetFirstTaskSortOrder(connection, transaction, task.ListId, task.Uid);
+                }
                 UpdateTaskRow(connection, transaction, task);
                 ReplaceTaskCollections(connection, transaction, task);
                 LogChange(connection, transaction, TaskEntityType, task.Uid, ChangeOperation.Update);
@@ -507,6 +519,34 @@ public sealed partial class SqliteTaskStore
         return string.Join(
             " AND ",
             tokens.Select(token => $"\"{token.Replace("\"", "\"\"", StringComparison.Ordinal)}\"*"));
+    }
+
+    private static bool IsManualList(SqliteConnection connection, SqliteTransaction transaction, long listId)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT sort_mode FROM lists WHERE id = @listId;";
+        command.Parameters.AddWithValue("@listId", listId);
+        return Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture) == (int)SortMode.Manual;
+    }
+
+    private static double GetFirstTaskSortOrder(
+        SqliteConnection connection, SqliteTransaction transaction, long listId, string uid)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            SELECT CASE WHEN (SELECT sort_descending FROM lists WHERE id = @listId) = 1
+                THEN COALESCE(MAX(sort_order), 0) + 1
+                ELSE COALESCE(MIN(sort_order), 1) - 1 END
+            FROM tasks
+            WHERE list_id = @listId AND parent_uid IS NULL AND is_deleted = 0
+                AND status <> @completed AND uid <> @uid;
+            """;
+        command.Parameters.AddWithValue("@listId", listId);
+        command.Parameters.AddWithValue("@completed", (int)Wintodo.Core.Models.TaskStatus.Completed);
+        command.Parameters.AddWithValue("@uid", uid);
+        return Convert.ToDouble(command.ExecuteScalar(), CultureInfo.InvariantCulture);
     }
 
     private void PrepareNewTask(
