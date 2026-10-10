@@ -22,8 +22,8 @@ function Invoke-WinAppChecked {
     $output
 }
 function Invoke-Ui {
-    param([string[]]$Arguments)
-    $selector = @('-a', "$appPid")
+    param([string[]]$Arguments, [string]$Window)
+    $selector = if ($Window) { @('-w', $Window) } else { @('-a', "$appPid") }
     Invoke-WinAppChecked (@('ui') + $Arguments + @('--on', $Target) + $selector)
 }
 function Start-App {
@@ -128,10 +128,18 @@ try {
         Set-Toggle 'AddNewToTop' $true
         Set-Toggle 'MoveStarredToTop' $true
         Select-WeekStart 'Monday'
-        Invoke-Ui @('focus', 'FlyoutButton')
-        Invoke-Ui @('send-keys', 'enter', '--via', 'send-input')
-        Invoke-Ui @('send-keys', 'up', '--via', 'send-input')
-        Invoke-Ui @('send-keys', 'enter', '--via', 'send-input')
+        Invoke-Ui @('invoke', 'FlyoutButton')
+        Invoke-Ui @('wait-for', 'HourLoopingSelector', '-t', '3000')
+        $pickerWindow = (Invoke-Ui @('list-windows', '--json') | ConvertFrom-Json |
+            Where-Object title -eq 'PopupHost' | Select-Object -First 1).hwnd
+        if (-not $pickerWindow) { throw 'Reminder time flyout window was not found.' }
+        $hourSelector = Get-Tree | Where-Object automationId -eq 'HourLoopingSelector' | Select-Object -First 1
+        $tenOClock = $hourSelector.children | Where-Object { $_.type -eq 'ListItem' -and $_.name -eq '10' } |
+            Select-Object -First 1
+        if (-not $tenOClock) { throw 'Hour 10 was not found in the reminder selector.' }
+        Invoke-Ui @('invoke', $tenOClock.selector, '--action', 'select') -Window "$pickerWindow"
+        Invoke-Ui @('invoke', 'AcceptButton') -Window "$pickerWindow"
+        Invoke-Ui @('wait-for', 'TimePickerFlyoutPresenter', '--gone', '-t', '3000')
         Save-Screenshot '02-preferences.png'
     }
     Test-UI 'Add new and star from row/detail move tasks to top' {
@@ -164,7 +172,7 @@ try {
     Test-UI 'Restart preserves all five preferences' {
         Open-Settings
         $script:expectedTime = (Invoke-Ui @('get-property', 'FlyoutButton', '--json') | ConvertFrom-Json).properties.Name
-        if (-not $expectedTime -or $expectedTime -notmatch '8|10') { throw "Reminder time did not change: $expectedTime" }
+        if (($expectedTime -replace '[^0-9]', '') -ne '1000') { throw "Reminder time did not change to 10:00: $expectedTime" }
         Start-Sleep -Milliseconds 600
         Stop-Process -Id $appPid
         $script:appPid = 0

@@ -144,7 +144,7 @@ function Select-ImportFile {
     Set-FileDialogPath $pickerHwnd $Path
     $open = Get-SearchMatches "Open" $pickerHwnd |
         Where-Object {
-            $_.type -eq "SplitButton" -and $_.automationId -eq "1"
+            $_.type -in @("Button", "SplitButton") -and $_.automationId -eq "1"
         } |
         Select-Object -First 1
     if (-not $open) {

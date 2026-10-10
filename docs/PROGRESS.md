@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-10-10:
+As of 2026-10-11:
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -27,8 +27,9 @@ As of 2026-10-10:
 - **Known gaps:** Final app name and
   MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
-- **UX-02:** Tasks settings implemented; dedicated gate passes 9/9. Composer
-  regression gate remains partial (1/3), so the package is still in progress.
+- **UX-02:** Complete: Tasks settings 9/9, composer 3/3, clean Debug/Release
+  builds and 259/259 tests. Baseline harness targeting/focus failures corrected;
+  existing smart-list/FTS performance checks pass without budget changes.
 - **UX-03:** Notifications/Data/About complete: reminder toggle and snooze,
   database location/size, repository and offline licences. M7 preflight and M8 pass.
 - **UX-04:** High-contrast navigation dots, search borders and header chrome
@@ -56,13 +57,10 @@ As of 2026-10-10:
   below 600 lines (largest 516); 587 declarations verified unchanged, with export
   filename policy and quick-add fallback moved into ShellViewModel. Build/tests,
   M3/M4/M5/M7/M8/M13, multi-select, navigation and notification settings pass.
-  Stability passes on repeat. Full gate closure remains open: M6 picker, list-icon
-  zero count, Tasks reminder restart and composer resize failures reproduce on
-  the unchanged baseline; transfer diagnostic with current picker type passes 7/7.
-  Motion visuals pass; the measured timing comparison fails and reduced-motion
-  testing was skipped. No performance acceptance is claimed.
-- **Next:** Close UX-13's remaining validation rows. Keep the UX-02 composer
-  regression and earlier variable performance checks tracked, via
+  Stability passes on repeat. Baseline harness failures corrected separately:
+  M6 7/7, list icons 10/10, Tasks settings 9/9 and composer 3/3 now pass.
+  Motion visuals pass; timing/reduced-motion acceptance remains open.
+- **Next:** Close UX-13's remaining motion validation, then UX-10 undo, via
   [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
@@ -2365,3 +2363,66 @@ remains in progress; no open row is reported as passed.
 - UX-13 stays in progress: its strict "all UI gates pass unchanged" acceptance
   is not satisfied. Baseline failures and motion validation remain explicit;
   the refactor does not silently weaken gates or change accepted decisions.
+
+## UX-02 — Close Tasks settings validation          2026-10-11
+
+**Gate: PASS** — Debug and Release x64 warnings-as-errors builds clean;
+259/259 unit tests, zero skipped. Tasks settings 9/9, composer layout 3/3,
+list icons 10/10 and M6 import/export 7/7 pass. Existing M3/M4/M5/M7/M8/M13,
+multi-select, stability, navigation and notification-settings results from the
+UX-13 run remain current: no product code changed in this follow-up.
+
+**Shipped**
+- Corrected baseline UI harness failures without changing app behavior:
+  M6 accepts the picker Open Button or SplitButton with AutomationId 1;
+  the composer gate closes detail explicitly before requiring inline options;
+  the list-icon gate selects real task rows, completes through TogglePattern,
+  and focuses the collapsed composer before adding the next task.
+- Tasks settings selects hour 10 through the time flyout's SelectionItemPattern
+  and invokes Accept in its own PopupHost window. Unscoped keyboard/focus calls
+  could leave the time unchanged and prevent the restart test from running.
+- Verified restart restores all five settings and the detail reminder defaults
+  to 10:00. Reviewed restored settings and wide composer screenshots.
+- Focused existing performance tests pass: My Day 0.897, Important 0.807,
+  Planned 0.896, All 0.873, Completed 0.964 ms against 5 ms; FTS 1.655 ms
+  against 60 ms. Measurements recorded in PERF.md; budgets unchanged.
+- PowerShell syntax checks and manual simplify/WinUI review clean; no app,
+  XAML, resources, dependencies, schema or AutomationId changes.
+
+**Deviations / remaining work**
+- Owner requested closure after the baseline-harness follow-up was proposed.
+  Corrections are a separate follow-up to the move-only UX-13 refactor; all
+  user-visible assertions remain. Original failed evidence stays in History
+  and ignored artifacts. UX-13 motion validation remains open separately.
+- Native AOT runtime, ARM64 and owner-run manual gates were not rerun.
+
+## UX-13 — Resolve baseline UI harness failures          2026-10-11
+
+**Gate: PARTIAL** — all four formerly failing functional suites pass after the
+separate harness corrections recorded under UX-02: M6 7/7, list icons 10/10,
+Tasks settings 9/9 and composer 3/3. Debug/Release builds and 259/259 tests pass.
+The 39 source files remain below 600 lines (maximum 516); no product code changed.
+Prior passing M3/M4/M5/M7/M8/M13, multi-select, stability, navigation and
+notification-settings proof remains applicable to identical app source.
+
+**Motion evidence**
+- Fresh pre-refactor/candidate pair: baseline median/mean 333.837/336.241 ms,
+  candidate 331.487/337.272 ms. FAIL on mean (+1.031 ms).
+- Second fresh pair: baseline 330.490/336.310 ms, candidate 331.586/331.446 ms.
+  FAIL on median (+1.096 ms). Both failed runs retained; threshold unchanged.
+- Existing gate with the accepted UX-07 d6038f2 baseline: candidate
+  331.071/329.839 ms versus 338.447/339.532 ms, timing PASS. Completion and
+  uncompletion placement, importance and undo visuals pass in all three runs.
+- Reduced motion SKIPPED pending explicit owner permission requested this turn.
+  No Windows setting changed. No full motion-gate or perf acceptance claimed.
+- Detailed rows and evidence paths are in PERF.md. Structural manual simplify
+  and WinUI review remain clean; PowerShell parser and diff checks pass.
+
+**Remaining work**
+- Run reduced-motion check with permission and verify system setting restoration.
+- Resolve strict fresh-comparison acceptance before marking UX-13 done. Also
+  explicitly settle its literal "all UI gates pass unchanged" criterion: the
+  owner requested these separate baseline-harness fixes, but corrected scripts
+  are not unchanged scripts. No acceptance criterion silently rewritten.
+- UX-02 is closed. UX-10 undo is the next feature; its optional completion
+  snackbar requires a DESIGN note and owner acknowledgement before implementation.

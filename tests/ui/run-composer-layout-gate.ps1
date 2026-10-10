@@ -138,9 +138,10 @@ try {
         Assert-CompactLayout
     }
     Test-UI 'Narrow list and wider window update without losing the draft' {
-        # Commit can close detail; the keyboard route also clears any popup.
-        Invoke-Ui @('focus', 'Todo.List.AddTaskBox') | Out-Null
-        Invoke-Ui @('send-keys', 'escape', '--via', 'send-input') | Out-Null
+        # Escape in the composer cancels its draft before the shell sees it.
+        # Close detail explicitly so the wide list can reach the inline breakpoint.
+        Invoke-Ui @('invoke', 'Todo.Detail.Close') | Out-Null
+        Invoke-Ui @('wait-for', 'Todo.Detail.Title', '--gone', '-t', '3000') | Out-Null
         Set-WindowWidth 900
         Invoke-Ui @('invoke', 'Todo.Nav.All') | Out-Null
         Invoke-Ui @('focus', 'Todo.List.AddTaskBox') | Out-Null

@@ -85,7 +85,7 @@ function Get-TaskRow {
 
     return (winapp ui search $Title -a $AppPid --json 2>$null |
         ConvertFrom-Json).matches |
-        Where-Object { $_.automationId -match "^Todo\.Row\." } |
+        Where-Object { $_.type -eq "ListItem" -and $_.automationId -match "^Todo\.Row\." } |
         Select-Object -First 1
 }
 
@@ -170,9 +170,15 @@ try {
                 throw "Task row '$title' was not found."
             }
             $uid = $row.automationId.Substring("Todo.Row.".Length)
-            winapp ui click "Todo.Row.CompleteToggle.$uid" -a $appPid | Out-Null
+            winapp ui invoke "Todo.Row.CompleteToggle.$uid" --action toggle-on -a $appPid | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw "Could not complete '$title'." }
         }
         winapp ui wait-for $countId -a $appPid --gone -t 5000 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'The count did not hide after completing both tasks.' }
+        winapp ui focus "Todo.List.AddTaskBox" -a $appPid | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Could not focus the composer.' }
+        winapp ui wait-for "Todo.Composer.AddButton" -a $appPid -t 3000 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'The composer did not expand.' }
         winapp ui set-value "Todo.List.AddTaskBox" "Persistent count task" -a $appPid | Out-Null
         winapp ui invoke "Todo.Composer.AddButton" -a $appPid | Out-Null
         winapp ui wait-for $countId -a $appPid --value "1" -t 5000 | Out-Null

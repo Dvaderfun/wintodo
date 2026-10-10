@@ -50,7 +50,7 @@ this dependency exception does not mark those gates passed.
 | ID | Title | Phase | Size | Depends on | Touches (hot files) | Status |
 |---|---|---|---|---|---|---|
 | UX-01 | Dates and times in the UI language | A | S | — | TaskDetailVM, TaskListVM | done (252f8e6) |
-| UX-02 | Settings infrastructure + **Tasks** section (confirm before delete) | A | M | — | SettingsView, ShellVM, ShellPage | in progress (Codex/main; settings gate PASS; composer/perf gates open) |
+| UX-02 | Settings infrastructure + **Tasks** section (confirm before delete) | A | M | — | SettingsView, ShellVM, ShellPage | done (closure follow-up; settings 9/9, composer 3/3, 259 tests) |
 | UX-03 | Settings: **Notifications**, **Data** and **About** sections | A | M | UX-02 | SettingsView, WindowsIntegrationService | done (09aa070) |
 | UX-04 | High-contrast fixes | A | S | — | ShellPage | done (71f6434) |
 | UX-05 | Hide the sync status until sync is configured | A | S | — | ShellPage.xaml, ShellVM.Sync | done (07fbcdc) |
@@ -620,9 +620,9 @@ file reference.
 - Placeholder app icon in the title bar and assets: belongs to M10 (final
   name/identity, PLAN §10 open item).
 
-- UX-02 validation: composer gate loses `Todo.Composer.OptionsButton` after adding
-  a task through compact options (2/3 checks fail). Settings gate passes 9/9;
-  startup crash from VSM targeting unloaded actions fixed separately.
+- UX-02 validation resolved 2026-10-11: composer 3/3 and Tasks settings 9/9.
+  Explicit detail closure and time-picker SelectionItemPattern fix harness
+  preconditions/targeting; original evidence remains in PROGRESS History.
 - UX-06 prerequisite: M3 task-row drag reorder still fails on the unchanged
   baseline and after extraction (`Controls/TaskListView.xaml.cs` container drag
   path). Removing container drag/drop overrides did not resolve it; reverted.
@@ -633,9 +633,6 @@ file reference.
   during another fixture's `InitializeAsync` on a UX-09 full-suite run. Fixtures
   call process-wide `SqliteConnection.ClearAllPools` during parallel tests;
   investigate pool cleanup isolation separately. Fresh full suite passes 257/257.
-- UX-13 baseline audit: unchanged `m6-ical.ps1` selects Open as SplitButton,
-  but the current picker exposes Button (2/7 baseline/refactor; a temporary
-  control-type-adjusted diagnostic passes 7/7). Update picker selector separately.
-- UX-13 baseline audit: `run-list-icon-gate.ps1` zero-count/new-task row fails
-  on baseline and refactor (9/10); `run-settings-gate.ps1` reminder-time restart
-  row fails on both (8/9); composer resize fails on both (2/3). Keep these open.
+- UX-13 baseline harness audit resolved separately 2026-10-11: M6 accepts
+  Open Button/SplitButton (7/7), list counts 10/10, Tasks settings 9/9 and
+  composer 3/3. No product behavior or assertion removed; motion remains open.
