@@ -34,20 +34,21 @@ Rules:
 
 ## UI gate scripts
 
-**Main-machine policy:** UI automation must run in Windows Sandbox or a dedicated
-VM. Builds and unit tests can run on the host while the owner works. Until a gate
-has been migrated and validated for an isolated target, leave its UI rows pending.
-Never silently fall back to the owner's desktop. Local UI scripts refuse to run
-unless `WINTODO_ALLOW_LOCAL_UI=1` is explicitly set for an owner-authorized session.
-The loopback CalDAV server alone does not require this opt-in.
+**Main-machine policy:** UI automation runs in the `WintodoTest` Hyper-V VM through
+`scripts\Invoke-VmGate.ps1` ([ADR-013](../adr/ADR-013-hyperv-test-vm.md); see
+[Running gates in the test VM](#running-gates-in-the-test-vm)). Builds and unit
+tests run on the host while the owner works. A gate the VM cannot run yet stays
+pending. Never silently fall back to the owner's desktop. The UI scripts refuse to
+run unless `WINTODO_ALLOW_LOCAL_UI=1` is set; `Invoke-VmGate.ps1` sets it only
+inside the guest. The loopback CalDAV server alone does not require this opt-in.
 
-Current scripts are **local-only**: they contain host UIA, input injection, file
-paths and process cleanup. They are not Sandbox-ready. Host/guest PIDs and HWNDs
-must stay paired with their target. Merely adding `--on sandbox` to `winapp run`
-would leave later commands acting on the host.
+The scripts themselves are target-agnostic local scripts: UIA, input injection,
+file paths and process cleanup all act on the machine they run on. That is why
+they run whole inside the guest instead of being driven from the host. Merely
+adding `--on sandbox` to `winapp run` would leave later commands acting on the host.
 
-For a dedicated VM or an explicitly authorized local session, use a fresh
-PowerShell window and set the process-only opt-in, then restore it in `finally`:
+Only with explicit owner permission for that session may a gate run on the host.
+Use a fresh PowerShell window, set the process-only opt-in and restore it in `finally`:
 
 ```powershell
 $previousLocalUi = $env:WINTODO_ALLOW_LOCAL_UI
@@ -64,22 +65,18 @@ never persist it in a user/machine environment variable or shell profile. Run
 one desktop workflow at a time. Local synthetic input moves the real cursor and
 changes focus; contrast and reduced-motion gates also change Windows settings.
 
-For Sandbox migration, build on the host, deploy with `winapp run --on sandbox`,
-and route **every** UI command with the returned `UiTargetArgs`. Run direct UIA,
-native input and system-setting helpers inside the guest using `winapp target exec
-sandbox`; transfer fixtures with `target push`, recover data with `target pull`,
-and stop the guest app inside the guest. Keep the Sandbox client connected and
-nonminimized. Sandbox is useful for functional gates; timing/performance budgets
-still require their designated measurement environment.
-
 Each `run-*-gate.ps1` launches the **already-built Debug x64 output**
 (`src\Wintodo.App\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64`) with
 `winapp run <folder> --detach --json`, points it at a throwaway database under
 `tests\ui\artifacts\<area>\run-<timestamp>\`, runs the matching suite, then
 stops the app. Artifacts (results JSON, screenshots, UI trees) are gitignored.
 
+The examples below show the gate scripts; on this machine, run each one through
+`.\scripts\Invoke-VmGate.ps1 -Gate <name>`.
+
 ```powershell
 dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
+.\tests\ui\run-m0-gate.ps1                        # launch + m0-smoke, 4 checks
 .\tests\ui\run-m8-gate.ps1                        # design + accessibility, 17 checks
 .\tests\ui\run-composer-layout-gate.ps1           # detail-open/narrow input, options, resize; -Aot for publish
 .\tests\ui\run-navigation-startup-gate.ps1       # one selected category on first launch, restart and hover
@@ -89,7 +86,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 
 | Script | Covers |
 |---|---|
-| `m0-smoke.ps1 -AppPid <pid>` | Window exists, interactive tree, screenshot |
+| `run-m0-gate.ps1` / `m0-smoke.ps1 -AppPid <pid>` | Window exists, interactive tree, screenshot |
 | `m2-shell.ps1`, `m2-theme.ps1` | Shell layout, Light/Dark/High Contrast |
 | `run-m3-gate.ps1` / `m3-lists-tasks.ps1` / `m3-restart.ps1` | List CRUD, add/complete/reorder/delete/undo tasks and drag-order persistence after restart; runner uses a fresh database with delete confirmation off |
 | `run-list-stability-gate.ps1` | 200-task middle-of-list fixture: Ctrl+I and Alt+Down retain selection/focus; completion keeps viewport within one row, exact completed-row focus, and Space restores that same task |
@@ -106,10 +103,120 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-list-icon-gate.ps1` | Emoji list icons and navigation counts |
 | `run-undo-gate.ps1` | Undo history across navigation/expiry, preserved newer title, due/reminder/repeat clears, step/list deletion, moves and bulk field/completion actions |
 
-The scripts drive real input on the selected desktop. Local runs require the
-explicit opt-in above. Enabling Sandbox is owner-controlled (Windows feature,
-UAC and potentially a restart); ask first. Its absence does not authorize local
-automation.
+The scripts drive real input on the desktop they run on. Host runs require the
+explicit opt-in above. The VM being unavailable does not authorize host automation.
+
+## Running gates in the test VM
+
+`WintodoTest` is a Generation 2 Hyper-V VM (4 vCPUs, 8 GB, 80 GB dynamic disk,
+Default Switch, Secure Boot, vTPM). Its `clean` checkpoint is a signed-in Windows 11
+desktop with Developer Mode, PowerShell 7, the .NET SDK from `global.json` (with
+a warm NuGet cache), the Windows App Runtime and the WinApp CLI. Each gate run
+restores it, so runs never see each other's state. Your account must be in
+**Hyper-V Administrators**; no elevation is needed.
+
+Build on the host first. The guest can't build the app (no Windows SDK/MSVC);
+it only builds `tests\Wintodo.Data.Tests` for gates that seed with `dotnet test`.
+
+```powershell
+dotnet build Wintodo.sln -p:Platform=x64                       # Debug x64: every run-*-gate.ps1
+.\scripts\Publish-Aot.ps1 -Platforms x64                       # only for -Aot and Measure-Perf
+.\scripts\Invoke-VmGate.ps1 -Gate run-m0-gate.ps1              # exit code = gate's exit code
+.\scripts\Invoke-VmGate.ps1 -Gate run-m13-gate.ps1 -GateArguments '-Aot'
+.\scripts\Invoke-VmGate.ps1 -Gate run-m8-gate.ps1 -KeepRunning # leave the VM up to inspect it
+```
+
+`-GateArguments` passes arguments through to the gate. `-Include` adds extra
+repo-relative files or folders to the copy, such as a baseline under `tests/ui/artifacts`:
+
+```powershell
+$baseline = 'tests\ui\artifacts\completion-measure\vm\timings.json'
+.\scripts\Invoke-VmGate.ps1 -Gate run-completion-measure.ps1 -GateArguments `
+    '-AppDirectory', 'C:\wintodo\src\Wintodo.App\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64', `
+    '-ArtifactDirectory', 'C:\wintodo\tests\ui\artifacts\completion-measure\vm'
+.\scripts\Invoke-VmGate.ps1 -Gate run-completion-motion-gate.ps1 `
+    -GateArguments '-BaselineTimings', $baseline -Include $baseline
+```
+
+`Invoke-VmGate.ps1` does six things:
+1. Restores `clean` and waits for the guest console desktop to be signed in and
+   unlocked.
+2. Copies files into `C:\wintodo` in the guest at their repo-relative paths, so
+   gates run unchanged:
+   - every tracked (or untracked, not ignored) file;
+   - the Debug x64 output;
+   - `publish\aot\win-x64` when the gate gets `-Aot`.
+
+   It leaves out each output's `Wintodo.build.appxrecipe` (absolute host paths;
+   `winapp run <folder>` fails on it) and `AppX\`. winapp then lays out the folder
+   itself in the guest.
+3. If the gate calls `dotnet test`, builds `tests\Wintodo.Data.Tests` in the
+   guest first; some gates pass `--no-build`.
+4. Runs the gate with pwsh 7 in the guest's desktop session. A PowerShell Direct
+   session has no desktop, so it uses a one-shot scheduled task with
+   `LogonType Interactive`. `WINTODO_ALLOW_LOCAL_UI=1` exists only in that guest process.
+5. Copies the guest's `tests/ui/artifacts` into `tests/ui/artifacts/`, the gate's
+   console output into `tests/ui/artifacts/vm/<gate>-<timestamp>.log`, and
+   `docs/PERF.md` if the gate changed it (unless the host copy changed meanwhile).
+6. Turns the VM off (unless `-KeepRunning`) and exits with the gate's exit code.
+
+Only one run at a time; a second concurrent run fails immediately. Gates may
+change Windows settings in the guest (contrast, animations); the next restore
+discards them.
+
+In a fresh guest the app's first launch takes 11–12 s (package registration, cold
+file cache, Debug JIT), longer than most suites' window waits. So before a UI
+gate, `Invoke-VmGate.ps1` launches the same output once, waits for the window,
+closes it and runs `Reset-AppxPackage`. The gate then gets a warm launch with
+first-run app data. `-NoWarmup` skips this; `Measure-Perf.ps1` never warms up.
+New runners should still `winapp ui wait-for` a stable element before asserting.
+
+The guest runs Windows build 26300; system dialogs can differ from newer host
+builds. For example, the file dialog's Open control (id 1) is a Button there but
+a SplitButton on 28020. Match such controls by AutomationId, not by type.
+
+**Performance:** `-Gate Measure-Perf.ps1` copies the framework-dependent Release
+build and `publish\aot\win-x64`, builds the Release test project in the guest and
+adds `-SkipBuild`. Build both on the host first, exactly as `Measure-Perf.ps1`
+does without `-SkipBuild` (see [performance.md](performance.md)). VM rows are a
+different environment from earlier host rows. Pass a `-Milestone` label that
+says so (for example `M9-VM`) and compare only like with like.
+
+**Watching the VM:** `vmconnect localhost WintodoTest` (host enhanced session
+mode is off, so VMConnect uses the guest console). Without a viewer, capture the
+guest screen through Hyper-V instead:
+`. .\scripts\TestVm.Common.ps1; Save-TestVmScreen -VmName WintodoTest -Path screen.png`.
+The gate runner refuses to start if the console isn't signed in and unlocked.
+
+**Still manual:** m7 toast Complete/Snooze (`-VerifyToastCompletion`/`-VerifyToastSnooze`)
+needs someone to act on a real toast, and the reboot-persistence row needs a reboot.
+Use `-KeepRunning` and VMConnect for those.
+
+### Building the VM (once)
+
+1. `.\scripts\New-TestVm.ps1 -IsoPath <Windows 11 x64 ISO>` creates the VM
+   (rolls back on failure).
+2. `.\scripts\Install-TestVmWindows.ps1` installs Windows 11 Pro unattended
+   (about 15–25 min). Details:
+   - It creates the local administrator `tester` and generates the password.
+   - The credential is saved with DPAPI to
+     `%LOCALAPPDATA%\Wintodo\WintodoTest.credential.xml`; never in the repo.
+   - It types the DVD boot-prompt key into the VM's virtual keyboard, not the host.
+   - If you change the guest password by hand, re-save it with
+     `.\scripts\Set-TestVmCredential.ps1` in your own terminal.
+3. `.\scripts\Initialize-TestVm.ps1` prepares the guest and takes `clean`.
+   It sets up:
+   - automatic sign-in (the password is an LSA secret in the guest);
+   - no lock screen, screen saver or sleep, and no automatic update restarts;
+   - a 1920 × 1080 display and Developer Mode;
+   - PowerShell 7, the .NET SDK (SHA-512-checked) and the Windows App Runtime and
+     WinApp CLI versions from `Directory.Packages.props`;
+   - a NuGet cache warmed for `tests\Wintodo.Data.Tests`;
+   - the public part of `publish/msix/m10-test.cer` in `LocalMachine\TrustedPeople`.
+
+Re-run `Initialize-TestVm.ps1 -Force` after bumping `global.json`,
+`Microsoft.WindowsAppSDK` or the WinApp CLI, or after regenerating the M10 test
+certificate. It restores the old `clean` first, so gate leftovers never get captured.
 
 ## AutomationIds are API
 
@@ -133,8 +240,8 @@ breaks a gate — search `tests/ui/` before you change an id.
 ## CI
 
 `.github/workflows/ci.yml` builds x64 Debug with warnings as errors and runs the
-three test projects (TRX + coverage uploaded as artifacts) on `windows-latest`. UI gates are local-only: they need an
-interactive desktop session and Developer Mode.
+three test projects (TRX + coverage uploaded as artifacts) on `windows-latest`. UI gates are not in CI: they need an
+interactive desktop session and Developer Mode, which the test VM provides.
 
 On `v*` tag pushes, a separate release job publishes Native AOT and packages
 unsigned x64 and ARM64 MSIX artifacts after build/test succeeds. Main pushes

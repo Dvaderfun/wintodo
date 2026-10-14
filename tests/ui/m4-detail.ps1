@@ -344,8 +344,11 @@ Test-UI "Attachment picker copies a local file" {
     }
 
     $fileNameEdit = (winapp ui search '1148' -a $AppPid -w $picker.hwnd --type Edit --json | ConvertFrom-Json).matches | Select-Object -First 1
-    $openButton = (winapp ui search '1' -a $AppPid -w $picker.hwnd --type SplitButton --json | ConvertFrom-Json).matches |
-        Where-Object automationId -eq '1' | Select-Object -First 1
+    # The dialog's Open control (id 1) is a SplitButton on newer Windows builds
+    # and a Button on 26300 (the test VM).
+    $openButton = (winapp ui search '1' -a $AppPid -w $picker.hwnd --json | ConvertFrom-Json).matches |
+        Where-Object { $_.automationId -eq '1' -and $_.type -in 'SplitButton', 'Button' } |
+        Select-Object -First 1
     if (-not $fileNameEdit -or -not $openButton) {
         throw "File picker controls were not found."
     }

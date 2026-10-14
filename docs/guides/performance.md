@@ -6,10 +6,22 @@ Budgets are gates, not goals. The table lives in `PLAN.md` §7, re-baselined by
 
 ## Measure
 
+The script drives the real desktop, so on the owner's machine it runs in the
+`WintodoTest` VM ([ADR-013](../adr/ADR-013-hyperv-test-vm.md)). Build on the host
+first, then pass the script's own arguments through:
+
 ```powershell
-.\scripts\Measure-Perf.ps1 -Milestone M14                       # FD + AOT, 0 / 5k / 20k tasks
-.\scripts\Measure-Perf.ps1 -Builds AOT -TaskCounts 5000 -Milestone M14 -SkipTenMinuteSample
+.\scripts\Publish-Aot.ps1 -Platforms x64
+dotnet build Wintodo.sln -c Release -p:Platform=x64 -p:PublishAot=false -p:SelfContained=false `
+    -p:WindowsAppSDKSelfContained=false -p:PublishTrimmed=false -warnaserror
+.\scripts\Invoke-VmGate.ps1 -Gate Measure-Perf.ps1 -TimeoutMinutes 120 -GateArguments '-Milestone', 'M14-VM'
+.\scripts\Invoke-VmGate.ps1 -Gate Measure-Perf.ps1 -GateArguments `
+    '-Builds', 'AOT', '-TaskCounts', '5000', '-Milestone', 'M14-VM', '-SkipTenMinuteSample'
 ```
+
+`Invoke-VmGate.ps1` adds `-SkipBuild` (the guest can't build the app) and copies a
+changed `docs/PERF.md` back. VM rows are a different environment from host rows.
+Label them (`-VM`) and compare like with like.
 
 | Parameter | Default | Meaning |
 |---|---|---|

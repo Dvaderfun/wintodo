@@ -28,7 +28,7 @@ dotnet build Wintodo.sln -p:Platform=x64 -warnaserror   # build everything, anal
 dotnet test  Wintodo.sln -p:Platform=x64                # Core + Data + Sync unit tests
 .\BuildAndRun.ps1                                       # build + launch attached (run async)
 .\BuildAndRun.ps1 --detach --json                       # launch, get PID for winapp ui
-.\tests\ui\run-m8-gate.ps1                              # a UI gate (needs a Debug x64 build)
+.\scripts\Invoke-VmGate.ps1 -Gate run-m8-gate.ps1       # a UI gate, in the test VM (needs a Debug x64 build)
 .\scripts\Publish-Aot.ps1                               # Native AOT publish, x64 + ARM64
 .\scripts\Measure-Perf.ps1 -Milestone <Mx>              # perf rows into docs/PERF.md
 winapp find-ui "<control or pattern>"                   # real WinUI samples before writing XAML
@@ -70,11 +70,12 @@ searching with coding. More: [docs/guides/ai-tooling.md](docs/guides/ai-tooling.
 **Build and run**
 - This is the owner's main machine. Never run UI automation, synthetic mouse/
   keyboard input, or UI-driven performance/contrast tests on the host desktop
-  without explicit permission for that test session. Prefer Windows Sandbox or
-  a dedicated VM; if isolation is unavailable, leave UI gates pending and continue
-  builds/unit tests. Never silently fall back to local. Never set
-  `WINTODO_ALLOW_LOCAL_UI=1` without that permission. Legacy UI scripts are local
-  and guarded; adding `--on sandbox` only to launch is insufficient.
+  without explicit permission for that test session. Run UI gates in the
+  `WintodoTest` VM: `.\scripts\Invoke-VmGate.ps1 -Gate run-<area>-gate.ps1`
+  ([ADR-013](docs/adr/ADR-013-hyperv-test-vm.md)). If the VM can't run a gate,
+  leave it pending and continue builds/unit tests. Never silently fall back to
+  local. Never set `WINTODO_ALLOW_LOCAL_UI=1` on the host without that permission;
+  `Invoke-VmGate.ps1` sets it only inside the guest.
 - Never run the packaged `.exe` directly. Use `BuildAndRun.ps1` or `winapp run`.
 - Never add `<WindowsPackageType>None</WindowsPackageType>`. Never delete `Package.appxmanifest`.
 - Never target `AnyCPU`. x64 or ARM64 only.
