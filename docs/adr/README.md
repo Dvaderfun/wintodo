@@ -21,6 +21,7 @@ owner's acknowledgement first (`AGENTS.md`, Working style).
 | [010](ADR-010-ai-friendly-repo-docs.md) | AI-friendly repo layout, vendored skills, toolchain 0.7 | accepted |
 | [011](ADR-011-ux13-validation-harnesses.md) | UX-13 validation with separately corrected harnesses | accepted |
 | [012](ADR-012-session-undo.md) | Session undo with atomic field restoration and list-delete membership | accepted |
+| [013](ADR-013-hyperv-test-vm.md) | UI gates, perf rows and clean-install checks run in the `WintodoTest` Hyper-V VM | accepted |
 
 ADR-001…007 were written inline in `PLAN.md` §2 and moved here verbatim by ADR-010.
 

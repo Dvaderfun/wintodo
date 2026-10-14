@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-10-11:
+As of 2026-10-14:
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -27,9 +27,10 @@ As of 2026-10-11:
 - **Known gaps:** Final app name and
   MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
-- **UI execution:** Main-machine automation disabled by default. Legacy UI and
-  performance scripts require session opt-in; Sandbox/VM migration remains open.
-  Build/unit-test work continues on the host. Never fall back to host UI silently.
+- **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
+  `scripts\Invoke-VmGate.ps1` (ADR-013). 14 gate runs pass there; m8 (16/17), settings
+  (8/9) and list-stability (2/3) fail and need reruns; undo, completion motion and
+  VM perf are not yet run (2026-10-14). Host UI automation stays disabled.
 - **UX-02:** Complete: Tasks settings 9/9, composer 3/3, clean Debug/Release
   builds and 259/259 tests. Baseline harness targeting/focus failures corrected;
   existing smart-list/FTS performance checks pass without budget changes.
@@ -2572,3 +2573,120 @@ input or system-setting change ran during verification. Parser/diff checks pass.
   a dedicated Windows VM. Adding `--on sandbox` only to launch is insufficient
   because direct UIA/input, paths, server helpers and cleanup still use the host.
 - Prior UI gate results remain recorded; no isolated gate PASS is claimed.
+
+## Tooling — Hyper-V test VM for UI gates          2026-10-14
+
+**Gate: PASS (m0 smoke in the VM, 4/4)**. `.\scripts\Invoke-VmGate.ps1 -Gate
+run-m0-gate.ps1` restored `clean`, copied the Debug x64 build and tests, ran the
+gate in the guest's signed-in desktop session and returned exit code 0. Checks:
+process responding, main window visible and titled, interactive controls have
+AutomationIds, screenshot captured. Results and screenshot were copied back to
+`tests/ui/artifacts/` (log `tests/ui/artifacts/vm/run-m0-gate-20261013-234132.log`).
+A deliberately failing earlier run returned exit code 1 through the same path.
+Nothing ran on the host desktop; `WINTODO_ALLOW_LOCAL_UI` is unset on the host
+at process, user and machine level. Build `-warnaserror` clean; 270/270 tests pass.
+
+**Shipped** ([ADR-013](adr/ADR-013-hyperv-test-vm.md))
+- `scripts/New-TestVm.ps1` creates `WintodoTest`: Gen 2, 4 vCPUs, 8 GB static,
+  80 GB dynamic VHDX, Default Switch, Secure Boot, vTPM, standard checkpoints.
+  Runs unelevated for Hyper-V Administrators.
+- `scripts/Install-TestVmWindows.ps1` installs Windows 11 Pro (build 26300)
+  unattended:
+  - an answer file on a temporary virtual DVD;
+  - the boot prompt answered through the VM's `Msvm_Keyboard`;
+  - a generated password, DPAPI-saved to
+    `%LOCALAPPDATA%\Wintodo\WintodoTest.credential.xml`;
+  - host locale `uk-UA` and FLE time zone in the guest.
+- `scripts/Initialize-TestVm.ps1` prepares the guest over PowerShell Direct and
+  takes the `clean` checkpoint:
+  - autologon via LSA secret;
+  - no lock screen or timeouts, and no update restarts;
+  - 1920 × 1080 display and Developer Mode;
+  - PowerShell 7.6.7, Windows App Runtime 2.5.1.0 and WinApp CLI 0.7.1, the
+    latter two pinned from `Directory.Packages.props`;
+  - the M10 test certificate in TrustedPeople.
+- `scripts/Invoke-VmGate.ps1` runs gates in the VM. It uses a one-shot interactive
+  scheduled task for the desktop session, a single-run mutex and artifact copy-back,
+  and turns the VM off afterwards. `scripts/Set-TestVmCredential.ps1` re-saves the
+  credential. `scripts/TestVm.Common.ps1` holds the shared helpers, including
+  `Save-TestVmScreen` (guest screen via Hyper-V WMI).
+- `tests/ui/run-m0-gate.ps1`: new runner for `m0-smoke.ps1` (which only takes a
+  PID). It waits up to 60 s for `Todo.List.AddTaskBox` before the smoke checks.
+- Host Hyper-V enhanced session mode turned off (owner-approved; no other VMs).
+- AGENTS.md hard rule, testing guide ("Running gates in the test VM") and ADR index
+  updated.
+
+**Deviations**
+- The owner asked to install Windows themselves; on 2026-10-14 they asked the
+  agent to do it, so the install became unattended (`Install-TestVmWindows.ps1`).
+- The payload omits `Wintodo.build.appxrecipe` and `AppX\`. The recipe lists
+  absolute host paths (`obj\`, NuGet cache), so `winapp run <folder>` failed in the
+  guest with "The build did not produce 275 file(s)". Without the recipe, winapp
+  builds the layout from the folder.
+- The first VM m0 run failed 2/4 (window not yet visible, screenshot failed). The
+  first launch in a fresh guest is cold, and `m0-smoke.ps1` checks immediately.
+  The runner now waits for the main window; `m0-smoke.ps1` itself is unchanged.
+  Its AutomationId check passed vacuously in that run, before any window existed.
+
+**Known issues carried forward**
+- Gates that seed databases with `dotnet test` are still pending in the VM: m3,
+  m5, m7, undo, multiselect, list-stability, completion-motion/measure and
+  notification-settings. They need the .NET SDK and sources in `clean`. `-Aot`
+  variants and `Measure-Perf.ps1` aren't wired up yet.
+- Other gates are unvalidated in the VM (m8, m13, settings, list-icon,
+  navigation-startup, composer-layout, m6). They may need the same window-ready
+  wait on a cold first launch.
+- The guest isn't activated (generic Pro install key); an activation watermark
+  may appear in screenshots.
+
+## Tooling — All automated gates wired into the test VM          2026-10-14
+
+**Gate: PARTIAL**. Swept in `WintodoTest` via `Invoke-VmGate.ps1`; logs are in
+`tests/ui/artifacts/vm/`.
+
+| Result | Gates |
+|---|---|
+| PASS | m0 4/4 · m3 · m4 9/9 + restart · m5 9/9 + restart · m6 · m7 preflight · m13 · m13 `-Aot` · composer-layout · composer-layout `-Aot` · navigation-startup · notification-settings · list-icon · multiselect |
+| FAIL | m8 16/17 · settings 8/9 · list-stability 2/3 |
+| Not run | undo (sweep stopped by owner request) · completion-measure/motion · `Measure-Perf.ps1` |
+
+The three failures are open; none is diagnosed as an app defect yet:
+- **m8:** "Original High Contrast state is restored" fails in the fresh guest.
+  It probably comes from restoring an empty default-scheme name; unconfirmed.
+  The check now reports which flags, scheme or colours differ. Rerun m8 to read it.
+- **settings:** "Add new and star … move tasks to top" failed because a
+  `winapp ui inspect --depth 16` call failed with no output. Not yet rerun, so
+  it's unknown whether this is flaky.
+- **list-stability:** Space completion moved the scroll anchor 178 px (limit one
+  row, 50 px). The VM runs at 100% scaling and 1920 × 1080. It needs a rerun to
+  separate flakiness (PROGRESS already notes "passes on repeat") from a real
+  layout bug.
+
+**Shipped**
+- `clean` now has .NET SDK 10.0.401 (official installer, SHA-512 checked against
+  release metadata) and a NuGet cache warmed for `tests\Wintodo.Data.Tests`.
+  `Initialize-TestVm.ps1 -Force` restores the old `clean` first.
+- `Invoke-VmGate.ps1` changes:
+  - It copies all tracked and untracked-not-ignored sources plus the host-built
+    outputs, through the shared `New-TestVmPayload`/`Copy-TestVmPayload` helpers.
+  - It builds `tests\Wintodo.Data.Tests` in the guest when the gate calls
+    `dotnet test`.
+  - `-Aot` copies `publish\aot\win-x64`. `-Gate Measure-Perf.ps1` copies the
+    Release FD build and AOT output, adds `-SkipBuild` and copies a changed
+    `docs/PERF.md` back. `-Include` adds extra files, such as a baseline.
+  - A warm-up launch runs before UI gates, then `Reset-AppxPackage`; `-NoWarmup`
+    skips it. A fresh guest's first launch takes 11–12 s, longer than the suites'
+    window waits (m5 failed on it). Measure-Perf never warms up.
+  - It recovers the gate lock if a previous run was killed.
+- `m4-detail.ps1`: the file dialog's Open control (id 1) is a SplitButton on host
+  build 28020 but a Button on guest build 26300. The test accepts both.
+- `m8-design-accessibility.ps1`: the restoration failure detail names what differs.
+- Host: `Publish-Aot.ps1 -Platforms x64` and the FD Release build refreshed.
+  Build is clean; no C# changes since the 270/270 unit test run.
+
+**Remaining**
+- Rerun m8, settings and list-stability; diagnose any that fail again.
+- Run the undo and completion-measure/motion gates (motion compares against a
+  same-environment baseline, so it isn't a UX-07 regression comparison) and a
+  `Measure-Perf.ps1` VM baseline labelled `-VM`.
+- m7 toast Complete/Snooze and reboot persistence remain manual.

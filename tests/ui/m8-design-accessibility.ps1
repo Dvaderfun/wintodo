@@ -597,16 +597,23 @@ try {
 }
 
 $restoredHighContrast = Get-HighContrast
-if ($restoredHighContrast.Flags -ne $originalHighContrast.Flags -or
-    $restoredHighContrast.Scheme -ne $originalHighContrast.Scheme -or
-    @($colorIndices | Where-Object {
+$restoreDifferences = @(
+    if ($restoredHighContrast.Flags -ne $originalHighContrast.Flags) {
+        "flags 0x{0:X} -> 0x{1:X}" -f $originalHighContrast.Flags, $restoredHighContrast.Flags
+    }
+    if ($restoredHighContrast.Scheme -ne $originalHighContrast.Scheme) {
+        "scheme '$($originalHighContrast.Scheme)' -> '$($restoredHighContrast.Scheme)'"
+    }
+    $colorIndices | Where-Object {
         [WintodoM8ThemeNative]::GetSysColor($_) -ne $originalColors[$_]
-    }).Count -ne 0) {
+    } | ForEach-Object { "colour $_" }
+)
+if ($restoreDifferences.Count -ne 0) {
     $fail++
     $results += @{
         name = "Original High Contrast state is restored"
         status = "FAIL"
-        detail = "The original flags, scheme or system colours were not restored."
+        detail = "Not restored: $($restoreDifferences -join ', ')."
     }
 } else {
     $pass++
