@@ -364,3 +364,26 @@ Evidence: `tests/ui/artifacts/ux13-approved-motion/placement-timings.json`,
 `reduced-motion-timing.json`, `animation-setting.json`, `results.json`,
 `completion.mp4` and screenshots. All historical failures retained;
 no threshold change, statistical speedup or Native AOT claim. UX-13 complete.
+
+### Test VM completion harness baseline — 2026-10-17
+
+WintodoTest Hyper-V VM: 4 vCPUs, 8 GB RAM, Windows 26300, 1920 × 1080,
+100% scale. Final Debug x64 build for both runs; fresh clean-checkpoint runs,
+200 tasks / 20 lists, 15 prewarmed in-process UIA placement samples with one
+warm-up excluded. These are same-build harness/behaviour checks; they are not
+a UX-07 regression comparison, statistical speedup claim or Native AOT matrix.
+
+| Run | Median | Mean | Samples | Result |
+|---|---:|---:|---:|---|
+| VM baseline | 429.568 ms | 424.515 ms | 15 | Captured |
+| VM motion gate | 359.499 ms | 366.242 ms | 15 | Existing strict comparison PASS |
+| VM reduced motion | 71.320 ms | 76.866 ms | 3 | All below 250 ms |
+
+Reduced-motion placements: 68.851, 90.426, 71.320 ms. Original Animation effects
+value 1 restored and read back as 1. Motion gate 7/7, zero failures/skips; video
+and screenshots delivered and reviewed. No budget changes.
+
+Evidence: `tests/ui/artifacts/completion-measure/vm-20261017/timings.json` and
+`tests/ui/artifacts/completion-motion/run-20261017-203731/` (placement timings,
+reduced-motion timings, animation-setting.json, results.json, completion.mp4).
+The optional M9-VM memory/startup/scroll perf matrix was not run.

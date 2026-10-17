@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-10-14:
+As of 2026-10-17:
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -19,18 +19,21 @@ As of 2026-10-14:
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
-- **Build:** Debug and Release x64, zero warnings with `WinUIAnalyzer` 0.7.1.
+- **Build:** Debug x64 clean on 2026-10-17 with `WinUIAnalyzer` 0.7.1;
+  Release/AOT outputs were last refreshed on 2026-10-14, before the viewport fix.
   Tests (xunit v3 on Microsoft Testing Platform): Core 169, Data 91, Sync 10 — 270/270,
-  zero skipped on the UX-10 validation run.
+  zero skipped on the 2026-10-17 VM follow-up validation run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** Final app name and
   MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
-  `scripts\Invoke-VmGate.ps1` (ADR-013). 14 gate runs pass there; m8 (16/17), settings
-  (8/9) and list-stability (2/3) fail and need reruns; undo, completion motion and
-  VM perf are not yet run (2026-10-14). Host UI automation stays disabled.
+  `scripts\Invoke-VmGate.ps1` (ADR-013). The earlier sweep's 14 passing runs remain
+  recorded. Follow-up: m8 17/17, settings 9/9 twice, list-stability 3/3 twice
+  after fixing intermittent viewport drift, undo 7/7, completion motion 7/7
+  including reduced motion. Completion uses a same-build VM baseline, not a
+  UX-07 regression comparison. VM perf remains unmeasured. Host UI automation stays disabled.
 - **UX-02:** Complete: Tasks settings 9/9, composer 3/3, clean Debug/Release
   builds and 259/259 tests. Baseline harness targeting/focus failures corrected;
   existing smart-list/FTS performance checks pass without budget changes.
@@ -2690,3 +2693,70 @@ The three failures are open; none is diagnosed as an app defect yet:
   same-environment baseline, so it isn't a UX-07 regression comparison) and a
   `Measure-Perf.ps1` VM baseline labelled `-VM`.
 - m7 toast Complete/Snooze and reboot persistence remain manual.
+
+## Tooling — VM follow-up gates and viewport restoration          2026-10-17
+
+**Gate:** PASS for the required automated follow-up; optional VM perf not run.
+Host Debug x64 build: zero warnings/errors; Core/Data/Sync tests 270/270,
+zero failures/skips. All UI execution stayed in WintodoTest (Windows 26300,
+1920 × 1080, 100% scale); no host app launch, automation or UI opt-in.
+
+| Gate | Results this session |
+|---|---|
+| M8 | Initial 16/17 (1 failure); corrected harness 17/17; final app 17/17 (0 failures on both corrected runs) |
+| Settings | Unchanged 9/9 twice (0 failures on both runs) |
+| List stability | Before fix: 3/3, then 2/3 (1 failure); after fix: 3/3 twice (0 failures) |
+| Undo | Initial 5/7 (2 failures); intermediate harness 0/7 (7 failures); corrected harness 7/7 (0 failures) |
+| Completion measure | 15/15 placement samples captured; exit 0 |
+| Completion motion | 7/7 (0 failures/skips), including reduced motion and setting restoration |
+| M9-VM perf matrix | Not run (optional) |
+
+**Shipped**
+- M8 failure reproduced exactly: flags and all colours restored, but SPI scheme
+  changed from empty to `High Contrast Black`. Both a null pointer and an explicit
+  empty string retain Windows' cached name; clearing the preference, broadcasting
+  settings change and refreshing per-user parameters do not clear that cache.
+  Restore the saved registry preference for the empty-scheme case. Only an
+  originally empty, inactive scheme checks the preference instead of the cached
+  name; named/active schemes, flags and every system colour remain exact checks.
+  Original/restored values are saved in `contrast-restoration.json`.
+- Settings' earlier empty-output `inspect --depth 16` failure did not recur in
+  two unchanged clean-checkpoint runs. Classified as transient CLI/UIA failure;
+  no app change or retry that hides failures.
+- Stability reproduced a real intermittent app layout defect: 93 px drift after
+  a 10 px passing run, versus the 50 px limit (previous sweep: 178 px).
+  Grouped virtualization can revise offsets after ChangeView's first correction.
+  Viewport restoration now rechecks/corrects the realized anchor, at most four
+  times, stopping within 1 DIP and cancelling on newer updates or user input.
+  Two clean-checkpoint runs passed with 10 px drift each; exact completion focus
+  and Space restoration also passed. This is WinUI layout code, not Core logic;
+  the existing real-VM gate supplies regression coverage instead of a mock unit test.
+- Undo's initial bulk check failed CLI focus confirmation on the ListView; its
+  list-deletion check missed the expiring snackbar. Keyboard undo now focuses
+  the list menu button, multi-selection focuses a selected row, and list deletion
+  uses Ctrl+Z. An intermediate row-search approach failed on the empty target
+  list and cascaded to 0/7; that approach was removed. Final run passes 7/7.
+- Same final Debug build and VM environment: baseline completion median/mean
+  429.568/424.515 ms; motion run 359.499/366.242 ms (15 samples each, one warm-up
+  excluded). Original strict thresholds unchanged. Reduced-motion placements:
+  68.851, 90.426, 71.320 ms; animation setting 1 restored/verified as 1.
+  Motion 7/7 is a harness/behaviour check, not a UX-07 regression comparison,
+  statistical speedup claim or AOT/perf-matrix result. Timings recorded in PERF.md.
+- Used `-KeepRunning` and Hyper-V `Save-TestVmScreen` for guest diagnostics;
+  reviewed returned screenshots. WinUI code review: no findings above informational.
+  No ADR or accepted UX decision changed.
+
+**Evidence**
+- Logs: `tests/ui/artifacts/vm/` (run names dated 20261017).
+- M8: `m8/run-20261017-194839` (failure), `m8/run-20261017-200331` (fixed).
+  Final app recheck: `m8/run-20261017-205004`, 17/17.
+- Settings: `settings/run-20261017-195402`, `settings/run-20261017-200810`.
+- Stability: `list-stability/run-20261017-195848`, `run-20261017-201236`
+  (93 px failure), `run-20261017-201833`, `run-20261017-202347` (fixed).
+- Undo: `undo/run-20261017-204501` (final); earlier failed logs retained.
+- Completion: `completion-measure/vm-20261017/timings.json`,
+  `completion-motion/run-20261017-203731` (results, timings, video and screenshots).
+
+**Remaining**
+- Optional `Measure-Perf.ps1 -Milestone M9-VM` baseline not run.
+- M7 toast actions/reboot, Narrator, live CalDAV and release/manual rows remain open.

@@ -526,12 +526,17 @@ public sealed partial class TaskListView : UserControl
         {
             _tasksScrollViewer.BringIntoViewOnFocusChange = false;
             _tasksScrollViewer.ChangeView(null, offset, null, disableAnimation: true);
-            if (_uiSettings.AnimationsEnabled) await Task.Delay(TimeSpan.FromMilliseconds(200));
-            if (version != _updateVersion) return;
-            TasksList.UpdateLayout();
-            if (anchor is not null && TasksList.ContainerFromItem(anchor) is ListViewItem row)
+            // ChangeView realizes grouped rows and can revise the virtualizing
+            // panel's estimated offsets again. Recheck after each correction;
+            // a single correction can leave the anchor several rows away.
+            for (int attempt = 0; attempt < 4; attempt++)
             {
+                await Task.Delay(TimeSpan.FromMilliseconds(200));
+                if (version != _updateVersion) return;
+                TasksList.UpdateLayout();
+                if (anchor is null || TasksList.ContainerFromItem(anchor) is not ListViewItem row) break;
                 double y = row.TransformToVisual(TasksList).TransformPoint(new Windows.Foundation.Point()).Y;
+                if (Math.Abs(y - anchorY) < 1) break;
                 _tasksScrollViewer.ChangeView(null, _tasksScrollViewer.VerticalOffset + y - anchorY, null, disableAnimation: true);
             }
         }

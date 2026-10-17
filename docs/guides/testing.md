@@ -175,6 +175,17 @@ The guest runs Windows build 26300; system dialogs can differ from newer host
 builds. For example, the file dialog's Open control (id 1) is a Button there but
 a SplitButton on 28020. Match such controls by AutomationId, not by type.
 
+M8 restores the saved High Contrast preference as well as flags and all system
+colours. With an originally empty, inactive scheme, Windows retains the last
+scheme name in its SPI cache even after the empty registry preference is restored;
+the harness checks that preference instead of requiring an unachievable empty
+cached name. Named or originally active schemes still require exact SPI equality.
+The original/restored values are saved in `contrast-restoration.json`.
+
+Undo keyboard checks focus a row or the list menu button; focusing the ListView
+itself can fail its CLI focus confirmation after selection changes. List deletion
+restoration uses Ctrl+Z so slow VM CLI calls cannot exhaust the snackbar lifetime.
+
 **Performance:** `-Gate Measure-Perf.ps1` copies the framework-dependent Release
 build and `publish\aot\win-x64`, builds the Release test project in the guest and
 adds `-SkipBuild`. Build both on the host first, exactly as `Measure-Perf.ps1`
