@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-10-17:
+As of 2026-10-18:
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -68,8 +68,10 @@ As of 2026-10-17:
   M6 7/7, list icons 10/10, Tasks settings 9/9 and composer 3/3 now pass.
   Complete: motion 7/7 with strict fresh timing PASS, reduced motion and Windows
   setting restoration verified; corrected harnesses acknowledged under ADR-011.
-- **Next:** Settle UX-10's optional row-completion snackbar, then UX-12, via
-  [UX-PLAN.md](UX-PLAN.md). M9 remains owner-deferred;
+- **Next:** UX-12 skipped by the owner on 2026-10-18; keep My Day's midnight
+  reset for To Do parity. UX-14 sort indicator is claimed by Codex/main; the owner
+  approved DESIGN §3.1 on 2026-10-18 (ADR-014). UX-10's optional row-completion
+  snackbar remains undecided. M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
 - **UX-10:** Shared 20-entry undo history implemented for task/list/step deletion,
@@ -2760,3 +2762,24 @@ zero failures/skips. All UI execution stayed in WintodoTest (Windows 26300,
 **Remaining**
 - Optional `Measure-Perf.ps1 -Milestone M9-VM` baseline not run.
 - M7 toast actions/reboot, Narrator, live CalDAV and release/manual rows remain open.
+
+## Planning — Skip configurable My Day reset          2026-10-18
+
+**Gate:** Not run; planning-only change.
+
+- Owner declined UX-12 to preserve Microsoft To Do parity: My Day continues
+  resetting at midnight, without a configurable reset time.
+- UX-PLAN status and Current state updated. UX-14 is the next proposal; its
+  DESIGN acknowledgement is still required before implementation. The optional
+  UX-10 completion snackbar has not been approved or declined by this decision.
+- No app code or existing gate result changed.
+
+## UX-14 — Design acknowledgement and claim          2026-10-18
+
+**Gate:** Not run; acknowledgement recorded before implementation.
+
+- Owner approved a compact Sort button at default, a Sorted by … chip with
+  direction/reset otherwise, and reset to each list's actual default.
+- Updated DESIGN §3.1 and recorded ADR-014; claimed UX-14 in UX-PLAN.
+- Existing sort AutomationIds, choices and persistence are required to survive.
+- UX-12 remains skipped, UX-10 completion snackbar undecided, M9 deferred.

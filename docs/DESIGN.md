@@ -147,6 +147,18 @@ Width `*`, horizontal padding **24**, top padding **16**, bottom padding **0**
 - Right side: `Sort` `DropDownButton` (text + chevron) and a `⋯` `Button`
   (32 × 32, `Subtle` style) opening the list menu: Rename, Change theme,
   Change icon, Show/hide completed, Print, Duplicate, Export `.ics`, Delete list.
+- Sorting at the list's default shows only the compact `Sort` button. When
+  sorting differs, show a compact `Sorted by …` chip below the header, with
+  direction and a 32 × 32 reset button. Reset restores both the actual default
+  mode and direction: Manual ascending for My Day and user lists (including
+  Tasks), Importance ascending for Important, Due date ascending for Planned,
+  and the existing date ordering for All and Completed (Creation date mode,
+  direction not reversed; Completed orders newest completions first).
+  Completed ignores mode choices in its query, so only reversing its direction
+  makes its ordering non-default. Keep all existing sort AutomationIds and menu
+  choices. User-list sort settings, including reset, persist; smart-list sorts
+  retain their existing session/navigation behavior.
+  Owner acknowledged UX-14 on 2026-10-18; see ADR-014.
 - Header spacing to composer: **16**.
 
 ### 3.2 Add-task composer
