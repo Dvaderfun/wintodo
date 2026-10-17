@@ -60,9 +60,9 @@ this dependency exception does not mark those gates passed.
 | UX-09 | Real multi-select and bulk actions | B | L | UX-07 | TaskListView, TaskListVM, TaskRow | done (b327d85; multiselect 7/7, M3/M8/stability PASS) |
 | UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | in progress (Codex/main; undo 7/7, M3/M4/M13/M8 PASS; optional completion awaiting owner) |
 | UX-11 | Drop tasks on My Day and Important | B | S | — | ShellPage | done (41b1946; M5 9/9 + restart, M8 17/17) |
-| UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | ready |
+| UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | skipped (owner, 2026-10-18; keep midnight for To Do parity) |
 | UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | done (efa09c2; motion 7/7, ADR-011 accepted) |
-| UX-14 | 🔒 Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | awaiting owner |
+| UX-14 | Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | in progress (Codex/main; owner approved DESIGN §3.1 on 2026-10-18) |
 | UX-15 | 🔒 Quieter placeholder when a list has no icon | B | S | — | TaskListView | awaiting owner |
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | awaiting owner |
 | UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | awaiting owner |
@@ -473,6 +473,9 @@ stays clean.
 
 ### UX-12 — My Day reset time
 
+**Disposition:** Skipped by the owner on 2026-10-18 to preserve Microsoft To Do
+parity. Keep the midnight reset; do not implement the configurable setting below.
+
 **Problem.** DESIGN §12 specifies a My Day reset time (default midnight). Today
 My Day membership is `MyDayDate = IClock.Today` (`SqliteTaskStore.Lists.cs:122`,
 `SqliteTaskStore.Tasks.cs:437`). People who work past midnight lose their day
@@ -501,7 +504,13 @@ at 00:00.
   the reset time, and My Day membership changes at the reset time only.
 - The M5 gate passes.
 
-### UX-14 — 🔒 Show the sort indicator only when the sort isn't the default
+### UX-14 — Show the sort indicator only when the sort isn't the default
+
+**Owner acknowledgement (2026-10-18):** Approved in the implementation request:
+compact `Sort` button by default; a `Sorted by …` chip with direction and reset
+for non-default sorting; reset restores the actual list default. Preserve existing
+AutomationIds, sorting choices and persistence. DESIGN §3.1 updated before coding;
+decision recorded in [ADR-014](adr/ADR-014-default-sort-indicator.md).
 
 **Proposal.** The header always shows the sort mode ("Creation date,
 ascending"), as DESIGN §3.1 specifies. To Do shows a sort chip only when the
