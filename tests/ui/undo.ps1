@@ -29,7 +29,7 @@ function OpenTask([string]$Title) {
 }
 function Undo([switch]$Keyboard) {
     if ($Keyboard) {
-        Ui @('focus', 'Todo.List.Tasks') | Out-Null
+        Ui @('focus', 'Todo.List.MenuButton') | Out-Null
         Ui @('send-keys', 'ctrl+vk=0x5A', '--via', 'send-input') | Out-Null
     } else {
         Ui @('wait-for', 'Todo.List.UndoButton', '-t', '3000') | Out-Null
@@ -56,7 +56,7 @@ foreach ($id in @($First, $Second)) {
 '@ | Set-Content $path
     powershell.exe -NoProfile -File $path -AppPid $AppPid -First $first -Second $second
     if ($LASTEXITCODE -ne 0) { throw 'Multi-selection setup failed.' }
-    Ui @('focus', 'Todo.List.Tasks') | Out-Null
+    Ui @('focus', (Row 'Bulk task 05').selector) | Out-Null
 }
 try {
     Ui @('wait-for', 'Todo.List.Tasks', '-t', '10000') | Out-Null
@@ -183,7 +183,7 @@ try {
         Ui @('wait-for', 'Todo.Dialog.DeleteList', '-t', '3000') | Out-Null
         Ui @('invoke', 'Todo.Dialog.DeleteList.Confirm') | Out-Null
         Ui @('wait-for', $navId, '--gone', '-t', '3000') | Out-Null
-        Undo
+        Undo -Keyboard
         Ui @('wait-for', $navId, '-t', '3000') | Out-Null
         Ui @('invoke', (Match 'Multiselect source' 'ListItem').automationId) | Out-Null
         Ui @('wait-for', 'Bulk task 04', '-t', '3000') | Out-Null

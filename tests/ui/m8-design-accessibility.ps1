@@ -508,6 +508,9 @@ Test-UI "Visible authored controls pass the AutomationId audit" {
 }
 
 $originalHighContrast = Get-HighContrast
+$highContrastRegistryPath = 'HKCU:\Control Panel\Accessibility\HighContrast'
+$originalSchemePreference = Get-ItemPropertyValue -LiteralPath $highContrastRegistryPath `
+    -Name 'High Contrast Scheme'
 $colorIndices = [int[]](0..30)
 $originalColors = [uint32[]]@($colorIndices | ForEach-Object {
     [WintodoM8ThemeNative]::GetSysColor($_)
@@ -591,18 +594,37 @@ try {
     Set-HighContrast `
         -Flags $originalHighContrast.Flags `
         -Scheme $originalHighContrast.Scheme
+    if ([string]::IsNullOrEmpty($originalHighContrast.Scheme)) {
+        # SPI_SETHIGHCONTRAST retains the last scheme even for an explicit empty
+        # string. Restore a fresh profile's empty preference after disabling HC.
+        Set-ItemProperty -LiteralPath 'HKCU:\Control Panel\Accessibility\HighContrast' `
+            -Name 'High Contrast Scheme' -Value $originalSchemePreference -ErrorAction Stop
+    }
     if (-not [WintodoM8ThemeNative]::SetSysColors(31, $colorIndices, $originalColors)) {
         throw "Could not restore original system colours."
     }
 }
 
 $restoredHighContrast = Get-HighContrast
+$restoredSchemePreference = Get-ItemPropertyValue -LiteralPath $highContrastRegistryPath `
+    -Name 'High Contrast Scheme'
+@{ original = $originalHighContrast; restored = $restoredHighContrast
+   originalPreference = $originalSchemePreference; restoredPreference = $restoredSchemePreference } |
+    ConvertTo-Json | Set-Content (Join-Path $ArtifactDirectory 'contrast-restoration.json')
 $restoreDifferences = @(
     if ($restoredHighContrast.Flags -ne $originalHighContrast.Flags) {
         "flags 0x{0:X} -> 0x{1:X}" -f $originalHighContrast.Flags, $restoredHighContrast.Flags
     }
-    if ($restoredHighContrast.Scheme -ne $originalHighContrast.Scheme) {
+    # Windows cannot clear the cached SPI scheme name. With HC originally off
+    # and no scheme selected, verify the restored preference instead. Flags and
+    # every system colour still require exact equality; named schemes do too.
+    $emptyInactiveScheme = [string]::IsNullOrEmpty($originalHighContrast.Scheme) -and
+        -not ($originalHighContrast.Flags -band $highContrastOn)
+    if (-not $emptyInactiveScheme -and $restoredHighContrast.Scheme -ne $originalHighContrast.Scheme) {
         "scheme '$($originalHighContrast.Scheme)' -> '$($restoredHighContrast.Scheme)'"
+    }
+    if ($restoredSchemePreference -ne $originalSchemePreference) {
+        "scheme preference '$originalSchemePreference' -> '$restoredSchemePreference'"
     }
     $colorIndices | Where-Object {
         [WintodoM8ThemeNative]::GetSysColor($_) -ne $originalColors[$_]
