@@ -66,7 +66,7 @@ this dependency exception does not mark those gates passed.
 | UX-15 | Quieter placeholder when a list has no icon | B | S | — | TaskListView | done (9976747; list-icon 14/14, M8 17/17, 288 tests) |
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | skipped for now (owner, 2026-10-18) |
 | UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | skipped for now (owner, 2026-10-18) |
-| UX-18 | 🔒 Share target (text/URL → task) | D | M | — | Manifest, App | awaiting owner (selected 2026-10-18; ADR-015 proposal prepared) |
+| UX-18 | Share target (text/URL → task) | D | M | — | Manifest, App | in progress (Codex/main; ADR-015 approved 2026-10-18) |
 | UX-19 | 🔒 My Day carry-over and suggestions, rule-based | D | M | UX-12 | Core, TaskListView | awaiting owner |
 | UX-20 | Close the open manual gate rows (owner-run) | C | — | — | — | owner |
 
@@ -413,6 +413,11 @@ keyboard table in §8, and add the shortcuts to the shortcuts dialog
 - M3 and M8 pass.
 
 ### UX-10 — Undo for every destructive action
+
+**Completion authorization (2026-10-18):** Owner requested fixing and verifying
+UX-10 after delegating assessment/approval. This includes the unfinished row
+completion undo, reusing field restoration and the five-second snackbar;
+detail completion stays quiet. DESIGN §7 updated before implementation.
 
 **Review (2026-10-18):** Owner delegated assessment/approval if complete. Build
 and all 288 tests pass, but latest undo VM gate is 6/7 (bulk snackbar timing).

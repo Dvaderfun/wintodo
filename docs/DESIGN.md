@@ -528,8 +528,10 @@ The window minimum is 640 × 480, so no state below that is needed.
 
 ## 7. Motion
 
-<!-- UX-10 proposal, pending owner acknowledgement: Completing from a list row
-shows a 5 s "Completed · Undo" snackbar; completion in the detail pane stays quiet. -->
+Completing from a list row shows a 5 s "Completed · Undo" snackbar, including
+recurring occurrence completion; completion in the detail pane stays quiet.
+Ctrl+Z retains the row-completion entry after snackbar expiry. Owner authorized
+finishing and verifying UX-10 on 2026-10-18 after delegating its assessment.
 
 Prefer built-in theme transitions — they respect the user's reduce-motion
 setting automatically. For explicit animations, check
