@@ -133,8 +133,13 @@ Width `*`, horizontal padding **24**, top padding **16**, bottom padding **0**
   theme.
 - Editable in place on click for user lists (turns into a borderless `TextBox`,
   commits on `Enter` / focus loss, `Esc` cancels).
-- An always-visible 44 px icon button precedes an editable user-list title. It
-  shows the selected emoji or the Fluent Emoji symbol when unset. Its flyout
+- A 44 px icon button precedes an editable user-list title. It shows the
+  selected emoji; when unset, a 16 px theme-colour dot matches navigation and
+  the button has no idle border. Hover or keyboard focus reveals the Fluent
+  Emoji affordance. The button remains keyboard-focusable and accessible by
+  its existing name. In High Contrast, the idle dot uses system window text
+  colour against the header background. Owner approved UX-15 on 2026-10-18;
+  see the amendment to ADR-009. Its flyout
   presents a six-column preset emoji grid plus `Clear icon`; choosing an item
   keeps an active title editor open and updates the header and nav row together.
 - Important, Planned, All, Completed, and the pinned default Tasks list place

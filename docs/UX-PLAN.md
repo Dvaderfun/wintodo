@@ -63,7 +63,7 @@ this dependency exception does not mark those gates passed.
 | UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | skipped (owner, 2026-10-18; keep midnight for To Do parity) |
 | UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | done (efa09c2; motion 7/7, ADR-011 accepted) |
 | UX-14 | Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | shipped (owner authorized commit/push 2026-10-18; sort 13/13, M5 12/12, M8 17/17; stability 2/3 remains open) |
-| UX-15 | 🔒 Quieter placeholder when a list has no icon | B | S | — | TaskListView | awaiting owner |
+| UX-15 | Quieter placeholder when a list has no icon | B | S | — | TaskListView | in progress (Codex/main; owner approved 2026-10-18) |
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | awaiting owner |
 | UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | awaiting owner |
 | UX-18 | 🔒 Share target (text/URL → task) | D | M | — | Manifest, App | awaiting owner |
@@ -534,7 +534,7 @@ M5 12/12 and M8 17/17 pass; stability remains 2/3 and also fails with the
 previous header. This is an explicit shipping exception, not full acceptance.
 Track viewport repair separately in the parking lot; retain the existing gate.
 
-### UX-15 — 🔒 Quieter placeholder when a list has no icon
+### UX-15 — Quieter placeholder when a list has no icon
 
 **Proposal.** DESIGN §3.1 (~line 135) shows an outlined smiley in the header
 when a list has no emoji. It reads as if the list's icon *is* a smiley, and in
@@ -542,6 +542,19 @@ high contrast it gets a heavy border. Option: show the list's theme-colour dot
 (the same thing the nav pane shows), and reveal the emoji-picker affordance
 only on hover or keyboard focus. **Owner decision** required, and ADR-009 must
 be amended.
+
+**Owner acknowledgement (2026-10-18):** Approved the colour-dot fallback and
+revealing the emoji-picker affordance on hover or keyboard focus. The approved
+amendment is appended to ADR-009; DESIGN §3.1 is updated before implementation.
+
+**Acceptance.**
+- An unset user-list icon shows a 16 px theme-colour dot in the existing 44 px
+  button, with no idle border; hover/focus reveals the Fluent Emoji affordance.
+- The button remains in the tab order with its existing accessible name and
+  AutomationId; Enter opens the existing picker, and selected emoji stay visible.
+- Choosing, clearing, navigation and restart retain the existing icon behavior.
+- Light, Dark, narrow/detail-open and all four contrast palettes pass visual
+  review; list-icon and M8 VM gates, build/tests and winui-code-review pass.
 
 ---
 

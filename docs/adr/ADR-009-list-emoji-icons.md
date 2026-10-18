@@ -44,3 +44,19 @@ the existing colour dot. The fixed default Tasks list continues to use Home.
 - CalDAV collection metadata currently synchronizes only the display name, so
   emoji icons, like list colours and backgrounds, remain local to this client.
   Manual `.ics` export/import preserves them.
+
+## UX-15 amendment — quieter unset header icon (2026-10-18)
+
+**Owner acknowledgement:** The owner approved the UX-15 proposal in this
+session, including this amendment. The original decision above is retained.
+
+- For a non-default user list without an emoji, show its 16 px theme-colour
+  dot in the existing 44 px header button, without an idle border.
+- Reveal the Fluent Emoji picker affordance only on hover or keyboard focus.
+  Keep the semantic Button, tab stop, accessible name and AutomationId; Enter
+  still opens the existing flyout. A selected emoji stays visible.
+- High Contrast uses system window text for the idle header dot and native
+  button hover/focus chrome. Navigation keeps its selected/unselected system
+  colours appropriate to its own background.
+- Clearing an icon returns to the dot. Presets, custom emoji, title editing,
+  persistence and iCalendar metadata retain their existing behavior.
