@@ -19,14 +19,15 @@ As of 2026-10-18:
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
-- **Build:** Debug x64 clean on 2026-10-17 with `WinUIAnalyzer` 0.7.1;
+- **Build:** Debug x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1;
   Release/AOT outputs were last refreshed on 2026-10-14, before the viewport fix.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 169, Data 91, Sync 10 — 270/270,
-  zero skipped on the 2026-10-17 VM follow-up validation run.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 185, Data 93, Sync 10 — 288/288,
+  zero failed/skipped on the 2026-10-18 UX-14 validation run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
-- **Known gaps:** Final app name and
-  MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
+- **Known gaps:** Completion viewport drift remains open: the UX-14 validation
+  and previous-header comparison each pass only 2/3 list-stability checks.
+  Final app name and MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
   `scripts\Invoke-VmGate.ps1` (ADR-013). The earlier sweep's 14 passing runs remain
@@ -69,8 +70,12 @@ As of 2026-10-18:
   Complete: motion 7/7 with strict fresh timing PASS, reduced motion and Windows
   setting restoration verified; corrected harnesses acknowledged under ADR-011.
 - **Next:** UX-12 skipped by the owner on 2026-10-18; keep My Day's midnight
-  reset for To Do parity. UX-14 sort indicator is claimed by Codex/main; the owner
-  approved DESIGN §3.1 on 2026-10-18 (ADR-014). UX-10's optional row-completion
+  reset for To Do parity. The owner authorized committing/pushing UX-14 on
+  2026-10-18 with its failed stability gate documented. Sort 13/13, M5 9/9 +
+  restart 3/3 and M8 17/17 pass; list stability remains 2/3, including a
+  previous-header comparison. Recommended next work is a separate completion
+  viewport investigation and fix, without changing the one-row tolerance.
+  UX-10's optional row-completion
   snackbar remains undecided. M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
@@ -2783,3 +2788,77 @@ zero failures/skips. All UI execution stayed in WintodoTest (Windows 26300,
 - Updated DESIGN §3.1 and recorded ADR-014; claimed UX-14 in UX-PLAN.
 - Existing sort AutomationIds, choices and persistence are required to survive.
 - UX-12 remains skipped, UX-10 completion snackbar undecided, M9 deferred.
+
+## UX-14 — Conditional sort indicator          2026-10-18
+
+**Gate:** UX-14 behavior PASS; required list-stability gate FAIL. Owner scope
+decision pending before final implementation commit/push.
+
+**Shipped in the working tree**
+- Compact localized Sort dropdown at default; Sorted by … chip with direction
+  and command-driven reset otherwise. Existing sort/menu AutomationIds retained.
+- TaskSorting owns actual list-kind defaults and compares effective sort terms.
+  Completed retains its fixed completion-date ordering and ignores mode choices.
+- Reset saves both mode/direction through existing user-list persistence; smart
+  sorts retain their previous navigation/session lifetime. Search/Settings hide
+  the indicator. Async saves retain the initiating query/list across navigation.
+- Added 16 Core default/effective-sort cases and two Data persistence/order cases.
+- Preserved and included the owner's UX-12 skip planning edits in approval commit
+  `185cb95`. DESIGN and ADR-014 acknowledgement were written before implementation.
+
+**Validation**
+- Final Debug x64 build with `-warnaserror`: 0 warnings, 0 errors. Unit tests:
+  Core 185, Data 93, Sync 10; 288 PASS, 0 FAIL, 0 SKIP.
+- WintodoTest sort gate `run-20261017-220208`: initial 10/10, saved-sort restart
+  2/2, reset restart 1/1; total 13 PASS, 0 FAIL, 0 SKIP. Includes five smart
+  lists, Tasks, user lists, task order, navigation/search, keyboard reset,
+  Light/Dark, detail-open and minimum-width layout with overlay detail closed.
+- M5 `run-20261017-220825`: phase one 9/9, restart 3/3; 12 PASS, 0 FAIL, 0 SKIP.
+- M8 `run-20261017-215419`: 17 PASS, 0 FAIL, 0 SKIP; chip/keyboard reset audited
+  in Aquatic, Desert, Dusk and Night sky; original Windows contrast state restored.
+- List stability with final UX-14: two runs each 2 PASS, 1 FAIL, 0 SKIP;
+  completion anchor drift +65 px against a 54 px limit. Exact completion-focus
+  and uncompletion assertions after the drift check were not reached.
+- Controlled comparison using only the previous header XAML (`0e17d5a`) with the
+  same completion code/fixture: 2 PASS, 1 FAIL, 0 SKIP; +93 px anchor drift.
+  UX-14 XAML restored and final build clean afterward.
+- A two-second observation experiment on final UX-14 also failed: 2 PASS,
+  1 FAIL, 0 SKIP; -350 px anchor drift. Timing experiment reverted; no viewport
+  implementation or tolerance change remains in this package.
+- All launches/input/captures ran exclusively through Invoke-VmGate in
+  WintodoTest. Guest logs/artifacts copied back; credentials never printed.
+
+**Harness corrections and review**
+- Initial sort attempts: 0/8, 0/10, 0/10, 9/10 and 9/10 (each 0 skips;
+  three restart checks not reached per attempt). Corrected nested-content name
+  assertion, expected-absence checks, PowerShell Sort alias collision, search
+  editor targeting via Ctrl+F, and visible-header check when detail overlays.
+- Initial M5: phase one 9/9; restart runner failed before its three assertions.
+  Added a bounded 15-second app-readiness wait; corrected full rerun passes.
+- Vendored winui-code-review completed: no outstanding Error/Warning in UX-14
+  changes. Localized accessible dropdown/reset names, explicit x:Bind modes,
+  commands, theme resources, 32px reset target, no dependencies/schema changes,
+  AOT-safe Core policy and persistence verified. Reviewed VM screenshots in
+  Light/Dark, narrow layout and contrast. Existing viewport failure tracked above.
+- M9 remains deferred; no AOT runtime/performance validation claimed. UX-10's
+  optional completion snackbar remains undecided; My Day still resets at midnight.
+
+## UX-14 — Commit/push disposition          2026-10-18
+
+**Gate:** Sort 13/13, M5 12/12 and M8 17/17 PASS; list stability remains FAIL
+(2/3). This disposition does not mark the failed or unreached assertions passed.
+
+- Owner explicitly chose commit/push with the failed stability gate documented.
+  UX-14 ships within its accepted sort-indicator scope; viewport repair stays
+  separate. The preceding implementation entry records the validation evidence
+  and the scope decision that was pending at the end of that session.
+- Pre-commit verification: fresh Debug x64 `-warnaserror` build passed with
+  0 warnings/errors; all 288 unit tests passed with 0 failures/skips. Reviewed
+  the final UX-14 diff under vendored winui-code-review: no outstanding
+  Error/Warning. VM gates were not rerun during this commit/push handoff;
+  their exact prior results remain recorded above.
+- Existing UX-12 skip edits are preserved. UX-10's optional completion snackbar,
+  M9 deferral and owner-controlled release decisions remain unchanged.
+- Recommended next: diagnose completion anchor drift, fix the responsible layer
+  and pass all three list-stability checks in WintodoTest with the existing
+  54 px limit, including exact completion focus and Space uncompletion.

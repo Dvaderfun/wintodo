@@ -210,6 +210,9 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial string SortLabel { get; set; }
 
     [ObservableProperty]
+    public partial bool HasNonDefaultSort { get; set; }
+
+    [ObservableProperty]
     public partial string ShowCompletedMenuLabel { get; set; }
 
     [ObservableProperty]

@@ -107,6 +107,9 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
   define sort terms shared with the SQLite query builder, and return unformatted
   subtitle parts. The App maps these to localised group headers, cached row view
   models and metadata text, preserving UI selection and completed expansion.
+  TaskSorting also defines each list kind's default and compares effective sort
+  terms for the header indicator; resetting restores default mode/direction via
+  the same App command path and existing user-list persistence as sort changes.
 - Bound groups and rows update through Core SequenceDiff insert/remove/move
   operations. Stable TaskGroupCollection instances explicitly implement
   IObservableVector for Release/AOT projection. Group headers bind to observable

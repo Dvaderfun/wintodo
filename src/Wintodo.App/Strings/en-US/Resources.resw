@@ -1137,4 +1137,11 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <data name="Undo_RepeatCleared" xml:space="preserve"><value>Removed repeat</value></data>
   <data name="Undo_Completed" xml:space="preserve"><value>Completed</value></data>
   <data name="Undo_Failed" xml:space="preserve"><value>Couldn’t undo. Try again.</value></data>
+  <!-- UX-14 -->
+  <data name="SortButtonLabel.Text" xml:space="preserve"><value>Sort</value></data>
+  <data name="SortButton.AutomationProperties.Name" xml:space="preserve"><value>Sort</value></data>
+  <data name="SortResetButton.AutomationProperties.Name" xml:space="preserve"><value>Reset sorting to list default</value></data>
+  <data name="SortResetButton.ToolTipService.ToolTip" xml:space="preserve"><value>Reset sorting to list default</value></data>
+  <data name="Sort_IndicatorLabel" xml:space="preserve"><value>Sorted by {0}, {1}</value></data>
+  <data name="Sort_CompletionDate" xml:space="preserve"><value>Completion date</value></data>
 </root>

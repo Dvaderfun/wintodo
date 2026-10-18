@@ -90,6 +90,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `m2-shell.ps1`, `m2-theme.ps1` | Shell layout, Light/Dark/High Contrast |
 | `run-m3-gate.ps1` / `m3-lists-tasks.ps1` / `m3-restart.ps1` | List CRUD, add/complete/reorder/delete/undo tasks and drag-order persistence after restart; runner uses a fresh database with delete confirmation off |
 | `run-list-stability-gate.ps1` | 200-task middle-of-list fixture: Ctrl+I and Alt+Down retain selection/focus; completion keeps viewport within one row, exact completed-row focus, and Space restores that same task |
+| `run-sort-indicator-gate.ps1` | UX-14: actual defaults across five smart lists, Tasks and user lists; mode/direction changes, effective Completed ordering, keyboard reset, search/navigation, Light/Dark and detail/narrow layout, non-default and reset persistence across two restarts. M8 also checks the chip/reset in all four contrast palettes. |
 | `run-multiselect-gate.ps1` | Ctrl/Shift selection, SelectionPattern and detail visibility, bulk importance/My Day/due date/completion, move, delete/undo, Ctrl+A and Esc |
 | `run-completion-motion-gate.ps1 -BaselineTimings <timings.json>` | 200 tasks / 20 lists: 15 in-process UIA placement samples versus a matched UX-07 baseline from `run-completion-measure.ps1`, screenshot/video, uncompletion, star and undo. `-TestReducedMotion` temporarily changes Windows Animation effects: obtain owner permission first; checks three instant placements and verifies restoration in `finally`. |
 | `run-m4-gate.ps1` | Detail pane fields and restart persistence |
@@ -170,6 +171,9 @@ gate, `Invoke-VmGate.ps1` launches the same output once, waits for the window,
 closes it and runs `Reset-AppxPackage`. The gate then gets a warm launch with
 first-run app data. `-NoWarmup` skips this; `Measure-Perf.ps1` never warms up.
 New runners should still `winapp ui wait-for` a stable element before asserting.
+M5 restart waits up to 15 seconds for the Sort control before inspecting the
+window; the earlier three-second window poll could expire on the VM before the
+restarted app became ready.
 
 The guest runs Windows build 26300; system dialogs can differ from newer host
 builds. For example, the file dialog's Open control (id 1) is a Button there but

@@ -583,6 +583,21 @@ try {
             if ($LASTEXITCODE -ne 0) { throw "Search is missing." }
             Assert-AuthoredControlsHaveIds
             Take-Screenshot "$prefix-selected.png"
+            # UX-14: include the non-default chip and keyboard reset in every palette.
+            winapp ui invoke 'Todo.List.SortButton' -w $mainHwnd | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not open Sort in High Contrast.' }
+            winapp ui invoke 'Todo.List.Sort.Reverse' -a $AppPid | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not reverse sorting in High Contrast.' }
+            winapp ui wait-for 'Todo.List.SortLabel' -w $mainHwnd --value 'Sorted by Manual, descending' -t 5000 | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Non-default sort chip is missing in High Contrast.' }
+            Assert-AuthoredControlsHaveIds
+            winapp ui focus 'Todo.List.Sort.Reset' -w $mainHwnd | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Sort reset cannot receive keyboard focus.' }
+            Take-Screenshot "$prefix-sort-reset-focused.png"
+            winapp ui send-keys 'space' -w $mainHwnd --via send-input | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Keyboard sort reset failed.' }
+            winapp ui wait-for 'Todo.List.Sort.Reset' -w $mainHwnd --gone -t 3000 | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Sort chip did not disappear after reset.' }
             foreach ($controlId in @("Todo.List.IconPickerButton", "Todo.List.TitleButton")) {
                 winapp ui focus $controlId -w $mainHwnd | Out-Null
                 if ($LASTEXITCODE -ne 0) { throw "Could not focus $controlId." }

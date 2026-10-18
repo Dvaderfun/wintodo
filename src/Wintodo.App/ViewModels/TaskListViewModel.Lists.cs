@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.Input;
 using Wintodo.Core.Models;
+using Wintodo.Core.Presentation;
+using Wintodo.Core.Queries;
 using Wintodo.Services;
 
 namespace Wintodo.ViewModels;
@@ -190,22 +192,9 @@ public sealed partial class TaskListViewModel
             return;
         }
 
-        if (_selectedList is not null)
-        {
-            _selectedList.SortMode = sortMode;
-            await _taskStore.SetListSortAsync(
-                _selectedList.Id,
-                sortMode,
-                _selectedList.SortDescending);
-            SortLabel = FormatSortLabel(sortMode, _selectedList.SortDescending);
-            CanReorderTasks = sortMode == SortMode.Manual;
-        }
-
         if (_currentQuery is not null)
         {
-            _currentQuery.SortMode = sortMode;
-            SortLabel = FormatSortLabel(sortMode, _currentQuery.SortDescending);
-            await ReloadAsync();
+            await ApplySortAsync(sortMode, _currentQuery.SortDescending);
         }
     }
 
@@ -218,26 +207,48 @@ public sealed partial class TaskListViewModel
             return;
         }
 
-        _currentQuery.SortDescending = !_currentQuery.SortDescending;
-        if (_selectedList is not null)
+        await ApplySortAsync(_currentQuery.SortMode, !_currentQuery.SortDescending);
+    }
+
+    [RelayCommand]
+    private async Task ResetSortAsync()
+    {
+        await Task.Yield();
+        if (_currentQuery is not null)
         {
-            _selectedList.SortDescending = _currentQuery.SortDescending;
-            await _taskStore.SetListSortAsync(
-                _selectedList.Id,
-                _selectedList.SortMode,
-                _selectedList.SortDescending);
-            SortLabel = FormatSortLabel(
-                _selectedList.SortMode,
-                _selectedList.SortDescending);
+            await ApplySortAsync(TaskSorting.GetDefaultMode(_currentQuery.Kind), descending: false);
         }
-        else
+    }
+
+    private async Task ApplySortAsync(SortMode mode, bool descending)
+    {
+        ListQuery? query = _currentQuery;
+        ShellListItemViewModel? list = _selectedList;
+        if (query is null) return;
+
+        if (list is not null)
         {
-            SortLabel = FormatSortLabel(
-                _currentQuery.SortMode,
-                _currentQuery.SortDescending);
+            await _taskStore.SetListSortAsync(
+                list.Id,
+                mode,
+                descending);
+            list.SortMode = mode;
+            list.SortDescending = descending;
         }
 
+        query.SortMode = mode;
+        query.SortDescending = descending;
+        // Navigation may finish while the user-list setting is being saved.
+        if (!ReferenceEquals(query, _currentQuery)) return;
+        CanReorderTasks = list is not null && mode == SortMode.Manual;
+        UpdateSortIndicator(query);
         await ReloadAsync();
+    }
+
+    private void UpdateSortIndicator(ListQuery query)
+    {
+        HasNonDefaultSort = !TaskSorting.IsDefault(query.SortMode, query.SortDescending, query.Kind);
+        SortLabel = FormatSortLabel(query.SortMode, query.SortDescending, query.Kind);
     }
 
     [RelayCommand]
@@ -344,15 +355,17 @@ public sealed partial class TaskListViewModel
         return result;
     }
 
-    private string FormatSortLabel(SortMode sortMode, bool descending)
+    private string FormatSortLabel(SortMode sortMode, bool descending, ListQueryKind kind)
     {
-        string mode = _resources.GetString($"Sort_{sortMode}");
-        string direction = descending
+        string mode = _resources.GetString(kind == ListQueryKind.Completed
+            ? "Sort_CompletionDate" : $"Sort_{sortMode}");
+        bool newestFirst = kind == ListQueryKind.Completed && !descending;
+        string direction = (kind == ListQueryKind.Completed ? newestFirst : descending)
             ? _resources.GetString("Sort_Descending")
             : _resources.GetString("Sort_Ascending");
         return string.Format(
             DisplayCulture.Current,
-            _resources.GetString("Sort_Label"),
+            _resources.GetString("Sort_IndicatorLabel"),
             mode,
             direction);
     }
