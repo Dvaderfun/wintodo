@@ -23,6 +23,7 @@ owner's acknowledgement first (`AGENTS.md`, Working style).
 | [012](ADR-012-session-undo.md) | Session undo with atomic field restoration and list-delete membership | accepted |
 | [013](ADR-013-hyperv-test-vm.md) | UI gates, perf rows and clean-install checks run in the `WintodoTest` Hyper-V VM | accepted |
 | [014](ADR-014-default-sort-indicator.md) | Show the sort indicator only for non-default ordering | accepted |
+| [015](ADR-015-share-target.md) | Complete the Windows text and URL share target | proposed |
 
 ADR-001…007 were written inline in `PLAN.md` §2 and moved here verbatim by ADR-010.
 

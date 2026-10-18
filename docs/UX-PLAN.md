@@ -58,15 +58,15 @@ this dependency exception does not mark those gates passed.
 | UX-07 | Update the task list in place instead of rebuilding it | B | L | UX-06 | TaskListVM, TaskListView | done (d6038f2; stability/M3/M5/M8 PASS) |
 | UX-08 | Completion and row motion per DESIGN §7 | B | S | UX-07 | TaskRow, TaskListView | done (9fa4a86; motion 7/7, stability 3/3, M8 17/17) |
 | UX-09 | Real multi-select and bulk actions | B | L | UX-07 | TaskListView, TaskListVM, TaskRow | done (b327d85; multiselect 7/7, M3/M8/stability PASS) |
-| UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | in progress (Codex/main; undo 7/7, M3/M4/M13/M8 PASS; optional completion awaiting owner) |
+| UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | in progress (review 2026-10-18: undo 6/7, bulk snackbar timing failure; optional row completion unimplemented; prior gates recorded) |
 | UX-11 | Drop tasks on My Day and Important | B | S | — | ShellPage | done (41b1946; M5 9/9 + restart, M8 17/17) |
 | UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | skipped (owner, 2026-10-18; keep midnight for To Do parity) |
 | UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | done (efa09c2; motion 7/7, ADR-011 accepted) |
 | UX-14 | Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | shipped (owner authorized commit/push 2026-10-18; sort 13/13, M5 12/12, M8 17/17; stability 2/3 remains open) |
 | UX-15 | Quieter placeholder when a list has no icon | B | S | — | TaskListView | done (9976747; list-icon 14/14, M8 17/17, 288 tests) |
-| UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | awaiting owner |
-| UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | awaiting owner |
-| UX-18 | 🔒 Share target (text/URL → task) | D | M | — | Manifest, App | awaiting owner |
+| UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | skipped for now (owner, 2026-10-18) |
+| UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | skipped for now (owner, 2026-10-18) |
+| UX-18 | 🔒 Share target (text/URL → task) | D | M | — | Manifest, App | awaiting owner (selected 2026-10-18; ADR-015 proposal prepared) |
 | UX-19 | 🔒 My Day carry-over and suggestions, rule-based | D | M | UX-12 | Core, TaskListView | awaiting owner |
 | UX-20 | Close the open manual gate rows (owner-run) | C | — | — | — | owner |
 
@@ -414,6 +414,11 @@ keyboard table in §8, and add the shortcuts to the shortcuts dialog
 
 ### UX-10 — Undo for every destructive action
 
+**Review (2026-10-18):** Owner delegated assessment/approval if complete. Build
+and all 288 tests pass, but latest undo VM gate is 6/7 (bulk snackbar timing).
+Optional row-completion feedback remains unimplemented; full package is not
+approved. Exact failed/unreached checks and harness corrections are in PROGRESS.
+
 **Problem.** DESIGN §8 says Ctrl+Z undoes "the last destructive action". Today
 only task delete can be undone (`TaskListViewModel.UndoDeleteAsync`,
 `_lastDeletedTaskUid`). Deleting a list, deleting a step, moving a task to
@@ -604,6 +609,8 @@ deliverable is an ADR in `docs/adr/`, using the template in
 
 ### UX-16 — Natural-language quick add
 
+**Disposition (2026-10-18):** Owner skipped this package for now.
+
 When you type "Pay rent tomorrow 9am !" in the add-task box, the app shows
 removable chips (due date tomorrow, reminder 09:00, important) and the title
 "Pay rent".
@@ -619,6 +626,8 @@ removable chips (due date tomorrow, reminder 09:00, important) and the title
   boundaries.
 
 ### UX-17 — Global quick-add hotkey
+
+**Disposition (2026-10-18):** Owner skipped this package for now.
 
 A system-wide shortcut (default proposal: Win+Alt+T, configurable, off by
 default) opens a small always-on-top quick-add window that works while the main
@@ -636,6 +645,25 @@ become a task in the default list, with the URL in the note. The ADR covers
 the manifest change (coordinate with M10 packaging), the activation path in
 `App.OnLaunched` (which must initialise only what it needs, like toast
 activation), and AOT.
+
+**Selection (2026-10-18):** Owner chose UX-18 next and requested an assessment
+of UX-10. [ADR-015](adr/ADR-015-share-target.md) is the concrete share-target
+proposal awaiting acknowledgement before code. The existing M7 implementation
+already accepts Text, but not WebLink; it starts the full shell/integration/sync
+graph before saving. UX-18 extends and validates that groundwork.
+
+**Proposed acceptance (subject to ADR acknowledgement).**
+- Real Windows shares of Text, WebLink and a text-encoded URL create exactly one
+  root task in the local default Tasks list, with each supplied URL in the note.
+- Multiline text and Unicode are preserved; empty/unsupported/failed shares
+  report a localized error and never report successful persistence.
+- Share-only startup skips the normal shell, CalDAV and reminder/badge startup;
+  successful completion closes its share window and releases the store.
+- Cold, already-open-app and repeated real shares pass in WintodoTest, followed
+  by restart persistence; test inputs never touch the owner's database.
+- Manifest validation, warnings-as-errors build, unit tests, x64 Native AOT
+  share execution and review pass; ARM64 publish is checked separately from
+  ARM64 runtime, which remains unavailable/deferred.
 
 ### UX-19 — My Day carry-over and suggestions, rule-based
 
