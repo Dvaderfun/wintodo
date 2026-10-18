@@ -11,6 +11,8 @@ if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1') {
 
 
 $ErrorActionPreference = "Stop"
+winapp ui wait-for 'Todo.List.SortButton' -a $AppPid -t 15000 | Out-Null
+if ($LASTEXITCODE -ne 0) { throw 'The restarted app did not become ready within 15 seconds.' }
 $MainHwnd = $null
 for ($attempt = 0; $attempt -lt 10 -and -not $MainHwnd; $attempt++) {
     Start-Sleep -Milliseconds 300

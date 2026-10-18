@@ -1,4 +1,5 @@
 using Wintodo.Core.Models;
+using Wintodo.Core.Presentation;
 using Wintodo.Core.Queries;
 using Wintodo.Services;
 
@@ -34,15 +35,7 @@ public sealed partial class TaskListViewModel
         _composerKind = kind;
         ResetComposer();
 
-        SortMode sortMode = kind switch
-        {
-            ListQueryKind.Important => SortMode.Importance,
-            ListQueryKind.Planned => SortMode.DueDate,
-            ListQueryKind.Completed => SortMode.CreationDate,
-            ListQueryKind.All => SortMode.CreationDate,
-            _ => SortMode.Manual,
-        };
-        SortLabel = FormatSortLabel(sortMode, descending: false);
+        SortMode sortMode = TaskSorting.GetDefaultMode(kind);
         _completedExpanded = kind == ListQueryKind.Completed;
         _searchText = string.Empty;
         return LoadAsync(
@@ -79,7 +72,6 @@ public sealed partial class TaskListViewModel
         EmptyGlyph = "\uE710";
         EmptyTitle = _resources.GetString("Empty_UserListTitle");
         EmptySubtitle = _resources.GetString("Empty_UserListSubtitle");
-        SortLabel = FormatSortLabel(list.SortMode, list.SortDescending);
         ShowCompletedMenuLabel = list.ShowCompleted
             ? _resources.GetString("TaskList_HideCompleted")
             : _resources.GetString("TaskList_ShowCompleted");
@@ -102,6 +94,7 @@ public sealed partial class TaskListViewModel
 
     internal void ShowSettings(string title)
     {
+        HasNonDefaultSort = false;
         _loadVersion++;
         _selectedList = null;
         _selectedNavigationKey = null;
@@ -129,6 +122,7 @@ public sealed partial class TaskListViewModel
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        HasNonDefaultSort = false;
         _loadVersion++;
         _selectedList = null;
         _selectedNavigationKey = null;
@@ -223,6 +217,7 @@ public sealed partial class TaskListViewModel
     private async Task LoadAsync(ListQuery query, CancellationToken cancellationToken, bool preserveViewport = false)
     {
         _currentQuery = query;
+        UpdateSortIndicator(query);
         int loadVersion = ++_loadVersion;
         IReadOnlyList<TodoTask> tasks =
             await _taskStore.GetTasksAsync(query, cancellationToken);

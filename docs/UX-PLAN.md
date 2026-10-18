@@ -62,7 +62,7 @@ this dependency exception does not mark those gates passed.
 | UX-11 | Drop tasks on My Day and Important | B | S | — | ShellPage | done (41b1946; M5 9/9 + restart, M8 17/17) |
 | UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | skipped (owner, 2026-10-18; keep midnight for To Do parity) |
 | UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | done (efa09c2; motion 7/7, ADR-011 accepted) |
-| UX-14 | Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | in progress (Codex/main; owner approved DESIGN §3.1 on 2026-10-18) |
+| UX-14 | Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | shipped (owner authorized commit/push 2026-10-18; sort 13/13, M5 12/12, M8 17/17; stability 2/3 remains open) |
 | UX-15 | 🔒 Quieter placeholder when a list has no icon | B | S | — | TaskListView | awaiting owner |
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | awaiting owner |
 | UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | awaiting owner |
@@ -512,12 +512,27 @@ for non-default sorting; reset restores the actual list default. Preserve existi
 AutomationIds, sorting choices and persistence. DESIGN §3.1 updated before coding;
 decision recorded in [ADR-014](adr/ADR-014-default-sort-indicator.md).
 
-**Proposal.** The header always shows the sort mode ("Creation date,
-ascending"), as DESIGN §3.1 specifies. To Do shows a sort chip only when the
-sort isn't the default, with a × to reset. **Owner decision:** change DESIGN
-§3.1 or keep it. If the owner approves: show a `[Sort ▾]` icon button by
-default, and a "Sorted by X ↑ ×" chip below the header when the sort is
-non-default. The AutomationIds of the existing sort button are preserved.
+**Accepted scope.** Show a compact `[Sort ▾]` button. Show a `Sorted by …`
+chip below the header only when effective ordering differs from the selected
+list's actual default, with direction and a × reset action. Keep all existing
+sort AutomationIds, menu choices and persistence behavior.
+
+**Acceptance.**
+- All five smart lists, Tasks and user lists start without a sort indicator.
+- Mode or direction changes show the indicator when ordering differs; Completed
+  ignores mode choices and compares its effective completion-date ordering.
+- Reset restores both mode and direction, including smart-list defaults.
+- Per-user-list sort and reset survive navigation and app restart.
+- Search/Settings do not retain a stale indicator; keyboard reset, Light/Dark,
+  High Contrast and narrow/detail-open layouts work.
+- Sort-indicator, M5, M8 and list-stability VM gates pass; build and unit tests
+  pass; winui-code-review has nothing above informational.
+
+**Shipping disposition (2026-10-18).** The owner chose to commit/push the
+implementation with the failed list-stability gate documented. Sort 13/13,
+M5 12/12 and M8 17/17 pass; stability remains 2/3 and also fails with the
+previous header. This is an explicit shipping exception, not full acceptance.
+Track viewport repair separately in the parking lot; retain the existing gate.
 
 ### UX-15 — 🔒 Quieter placeholder when a list has no icon
 
@@ -626,6 +641,12 @@ No AI, deterministic, `IClock`-driven, with Core-tested selection rules.
 
 Add findings that are outside a package's scope here, one line each, with a
 file reference.
+
+- Completion viewport drift (`src/Wintodo.App/Controls/TaskListView.xaml.cs`,
+  `tests/ui/run-list-stability-gate.ps1`): UX-14 and previous-header comparisons
+  fail the existing 54 px anchor limit (2/3 checks). Owner chose to ship UX-14
+  on 2026-10-18 with this open; diagnose and fix separately, then verify exact
+  completed-row focus and Space uncompletion without relaxing the tolerance.
 
 - Placeholder app icon in the title bar and assets: belongs to M10 (final
   name/identity, PLAN §10 open item).

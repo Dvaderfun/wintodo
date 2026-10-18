@@ -23,6 +23,18 @@ public readonly record struct TaskSortTerm(TaskSortField Field, bool Descending)
 /// <summary>The existing query ordering policy, shared by SQL and pure comparisons.</summary>
 public static class TaskSorting
 {
+    public static SortMode GetDefaultMode(ListQueryKind kind) => kind switch
+    {
+        ListQueryKind.Important => SortMode.Importance,
+        ListQueryKind.Planned => SortMode.DueDate,
+        ListQueryKind.All or ListQueryKind.Completed => SortMode.CreationDate,
+        _ => SortMode.Manual,
+    };
+
+    /// <summary>Compares effective ordering, including Completed's fixed date ordering.</summary>
+    public static bool IsDefault(SortMode mode, bool reverse, ListQueryKind kind) =>
+        GetTerms(mode, reverse, kind).SequenceEqual(GetTerms(GetDefaultMode(kind), false, kind));
+
     public static IReadOnlyList<TaskSortTerm> GetTerms(
         SortMode mode, bool reverse, ListQueryKind kind = ListQueryKind.UserList)
     {

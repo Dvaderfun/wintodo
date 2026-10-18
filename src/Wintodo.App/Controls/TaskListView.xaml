@@ -206,6 +206,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="64" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="12" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
@@ -363,6 +364,7 @@
 
             <DropDownButton
                 x:Name="SortButton"
+                x:Uid="SortButton"
                 Grid.Column="1"
                 AutomationProperties.AutomationId="Todo.List.SortButton"
                 Style="{StaticResource SubtleButtonStyle}"
@@ -370,9 +372,8 @@
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon Glyph="&#xE8CB;" />
                     <TextBlock
-                        AutomationProperties.AutomationId="Todo.List.SortLabel"
-                        Style="{StaticResource BodyTextBlockStyle}"
-                        Text="{x:Bind ViewModel.SortLabel, Mode=OneWay}" />
+                        x:Uid="SortButtonLabel"
+                        Style="{StaticResource BodyTextBlockStyle}" />
                 </StackPanel>
                 <DropDownButton.Flyout>
                     <MenuFlyout>
@@ -658,15 +659,51 @@
             </Button>
         </Grid>
 
+        <Border
+            Grid.Row="1"
+            HorizontalAlignment="Right"
+            Margin="0,0,0,8"
+            Padding="8,0,0,0"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="{StaticResource ControlCornerRadius}"
+            Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.HasNonDefaultSort), Mode=OneWay}">
+            <Grid ColumnSpacing="4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="Todo.List.SortLabel"
+                    Style="{StaticResource CaptionTextBlockStyle}"
+                    Text="{x:Bind ViewModel.SortLabel, Mode=OneWay}"
+                    TextTrimming="CharacterEllipsis" />
+                <Button
+                    x:Uid="SortResetButton"
+                    Grid.Column="1"
+                    Width="32"
+                    Height="32"
+                    MinWidth="0"
+                    Padding="0"
+                    AutomationProperties.AutomationId="Todo.List.Sort.Reset"
+                    Command="{x:Bind ViewModel.ResetSortCommand, Mode=OneTime}"
+                    Style="{StaticResource SubtleButtonStyle}">
+                    <FontIcon Glyph="&#xE711;" />
+                </Button>
+            </Grid>
+        </Border>
+
         <controls:AddTaskComposer
             x:Name="Composer"
-            Grid.Row="1"
+            Grid.Row="2"
             ViewModel="{x:Bind ViewModel, Mode=OneWay}"
             Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsComposerVisible), Mode=OneWay}" />
 
         <Grid
             x:Name="TaskContent"
-            Grid.Row="3"
+            Grid.Row="4"
             Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="3*" />
@@ -753,7 +790,7 @@
 
         <Border
             x:Name="UndoSnackbar"
-            Grid.Row="3"
+            Grid.Row="4"
             Margin="16"
             Padding="12,8"
             HorizontalAlignment="Center"
