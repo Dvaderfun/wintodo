@@ -544,7 +544,8 @@ public sealed partial class TaskListView : UserControl
     private async Task RestoreViewportAfterTransitionAsync(int version, TaskItemViewModel? anchor, double anchorY)
     {
         double offset = _savedVerticalOffset;
-        if (_uiSettings.AnimationsEnabled) await Task.Delay(TimeSpan.FromMilliseconds(500));
+        if (_uiSettings.AnimationsEnabled && TasksList.ItemContainerTransitions is not null)
+            await Task.Delay(TimeSpan.FromMilliseconds(500));
         if (version != _updateVersion) return;
         _restoringTaskFocus = true;
         if (_tasksScrollViewer is not null)
@@ -559,7 +560,14 @@ public sealed partial class TaskListView : UserControl
                 await Task.Delay(TimeSpan.FromMilliseconds(200));
                 if (version != _updateVersion) return;
                 TasksList.UpdateLayout();
-                if (anchor is null || TasksList.ContainerFromItem(anchor) is not ListViewItem row) break;
+                if (anchor is null || TasksList.ContainerFromItem(anchor) is not ListViewItem row)
+                {
+                    if (anchor is null || !ViewModel.VisibleItems.Contains(anchor)) break;
+                    // A grouped move can recycle the anchor. Realize that item
+                    // before correcting its position instead of abandoning it.
+                    TasksList.ScrollIntoView(anchor, ScrollIntoViewAlignment.Leading);
+                    continue;
+                }
                 double y = row.TransformToVisual(TasksList).TransformPoint(new Windows.Foundation.Point()).Y;
                 if (Math.Abs(y - anchorY) < 1) break;
                 _tasksScrollViewer.ChangeView(null, _tasksScrollViewer.VerticalOffset + y - anchorY, null, disableAnimation: true);

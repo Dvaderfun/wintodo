@@ -283,6 +283,9 @@ names and expansion bind to observable metadata. Selection stays on a completed
 task as it moves into Completed; its group expands to keep it addressable.
 Viewport restoration cancels on new input, and preserves keyboard focus even
 when the selected completed container is virtualized outside the viewport.
+The item panel keeps its scroll offset during mutations so it does not compete
+with the view's anchor correction. Restoration waits for row transitions only
+when they are enabled and realizes a recycled anchor before correcting it.
 
 **Element budget: 12 or fewer visual elements.** Every element costs working set
 × visible rows × recycling headroom. Do not add decorative borders.

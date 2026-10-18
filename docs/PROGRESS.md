@@ -19,15 +19,17 @@ As of 2026-10-18:
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
-- **Build:** Debug x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1;
+- **Build:** Debug and Release x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1
+  after the completion viewport repair;
   Release/AOT x64 and ARM64 published on 2026-10-18 during UX-18 work.
   Tests (xunit v3 on Microsoft Testing Platform): Core 202, Data 95, Sync 10 — 307/307,
   zero failed/skipped on the latest 2026-10-18 run. One intervening existing
   InvalidListMutation test failed transiently; focused and full reruns pass.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
-- **Known gaps:** Completion viewport drift remains open: the UX-14 validation
-  and previous-header comparison each pass only 2/3 list-stability checks.
+- **Known gaps:** Completion viewport drift is fixed separately from UX-14:
+  strengthened list stability passes 3/3 twice, with 10 px drift on immediate
+  and settled completion/uncompletion against the unchanged 54 px limit.
   Final app name and MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
@@ -79,8 +81,9 @@ As of 2026-10-18:
   reset for To Do parity. The owner authorized committing/pushing UX-14 on
   2026-10-18 with its failed stability gate documented. Sort 13/13, M5 9/9 +
   restart 3/3 and M8 17/17 pass; list stability remains 2/3, including a
-  previous-header comparison. Completion viewport investigation remains open,
-  without changing the one-row tolerance. Owner selected UX-18 next and skipped
+  previous-header comparison. The separate viewport repair now passes 3/3 twice,
+  including exact completion focus and Space uncompletion, without changing
+  the one-row tolerance. Owner selected UX-18 next and skipped
   UX-16/17 for now; ADR-015 is accepted. UX-18 is complete:
   Text/WebLink mapping, share-only startup/window and external SQLite refresh
   build and unit tests pass; real x64 AOT broker gate passes 10/10. Final
@@ -89,6 +92,13 @@ As of 2026-10-18:
   UX-10 expanded undo gate passes 12/12, M3 + restart and M4 + restart pass;
   M13 passes 11/11 and M8 17/17; UX-10 is complete. M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
+
+- **Completion viewport repair:** Panel updates keep their scroll offset rather
+  than competing with the view's anchor correction. Transition-free updates
+  restore immediately; recycled anchors are realized before correction resumes.
+  Stability 3/3 twice, M3 10/10 + restart and M8 17/17 pass in WintodoTest;
+  all 307 tests pass. The strengthened gate also checks settled completion
+  and uncompletion. WinUI code review and returned captures pass.
 
 - **UX-10:** Row completion, including recurring occurrences, now records undo
   after its row update. The five-second snackbar and retained Ctrl+Z history
@@ -3068,3 +3078,48 @@ passed, 0 failed/skipped. Fresh undo VM gate 6/7; full UX-10 not approved.
   No clipping/overlap found; no share Dark/HighContrast runtime claim.
 - UX-10 remains separately committed as 6cce524. Completion viewport drift
   remains separate, with the existing 54 px tolerance unchanged. No perf claim.
+
+## UX-14 follow-up — Completion viewport restoration          2026-10-18
+
+**Gate:** PASS — strengthened stability 3/3 twice, M3 10/10 plus restart
+order, M8 17/17; Debug and Release x64 warnings-as-errors builds clean;
+Core 202 + Data 95 + Sync 10 = 307/307, no failures/skips.
+
+**Cause and shipped fix**
+- The panel's item-preserving scroll updates competed with the view's delayed
+  ChangeView corrections. Diagnostic tracing showed requested corrections
+  followed by offsets moving in the opposite direction. During uncompletion,
+  a recycled anchor made the old loop exit before restoration; a trace later
+  placed that anchor about 998 px above its expected position.
+- ItemsStackPanel now uses KeepScrollOffset so the existing view owns the
+  anchor correction. Updates with no item transitions skip the 500 ms wait;
+  an unrealized surviving anchor is scrolled into realization before correction
+  resumes. Existing four-attempt bound and cancellation on new input remain.
+- The gate retains its original 900 ms observation, 54 px tolerance, exact
+  completed-row focus and Space restoration checks. It additionally checks
+  settled completion and uncompletion positions and captures both. It focuses
+  the existing menu button before wheel input to establish the foreground app.
+- Final clean-checkpoint runs each pass 3/3: immediate completion, settled
+  completion and settled uncompletion all have 10 px anchor drift. Selected
+  completed task 099 retains its exact AutomationId as keyboard focus.
+- Vendored winui-design/API checks and winui-code-review completed with no
+  issues above informational. Stability, M3 and all M8 captures reviewed;
+  no new clipping/overlap found. DESIGN and UX-PLAN record the resolved issue.
+
+**Evidence and limits**
+- Final stability: list-stability/run-20261018-190759 and run-20261018-191318
+  (scroll-anchor.json, settled-scroll-anchor.json, uncompleted-scroll-anchor.json,
+  completion-focus.json, results.json and six screenshots per run).
+- M3: m3/run-20261018-191744; restart-results.json verifies persisted task order.
+- M8: m8/run-20261018-192046; 17/17 and original contrast state restoration
+  verified by the existing accepted harness.
+- Unchanged baseline passed 3/3 this session; historical 65/93/350 px failures
+  remain in History. An instrumented run also passed. A three-launch diagnostic
+  batch passed its first run; the other two stopped before product assertions
+  on the CLI foreground-window guard. Those failures remain in
+  vm/run-viewport-investigation-20261018-185834.log; the temporary batch and
+  product tracing were removed. No original assertion or tolerance was relaxed.
+- All launches, synthetic input and captures stayed inside WintodoTest through
+  Invoke-VmGate. No host UI automation, new dependency, ADR change or performance
+  claim. Release build is verified; fresh Native AOT runtime and ARM64 execution
+  were not part of this focused repair. M9 and owner-run manual gates remain open.

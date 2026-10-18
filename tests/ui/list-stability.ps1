@@ -34,6 +34,7 @@ function Properties($item) { (Ui @('get-property', $item.selector, '--json') | C
 try {
     Ui @('wait-for', 'Todo.List.Tasks', '-t', '10000') | Out-Null
     Ui @('wait-for', 'Stability task 001', '-t', '10000') | Out-Null
+    Ui @('focus', 'Todo.List.MenuButton') | Out-Null
     Ui @('scroll', 'Todo.List.Tasks', '--wheel', '-54') | Out-Null
     Start-Sleep -Milliseconds 600
     $tree = Ui @('inspect', '--depth', '12', '--json') | ConvertFrom-Json
@@ -95,12 +96,26 @@ $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
         $focus = & powershell.exe -NoProfile -NonInteractive -Command $focusScript | ConvertFrom-Json
         $focus | ConvertTo-Json | Set-Content (Join-Path $ArtifactDirectory 'completion-focus.json')
         if ($focus.process -ne $AppPid -or $focus.id -ne $selectedUid) { throw 'Keyboard focus left the selected completed row.' }
+        Start-Sleep -Milliseconds 1200
+        $settled = Row $anchorTitle
+        $settledList = (Ui @('search', 'Todo.List.Tasks', '--json') | ConvertFrom-Json).matches | Select-Object -First 1
+        $settledDelta = ($settled.y - $settledList.y) - ($before.y - $listBefore.y)
+        @{row=$settled;list=$settledList;delta=$settledDelta} | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $ArtifactDirectory 'settled-scroll-anchor.json')
+        Capture '05-settled.png'
+        if (-not $settled -or [Math]::Abs($settledDelta) -gt $before.height + 4) { throw "Settled scroll anchor moved more than one row: delta=$settledDelta,height=$($before.height)." }
         # The completed container can be virtualized. Prove logical selection by
         # toggling it again through the focused list, then inspecting that task.
         Ui @('send-keys', 'space', '--via', 'send-input') | Out-Null
         Start-Sleep -Milliseconds 800
         $restored = Row $selectedTitle
         if (-not $restored -or $restored.name -notlike '*not completed*') { throw 'Space did not restore the same selected task.' }
+        Start-Sleep -Milliseconds 1200
+        $uncompletedAnchor = Row $anchorTitle
+        $uncompletedList = (Ui @('search', 'Todo.List.Tasks', '--json') | ConvertFrom-Json).matches | Select-Object -First 1
+        $uncompletedDelta = ($uncompletedAnchor.y - $uncompletedList.y) - ($before.y - $listBefore.y)
+        @{row=$uncompletedAnchor;list=$uncompletedList;delta=$uncompletedDelta} | ConvertTo-Json -Depth 6 | Set-Content (Join-Path $ArtifactDirectory 'uncompleted-scroll-anchor.json')
+        Capture '06-uncompleted.png'
+        if (-not $uncompletedAnchor -or [Math]::Abs($uncompletedDelta) -gt $before.height + 4) { throw "Uncompleted scroll anchor moved more than one row: delta=$uncompletedDelta,height=$($before.height)." }
     }
 } catch { $results.Add(@{name='Setup';status='FAIL';detail="$_"}) }
 finally { winapp ui yield | Out-Null; Remove-Item Env:\WINAPP_UI_WORKFLOW_ID -ErrorAction SilentlyContinue }
