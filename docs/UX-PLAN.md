@@ -66,7 +66,7 @@ this dependency exception does not mark those gates passed.
 | UX-15 | Quieter placeholder when a list has no icon | B | S | — | TaskListView | done (9976747; list-icon 14/14, M8 17/17, 288 tests) |
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | skipped for now (owner, 2026-10-18) |
 | UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | skipped for now (owner, 2026-10-18) |
-| UX-18 | Share target (text/URL → task) | D | M | — | Manifest, App | in progress (Codex/main; ADR-015 approved 2026-10-18) |
+| UX-18 | Share target (text/URL → task) | D | M | — | Manifest, App | done (ADR-015; x64 AOT real-share 10/10, M0/M7/AOT-M13 PASS; both architectures published) |
 | UX-19 | 🔒 My Day carry-over and suggestions, rule-based | D | M | UX-12 | Core, TaskListView | awaiting owner |
 | UX-20 | Close the open manual gate rows (owner-run) | C | — | — | — | owner |
 
@@ -652,8 +652,8 @@ the manifest change (coordinate with M10 packaging), the activation path in
 activation), and AOT.
 
 **Selection (2026-10-18):** Owner chose UX-18 next and requested an assessment
-of UX-10. [ADR-015](adr/ADR-015-share-target.md) is the concrete share-target
-accepted proposal (owner acknowledgement recorded in ADR-015). The existing M7 implementation
+of UX-10. [ADR-015](adr/ADR-015-share-target.md) is accepted with the owner's
+acknowledgement recorded. The existing M7 implementation
 already accepts Text, but not WebLink; it starts the full shell/integration/sync
 graph before saving. UX-18 extends and validates that groundwork.
 

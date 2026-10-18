@@ -1,16 +1,14 @@
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
 using Microsoft.Windows.AppNotifications;
-using Microsoft.Windows.ApplicationModel.Resources;
 using System.Diagnostics;
 using Windows.ApplicationModel.Activation;
-using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
-using Wintodo.Core.Models;
 using Wintodo.Core.Services;
 using Wintodo.Data;
 using Wintodo.Services;
 using Wintodo.Sync;
+using WinRT;
 
 namespace Wintodo;
 
@@ -22,6 +20,7 @@ public partial class App : Application
     private readonly TaskCompletionSource<WindowsIntegrationService> _integrationReady =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _notificationsRegistered;
+    private readonly AppActivationArguments _activation;
 
     public static Window Window { get; private set; } = null!;
 
@@ -33,8 +32,9 @@ public partial class App : Application
     public static Microsoft.UI.WindowId WindowId =>
         Microsoft.UI.Win32Interop.GetWindowIdFromWindow(WindowHandle);
 
-    public App()
+    internal App(AppActivationArguments activation)
     {
+        _activation = activation;
         InitializeComponent();
         UnhandledException += (_, args) =>
             Trace.WriteLine($"WINTODO_UNHANDLED_EXCEPTION={args.Exception}");
@@ -50,12 +50,21 @@ public partial class App : Application
         try
         {
             long launchStartTimestamp = Stopwatch.GetTimestamp();
+            TraceStartupStage("activation-start", launchStartTimestamp);
             DisplayCulture.Initialize();
             DispatcherQueue = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+            AppActivationArguments activation = _activation;
+            TraceStartupStage("activation-received", launchStartTimestamp);
+            if (activation.Kind == ExtendedActivationKind.ShareTarget)
+            {
+                // Query the WinRT contract interface explicitly; Native AOT may expose
+                // an IInspectable wrapper rather than the concrete runtime class.
+                var shareArgs = activation.Data.As<IShareTargetActivatedEventArgs>();
+                await HandleShareAsync(shareArgs);
+                return;
+            }
             RegisterAppNotifications();
             TraceStartupStage("notifications", launchStartTimestamp);
-            AppActivationArguments activation =
-                AppInstance.GetCurrent().GetActivatedEventArgs();
             IClock clock = ResolveClock();
             string? commandLineDatabasePath = GetCommandLineOption("--database-path");
             string databasePath = ResolveDatabasePath(
@@ -132,17 +141,7 @@ public partial class App : Application
             TraceStartupStage("integration", launchStartTimestamp);
             _integrationReady.TrySetResult(windowsIntegration);
 
-            if (activation.Kind == ExtendedActivationKind.ShareTarget
-                && activation.Data is ShareTargetActivatedEventArgs shareArgs)
-            {
-                string? sharedTaskUid = await CreateTaskFromShareAsync(store, shareArgs);
-                if (sharedTaskUid is not null)
-                {
-                    await window.RefreshForExternalChangeAsync();
-                    await window.OpenTaskAsync(sharedTaskUid);
-                }
-            }
-            else if (activation.Kind == ExtendedActivationKind.Launch
+            if (activation.Kind == ExtendedActivationKind.Launch
                      && !string.IsNullOrWhiteSpace(args.Arguments))
             {
                 await window.HandleJumpListArgumentAsync(args.Arguments);
@@ -269,64 +268,6 @@ public partial class App : Application
         };
         Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += handler;
         return completion.Task;
-    }
-
-    private static async Task<string?> CreateTaskFromShareAsync(
-        SqliteTaskStore store,
-        ShareTargetActivatedEventArgs args)
-    {
-        ResourceLoader resources = new();
-        Windows.ApplicationModel.DataTransfer.ShareTarget.ShareOperation operation =
-            args.ShareOperation;
-        operation.ReportStarted();
-        try
-        {
-            if (!operation.Data.Contains(StandardDataFormats.Text))
-            {
-                operation.ReportError(resources.GetString("Share_NoText"));
-                return null;
-            }
-
-            string text = (await operation.Data.GetTextAsync()).Trim();
-            if (text.Length == 0)
-            {
-                operation.ReportError(resources.GetString("Share_NoText"));
-                return null;
-            }
-
-            TodoList list = await store.EnsureDefaultListAsync(
-                resources.GetString("DefaultList_Name"));
-            string normalized = text.Replace("\r\n", "\n", StringComparison.Ordinal);
-            int lineBreak = normalized.IndexOf('\n', StringComparison.Ordinal);
-            string summary = lineBreak < 0
-                ? normalized
-                : normalized[..lineBreak].Trim();
-            string? description = lineBreak < 0
-                ? null
-                : normalized[(lineBreak + 1)..].Trim();
-            if (summary.Length == 0)
-            {
-                summary = normalized;
-                description = null;
-            }
-
-            TodoTask task = await store.CreateTaskAsync(new TodoTask
-            {
-                ListId = list.Id,
-                Summary = summary,
-                Description = string.IsNullOrWhiteSpace(description)
-                    ? null
-                    : description,
-            });
-            operation.ReportCompleted();
-            return task.Uid;
-        }
-        catch (Exception exception)
-        {
-            Trace.WriteLine($"WINTODO_SHARE_TARGET_EXCEPTION={exception}");
-            operation.ReportError(resources.GetString("Share_CreateFailed"));
-            return null;
-        }
     }
 
     private static string ResolveDatabasePath(

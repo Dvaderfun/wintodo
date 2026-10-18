@@ -1,0 +1,32 @@
+<Window x:Class="Wintodo.ShareWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl x:Name="Root"><Grid Padding="24" RowSpacing="16" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="Busy" />
+                <VisualState x:Name="Failed">
+                    <VisualState.Setters>
+                        <Setter Target="Progress.Visibility" Value="Collapsed" />
+                        <Setter Target="Error.Visibility" Value="Visible" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+        <TextBlock x:Uid="ShareHeading" Style="{StaticResource SubtitleTextBlockStyle}" TextWrapping="Wrap" />
+        <StackPanel x:Name="Progress" Grid.Row="1" Spacing="16" VerticalAlignment="Center">
+            <ProgressRing IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" AutomationProperties.AutomationId="Todo.Share.Progress" />
+            <TextBlock x:Uid="ShareProgress" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+        </StackPanel>
+        <InfoBar x:Name="Error" Grid.Row="1" Visibility="Collapsed" IsOpen="True" IsClosable="False"
+            Severity="Error" Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+            AutomationProperties.AutomationId="Todo.Share.Error" />
+        <Button Grid.Row="2" x:Uid="ShareClose" HorizontalAlignment="Right"
+            Command="{x:Bind ViewModel.CloseCommand, Mode=OneTime}" AutomationProperties.AutomationId="Todo.Share.Close" />
+    </Grid></UserControl>
+</Window>

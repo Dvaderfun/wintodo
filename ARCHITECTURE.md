@@ -38,6 +38,7 @@ src/
     Ical/              IcalReader / IcalWriter / IcalUnknownCodec (verbatim passthrough)
     Queries/           ListQuery (smart-list and filter descriptors)
     Presentation/      TaskGrouping (ordered UID groups), TaskSorting (query sort terms/comparison),
+                       SharedTaskContent (local Text/WebLink title/note mapping),
                        TaskMetadataLine (subtitle parts), SequenceDiff (keyed collection operations),
                        display-culture/date helpers
     Services/          interfaces: ITaskStore, ISyncStore, ISettingsStore, ICredentialStore, IClock; TaskPreferences
@@ -49,7 +50,10 @@ src/
   Wintodo.Sync/        net10.0, Core only, AOT-compatible
                        CalDavClient (HTTP/XML), CalDavSyncService (push/pull/conflicts)
   Wintodo.App/         the WinUI app; the only project with XAML or Windows APIs
+    Program.cs         captures activation before WinUI initialization (one platform query)
     App.xaml.cs        composition root, activation routing (launch / toast / startup task)
+    App.Share.cs       share-only activation, local save and broker completion
+    ShareWindow.xaml   minimal native progress/error window; no main-shell services
     MainWindow.xaml    Mica, title bar, root Frame hosting ShellPage
     Pages/             ShellPage (composition + view wiring), with Navigation, Dialogs,
                        Accelerators, Theme, Transfers and Lifecycle partials
@@ -131,6 +135,8 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
   List deletion records task membership in migration 003; restore retains earlier
   task deletions and queues CalDAV collection creation before task uploads when
   the collection delete has already been pushed.
+  Row completion, including recurring occurrences, adds a five-second Undo snackbar
+  after the row update; detail completion remains quiet.
 
 ## Layers and data flow
 
@@ -148,6 +154,16 @@ SqliteTaskStore (all IO off the UI thread)        CalDavSyncService ──► Ca
 `WindowsIntegrationService` → `CalDavSyncService` → `MainWindow`. Toast and
 startup-task activations initialise only what they need and may exit without
 showing a window.
+
+ShareTarget is routed before notifications, main window, integration and sync.
+Program captures the consumable activation payload before `Application.Start`;
+App queries `IShareTargetActivatedEventArgs` explicitly for its AOT projection.
+Its native window keeps ShareOperation calls on the UI dispatcher and writes one
+task to the local default Tasks list before reporting completion. Success disposes
+the store and exits; failures show localized Close-only feedback. HTTP(S) links
+stay local and are preserved in notes. Main-window activation uses the writer's
+SQLite `data_version` to reload external commits while retaining task selection
+and editor drafts. No storage override is accepted by broker shares in Release.
 
 ### Data access
 

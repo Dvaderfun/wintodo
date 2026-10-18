@@ -6,6 +6,11 @@ Final identity and production signing require the owner's decision (PLAN §10).
 The manifest declares only `runFullTrust`, required for the desktop app and its
 COM toast/startup extensions. It does not request `broadFileSystemAccess`;
 file import/export uses pickers and CalDAV uses the full-trust HTTP client.
+ADR-015 extends the existing ShareTarget to `Text` and `WebLink`; generated
+x64/ARM64 manifests retain the same identity, permissions and startup/toast
+declarations. Real broker activation is verified in the published x64 AOT output
+inside WintodoTest. Share processing uses guest package LocalState, with no
+Release broker storage override. This does not close M10 signing/Store gates.
 
 ## Unsigned artifacts
 

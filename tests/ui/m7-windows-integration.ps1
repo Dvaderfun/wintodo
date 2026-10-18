@@ -32,6 +32,8 @@ winapp ui wait-for "Todo.Settings.LaunchAtLogin" `
     -w $mainHwnd `
     -t 10000 | Out-Null
 if ($LASTEXITCODE -ne 0) {
+    winapp ui inspect --json -w $mainHwnd | Set-Content (Join-Path $ArtifactDirectory 'settings-missing-tree.json')
+    winapp ui screenshot -w $mainHwnd -o (Join-Path $ArtifactDirectory 'settings-missing.png') | Out-Null
     throw "The launch-at-login setting is missing."
 }
 

@@ -30,6 +30,9 @@ public sealed partial class MainWindow : Window
     private PointInt32 _restoredPosition;
     private SizeInt32 _restoredSize;
     private bool _maximizeAfterActivation;
+    private long _externalChangeVersion;
+    private bool _isInitialized;
+    private bool _isActivationRefreshRunning;
 
     internal MainWindow(
         SqliteTaskStore store,
@@ -65,6 +68,7 @@ public sealed partial class MainWindow : Window
 
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
+        _externalChangeVersion = await _store.GetExternalChangeVersionAsync(cancellationToken);
         _shellPage = new ShellPage(
             _store,
             _clock,
@@ -85,6 +89,7 @@ public sealed partial class MainWindow : Window
         {
             ApplyPlacement(placement.Value);
         }
+        _isInitialized = true;
     }
 
     internal void ApplyDeferredPresenterState()
@@ -196,9 +201,17 @@ public sealed partial class MainWindow : Window
     private async void OnActivated(object sender, WindowActivatedEventArgs args)
     {
         if (args.WindowActivationState != WindowActivationState.Deactivated
-            && _shellPage is not null)
+            && _shellPage is not null && _isInitialized && !_isActivationRefreshRunning)
         {
-            await _shellPage.RefreshForActivationAsync();
+            _isActivationRefreshRunning = true;
+            try
+            {
+                long version = await _store.GetExternalChangeVersionAsync();
+                System.Diagnostics.Trace.WriteLine($"WINTODO_EXTERNAL_VERSION={_externalChangeVersion}->{version}");
+                await _shellPage.RefreshForActivationAsync(reloadExternalChanges: version != _externalChangeVersion);
+                _externalChangeVersion = version;
+            }
+            finally { _isActivationRefreshRunning = false; }
         }
     }
 

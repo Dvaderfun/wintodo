@@ -9,6 +9,7 @@ namespace Wintodo.Pages;
 
 public sealed partial class ShellPage
 {
+    private bool _isActivationRefreshRunning;
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         string selectedNavigation = await ViewModel.InitializeAsync(cancellationToken);
@@ -31,15 +32,27 @@ public sealed partial class ShellPage
     }
 
     internal async Task RefreshForActivationAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, bool reloadExternalChanges = false)
     {
-        await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken);
-        await _windowsIntegration.RefreshAsync(cancellationToken);
-        if (_clock.UtcNow - _lastSyncAttempt >= TimeSpan.FromMinutes(1))
+        if (!_isNavigationInitialized || _isActivationRefreshRunning) return;
+        _isActivationRefreshRunning = true;
+        try
         {
-            await RunBackgroundSyncAsync(cancellationToken);
+            // Reload externally committed shares without replacing active editors or their drafts.
+            if (reloadExternalChanges)
+            {
+                await ViewModel.TaskList.ReloadAsync(cancellationToken);
+                await ViewModel.RefreshNavigationAsync(cancellationToken);
+            }
+            await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken);
+            await _windowsIntegration.RefreshAsync(cancellationToken);
+            if (_clock.UtcNow - _lastSyncAttempt >= TimeSpan.FromMinutes(1))
+            {
+                await RunBackgroundSyncAsync(cancellationToken);
+            }
+            ScheduleMidnightRefresh();
         }
-        ScheduleMidnightRefresh();
+        finally { _isActivationRefreshRunning = false; }
     }
 
     internal Task RefreshForExternalChangeAsync(

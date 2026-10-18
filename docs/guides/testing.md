@@ -103,6 +103,9 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-settings-gate.ps1` | Tasks settings, immediate delete/undo, restart, reminder default, ordering and accessibility |
 | `run-list-icon-gate.ps1` | Emoji list icons and navigation counts; UX-15 unset header dot, hover, keyboard focus/Enter, clear, Light/Dark, detail-open and minimum-width screenshots |
 | `run-undo-gate.ps1` | Undo history across navigation/expiry, preserved newer title, due/reminder/repeat clears, step/list deletion, moves and bulk field/completion actions |
+| `run-share-gate.ps1 -Aot` | Real Windows Share source, target discovery, Text/WebLink, errors, exact local persistence, process exit and open-main/restart refresh; include the host-built source fixture |
+| `run-ux-regression-gate.ps1` | Runs existing M4/M13/M8/M7/M0 gates sequentially in one guest restore |
+| `run-share-regression-gate.ps1 -Aot` | Final UX-18 startup regressions: M0, M7 preflight, and published x64 M13 |
 
 The scripts drive real input on the desktop they run on. Host runs require the
 explicit opt-in above. The VM being unavailable does not authorize host automation.
@@ -164,6 +167,13 @@ $baseline = 'tests\ui\artifacts\completion-measure\vm\timings.json'
 Only one run at a time; a second concurrent run fails immediately. Gates may
 change Windows settings in the guest (contrast, animations); the next restore
 discards them.
+
+The real Share fixture is a BCL-free native C++ desktop source using the Windows
+DataTransferManager HWND interop. Build it on the host with
+`scripts/Build-ShareSource.ps1`, then run
+`scripts/Invoke-VmGate.ps1 -Gate run-share-gate.ps1 -GateArguments '-Aot' -Include 'tests/ui/artifacts/share-source'`.
+All activation, discovery and input stay in the guest. AOT shares use the disposable
+guest package's LocalState. Direct mapping tests do not prove broker activation.
 
 In a fresh guest the app's first launch takes 11–12 s (package registration, cold
 file cache, Debug JIT), longer than most suites' window waits. So before a UI
