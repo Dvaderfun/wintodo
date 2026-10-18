@@ -78,10 +78,12 @@ As of 2026-10-18:
   reset for To Do parity. The owner authorized committing/pushing UX-14 on
   2026-10-18 with its failed stability gate documented. Sort 13/13, M5 9/9 +
   restart 3/3 and M8 17/17 pass; list stability remains 2/3, including a
-  previous-header comparison. Recommended next work is a separate completion
-  viewport investigation and fix, without changing the one-row tolerance.
-  UX-10's optional row-completion
-  snackbar remains undecided. M9 remains owner-deferred;
+  previous-header comparison. Completion viewport investigation remains open,
+  without changing the one-row tolerance. Owner selected UX-18 next and skipped
+  UX-16/17 for now; ADR-015 is proposed, awaiting acknowledgement before code.
+  UX-10's optional row-completion snackbar remains unimplemented; the fresh
+  review did not approve full completion (undo VM gate 6/7, snackbar timing
+  failure in the bulk check). M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
 - **UX-10:** Shared 20-entry undo history implemented for task/list/step deletion,
@@ -89,6 +91,9 @@ As of 2026-10-18:
   7/7, M3 10/10 + restart, M4 9/9 + restart, M13 11/11; 270/270 tests pass.
   M8 17/17 after correcting the customised-palette harness;
   optional row-completion snackbar awaits owner acknowledgement of DESIGN §7.
+  Review on 2026-10-18: build clean, 288 unit tests pass; latest undo VM gate
+  6/7, with bulk check failing on expired snackbar. Prior 7/7 evidence remains
+  historical; this review does not approve the incomplete package.
 
 ---
 
@@ -2916,3 +2921,52 @@ not rerun or marked passed by this package.
   deferred; UX-10's optional completion snackbar is still undecided.
 - All UI input and capture ran in WintodoTest through Invoke-VmGate, with no
   host desktop automation. Next work remains the completion viewport repair.
+
+## UX-10 — Owner-requested completion review          2026-10-18
+
+**Gate:** PARTIAL — Debug x64 warnings-as-errors build clean; 288 unit tests
+passed, 0 failed/skipped. Fresh undo VM gate 6/7; full UX-10 not approved.
+
+- Owner requested "Check it and approve if done right." Reviewed row/bulk/detail
+  completion, shared undo history, field restoration, recurrence/alarm restoration
+  and current tests under vendored winui-code-review.
+- Optional list-row "Completed · Undo" is not implemented: ToggleTaskCompletionAsync
+  does not capture/record undo. DESIGN §7 is still a proposal comment. Bulk
+  completion records field undo; detail completion stays quiet. No optional
+  behavior was approved as shipped, or silently skipped.
+- First VM run `run-20261018-155559`: 6/7, 0 skips. Expected absence of Bulk task
+  01 used search, whose nonzero exit was treated as test failure. Replaced it
+  with explicit wait-for --gone, preserving the stack-order assertion.
+- Second run `run-20261018-160116`: 5/7, 0 skips. Older history check and deleted
+  step check missed the five-second snackbar between CLI calls. Older history
+  now uses Ctrl+Z, appropriate after expiry. Removed redundant wait before
+  visible-button invoke; other checks still exercise the actual snackbar.
+- Final rerun: 6/7, 0 skips; log `vm/run-undo-gate-20261018-160625.log`.
+  Retained history, newer title, reminder/repeat clears, step restore, move and
+  list restore pass. The combined bulk check misses UndoButton after intermediate
+  row-value reads consume its lifetime; later assertions in that check are not
+  reported passed. No product or five-second duration change. Stopped after the
+  two permitted fix/rerun cycles; remaining harness timing requires focused work.
+- Existing Core/Data tests prove bounded history/retry/serialization/invalidation,
+  recurring occurrence/alarm/count restore and newer-field preservation. These
+  do not replace the incomplete UI gate. No AOT or stability validation claimed.
+- All input and captures ran inside WintodoTest; no host UI automation.
+
+## UX-18 — Share-target proposal and UX-16/17 disposition          2026-10-18
+
+**Gate:** PROPOSAL ONLY — no share implementation or integration pass claimed.
+
+- Owner chose UX-18 and skipped UX-16/17 for now. Status table and package
+  dispositions updated; completion viewport drift remains open separately.
+- Prepared ADR-015 and indexed it as proposed. Existing M7 shares accept Text
+  only, initialize the full shell/integration/sync graph, then create a task and
+  open it. No current real-share gate proves URL or broker/AOT handling.
+- Proposed extension: Text/WebLink to local default Tasks, preserve URLs in notes,
+  minimal native share window, one committed save, return to source application,
+  localized failures, immediate cleanup and narrow already-open-shell refresh.
+- Checked exact referenced DataPackageView/ShareOperation/AppInstance APIs via
+  winapp find-api and current Microsoft Learn activation/manifest/lifecycle docs.
+  UWP CoreWindow lifecycle wording is not proof for WinUI HWND activation; real
+  broker and x64 AOT share tests are required. M10 identity/signing stays separate.
+- Asked for acknowledgement of the concrete ADR before code, as UX-PLAN Phase D
+  explicitly requires. UX-18 stays awaiting owner; no product files were changed.
