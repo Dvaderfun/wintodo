@@ -176,6 +176,11 @@ public sealed partial class TaskListView : UserControl
         Composer.FocusComposer();
     }
 
+    internal void SetHeaderPlaceholderBrush(Brush brush)
+    {
+        ListIconPlaceholder.Fill = brush;
+    }
+
     internal void SelectTask(TaskItemViewModel item)
     {
         TasksList.SelectedItem = item;
@@ -276,6 +281,26 @@ public sealed partial class TaskListView : UserControl
     private void OnLoaded(object sender, RoutedEventArgs args)
     {
         _uiSettings.AnimationsEnabledChanged += OnAnimationsEnabledChanged;
+        ApplyListIconPickerState();
+    }
+
+    private void OnListIconPickerPointerChanged(object sender, PointerRoutedEventArgs args)
+    {
+        ApplyListIconPickerState();
+    }
+
+    private void OnListIconPickerFocusChanged(object sender, RoutedEventArgs args)
+    {
+        ApplyListIconPickerState();
+    }
+
+    private void ApplyListIconPickerState()
+    {
+        bool revealed = ListIconPickerButton.IsPointerOver
+            || ListIconPickerButton.FocusState is FocusState.Keyboard or FocusState.Programmatic;
+        VisualStateManager.GoToState(this,
+            revealed ? "ListIconPickerRevealed" : "ListIconPickerIdle",
+            useTransitions: false);
     }
 
     private void OnUnloaded(object sender, RoutedEventArgs args)

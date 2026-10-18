@@ -664,6 +664,11 @@ file reference.
 - Placeholder app icon in the title bar and assets: belongs to M10 (final
   name/identity, PLAN §10 open item).
 
+- Existing list/header and fixed-category accent brushes remain stale or use the
+  system palette during app-only Light/Dark switches (`Pages/ShellPage.Theme.cs`,
+  `ResolveBrush`/`ApplyListAccent`). UX-15 refreshes only its new placeholder;
+  review the wider accent resolution separately.
+
 - UX-02 validation resolved 2026-10-11: composer 3/3 and Tasks settings 9/9.
   Explicit detail closure and time-picker SelectionItemPattern fix harness
   preconditions/targeting; original evidence remains in PROGRESS History.

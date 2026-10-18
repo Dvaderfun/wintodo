@@ -22,7 +22,7 @@ As of 2026-10-18:
 - **Build:** Debug x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1;
   Release/AOT outputs were last refreshed on 2026-10-14, before the viewport fix.
   Tests (xunit v3 on Microsoft Testing Platform): Core 185, Data 93, Sync 10 — 288/288,
-  zero failed/skipped on the 2026-10-18 UX-14 validation run.
+  zero failed/skipped on the 2026-10-18 UX-15 validation run.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** Completion viewport drift remains open: the UX-14 validation
@@ -69,6 +69,11 @@ As of 2026-10-18:
   M6 7/7, list icons 10/10, Tasks settings 9/9 and composer 3/3 now pass.
   Complete: motion 7/7 with strict fresh timing PASS, reduced motion and Windows
   setting restoration verified; corrected harnesses acknowledged under ADR-011.
+- **UX-15:** Complete: unset user-list header icons show a 16 px theme-colour
+  dot without an idle border; hover and keyboard focus reveal the emoji picker.
+  Existing emoji, accessible name/IDs and 44 px target preserved. List-icon
+  14/14 and M8 17/17 pass in WintodoTest; Light/Dark, detail/narrow and four
+  contrast palettes visually reviewed. DESIGN and ADR-009 amendment approved.
 - **Next:** UX-12 skipped by the owner on 2026-10-18; keep My Day's midnight
   reset for To Do parity. The owner authorized committing/pushing UX-14 on
   2026-10-18 with its failed stability gate documented. Sort 13/13, M5 9/9 +
@@ -2862,3 +2867,52 @@ decision pending before final implementation commit/push.
 - Recommended next: diagnose completion anchor drift, fix the responsible layer
   and pass all three list-stability checks in WintodoTest with the existing
   54 px limit, including exact completion focus and Space uncompletion.
+
+## UX-15 — Quieter placeholder when a list has no icon          2026-10-18
+
+**Gate:** PASS — Debug x64 build clean, 288/288 unit tests, list-icon 14/14,
+M8 17/17. Completion viewport drift remains separately open; stability was
+not rerun or marked passed by this package.
+
+**Shipped**
+- Owner approval recorded before implementation in claim commit `df3aaa1`:
+  UX-PLAN acceptance, DESIGN §3.1 and an appended ADR-009 amendment preserve
+  the original decision while recording the approved header change.
+- The existing 44 px semantic Button shows a 16 px colour dot without an idle
+  border when no emoji is assigned. VisualStateManager reveals the Fluent Emoji
+  affordance on hover or keyboard/programmatic focus, with native focus chrome.
+  A selected emoji stays visible; presets, custom emoji and clear commands reuse
+  their existing paths. No new product strings, dependencies or schema changes.
+- Placeholder colour updates immediately after list-colour changes and uses
+  the app's actual Light/Dark palette; High Contrast uses system window text.
+  Existing accessible name and AutomationIds are retained.
+
+**Validation**
+- Final `dotnet build Wintodo.sln -p:Platform=x64 -warnaserror`: 0 warnings/errors.
+  `dotnet test Wintodo.sln -p:Platform=x64`: Core 185, Data 93, Sync 10;
+  288 passed, 0 failed, 0 skipped. No new domain logic requires unit cases.
+- Expanded list-icon VM gate `run-20261018-151837`: 14 passed, 0 failed/skipped.
+  Covers real Shift+Tab focus and Enter activation, hover, icon selection/custom
+  validation, clearing, saved emoji and cleared-icon restart persistence,
+  colour changes, Light/Dark and detail-open/minimum-width layout. Screenshots
+  confirm the new dot, hover affordance and focus states without clipping.
+- M8 VM gate `run-20261018-152234`: 17 passed, 0 failed/skipped. Added idle/hover
+  captures and keyboard picker activation in Aquatic, Desert, Dusk and Night sky.
+  Header states visually reviewed; saved contrast flags, colours and registry
+  preference restored using the existing documented SPI-cache exception.
+- Initial icon run `run-20261018-151155`: 13 automated checks passed, but visual
+  review found the placeholder retained a stale colour and system-theme brush.
+  Corrected only the placeholder refresh/palette lookup, rebuilt and reran the
+  complete gate with the extra cleared-icon restart check before acceptance.
+- Vendored winui-code-review completed with no outstanding Error/Warning in
+  UX-15: explicit x:Bind modes, localized accessible name, preserved commands,
+  semantic button/tab stop, native focus, theme brushes and AOT-safe APIs.
+
+**Scope and remaining work**
+- Existing wider accent resolution can retain stale colours/use the system
+  palette during app-only theme switches. Recorded separately in UX-PLAN's
+  parking lot; this package fixes the new placeholder only.
+- Release/AOT, performance and manual owner gates were not rerun. M9 stays
+  deferred; UX-10's optional completion snackbar is still undecided.
+- All UI input and capture ran in WintodoTest through Invoke-VmGate, with no
+  host desktop automation. Next work remains the completion viewport repair.

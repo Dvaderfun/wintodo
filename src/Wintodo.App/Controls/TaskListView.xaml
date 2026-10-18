@@ -163,6 +163,15 @@
 
     <Grid>
         <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="ListIconPickerStates">
+                <VisualState x:Name="ListIconPickerIdle" />
+                <VisualState x:Name="ListIconPickerRevealed">
+                    <VisualState.Setters>
+                        <Setter Target="ListIconPlaceholder.Visibility" Value="Collapsed" />
+                        <Setter Target="ListIconPickerAffordance.Visibility" Value="Visible" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
             <VisualStateGroup x:Name="UndoStates">
                 <VisualStateGroup.Transitions>
                     <VisualTransition From="UndoHidden" To="UndoShown" GeneratedDuration="0:0:0.2">
@@ -258,13 +267,31 @@
                         MinWidth="0"
                         Padding="0"
                         AutomationProperties.AutomationId="Todo.List.IconPickerButton"
-                        BorderThickness="{ThemeResource ListHeaderButtonBorderThickness}"
+                        BorderThickness="0"
+                        GotFocus="OnListIconPickerFocusChanged"
+                        LostFocus="OnListIconPickerFocusChanged"
+                        PointerEntered="OnListIconPickerPointerChanged"
+                        PointerExited="OnListIconPickerPointerChanged"
                         Style="{StaticResource SubtleButtonStyle}"
                         Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.CanEditSelectedList), Mode=OneWay}">
                         <Grid>
-                            <SymbolIcon
-                                Symbol="Emoji"
-                                Visibility="{x:Bind local:TaskListView.InverseBoolToVisibility(ViewModel.HasSelectedIconEmoji), Mode=OneWay}" />
+                            <Grid Visibility="{x:Bind local:TaskListView.InverseBoolToVisibility(ViewModel.HasSelectedIconEmoji), Mode=OneWay}">
+                                <Ellipse
+                                    x:Name="ListIconPlaceholder"
+                                    Width="16"
+                                    Height="16"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    AutomationProperties.AutomationId="Todo.List.IconPlaceholder"
+                                    Fill="{ThemeResource ListHeaderPlaceholderBrush}" />
+                                <SymbolIcon
+                                    x:Name="ListIconPickerAffordance"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    AutomationProperties.AutomationId="Todo.List.IconPickerAffordance"
+                                    Symbol="Emoji"
+                                    Visibility="Collapsed" />
+                            </Grid>
                             <TextBlock
                                 AutomationProperties.AutomationId="Todo.List.HeaderIcon"
                                 FontFamily="Segoe UI Emoji"
