@@ -759,7 +759,9 @@
                 SelectionMode="Extended">
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <ItemsStackPanel AreStickyGroupHeadersEnabled="True" />
+                        <ItemsStackPanel
+                            AreStickyGroupHeadersEnabled="True"
+                            ItemsUpdatingScrollMode="KeepScrollOffset" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
                 <ListView.GroupStyle>

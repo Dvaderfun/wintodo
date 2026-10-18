@@ -62,7 +62,7 @@ this dependency exception does not mark those gates passed.
 | UX-11 | Drop tasks on My Day and Important | B | S | — | ShellPage | done (41b1946; M5 9/9 + restart, M8 17/17) |
 | UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | skipped (owner, 2026-10-18; keep midnight for To Do parity) |
 | UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | done (efa09c2; motion 7/7, ADR-011 accepted) |
-| UX-14 | Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | shipped (owner authorized commit/push 2026-10-18; sort 13/13, M5 12/12, M8 17/17; stability 2/3 remains open) |
+| UX-14 | Show the sort indicator only when the sort isn't the default | B | S | — | TaskListView | shipped (owner authorized commit/push 2026-10-18; sort 13/13, M5 12/12, M8 17/17; separate viewport repair now passes stability 3/3 twice) |
 | UX-15 | Quieter placeholder when a list has no icon | B | S | — | TaskListView | done (9976747; list-icon 14/14, M8 17/17, 288 tests) |
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | skipped for now (owner, 2026-10-18) |
 | UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | skipped for now (owner, 2026-10-18) |
@@ -689,10 +689,12 @@ Add findings that are outside a package's scope here, one line each, with a
 file reference.
 
 - Completion viewport drift (`src/Wintodo.App/Controls/TaskListView.xaml.cs`,
-  `tests/ui/run-list-stability-gate.ps1`): UX-14 and previous-header comparisons
-  fail the existing 54 px anchor limit (2/3 checks). Owner chose to ship UX-14
-  on 2026-10-18 with this open; diagnose and fix separately, then verify exact
-  completed-row focus and Space uncompletion without relaxing the tolerance.
+  `tests/ui/run-list-stability-gate.ps1`): resolved separately on 2026-10-18.
+  Panel offset preservation, immediate restoration when transitions are disabled,
+  and recycled-anchor realization pass 3/3 twice in WintodoTest. Immediate and
+  settled completion/uncompletion drift is 10 px against the unchanged 54 px
+  limit; exact completed-row focus and Space uncompletion pass. Earlier UX-14
+  and previous-header failures remain recorded in PROGRESS History.
 
 - Placeholder app icon in the title bar and assets: belongs to M10 (final
   name/identity, PLAN §10 open item).
