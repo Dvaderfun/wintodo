@@ -582,7 +582,16 @@ try {
             winapp ui wait-for "Todo.TitleBar.SearchBox" -w $mainHwnd -t 5000 | Out-Null
             if ($LASTEXITCODE -ne 0) { throw "Search is missing." }
             Assert-AuthoredControlsHaveIds
+            winapp ui focus 'Todo.List.TitleButton' -w $mainHwnd | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not focus the list title.' }
+            winapp ui hover 'Todo.List.SortButton' -w $mainHwnd | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not move away from the icon picker.' }
             Take-Screenshot "$prefix-selected.png"
+            winapp ui hover 'Todo.List.IconPickerButton' -w $mainHwnd | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not hover the icon picker.' }
+            Take-Screenshot "$prefix-icon-picker-hover.png"
+            winapp ui hover 'Todo.List.SortButton' -w $mainHwnd | Out-Null
+            if ($LASTEXITCODE -ne 0) { throw 'Could not move away from the icon picker.' }
             # UX-14: include the non-default chip and keyboard reset in every palette.
             winapp ui invoke 'Todo.List.SortButton' -w $mainHwnd | Out-Null
             if ($LASTEXITCODE -ne 0) { throw 'Could not open Sort in High Contrast.' }
@@ -602,6 +611,14 @@ try {
                 winapp ui focus $controlId -w $mainHwnd | Out-Null
                 if ($LASTEXITCODE -ne 0) { throw "Could not focus $controlId." }
                 Take-Screenshot "$prefix-$($controlId.Split('.')[-1])-focused.png"
+                if ($controlId -eq 'Todo.List.IconPickerButton') {
+                    winapp ui send-keys 'enter' -w $mainHwnd --via send-input | Out-Null
+                    if ($LASTEXITCODE -ne 0) { throw 'Keyboard icon picker activation failed.' }
+                    winapp ui wait-for 'Todo.List.Icon.Choice.31' -a $AppPid -t 3000 | Out-Null
+                    if ($LASTEXITCODE -ne 0) { throw 'Icon presets are missing in High Contrast.' }
+                    winapp ui send-keys 'escape' -w $mainHwnd --via send-input | Out-Null
+                    if ($LASTEXITCODE -ne 0) { throw 'Icon picker dismissal failed.' }
+                }
             }
         }
     }

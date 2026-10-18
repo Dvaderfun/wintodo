@@ -111,6 +111,9 @@ public sealed partial class ShellPage
             ? ResolveBrush("SystemColorHighlightColorBrush")
             : ResolveBrush(resourceKey);
         TaskList.Resources["ListAccentBrush"] = brush;
+        TaskList.SetHeaderPlaceholderBrush((isHighContrast ?? _isHighContrast)
+            ? ResolveBrush("SystemColorWindowTextColorBrush")
+            : ResolveHeaderPlaceholderBrush(list));
         DetailPane.Resources["ListAccentBrush"] = brush;
         ShellNavigation.Resources["NavigationViewSelectionIndicatorForeground"] = brush;
     }
@@ -268,6 +271,27 @@ public sealed partial class ShellPage
     private Brush ResolveBrush(string resourceKey)
     {
         return (Brush)Application.Current.Resources[resourceKey];
+    }
+
+    private Brush ResolveHeaderPlaceholderBrush(ShellListItemViewModel? list)
+    {
+        // Application-level lookup follows the system theme, not the app override.
+        // Resolve the selected palette explicitly and update the shape immediately;
+        // replacing a local resource does not invalidate an existing ThemeResource.
+        string themeKey = ShellRoot.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
+        string resourceKey = list?.AccentResourceKey ?? "ListHeaderPlaceholderBrush";
+        foreach (ResourceDictionary merged in Application.Current.Resources.MergedDictionaries)
+        {
+            if (merged.ThemeDictionaries.TryGetValue(themeKey, out object? theme)
+                && theme is ResourceDictionary palette
+                && palette.TryGetValue(resourceKey, out object? value)
+                && value is Brush resolved)
+            {
+                return resolved;
+            }
+        }
+
+        return ResolveBrush(resourceKey);
     }
 
 }

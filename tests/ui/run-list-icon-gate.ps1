@@ -94,6 +94,51 @@ function Get-TaskRow {
         Select-Object -First 1
 }
 
+function Ui {
+    param([string[]]$Arguments)
+    $output = winapp ui @Arguments -a $appPid
+    if ($LASTEXITCODE -ne 0) { throw "UI command failed: $($Arguments -join ' ') $output" }
+    $output
+}
+
+function Save-HeaderScreenshot {
+    param([string]$Name)
+    $path = Join-Path $artifactDirectory $Name
+    Ui @('screenshot', '-o', $path) | Out-Null
+    if (-not (Test-Path -LiteralPath $path) -or (Get-Item -LiteralPath $path).Length -eq 0) {
+        throw "Screenshot was not delivered: $path"
+    }
+}
+
+function Assert-IconButton {
+    $button = (Ui @('search', 'Todo.List.IconPickerButton', '--json') | ConvertFrom-Json).matches |
+        Where-Object automationId -eq 'Todo.List.IconPickerButton' | Select-Object -First 1
+    if (-not $button -or $button.name -ne 'Choose list icon' -or
+        $button.width -lt 44 -or $button.height -lt 44 -or $button.isOffscreen) {
+        throw 'The named 44 px icon picker is missing or clipped.'
+    }
+    Ui @('wait-for', 'Todo.List.IconPickerButton', '-p', 'IsKeyboardFocusable', '--value', 'True') | Out-Null
+}
+
+function Set-HeaderWindowWidth {
+    param([int]$Width)
+    $window = (Get-Process -Id $appPid).MainWindowHandle
+    $scale = [ListIconGateNative]::GetDpiForWindow($window) / 96.0
+    if (-not [ListIconGateNative]::SetWindowPos($window, [IntPtr]::Zero, 0, 0,
+        [int]($Width * $scale), [int](820 * $scale), 0x0006)) { throw 'Window resize failed.' }
+    Start-Sleep -Milliseconds 300
+}
+
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class ListIconGateNative {
+    [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] public static extern bool SetWindowPos(
+        IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
+}
+'@
+
 function Open-ListIconDialog {
     param([int]$AppPid, [string]$MainHwnd)
 
@@ -141,6 +186,23 @@ try {
     $listUid = $list.automationId.Substring("Todo.Nav.UserList.".Length)
     $iconId = "Todo.Nav.Icon.$listUid"
     $countId = "Todo.Nav.Count.$listUid"
+
+    Test-UI 'UX-15 unset header: idle dot, hover, keyboard focus and Enter picker' {
+        Ui @('focus', 'Todo.List.TitleButton') | Out-Null
+        Ui @('hover', 'Todo.List.SortButton') | Out-Null
+        Assert-IconButton
+        Save-HeaderScreenshot 'ux15-01-idle.png'
+        Ui @('hover', 'Todo.List.IconPickerButton') | Out-Null
+        Save-HeaderScreenshot 'ux15-02-hover.png'
+        Ui @('hover', 'Todo.List.SortButton') | Out-Null
+        Ui @('send-keys', 'shift+tab', '--via', 'send-input') | Out-Null
+        Ui @('wait-for', 'Todo.List.IconPickerButton', '-p', 'HasKeyboardFocus', '--value', 'True') | Out-Null
+        Save-HeaderScreenshot 'ux15-03-keyboard-focus.png'
+        Ui @('send-keys', 'enter', '--via', 'send-input') | Out-Null
+        Ui @('wait-for', 'Todo.List.Icon.Choice.31', '-t', '3000') | Out-Null
+        Ui @('send-keys', 'escape', '--via', 'send-input') | Out-Null
+        Ui @('wait-for', 'Todo.List.Icon.Choice.31', '--gone', '-t', '3000') | Out-Null
+    }
 
     Test-UI "Incomplete task count updates in navigation" {
         winapp ui focus "Todo.List.AddTaskBox" -a $appPid | Out-Null
@@ -262,6 +324,80 @@ try {
         Start-Sleep -Milliseconds 200
         winapp ui invoke "Todo.List.Icon.Remove" -a $appPid | Out-Null
         winapp ui wait-for $iconId -a $appPid --gone -t 5000 | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw 'Navigation emoji did not clear.' }
+        Ui @('wait-for', 'Todo.List.HeaderIcon', '--gone', '-t', '3000') | Out-Null
+        Ui @('focus', 'Todo.List.TitleButton') | Out-Null
+        Ui @('hover', 'Todo.List.SortButton') | Out-Null
+        Assert-IconButton
+        Save-HeaderScreenshot 'ux15-04-cleared.png'
+    }
+
+    Test-UI 'UX-15 Light and Dark: colour change, idle, hover and focus' {
+        foreach ($theme in @(@('Light', 1), @('Dark', 2))) {
+            Ui @('invoke', 'Todo.Nav.Settings') | Out-Null
+            Ui @('wait-for', 'Todo.Settings.Theme', '-t', '5000') | Out-Null
+            Ui @('focus', 'Todo.Settings.Theme') | Out-Null
+            Ui @('send-keys', 'home', '--via', 'send-input') | Out-Null
+            for ($index = 0; $index -lt $theme[1]; $index++) {
+                Ui @('send-keys', 'down', '--via', 'send-input') | Out-Null
+            }
+            Ui @('send-keys', 'enter', '--via', 'send-input') | Out-Null
+            Ui @('wait-for', 'Todo.Settings.Theme', '--value', $theme[0]) | Out-Null
+            Ui @('invoke', $list.automationId) | Out-Null
+            Ui @('wait-for', 'Todo.List.TitleButton', '--value', 'Emoji Gate') | Out-Null
+            Ui @('invoke', 'Todo.List.MenuButton') | Out-Null
+            Ui @('invoke', 'Todo.List.Menu.ChangeTheme') | Out-Null
+            Ui @('invoke', 'Todo.List.Theme.Green') | Out-Null
+            Ui @('focus', 'Todo.List.TitleButton') | Out-Null
+            Ui @('hover', 'Todo.List.SortButton') | Out-Null
+            Assert-IconButton
+            Save-HeaderScreenshot "ux15-$($theme[0])-idle.png"
+            Ui @('hover', 'Todo.List.IconPickerButton') | Out-Null
+            Save-HeaderScreenshot "ux15-$($theme[0])-hover.png"
+            Ui @('hover', 'Todo.List.SortButton') | Out-Null
+            Ui @('send-keys', 'shift+tab', '--via', 'send-input') | Out-Null
+            Ui @('wait-for', 'Todo.List.IconPickerButton', '-p', 'HasKeyboardFocus', '--value', 'True') | Out-Null
+            Save-HeaderScreenshot "ux15-$($theme[0])-focus.png"
+        }
+    }
+
+    Test-UI 'UX-15 header fits beside detail and at minimum window width' {
+        try {
+            $row = Get-TaskRow -AppPid $appPid -Title 'Persistent count task'
+            if (-not $row) { throw 'Persistent task is missing.' }
+            Ui @('invoke', $row.selector) | Out-Null
+            Ui @('wait-for', 'Todo.Detail.Title', '-t', '5000') | Out-Null
+            foreach ($width in 1180, 640) {
+                Set-HeaderWindowWidth $width
+                if ($width -eq 640) {
+                    Ui @('invoke', 'Todo.Detail.Close') | Out-Null
+                    Ui @('wait-for', 'Todo.Detail.Title', '--gone', '-t', '3000') | Out-Null
+                }
+                Ui @('focus', 'Todo.List.TitleButton') | Out-Null
+                Ui @('hover', 'Todo.List.SortButton') | Out-Null
+                Assert-IconButton
+                Save-HeaderScreenshot "ux15-width-$width.png"
+            }
+        } finally { Set-HeaderWindowWidth 1180 }
+    }
+} finally {
+    Stop-Process -Id $appPid -ErrorAction SilentlyContinue
+}
+
+$appPid = Start-TestApp
+try {
+    $mainHwnd = Get-MainWindow -AppPid $appPid
+    Test-UI 'UX-15 cleared icon persists after restart' {
+        $list = Get-UserList -AppPid $appPid -Name 'Emoji Gate'
+        if (-not $list) { throw 'The persisted user list was not found.' }
+        Ui @('invoke', $list.selector) | Out-Null
+        Ui @('wait-for', 'Todo.List.TitleButton', '--value', 'Emoji Gate', '-t', '5000') | Out-Null
+        Ui @('wait-for', $iconId, '--gone', '-t', '3000') | Out-Null
+        Ui @('wait-for', 'Todo.List.HeaderIcon', '--gone', '-t', '3000') | Out-Null
+        Ui @('focus', 'Todo.List.TitleButton') | Out-Null
+        Ui @('hover', 'Todo.List.SortButton') | Out-Null
+        Assert-IconButton
+        Save-HeaderScreenshot 'ux15-05-cleared-restart.png'
     }
 } finally {
     Stop-Process -Id $appPid -ErrorAction SilentlyContinue

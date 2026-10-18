@@ -101,7 +101,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-m13-gate.ps1` | CalDAV Configure dialog, cancel/retry, sync, list toggles, footer visibility before connect/after connect/restart/disconnect (`-Aot` for published x64) |
 | `run-notification-settings-gate.ps1` | Reminder enable/disable, actual scheduled payload defaults, restart, Data/About and accessibility |
 | `run-settings-gate.ps1` | Tasks settings, immediate delete/undo, restart, reminder default, ordering and accessibility |
-| `run-list-icon-gate.ps1` | Emoji list icons and navigation counts |
+| `run-list-icon-gate.ps1` | Emoji list icons and navigation counts; UX-15 unset header dot, hover, keyboard focus/Enter, clear, Light/Dark, detail-open and minimum-width screenshots |
 | `run-undo-gate.ps1` | Undo history across navigation/expiry, preserved newer title, due/reminder/repeat clears, step/list deletion, moves and bulk field/completion actions |
 
 The scripts drive real input on the desktop they run on. Host runs require the
