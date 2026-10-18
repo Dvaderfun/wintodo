@@ -86,15 +86,27 @@ public sealed class UndoStoreTests
         await using StoreFixture f = await StoreFixture.CreateAsync();
         var ct = TestContext.Current.CancellationToken;
         TodoList list = await f.Store.CreateListAsync("Recurring", cancellationToken: ct);
-        var task = new TodoTask { ListId = list.Id, Summary = "Daily", Due = f.Clock.UtcNow, RRule = "FREQ=DAILY;COUNT=2" };
+        var task = new TodoTask { ListId = list.Id, Summary = "Daily", Due = f.Clock.UtcNow, Start = f.Clock.UtcNow.AddHours(-1), RRule = "FREQ=DAILY;COUNT=2" };
         task.Alarms.Add(new TaskAlarm { Trigger = f.Clock.UtcNow.AddMinutes(-10) });
         task = await f.Store.CreateTaskAsync(task, ct);
         var states = await f.Store.CaptureTaskUndoAsync([task.Uid], TaskUndoFields.Completion, ct);
         await f.Store.CompleteTaskAsync(task.Uid, ct);
+        TodoTask advanced = (await f.Store.GetTaskAsync(task.Uid, ct))!;
+        Assert.Equal(task.Due!.Value.AddDays(1), advanced.Due);
+        Assert.Equal(task.Start!.Value.AddDays(1), advanced.Start);
+        Assert.Equal(task.Alarms[0].Trigger!.Value.AddDays(1), advanced.Alarms[0].Trigger);
+        Assert.Equal(1, Assert.Single(await f.Store.CaptureTaskUndoAsync([task.Uid], TaskUndoFields.Completion, ct)).CompletionCount);
+        advanced.Summary = "Newer recurring title";
+        advanced.Description = "Newer recurring note";
+        await f.Store.UpdateTaskAsync(advanced, ct);
         await f.Store.RestoreTaskFieldsAsync(states, ct);
         TodoTask restored = (await f.Store.GetTaskAsync(task.Uid, ct))!;
         Assert.Equal(task.Due, restored.Due);
+        Assert.Equal(task.Start, restored.Start);
+        Assert.Equal("Newer recurring title", restored.Summary);
+        Assert.Equal("Newer recurring note", restored.Description);
         Assert.Equal(task.Alarms[0].Trigger, restored.Alarms[0].Trigger);
+        Assert.Equal(0, Assert.Single(await f.Store.CaptureTaskUndoAsync([task.Uid], TaskUndoFields.Completion, ct)).CompletionCount);
         await f.Store.CompleteTaskAsync(task.Uid, ct);
         Assert.Equal(Wintodo.Core.Models.TaskStatus.NeedsAction, (await f.Store.GetTaskAsync(task.Uid, ct))!.Status);
     }
