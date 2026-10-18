@@ -1,10 +1,10 @@
 # ADR-015 — Complete the Windows text and URL share target
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-10-18
 - **Supersedes:** nothing; extends M7's existing text-share groundwork
-- **Owner acknowledgement:** owner selected UX-18 and skipped UX-16/17 for now;
-  acknowledgement of this concrete proposal is pending before implementation.
+- **Owner acknowledgement:** owner explicitly approved this ADR on 2026-10-18
+  after reviewing the concrete proposal; UX-16/17 remain skipped for now.
 
 ## Context
 
