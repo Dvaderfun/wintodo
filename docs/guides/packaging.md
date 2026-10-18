@@ -3,6 +3,9 @@
 The app name and publisher remain the placeholders in `Package.appxmanifest`:
 `5826186B-4750-4C22-BC50-B5DD1EED9CA5`, `CN=AppPublisher`, version `1.0.0.0`.
 Final identity and production signing require the owner's decision (PLAN §10).
+The remaining decisions, owner-run checks and clean-install premise are tracked
+in [release-checklist.md](release-checklist.md). The standard `WintodoTest`
+checkpoint is provisioned for development and cannot prove a clean M10 install.
 The manifest declares only `runFullTrust`, required for the desktop app and its
 COM toast/startup extensions. It does not request `broadFileSystemAccess`;
 file import/export uses pickers and CalDAV uses the full-trust HTTP client.
@@ -57,3 +60,24 @@ This certificate is for local testing only. Certificate trust and package
 installation are separate owner-approved actions; neither is needed to prove
 package creation or test signing. Clean-VM install/launch, uninstall cleanup,
 final Store assets and production signing remain M10 gate work.
+
+## Prepared artifacts (2026-10-18)
+
+Source: viewport repair commit `23881eb`. Debug/Release x64 builds and 307 unit
+tests passed before republishing Native AOT for x64 and ARM64. Fresh unsigned
+packages and copies signed with the existing local test certificate are available
+under `publish/msix`:
+
+- `Wintodo-x64.msix` and `Wintodo-arm64.msix`.
+- `Wintodo-x64-test-signed.msix` and `Wintodo-arm64-test-signed.msix`.
+- `inspection.json`: source commit, SHA-256 hashes, package identity, extensions,
+  native executable/runtime/SQLite architecture checks and signature metadata.
+- `*.verify.log`: SignTool verification output for each test-signed package.
+
+Package inspection confirms the placeholder identity/version, only `runFullTrust`,
+toast/COM/startup/share declarations, Text/WebLink share formats, required packaged
+assets and native x64/ARM64 binaries with no CLR header. Runtime/deployment gates
+remain pending. SignTool verification exits 1 because the development certificate
+is untrusted on the host; full signature/trust verification is not reported as
+passed. No certificate was installed. Test copies are not timestamped production
+artifacts. The original public certificate and PFX remain in the ignored folder.

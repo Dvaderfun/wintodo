@@ -596,6 +596,7 @@ behaviour sits in code-behind, where it can't be tested.
 ### UX-20 — Close the open manual gate rows (owner-run)
 
 These are in PROGRESS **Current state**:
+
 - M6: hand-import into Nextcloud Tasks or Thunderbird.
 - M7: a reminder survives a reboot; a visible taskbar badge.
 - M8: Narrator listening check.
@@ -603,6 +604,8 @@ These are in PROGRESS **Current state**:
   Automation.
 
 Agents can prepare checklists and scripts. Only the owner can mark them passed.
+The session steps and pass criteria are prepared in
+[the release checklist](guides/release-checklist.md). Rows remain owner-run.
 
 ---
 

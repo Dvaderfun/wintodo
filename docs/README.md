@@ -27,6 +27,7 @@ Read what the task needs, not everything. Start from `AGENTS.md`, then
 - [guides/migrations.md](guides/migrations.md) — adding a SQLite schema migration
 - [guides/performance.md](guides/performance.md) — measuring, recording, and the budget rules
 - [guides/packaging.md](guides/packaging.md) — unsigned tag artifacts, placeholder identity, local test signatures and open release gates
+- [guides/release-checklist.md](guides/release-checklist.md) — UX-20 owner-run checks, M10 decisions and clean-install acceptance
 - [guides/ai-tooling.md](guides/ai-tooling.md) — instruction files, vendored skills, WinApp CLI, MCP servers
 
 ## Fixtures

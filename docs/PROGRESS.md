@@ -14,14 +14,15 @@ As of 2026-10-18:
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | GROUNDWORK | Unsigned tag CI added; final identity/signing, Store assets and clean-VM install/uninstall gates pending |
+| M10 Packaging and release | GROUNDWORK | Fresh x64/ARM64 AOT MSIX and local test signatures prepared; unsigned tag CI added; final identity/signing, Store assets and clean-VM install/uninstall gates pending |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug and Release x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1
   after the completion viewport repair;
-  Release/AOT x64 and ARM64 published on 2026-10-18 during UX-18 work.
+  Release/AOT x64 and ARM64 republished on 2026-10-18 after the viewport repair
+  for M10 package preparation; fresh runtime execution is not claimed.
   Tests (xunit v3 on Microsoft Testing Platform): Core 202, Data 95, Sync 10 — 307/307,
   zero failed/skipped on the latest 2026-10-18 run. One intervening existing
   InvalidListMutation test failed transiently; focused and full reruns pass.
@@ -92,6 +93,16 @@ As of 2026-10-18:
   UX-10 expanded undo gate passes 12/12, M3 + restart and M4 + restart pass;
   M13 passes 11/11 and M8 17/17; UX-10 is complete. M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
+
+- **Release readiness:** Viewport repair committed as `23881eb`; Debug/Release
+  builds and 307/307 tests rechecked. UX-20 owner-run procedures and M10 acceptance
+  are in [the release checklist](guides/release-checklist.md). Fresh unsigned
+  x64/ARM64 MSIX and existing-certificate test-signed copies are in `publish/msix`;
+  package inspection and SHA-256 hashes are in `inspection.json`. Host signature
+  verification stops at the untrusted development certificate; no trust was added.
+  The regular VM checkpoint has Developer Mode and certificate trust already,
+  so a separate clean-install baseline remains necessary. Final name, publisher,
+  distribution route, production signing/assets and owner-run gates remain open.
 
 - **Completion viewport repair:** Panel updates keep their scroll offset rather
   than competing with the view's anchor correction. Transition-free updates
@@ -3123,3 +3134,48 @@ Core 202 + Data 95 + Sync 10 = 307/307, no failures/skips.
   Invoke-VmGate. No host UI automation, new dependency, ADR change or performance
   claim. Release build is verified; fresh Native AOT runtime and ARM64 execution
   were not part of this focused repair. M9 and owner-run manual gates remain open.
+
+## UX-20 / M10 — Manual gate and release preparation          2026-10-18
+
+**Gate:** PREPARATION PASS; owner-run UX-20 and M10 deployment gates PENDING.
+Debug/Release x64 warnings-as-errors builds clean; unit tests 307/307 with no
+failures/skips. Native AOT publish and unsigned MSIX packaging succeed for x64
+and ARM64. Local test signing succeeds; full trust verification does not pass.
+
+**Shipped**
+- Committed the already-verified completion viewport repair as `23881eb` after
+  reviewing the six-file diff, restored-project ItemsStackPanel API, existing VM
+  stability/M3/M8 evidence and returned screenshot. No review findings above
+  informational. Existing UI evidence remains the preceding entry; no new UI
+  gate or ARM64 runtime execution is claimed in this preparation session.
+- Added `docs/guides/release-checklist.md`: M6 external import, M7 reboot reminder
+  and visible badge, M8 Narrator, real Radicale/Nextcloud convergence, offline
+  edits, conflicts and unknown-property retention. Each row remains pending
+  owner observation. The checklist explains how to retain guest state through
+  reboot without restoring the standard gate checkpoint.
+- Prepared fresh unsigned and test-signed x64/ARM64 packages in the ignored
+  `publish/msix` directory, using the existing test PFX/public certificate.
+  Packaged manifest inspection confirms the existing identity/version,
+  `runFullTrust` only, toast/COM/startup/share extensions, and Text/WebLink.
+  Native app, WinUI runtime, Windows App Runtime and SQLite binaries match each
+  package's architecture and have no CLR directory. Required assets/PRI exist.
+- `publish/msix/inspection.json` records SHA-256 hashes, source commit, package
+  sizes and signature metadata. Unsigned x64: 57,071,649 bytes; ARM64:
+  55,456,420 bytes. Test-signed x64: 57,082,950 bytes; ARM64: 55,467,733 bytes.
+  Signing certificate matches the existing `CN=AppPublisher` public certificate.
+- SignTool verification exits 1 for both test-signed packages because the
+  self-signed development certificate is not trusted on the host. Logs are
+  retained as `*.verify.log`; signature presence and signer matching do not
+  replace a passed trust/deployment gate. No host certificate trust was added.
+
+**Open decisions and limits**
+- Final app name, exact identity/publisher and distribution route were requested
+  from the owner; current placeholders remain. Production signing, release
+  assets/listing, signing/release CI and Store submission remain pending those
+  choices. Existing CI still uploads unsigned artifacts only.
+- M10's clean-install premise requires a separate guest baseline: the normal
+  `clean` checkpoint already has Developer Mode and test certificate trust.
+  The checklist records this and the install/uninstall acceptance; no VM
+  provisioning, certificate trust, installation or owner desktop automation
+  was performed. Guest changes outside the repo require owner authorization.
+- No ADR or accepted product decision changed. M9 remains owner-deferred.
