@@ -140,7 +140,7 @@ try {
             $uid = (Row $title).automationId.Substring('Todo.Row.'.Length)
             Ui @('wait-for', "Todo.Row.ImportanceToggle.$uid", '--value', 'On', '-t', '3000') | Out-Null
         }
-        Undo
+        Undo -Keyboard
         foreach ($title in 'Bulk task 05','Bulk task 06') {
             $uid = (Row $title).automationId.Substring('Todo.Row.'.Length)
             Ui @('wait-for', "Todo.Row.ImportanceToggle.$uid", '--value', 'Off', '-t', '3000') | Out-Null
@@ -163,7 +163,7 @@ try {
         Ui @('invoke', 'Todo.Row.Selection.Due.Today') | Out-Null
         Start-Sleep -Milliseconds 500
         foreach ($title in 'Bulk task 05','Bulk task 06') { if ((Row $title).name -notlike '*Today*') { throw 'Due date missing.' } }
-        Undo
+        Undo -Keyboard
         foreach ($title in 'Bulk task 05','Bulk task 06') { if ((Row $title).name -like '*Today*') { throw 'Due date retained after undo.' } }
         SelectTwo
         Ui @('send-keys', 'space', '--via', 'send-input') | Out-Null
@@ -177,6 +177,26 @@ try {
             $uid = (Row $title).automationId.Substring('Todo.Row.'.Length)
             Ui @('wait-for', "Todo.Row.CompleteToggle.$uid", '--value', 'Off', '-t', '3000') | Out-Null
         }
+    }
+    foreach ($keyboard in @($false, $true)) {
+        foreach ($recurring in @($false, $true)) {
+            $title = if ($recurring) { 'Undo recurring completion' } else { 'Bulk task 07' }
+            Check "Row completion undo: recurring=$recurring keyboard-after-expiry=$keyboard" {
+                OpenTask $title
+                $uid = (Row $title).automationId.Substring('Todo.Row.'.Length)
+                $options = @()
+                if ($keyboard) { $options += '-Keyboard' }
+                if ($recurring) { $options += '-Recurring' }
+                powershell.exe -NoProfile -File (Join-Path $PSScriptRoot 'check-completion-undo.ps1') -AppPid $AppPid -TaskUid $uid @options
+                if ($LASTEXITCODE -ne 0) { throw 'Completion undo check failed.' }
+            }
+        }
+    }
+    Check 'Detail completion remains quiet' {
+        OpenTask 'Bulk task 08'
+        $uid = (Row 'Bulk task 08').automationId.Substring('Todo.Row.'.Length)
+        powershell.exe -NoProfile -File (Join-Path $PSScriptRoot 'check-completion-undo.ps1') -AppPid $AppPid -TaskUid $uid -Detail
+        if ($LASTEXITCODE -ne 0) { throw 'Quiet detail completion check failed.' }
     }
     Check 'List deletion undo restores navigation and tasks together' {
         OpenTask 'Bulk task 04'

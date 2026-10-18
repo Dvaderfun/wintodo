@@ -39,6 +39,8 @@ public sealed partial class TaskItemViewModel : TaskListEntryViewModel
 
     internal TodoTask Model { get; set; }
 
+    internal void RefreshCompletionToggle() => OnPropertyChanged(nameof(IsCompleted));
+
     public string Uid => Model.Uid;
 
     public long ListId => Model.ListId;

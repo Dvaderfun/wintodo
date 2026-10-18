@@ -227,12 +227,17 @@ public sealed partial class TaskListViewModel
                 return;
             }
 
+            var completionUndo = await _taskStore.CaptureTaskUndoAsync(
+                [item.Uid], TaskUndoFields.Completion);
             await _taskStore.CompleteTaskAsync(item.Uid);
             TodoTask updated = await _taskStore.GetTaskAsync(item.Uid)
                 ?? throw new InvalidOperationException($"Task '{item.Uid}' disappeared after completion.");
             item.Model = updated;
             item.IsCompleted =
                 updated.Status == Wintodo.Core.Models.TaskStatus.Completed;
+            // A recurring occurrence remains incomplete; reset the CheckBox's native toggle
+            // even when the observable bool has not changed from false.
+            item.RefreshCompletionToggle();
             UpdateItemDisplay(item);
             CompletionAnnouncement = string.Format(
                 DisplayCulture.Current,
@@ -244,6 +249,7 @@ public sealed partial class TaskListViewModel
             if (!item.IsCompleted)
             {
                 VisibleItemsUpdated?.Invoke();
+                RecordTaskUndo(completionUndo, "Undo_TaskCompleted");
                 return;
             }
 
@@ -257,6 +263,7 @@ public sealed partial class TaskListViewModel
             InsertBySortOrder(_completedTasks, item);
             if (ReferenceEquals(SelectedTask, item)) _completedExpanded = true;
             RebuildVisibleItems(viewportAlreadyCaptured: true);
+            RecordTaskUndo(completionUndo, "Undo_TaskCompleted");
         }
         catch
         {

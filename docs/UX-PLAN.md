@@ -58,7 +58,7 @@ this dependency exception does not mark those gates passed.
 | UX-07 | Update the task list in place instead of rebuilding it | B | L | UX-06 | TaskListVM, TaskListView | done (d6038f2; stability/M3/M5/M8 PASS) |
 | UX-08 | Completion and row motion per DESIGN §7 | B | S | UX-07 | TaskRow, TaskListView | done (9fa4a86; motion 7/7, stability 3/3, M8 17/17) |
 | UX-09 | Real multi-select and bulk actions | B | L | UX-07 | TaskListView, TaskListVM, TaskRow | done (b327d85; multiselect 7/7, M3/M8/stability PASS) |
-| UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | in progress (review 2026-10-18: undo 6/7, bulk snackbar timing failure; optional row completion unimplemented; prior gates recorded) |
+| UX-10 | Undo for every destructive action | B | M | UX-02 | TaskListVM, ShellVM, Data | done (2026-10-18: undo 12/12, M3/M4 + restart, M13 11/11, M8 17/17; stability remains separate) |
 | UX-11 | Drop tasks on My Day and Important | B | S | — | ShellPage | done (41b1946; M5 9/9 + restart, M8 17/17) |
 | UX-12 | My Day reset time | B | M | UX-02 | Core (clock/queries), Data | skipped (owner, 2026-10-18; keep midnight for To Do parity) |
 | UX-13 | Split oversized code-behind and view models | C | M | UX-07, UX-09 | ShellPage, all VMs | done (efa09c2; motion 7/7, ADR-011 accepted) |
@@ -653,11 +653,11 @@ activation), and AOT.
 
 **Selection (2026-10-18):** Owner chose UX-18 next and requested an assessment
 of UX-10. [ADR-015](adr/ADR-015-share-target.md) is the concrete share-target
-proposal awaiting acknowledgement before code. The existing M7 implementation
+accepted proposal (owner acknowledgement recorded in ADR-015). The existing M7 implementation
 already accepts Text, but not WebLink; it starts the full shell/integration/sync
 graph before saving. UX-18 extends and validates that groundwork.
 
-**Proposed acceptance (subject to ADR acknowledgement).**
+**Approved acceptance.**
 - Real Windows shares of Text, WebLink and a text-encoded URL create exactly one
   root task in the local default Tasks list, with each supplied URL in the note.
 - Multiline text and Unicode are preserved; empty/unsupported/failed shares

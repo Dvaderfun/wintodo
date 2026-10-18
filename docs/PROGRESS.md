@@ -20,9 +20,10 @@ As of 2026-10-18:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 
 - **Build:** Debug x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1;
-  Release/AOT outputs were last refreshed on 2026-10-14, before the viewport fix.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 185, Data 93, Sync 10 — 288/288,
-  zero failed/skipped on the 2026-10-18 UX-15 validation run.
+  Release/AOT x64 and ARM64 published on 2026-10-18 during UX-18 work.
+  Tests (xunit v3 on Microsoft Testing Platform): Core 202, Data 95, Sync 10 — 307/307,
+  zero failed/skipped on the latest 2026-10-18 run. One intervening existing
+  InvalidListMutation test failed transiently; focused and full reruns pass.
 - **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Known gaps:** Completion viewport drift remains open: the UX-14 validation
@@ -80,20 +81,20 @@ As of 2026-10-18:
   restart 3/3 and M8 17/17 pass; list stability remains 2/3, including a
   previous-header comparison. Completion viewport investigation remains open,
   without changing the one-row tolerance. Owner selected UX-18 next and skipped
-  UX-16/17 for now; ADR-015 is proposed, awaiting acknowledgement before code.
-  UX-10's optional row-completion snackbar remains unimplemented; the fresh
-  review did not approve full completion (undo VM gate 6/7, snackbar timing
-  failure in the bulk check). M9 remains owner-deferred;
+  UX-16/17 for now; ADR-015 is accepted. UX-18 implementation is in progress:
+  Text/WebLink mapping, share-only startup/window and external SQLite refresh
+  build and unit tests pass; real broker/AOT validation remains open.
+  UX-10 expanded undo gate passes 12/12, M3 + restart and M4 + restart pass;
+  M13 passes 11/11 and M8 17/17; UX-10 is complete. M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
 
-- **UX-10:** Shared 20-entry undo history implemented for task/list/step deletion,
-  moves, bulk actions and cleared due/reminder/repeat fields. Undo 7/7, multi-select
-  7/7, M3 10/10 + restart, M4 9/9 + restart, M13 11/11; 270/270 tests pass.
-  M8 17/17 after correcting the customised-palette harness;
-  optional row-completion snackbar awaits owner acknowledgement of DESIGN §7.
-  Review on 2026-10-18: build clean, 288 unit tests pass; latest undo VM gate
-  6/7, with bulk check failing on expired snackbar. Prior 7/7 evidence remains
-  historical; this review does not approve the incomplete package.
+- **UX-10:** Row completion, including recurring occurrences, now records undo
+  after its row update. The five-second snackbar and retained Ctrl+Z history
+  pass for ordinary/recurring tasks; detail completion stays quiet. Expanded
+  undo 12/12, M3 10/10 + restart, M4 9/9 + restart and M13 11/11 pass in
+  WintodoTest on 2026-10-18. Recurring checkbox state refresh corrected;
+  field restore retains later title/note edits and restores dates/alarms/history.
+  M8 17/17 and contact-sheet visual review pass. UX-10 is complete; stability unclaimed.
 
 ---
 
@@ -2970,3 +2971,29 @@ passed, 0 failed/skipped. Fresh undo VM gate 6/7; full UX-10 not approved.
   broker and x64 AOT share tests are required. M10 identity/signing stays separate.
 - Asked for acknowledgement of the concrete ADR before code, as UX-PLAN Phase D
   explicitly requires. UX-18 stays awaiting owner; no product files were changed.
+
+## UX-10 — Row-completion undo finished and verified          2026-10-18
+
+- Preserved the handoff edits and finished list-row completion undo. Captures
+  completion state before writing; the five-second snackbar starts after the
+  row update, so an immediate undo cannot race the delayed completed-row move.
+  Detail completion stays quiet; Ctrl+Z retains history after snackbar expiry.
+- Recurring occurrence completion now explicitly refreshes the native checkbox
+  even when its bool stays false. Undo restores due/start, shifted alarms and
+  completion history while preserving newer title/note edits.
+- Expanded undo VM gate: 12/12, no skips (`undo/run-20261018-164742`;
+  `vm/run-undo-gate-20261018-164543.log`). Ordinary/recurring row completion
+  each pass snackbar and keyboard-after-expiry checks; detail quiet passes.
+  Initial expanded run was 10/12 with the recurring native-toggle defect;
+  the product fix and rerun passed. Bulk checks retain the handoff Ctrl+Z fix.
+- M3 10/10 plus restart (`m3/run-20261018-164016`); M4 9/9 plus restart
+  (`m4/run-20261018-170055`); M13 11/11 (`m13/run-20261018-170317`);
+  M8 17/17 (`m8/run-20261018-170420`). VM-only input and capture. Contact
+  sheets reviewed for undo/M3 and all 29 M8 captures, including four contrast
+  palettes. No visual regression found. Narrator/manual rows stay pending.
+- Debug x64 warnings-as-errors build clean. Full units pass 307/307 during
+  combined UX-10/18 work; recurrence regression strengthened. One intervening
+  existing InvalidListMutation test failure did not reproduce in its focused
+  or full rerun. Vendored winui-code-review: no issues above informational.
+- No viewport stability or performance claim; the existing 54 px tolerance and
+  separate completion drift issue remain unchanged. Separate UX-10 commit.

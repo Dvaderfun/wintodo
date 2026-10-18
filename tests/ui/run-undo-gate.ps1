@@ -11,12 +11,18 @@ $ArtifactDirectory = [IO.Path]::GetFullPath($ArtifactDirectory)
 New-Item -ItemType Directory -Force -Path $ArtifactDirectory | Out-Null
 $db = Join-Path $ArtifactDirectory 'undo.db'
 $env:WINTODO_MULTISELECT_DB_PATH = $db
+$env:WINTODO_UNDO_COMPLETION_FIXTURE = '1'
 try {
     dotnet test --project (Join-Path $root 'tests\Wintodo.Data.Tests') -p:Platform=x64 --filter-class '*MultiselectGateDatabaseTests'
     if ($LASTEXITCODE -ne 0) { throw 'Undo fixture failed.' }
-} finally { Remove-Item Env:\WINTODO_MULTISELECT_DB_PATH -ErrorAction SilentlyContinue }
+} finally {
+    Remove-Item Env:\WINTODO_MULTISELECT_DB_PATH -ErrorAction SilentlyContinue
+    Remove-Item Env:\WINTODO_UNDO_COMPLETION_FIXTURE -ErrorAction SilentlyContinue
+}
+$clock = Join-Path $ArtifactDirectory 'clock.txt'
+Set-Content $clock '2026-01-05T12:00:00+00:00'
 $app = Join-Path $root 'src\Wintodo.App\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64'
-$launch = winapp run $app --detach --json -- --database-path $db | ConvertFrom-Json
+$launch = winapp run $app --detach --json -- --database-path $db --clock-file $clock | ConvertFrom-Json
 if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) { throw 'Undo app launch failed.' }
 try {
     & (Join-Path $PSScriptRoot 'undo.ps1') -AppPid $launch.ProcessId -ArtifactDirectory $ArtifactDirectory

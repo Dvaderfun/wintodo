@@ -1144,4 +1144,6 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <data name="SortResetButton.ToolTipService.ToolTip" xml:space="preserve"><value>Reset sorting to list default</value></data>
   <data name="Sort_IndicatorLabel" xml:space="preserve"><value>Sorted by {0}, {1}</value></data>
   <data name="Sort_CompletionDate" xml:space="preserve"><value>Completion date</value></data>
+  <!-- UX-10 row completion -->
+  <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
 </root>
