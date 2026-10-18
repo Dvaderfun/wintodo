@@ -936,7 +936,12 @@
   <data name="JumpList_RecentLists" xml:space="preserve"><value>Recent lists</value></data>
   <data name="JumpList_OpenListDescription" xml:space="preserve"><value>Open {0} in Wintodo.</value></data>
   <data name="Share_NoText" xml:space="preserve"><value>The shared item does not contain text.</value></data>
-  <data name="Share_CreateFailed" xml:space="preserve"><value>Wintodo could not create a task from the shared text.</value></data>
+  <data name="Share_CreateFailed" xml:space="preserve"><value>Wintodo could not save the shared item. Close this window and try sharing again.</value></data>
+  <data name="Share_Unsupported" xml:space="preserve"><value>Share some text or an HTTP or HTTPS link to create a task.</value></data>
+  <data name="Share_CompletionFailed" xml:space="preserve"><value>The task was saved, but Windows could not finish sharing. Close this window; sharing again will create another task.</value></data>
+  <data name="ShareHeading.Text" xml:space="preserve"><value>Add to Tasks</value></data>
+  <data name="ShareProgress.Text" xml:space="preserve"><value>Saving the shared item…</value></data>
+  <data name="ShareClose.Content" xml:space="preserve"><value>Close</value></data>
   <data name="SettingsSyncHeader.Text" xml:space="preserve"><value>Synchronization</value></data>
   <data name="SettingsSyncConnectCard.Header" xml:space="preserve"><value>CalDAV account</value></data>
   <data name="SettingsSyncConnectCard.Description" xml:space="preserve"><value>Connect a task-compatible CalDAV server.</value></data>

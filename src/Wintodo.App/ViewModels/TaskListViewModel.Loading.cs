@@ -266,6 +266,8 @@ public sealed partial class TaskListViewModel
     {
         if (_itemCache.TryGetValue(task.Uid, out TaskItemViewModel? existing))
         {
+            // An activation refresh must not overwrite an inline title draft.
+            if (existing.IsEditingTitle) return existing;
             existing.Model = task;
             existing.Summary = task.Summary;
             existing.IsCompleted =

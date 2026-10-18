@@ -524,6 +524,15 @@ these properties from code-behind.
 
 The window minimum is 640 × 480, so no state below that is needed.
 
+### 6.1 Share-only window (ADR-015)
+
+Selecting Wintodo in Windows Share automatically saves text or an HTTP(S) link
+to Tasks. A 480 × 320 DIP native window uses standard title/body text and a
+ProgressRing, then closes after persistence and broker completion. A localized
+InfoBar and Close command handle failures; there is no list picker or editor.
+The normal main window is not opened. Standard theme brushes and type-ramp
+styles apply in Light, Dark and High Contrast.
+
 ---
 
 ## 7. Motion

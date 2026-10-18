@@ -81,9 +81,11 @@ As of 2026-10-18:
   restart 3/3 and M8 17/17 pass; list stability remains 2/3, including a
   previous-header comparison. Completion viewport investigation remains open,
   without changing the one-row tolerance. Owner selected UX-18 next and skipped
-  UX-16/17 for now; ADR-015 is accepted. UX-18 implementation is in progress:
+  UX-16/17 for now; ADR-015 is accepted. UX-18 is complete:
   Text/WebLink mapping, share-only startup/window and external SQLite refresh
-  build and unit tests pass; real broker/AOT validation remains open.
+  build and unit tests pass; real x64 AOT broker gate passes 10/10. Final
+  startup/integration regression passes M0 4/4, M7 preflight and x64 AOT M13
+  11/11; ARM64 runtime remains unclaimed.
   UX-10 expanded undo gate passes 12/12, M3 + restart and M4 + restart pass;
   M13 passes 11/11 and M8 17/17; UX-10 is complete. M9 remains owner-deferred;
   final name/publisher, signing and M10 clean-VM gates remain pending.
@@ -94,7 +96,8 @@ As of 2026-10-18:
   undo 12/12, M3 10/10 + restart, M4 9/9 + restart and M13 11/11 pass in
   WintodoTest on 2026-10-18. Recurring checkbox state refresh corrected;
   field restore retains later title/note edits and restores dates/alarms/history.
-  M8 17/17 and contact-sheet visual review pass. UX-10 is complete; stability unclaimed.
+  M8 17/17 and contact-sheet visual review pass. M7 automated preflight and
+  M0 4/4 pass on follow-up. UX-10 is complete; stability unclaimed.
 
 ---
 
@@ -2997,3 +3000,71 @@ passed, 0 failed/skipped. Fresh undo VM gate 6/7; full UX-10 not approved.
   or full rerun. Vendored winui-code-review: no issues above informational.
 - No viewport stability or performance claim; the existing 54 px tolerance and
   separate completion drift issue remain unchanged. Separate UX-10 commit.
+
+## UX-10/18 — Activation regression follow-up          2026-10-18
+
+- Combined VM regression batch passed M4 9/9 plus restart, M13 11/11, M8
+  17/17 and M0 4/4; M7 initially missed Launch at login. The fresh standalone
+  M7 rerun passed UI, scheduled-tag and badge preflight (`m7/run-20261018-171549`,
+  `vm/run-m7-gate-20261018-171403.log`). No product or tolerance change for M7.
+  Captures reviewed through the integration contact sheet; manual toast/reboot
+  rows remain pending. Added missing-control diagnostics for future M7 failures.
+- UX-10 completion commit: 6cce524. UX-18 remains in progress. Real Windows
+  Share discovers Wintodo, but the cold x64 AOT target is initially treated as
+  a normal launch; source never receives ShareCompleted. Focused diagnostics
+  (`vm/run-share-gate-20261018-171124.log`) prove normal-shell startup rather
+  than share-only startup. Mapping/unit/manifest passes do not replace broker
+  evidence. Testing the direct platform activation query used by Microsoft's
+  official WinUI ShareTarget sample; no ADR reapproval or host UI fallback.
+
+## UX-18 — Windows Text/WebLink share target complete          2026-10-18
+
+- Implemented accepted ADR-015. Selecting Wintodo in Windows Share saves one
+  root task in local default Tasks. Core maps first nonempty text line/title,
+  preserves Unicode/note lines, source WebLink title and exact URL note lines;
+  HTTP(S) URLs stay local, without fetch/launch/date inference or truncation.
+  No dependency, migration, credential or package identity change.
+- Share activation precedes notifications, MainWindow, reminder and CalDAV
+  construction. Minimal native progress/error window keeps ShareOperation on
+  the UI dispatcher. One save attempt; ReportCompleted follows commit. Store
+  disposal and process exit verified. Empty/provider/database failures display
+  localized Close-only errors and save no task. Committed-report failure has
+  separate wording and never retries a write.
+- Real AOT exposed two activation defects hidden by helper tests: WinUI startup
+  consumes the platform payload, and the AOT IInspectable does not match the
+  concrete ShareTargetActivatedEventArgs type check. Program now captures
+  AppLifecycle activation before Application.Start; App explicitly queries
+  IShareTargetActivatedEventArgs via CsWinRT As. No single-instance redesign.
+- Main window observes external commits on return via the writer connection's
+  SQLite data_version; routine local activations avoid reloads. Stable row
+  selection and open title/note editor survive. Inline title drafts are retained.
+  Data unit proof distinguishes local versus other-connection commits.
+- Real source fixture uses native DataTransferManager HWND interop and a
+  button-driven Windows Share UI. All activation/input/capture stayed in
+  WintodoTest. Published x64 gate 10/10, no skips:
+  `share/run-20261018-180938`, log `vm/run-share-gate-20261018-180754.log`.
+  Text, WebLink, text URL, combined/repeated open-main shares, empty and failed
+  provider, unavailable database, unsupported discovery and restart all pass.
+  Exact title/note/default-list/task count verified after each scenario; every
+  successful operation gets one task, source ShareCompleted and target exit.
+- Corrected harness defects: host C++ runtime dependency (static fixture build),
+  hidden source startup, wrong 1x1 shell helper HWND, picker-ready waits, real
+  source button, duplicate-title wait (search/count two rows), PowerShell IntPtr,
+  error Close click. The OS picker sometimes stalls before target selection;
+  the harness allows one reopen before any activation/save, and preserves failed
+  run evidence. No committed write retry or duration/budget relaxation.
+- Final Debug x64 warnings-as-errors build: 0 warnings/errors. Full units:
+  Core 202 + Data 95 + Sync 10 = 307/307, no failures/skips. x64 and ARM64
+  Native AOT publish clean; generated manifests retain identity/permissions and
+  advertise Text/WebLink. x64 real-share runtime proven; ARM64 runtime unclaimed.
+- Final startup regression log `vm/run-share-regression-gate-20261018-181444.log`:
+  M0 4/4, M7 automated UI/schedule/badge preflight, x64 AOT M13 11/11.
+  Earlier affected M3/M4/M8 pass with UX-10 evidence. Manual toast/reboot,
+  Narrator, M10 signing/Store and deferred perf rows stay open.
+- Vendored winui-code-review completed: no issues above informational. Compiled
+  bindings have explicit modes, partial observable properties/commands, theme
+  resources, localized strings and IDs; no reflection/new dependency. Final
+  error/main-return and integration captures reviewed through contact sheets.
+  No clipping/overlap found; no share Dark/HighContrast runtime claim.
+- UX-10 remains separately committed as 6cce524. Completion viewport drift
+  remains separate, with the existing 54 px tolerance unchanged. No perf claim.

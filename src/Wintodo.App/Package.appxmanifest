@@ -71,6 +71,7 @@
         <uap:Extension Category="windows.shareTarget">
           <uap:ShareTarget>
             <uap:DataFormat>Text</uap:DataFormat>
+            <uap:DataFormat>WebLink</uap:DataFormat>
           </uap:ShareTarget>
         </uap:Extension>
       </Extensions>
