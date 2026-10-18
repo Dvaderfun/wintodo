@@ -32,7 +32,8 @@ function Undo([switch]$Keyboard) {
         Ui @('focus', 'Todo.List.MenuButton') | Out-Null
         Ui @('send-keys', 'ctrl+vk=0x5A', '--via', 'send-input') | Out-Null
     } else {
-        Ui @('wait-for', 'Todo.List.UndoButton', '-t', '3000') | Out-Null
+        # Invoke itself checks that the visible button exists. A separate CLI
+        # wait can consume the five-second lifetime before a second CLI starts.
         Ui @('invoke', 'Todo.List.UndoButton') | Out-Null
     }
     Start-Sleep -Milliseconds 700
@@ -73,8 +74,10 @@ try {
         Undo -Keyboard
         Ui @('invoke', (Match 'Multiselect source' 'ListItem').automationId) | Out-Null
         Ui @('wait-for', 'Bulk task 02', '-t', '5000') | Out-Null
-        if (Row 'Bulk task 01') { throw 'Undo restored wrong stack entry.' }
-        Undo
+        Ui @('wait-for', 'Bulk task 01', '--gone', '-t', '3000') | Out-Null
+        # This case verifies retained history after expiry; slow CLI calls can
+        # consume the newly shown snackbar too. Use Ctrl+Z for the older entry.
+        Undo -Keyboard
         Ui @('wait-for', 'Bulk task 01', '-t', '5000') | Out-Null
     }
     Check 'Due clear restores date and keeps a newer title' {
