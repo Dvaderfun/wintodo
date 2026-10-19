@@ -3613,3 +3613,17 @@ Data and Import tests cover re-runs, deleted tasks and incremental transfers.
 **Deviations:** The BCL streaming JSON reader decodes contentBytes directly;
 all object JSON remains source-generated. Existing exception traces need a
 separate privacy repair, recorded as IMP-25 without expanding this package.
+
+## IMP-10 — Resume Review after expired sign-in          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 381/381 tests, zero
+failed/skipped; VM import 12/12 including no second read in the expiry row and
+zero re-run attachment downloads. Returned Done capture reviewed.
+winui-code-review: no new findings above informational.
+
+**Shipped:** Keep export, choices and pending ids on 401. A fresh sign-in checks
+/me only; same account resumes Review with the continue message, a different
+account rereads. Three Import identity tests cover same/different/missing ids.
+
+**Deviations:** None; tokens remain in memory for a single sign-in. The
+pre-existing exception-trace finding remains in the separate IMP-25 row.

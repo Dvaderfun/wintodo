@@ -37,6 +37,14 @@ public sealed class MicrosoftTodoReader(GraphTodoClient client)
 {
     private readonly GraphTodoClient _client = client ?? throw new ArgumentNullException(nameof(client));
 
+    /// <summary>Verifies identity before reusing an export after a fresh sign-in.</summary>
+    public static async Task<bool> CanResumeAsync(GraphTodoClient client, MicrosoftTodoExport export,
+        CancellationToken cancellationToken = default)
+    {
+        GraphUser user = await client.GetMeAsync(cancellationToken).ConfigureAwait(false);
+        return !string.IsNullOrWhiteSpace(user.Id) && string.Equals(user.Id, export.User.Id, StringComparison.Ordinal);
+    }
+
     public async Task<MicrosoftTodoExport> ReadAsync(
         IProgress<MicrosoftTodoProgress>? progress = null,
         CancellationToken cancellationToken = default)

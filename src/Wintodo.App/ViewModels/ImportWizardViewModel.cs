@@ -36,6 +36,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     private MicrosoftTodoExport? _export;
     private string? _lastRunId;
     private IReadOnlySet<string> _pendingAttachmentIds = new HashSet<string>(StringComparer.Ordinal);
+    private bool _resumeAfterExpired;
 
     internal ImportWizardViewModel(ITaskStore store, IClock clock, ImportEnvironment environment)
     {
@@ -152,6 +153,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         Lists.Clear();
         SummaryLines.Clear();
         _pendingAttachmentIds = new HashSet<string>(StringComparer.Ordinal);
+        _resumeAfterExpired = false;
         _ = RefreshLastImportAsync();
     }
 
@@ -185,6 +187,16 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         {
             GraphTodoClient client = await _environment.Connector.ConnectAsync(token);
             SetProgress(_resources.GetString("Import_ProgressAccount"), indeterminate: true);
+            if (_resumeAfterExpired && _export is not null && await MicrosoftTodoReader.CanResumeAsync(client, _export, token))
+            {
+                _resumeAfterExpired = false;
+                _reader = new MicrosoftTodoReader(client);
+                Step = ImportWizardStep.Review;
+                ErrorMessage = _resources.GetString("Import_SignedInAgain");
+                IsErrorOpen = true;
+                return;
+            }
+            _resumeAfterExpired = false;
             _reader = new MicrosoftTodoReader(client);
             _export = await _reader.ReadAsync(new Progress<MicrosoftTodoProgress>(ReportProgress), token);
             IReadOnlyList<ImportSourceInfo> sources = await _store.GetImportSourcesAsync(GraphTodoMapper.Provider, token);
@@ -269,10 +281,10 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
         catch (GraphAuthorizationException exception) when (exception.IsSignInExpired)
         {
-            // The token is only valid for this sign-in; retrying with it fails
-            // again. Signing in re-reads To Do and keeps the list choices.
+            // Keep the read and preview. A new sign-in checks account identity
+            // before reusing them; no token is refreshed or persisted.
             _reader = null;
-            _export = null;
+            _resumeAfterExpired = true;
             Step = ImportWizardStep.Connect;
             ShowError(DescribeReadFailure(exception), exception);
         }
