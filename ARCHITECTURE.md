@@ -41,14 +41,20 @@ src/
                        SharedTaskContent (local Text/WebLink title/note mapping),
                        TaskMetadataLine (subtitle parts), SequenceDiff (keyed collection operations),
                        display-culture/date helpers
+    Import/            ImportSnapshot (source-neutral import model), IImportStore, ImportIdentity (UUIDv5, fingerprint)
     Services/          interfaces: ITaskStore, ISyncStore, ISettingsStore, ICredentialStore, IClock; TaskPreferences
                        UndoService (session history), TaskUndoState (field restore snapshot)
   Wintodo.Data/        net10.0, Core + Microsoft.Data.Sqlite, AOT-compatible
     Migrations/        NNN_*.sql, embedded resources, forward-only
     Mapping/           SqliteMapper (row <-> model)
-    SqliteTaskStore*.cs  one partial per area: Tasks, Lists, Groups, Alarms, Ical, Sync, Settings, Maintenance
+    SqliteTaskStore*.cs  one partial per area: Tasks, Lists, Groups, Alarms, Ical, Import, Sync, Settings, Maintenance
   Wintodo.Sync/        net10.0, Core only, AOT-compatible
                        CalDavClient (HTTP/XML), CalDavSyncService (push/pull/conflicts)
+  Wintodo.Import/      net10.0, Core only, AOT-compatible (ADR-016)
+                       MicrosoftTodo/: GraphTodoClient (read-only Graph, paging, retry),
+                       MicrosoftTodoReader, GraphTodoMapper (Graph -> ImportSnapshot),
+                       PatternedRecurrenceConverter, GraphDateConverter, FixtureGraphHandler;
+                       HtmlNoteConverter
   Wintodo.App/         the WinUI app; the only project with XAML or Windows APIs
     Program.cs         captures activation before WinUI initialization (one platform query)
     App.xaml.cs        composition root, activation routing (launch / toast / startup task)
@@ -85,12 +91,14 @@ ShellViewModel; file pickers, drag events and dialog rendering stay in the page.
 ```
 Wintodo.App ──► Wintodo.Data ──► Wintodo.Core
 Wintodo.App ──► Wintodo.Sync ──► Wintodo.Core
+Wintodo.App ──► Wintodo.Import ──► Wintodo.Core
 Wintodo.Core ──X──► anything but the BCL
 Wintodo.Data ──X──► Wintodo.Sync   (and vice versa; both talk through Core interfaces)
+Wintodo.Data ──X──► Wintodo.Import (Import builds an ImportSnapshot; Data persists it via IImportStore)
 UI types     ──X──► below Wintodo.App
 ```
 
-Core, Data and Sync set `IsAotCompatible`. A new library project must too.
+Core, Data, Sync and Import set `IsAotCompatible`. A new library project must too.
 
 ## Shell composition
 
@@ -183,6 +191,34 @@ Everything that depends on "now" takes `IClock`. Launching with
 from that file, so UI gate scripts can move time (My Day rollover, reminders)
 without touching the OS clock.
 
+## Import and onboarding
+
+ADR-016 and [docs/IMPORT-PLAN.md](docs/IMPORT-PLAN.md) cover the design.
+`ImportWizardViewModel` owns the Microsoft To Do flow: connect → read → choose →
+review → import → done. `ImportWizardView` hosts it in the list pane, like
+`SettingsView`. It opens from the onboarding `WelcomeView` and from
+Settings → Data.
+
+- **Sign-in.** `MicrosoftSignInService` uses the Windows App SDK
+  `OAuth2Manager` (authorization code + PKCE, system browser) with a loopback
+  redirect the app listens on. Scopes are `Tasks.Read` and `User.Read`. The
+  access token lives in memory for one import and is never stored.
+  `MicrosoftTodoRegistration.ClientId` is empty until the Entra app is
+  registered, and the wizard then says sign-in isn't set up.
+- **Reading and mapping.** `MicrosoftTodoReader` reads the account into a
+  `MicrosoftTodoExport`. `GraphTodoMapper` turns it into an `ImportSnapshot`
+  for the lists the person selected. Attachments download to `import-staging\`
+  and are copied under `attachments\<uid>\` inside the import transaction.
+- **Saving.** `IImportStore` (implemented by `SqliteTaskStore.Import.cs`,
+  DATA-MODEL §3.6) previews in a rolled-back transaction and applies in one
+  writer transaction.
+- **Onboarding.** `ShellViewModel` shows Welcome when `onboarding.completed`
+  is unset and the database has no tasks and only the default list. Starting
+  fresh, importing, or navigating away sets the key. Launches with
+  `--database-path` skip onboarding unless `--show-onboarding` is passed. The
+  Debug-only `--import-fixture <dir>` serves recorded Graph responses through
+  `FixtureGraphHandler` instead of signing in.
+
 ## Windows integration
 
 `WindowsIntegrationService` owns reminder toasts (scheduled through
@@ -203,3 +239,4 @@ to `PasswordVault` via `PasswordVaultCredentialStore` — never SQLite.
 | §3: `Microsoft.Extensions.DependencyInjection` | Manual wiring in `App.OnLaunched` | Fewer dependencies, AOT-trivial. Fine at this size. |
 | §5: `Views/` with `ShellPage`, `SettingsPage` | `Pages/ShellPage`, `Controls/*`, `SettingsView` control | Settings is in-shell, not `Frame`-navigated. |
 | §5: `Wintodo.Data` / `Wintodo.Core` only | Plus `Wintodo.Sync` (M13) | Planned in M13, missing from the §5 tree. |
+| §1: built "instead of Microsoft Graph" | `Wintodo.Import` reads Graph once, read-only, to import from Microsoft To Do | ADR-016. Graph is never storage or sync. |

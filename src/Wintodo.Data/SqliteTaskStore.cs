@@ -10,6 +10,7 @@ public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
         "Wintodo.Data.Migrations.001_init.sql",
         "Wintodo.Data.Migrations.002_list_icon_emoji.sql",
         "Wintodo.Data.Migrations.003_list_delete_membership.sql",
+        "Wintodo.Data.Migrations.004_import_links.sql",
     ];
     private const string ConnectionPragmas = """
         PRAGMA journal_mode = WAL;

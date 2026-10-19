@@ -372,6 +372,19 @@
                             </settings:SettingsCard.Description>
                         </settings:SettingsCard>
 
+                        <settings:SettingsCard
+                            x:Uid="SettingsMicrosoftTodoCard"
+                            AutomationProperties.AutomationId="Todo.Settings.Data.MicrosoftTodoCard">
+                            <settings:SettingsCard.HeaderIcon>
+                                <FontIcon Glyph="&#xE9D5;" />
+                            </settings:SettingsCard.HeaderIcon>
+                            <Button
+                                x:Uid="SettingsMicrosoftTodoButton"
+                                AutomationProperties.AutomationId="Todo.Settings.ImportMicrosoftTodo"
+                                Command="{x:Bind ViewModel.StartMicrosoftTodoImportCommand, Mode=OneTime}"
+                                Style="{StaticResource SettingsActionButtonStyle}" />
+                        </settings:SettingsCard>
+
                         <settings:SettingsCard x:Uid="SettingsImportCard">
                             <settings:SettingsCard.HeaderIcon>
                                 <FontIcon Glyph="&#xE8B5;" />

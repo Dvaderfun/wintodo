@@ -57,7 +57,8 @@ public sealed partial class ShellViewModel : ObservableObject
         ShellStateService stateService,
         IStartupTaskService startupTaskService,
         CalDavSyncService syncService,
-        WindowsIntegrationService windowsIntegration)
+        WindowsIntegrationService windowsIntegration,
+        ImportEnvironment importEnvironment)
     {
         _taskStore = taskStore;
         _stateService = stateService;
@@ -86,6 +87,7 @@ public sealed partial class ShellViewModel : ObservableObject
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
         Detail.TaskDeleted += TaskList.ApplyDetailTaskDeleted;
         Detail.DeleteRequested += OnDetailDeleteRequested;
+        InitializeImport(taskStore, clock, importEnvironment);
     }
 
     internal event Action? NavigationStructureChanged;
@@ -353,6 +355,7 @@ public sealed partial class ShellViewModel : ObservableObject
 
         _ = ApplyStartupTaskStateWhenReadyAsync(startupTask);
 
+        await InitializeOnboardingAsync(cancellationToken);
         await InitializeSyncAsync(cancellationToken);
 
         return await selectedNavigationTask ?? MyDayNavigationKey;

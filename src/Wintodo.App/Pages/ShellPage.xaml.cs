@@ -49,7 +49,8 @@ public sealed partial class ShellPage : Page
         ShellStateService stateService,
         WindowsIntegrationService windowsIntegration,
         IStartupTaskService startupTaskService,
-        CalDavSyncService syncService)
+        CalDavSyncService syncService,
+        ImportEnvironment importEnvironment)
     {
         _clock = clock;
         _taskStore = taskStore;
@@ -61,7 +62,8 @@ public sealed partial class ShellPage : Page
             stateService,
             startupTaskService,
             syncService,
-            windowsIntegration);
+            windowsIntegration,
+            importEnvironment);
         KeyboardShortcuts = CreateKeyboardShortcuts();
         InitializeComponent();
         AddPunctuationAccelerators();

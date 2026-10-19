@@ -11,6 +11,7 @@ Read what the task needs, not everything. Start from `AGENTS.md`, then
 | [DATA-MODEL.md](DATA-MODEL.md) | Changing models, the SQLite schema, or the `VTODO` mapping |
 | [../PLAN.md](../PLAN.md) | Starting a milestone (scope, deliverables, gate) or touching a §7 budget |
 | [UX-PLAN.md](UX-PLAN.md) | Picking up a UX work package (`UX-xx`): status table, scope, acceptance |
+| [IMPORT-PLAN.md](IMPORT-PLAN.md) | Onboarding and Microsoft To Do import (`IMP-xx`): status, design, open owner steps |
 
 ## Records
 
@@ -33,3 +34,4 @@ Read what the task needs, not everything. Start from `AGENTS.md`, then
 ## Fixtures
 
 - [../tests/fixtures/ical/README.md](../tests/fixtures/ical/README.md) — provenance of the iCalendar corpus
+- [../tests/fixtures/mstodo/README.md](../tests/fixtures/mstodo/README.md) — hand-written Microsoft Graph To Do responses

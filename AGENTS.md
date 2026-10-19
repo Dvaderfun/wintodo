@@ -8,7 +8,8 @@ Humans: start with [README.md](README.md).
 **Wintodo** — a native, packaged WinUI 3 task manager for Windows. v1 is a faithful
 Microsoft To Do clone built on open standards (iCalendar `VTODO`, CalDAV) instead of
 Microsoft Graph. Native AOT, x64 + ARM64, MSIX. Implemented: M0–M9 and M13 (CalDAV
-sync), with some manual gate rows still open. Not started: M10 packaging, M11 deep
+sync), with some manual gate rows still open. Onboarding with a one-way Microsoft
+To Do import (ADR-016) is implemented; it needs an Entra client id to sign in. Not started: M10 packaging, M11 deep
 subtasks, M12 tags. `Wintodo` is a placeholder name.
 
 ## Read before changing code
@@ -141,6 +142,7 @@ searching with coding. More: [docs/guides/ai-tooling.md](docs/guides/ai-tooling.
 | Change iCalendar import/export | `src/Wintodo.Core/Ical/`, `tests/fixtures/ical/`, DATA-MODEL §4 |
 | Change recurrence | `src/Wintodo.Core/Recurrence/RecurrenceRule.cs`, [ADR-006](docs/adr/ADR-006-recurrence-on-completion.md) |
 | Change CalDAV sync | `src/Wintodo.Sync/`, [ADR-002](docs/adr/ADR-002-caldav-webdav-sync.md) |
+| Change onboarding or the Microsoft To Do import | `src/Wintodo.Import/`, `Data/SqliteTaskStore.Import.cs`, `ViewModels/ImportWizardViewModel.cs`, `Controls/ImportWizardView`/`WelcomeView`, [ADR-016](docs/adr/ADR-016-microsoft-todo-import.md), [IMPORT-PLAN](docs/IMPORT-PLAN.md) |
 | Toasts, badge, jump list, startup | `src/Wintodo.App/Services/WindowsIntegrationService.cs`, `StartupTaskService.cs` |
 | App startup and object graph | `src/Wintodo.App/App.xaml.cs` (`OnLaunched`) |
 | Perf budgets / measurement | `PLAN.md` §7, [performance guide](docs/guides/performance.md), `docs/PERF.md` |

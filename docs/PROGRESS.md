@@ -18,6 +18,7 @@ As of 2026-10-19:
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
+| IMP Onboarding + Microsoft To Do import | AUTOMATED PASS | Entra app registration (owner, IMP-00); manual gate with real personal + work accounts |
 
 - **Build:** Debug and Release x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1
   after the completion viewport repair;
@@ -42,6 +43,10 @@ As of 2026-10-19:
   and 307/307 unit tests pass.
   Signed x64 MSIX version `1.0.0.3` now
   includes this fix; ARM64 and earlier test-signed copies predate it.
+- **IMP (2026-10-19):** Onboarding Welcome + one-way Microsoft To Do import (ADR-016).
+  Import gate 11/11, M8 17/17, settings 9/9 in WintodoTest; Debug/Release and AOT x64
+  clean; 364/364 unit tests (Core 211, Data 95, Sync 10, Import 48). Real sign-in
+  waits on the owner's Entra client id.
 - **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
   `scripts\Invoke-VmGate.ps1` (ADR-013). The earlier sweep's 14 passing runs remain
   recorded. Follow-up: m8 17/17, settings 9/9 twice, list-stability 3/3 twice
@@ -3304,3 +3309,66 @@ with warnings as errors and verifies Valid. No new MSIX runtime claim.
   SHA-256 `A3499B9F92FA9D1DA440C6D746485F2F4C8888C8E81A84850EFECB3468A46CD7`.
   Current metadata is in `Wintodo-x64.details.json`. No host install, launch,
   input automation, certificate change or ARM64 rebuild. M9/M10 open rows remain.
+
+## IMP — Onboarding and Microsoft To Do import          2026-10-19
+
+**Gate:** AUTOMATED PASS — import gate 11/11 in WintodoTest
+(`import/run-20261019-140532`, strict UIA invoke, no retries or keyboard
+fallback); M8 17/17 (`m8/run-20261019-140802`) and Tasks settings 9/9
+(`settings/run-20261018-221730`) after the shell/Settings changes. Debug and
+Release x64 warnings-as-errors builds clean; Native AOT x64 publish clean with
+no trim/AOT warnings (binary 20.11 MB). Unit tests 364/364 (Core 211, Data 95,
+Sync 10, Import 48), zero failed/skipped. WinUI code review: no findings above
+informational after the fixes below. **Open:** IMP-00 Entra app registration
+and the owner's manual gate with real personal and work accounts.
+
+**Shipped** (ADR-016, IMPORT-PLAN IMP-01…IMP-07)
+- `Wintodo.Import`: read-only Graph client (paging, `$expand` with automatic
+  fallback, 429/503 retry honouring `Retry-After`), reader, mapper, recurrence/
+  date/HTML converters, recorded fixture `tests/fixtures/mstodo/basic`.
+- Core `ImportSnapshot`/`IImportStore`/`ImportIdentity`; migration
+  `004_import_links.sql`; store preview (rolled-back transaction), apply,
+  `RemoveImportRunAsync`, dedupe by link → fingerprint → list name.
+- App: `OAuth2Manager` sign-in with a loopback redirect (token kept in memory
+  only), import wizard, first-run Welcome surface, Settings → Data card,
+  launch flags `--show-onboarding` and Debug-only `--import-fixture <dir>`.
+- Debug-only `--trace-file <path>` writes the app's trace lines for UI gates;
+  the import gate uses it.
+
+**Fixed while closing the gate**
+- Reopening the wizard in one session failed: the second "Import from To Do"
+  press threw inside the command (WinRT swallowed it; UIA reported "no invoke
+  pattern" and the button stayed drawn as pressed). The x:Load-discarded
+  `ImportWizardView` still observed the shared view model's collections, and
+  `Reset()` cleared them. The view now stops its bindings and drops its
+  repeaters' `ItemsSource` on `Unloaded`. A trace from `--trace-file` showed
+  the command running without the wizard opening. The earlier note calling
+  this harness-only was wrong; the gate's retry helper and keyboard fallback
+  were removed, not kept as workarounds.
+- Code review: the loopback listener no longer stops on a malformed, stalled
+  (10 s) or state-mismatched request, so a local process cannot end sign-in
+  early; HTTP timeouts are reported as offline instead of as a cancel;
+  `GraphTodoClient` takes `IClock` for `Retry-After` dates (new unit test).
+  The snapshot was already moved off the UI thread earlier in this package.
+- `dotnet sln add` had added `Any CPU`/`x86` solution platforms and mapped
+  every project to `Any CPU`; the solution now only adds the two new projects
+  with x64/ARM64 mappings, like the rest.
+
+**Deviations from IMPORT-PLAN**
+- Redirect: loopback `http://localhost` listener chosen over a protocol
+  redirect (decision 4); no manifest change.
+- Welcome cards use a `SettingsCard` with an action button; a clickable card
+  exposed no Invoke pattern.
+- §7.3 idempotency suite lives in `Wintodo.Import.Tests/ImportStoreTests.cs`
+  (it needs the fixture reader), not in `Wintodo.Data.Tests`.
+- §7.4 "offline error" is not a UI gate row; offline/timeout mapping is
+  covered by code review and unit tests of the client only.
+- Other as-built details (counts, step change detection, possible duplicates)
+  are in IMPORT-PLAN §10.
+
+**Known issues carried forward**
+- Not verified against live Graph: emoji-prefixed list names, `$expand` on
+  list tasks, raw attachment `$value`, and the `OAuth2Manager` token exchange.
+  All need the Entra client id in `MicrosoftTodoRegistration.ClientId` and the
+  owner's manual gate.
+- No ARM64 runtime or AOT runtime gate claimed for the import surfaces.

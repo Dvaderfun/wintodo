@@ -1,0 +1,45 @@
+{
+  "value": [
+    {
+      "@odata.etag": "W/\"etag-1\"",
+      "id": "T1",
+      "title": "Water the plants",
+      "body": {"content": "Use the blue can.\r\nNot too much.", "contentType": "text"},
+      "importance": "normal",
+      "status": "notStarted",
+      "isReminderOn": true,
+      "createdDateTime": "2026-09-01T08:15:30.1234567Z",
+      "lastModifiedDateTime": "2026-10-10T09:00:00.0000000Z",
+      "dueDateTime": {"dateTime": "2026-10-21T00:00:00.0000000", "timeZone": "UTC"},
+      "reminderDateTime": {"dateTime": "2026-10-21T07:30:00.0000000", "timeZone": "UTC"},
+      "recurrence": {
+        "pattern": {"type": "weekly", "interval": 1, "month": 0, "dayOfMonth": 0, "daysOfWeek": ["monday", "wednesday"], "firstDayOfWeek": "sunday", "index": "first"},
+        "range": {"type": "noEnd", "startDate": "2026-10-21", "endDate": "0001-01-01", "recurrenceTimeZone": "UTC", "numberOfOccurrences": 0}
+      },
+      "categories": [],
+      "hasAttachments": false,
+      "futureProperty": {"answer": 42},
+      "checklistItems": [
+        {"id": "C1", "displayName": "Fill the can", "isChecked": true, "createdDateTime": "2026-09-01T08:16:00Z", "checkedDateTime": "2026-10-09T18:00:00Z"},
+        {"id": "C2", "displayName": "Kitchen window", "isChecked": false, "createdDateTime": "2026-09-01T08:17:00Z"}
+      ],
+      "linkedResources": []
+    },
+    {
+      "id": "T2",
+      "title": "Book dentist",
+      "body": {"content": "", "contentType": "text"},
+      "importance": "low",
+      "status": "completed",
+      "isReminderOn": false,
+      "createdDateTime": "2026-08-01T10:00:00Z",
+      "lastModifiedDateTime": "2026-08-03T11:00:00Z",
+      "completedDateTime": {"dateTime": "2026-08-03T00:00:00.0000000", "timeZone": "UTC"},
+      "categories": [],
+      "hasAttachments": false,
+      "checklistItems": [],
+      "linkedResources": []
+    }
+  ],
+  "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/todo/lists/L-default/tasks/page2?$skip=2"
+}

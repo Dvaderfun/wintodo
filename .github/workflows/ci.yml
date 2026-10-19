@@ -30,7 +30,7 @@ jobs:
       - name: Build (x64 Debug, warnings as errors, WinUI + AOT analyzers)
         run: dotnet build Wintodo.sln -p:Platform=x64 -warnaserror --no-restore
 
-      - name: Unit tests (Core, Data, Sync — xunit v3 on Microsoft Testing Platform)
+      - name: Unit tests (Core, Data, Sync, Import — xunit v3 on Microsoft Testing Platform)
         run: >
           dotnet test --solution Wintodo.sln -p:Platform=x64 --no-build
           --report-trx --coverage --results-directory ${{ github.workspace }}/TestResults

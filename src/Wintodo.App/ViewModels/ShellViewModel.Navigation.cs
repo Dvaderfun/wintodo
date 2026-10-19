@@ -34,6 +34,7 @@ public sealed partial class ShellViewModel
         CloseDetail();
         if (!string.IsNullOrWhiteSpace(text))
         {
+            LeaveImportSurfaces();
             IsSettingsVisible = false;
             await TaskList.LoadSearchAsync(text, cancellationToken);
             return;

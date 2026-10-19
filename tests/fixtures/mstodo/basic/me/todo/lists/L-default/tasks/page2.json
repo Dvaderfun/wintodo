@@ -1,0 +1,22 @@
+{
+  "value": [
+    {
+      "id": "T3",
+      "title": "Send the quarterly report",
+      "body": {"content": "<html><head><style>p{}</style></head><body><p>Numbers from <b>finance</b> &amp; sales</p><ul><li>Revenue</li><li>Costs</li></ul></body></html>", "contentType": "html"},
+      "importance": "high",
+      "status": "waitingOnOthers",
+      "isReminderOn": true,
+      "createdDateTime": "2026-09-15T12:00:00Z",
+      "lastModifiedDateTime": "2026-10-01T12:00:00Z",
+      "dueDateTime": {"dateTime": "2026-10-19T22:00:00.0000000", "timeZone": "UTC"},
+      "reminderDateTime": {"dateTime": "2026-09-30T09:00:00.0000000", "timeZone": "W. Europe Standard Time"},
+      "categories": ["Work", "Red category"],
+      "hasAttachments": true,
+      "checklistItems": [],
+      "linkedResources": [
+        {"id": "R1", "webUrl": "https://example.com/report", "applicationName": "Contoso", "displayName": "Report draft", "externalId": "doc-77"}
+      ]
+    }
+  ]
+}

@@ -1,10 +1,11 @@
+using Wintodo.Core.Import;
 using Wintodo.Core.Ical;
 using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
 
 namespace Wintodo.Core.Services;
 
-public interface ITaskStore : ISettingsStore, ISyncStore, IAsyncDisposable
+public interface ITaskStore : ISettingsStore, ISyncStore, IImportStore, IAsyncDisposable
 {
     event EventHandler<StoreChangedEventArgs>? StoreChanged;
 

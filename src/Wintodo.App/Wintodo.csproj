@@ -65,6 +65,7 @@
     <ProjectReference Include="..\Wintodo.Core\Wintodo.Core.csproj" />
     <ProjectReference Include="..\Wintodo.Data\Wintodo.Data.csproj" />
     <ProjectReference Include="..\Wintodo.Sync\Wintodo.Sync.csproj" />
+    <ProjectReference Include="..\Wintodo.Import\Wintodo.Import.csproj" />
   </ItemGroup>
 
   <!--
