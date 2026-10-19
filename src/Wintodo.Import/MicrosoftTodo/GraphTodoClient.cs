@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
@@ -70,14 +71,17 @@ public sealed class GraphTodoClient
         {
             try
             {
-                return await GetAllPagesAsync(
+                List<GraphTodoTask> expandedTasks = await GetAllPagesAsync(
                     new Uri(_baseUri, listPath + "?$top=100&$expand=checklistItems,linkedResources"),
                     GraphJsonContext.Default.GraphCollectionGraphTodoTask,
                     cancellationToken).ConfigureAwait(false);
+                TraceTaskRead(expandedTasks, "success");
+                return expandedTasks;
             }
             catch (GraphRequestException exception) when (exception.StatusCode == HttpStatusCode.BadRequest)
             {
                 _expandUnsupported = true;
+                Trace.WriteLine("WINTODO_IMPORT_READ expand=fallback status=400");
             }
         }
 
@@ -98,7 +102,18 @@ public sealed class GraphTodoClient
                 cancellationToken).ConfigureAwait(false);
         }
 
+        TraceTaskRead(tasks, "fallback");
         return tasks;
+    }
+
+    private static void TraceTaskRead(List<GraphTodoTask> tasks, string expand)
+    {
+        // Counts and endpoint outcomes only; never log names, ids or URLs.
+        Trace.WriteLine(
+            $"WINTODO_IMPORT_READ expand={expand} tasks={tasks.Count} " +
+            $"completed={tasks.Count(task => task.Status == "completed")} " +
+            $"steps={tasks.Sum(task => task.ChecklistItems?.Count ?? 0)} " +
+            $"links={tasks.Sum(task => task.LinkedResources?.Count ?? 0)}");
     }
 
     public Task<List<GraphAttachment>> GetAttachmentsAsync(
@@ -124,18 +139,23 @@ public sealed class GraphTodoClient
             using HttpResponseMessage raw = await SendAsync(
                 new Uri(_baseUri, path + "/$value"),
                 cancellationToken).ConfigureAwait(false);
-            return await raw.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            byte[] content = await raw.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+            Trace.WriteLine($"WINTODO_IMPORT_READ attachment=raw bytes={content.LongLength}");
+            return content;
         }
         catch (GraphRequestException exception) when (
             exception.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound)
         {
+            Trace.WriteLine($"WINTODO_IMPORT_READ attachment=fallback status={(int)exception.StatusCode}");
             GraphAttachment attachment = await GetJsonAsync(
                 new Uri(_baseUri, path),
                 GraphJsonContext.Default.GraphAttachment,
                 cancellationToken).ConfigureAwait(false);
-            return string.IsNullOrEmpty(attachment.ContentBytes)
+            byte[] content = string.IsNullOrEmpty(attachment.ContentBytes)
                 ? []
                 : Convert.FromBase64String(attachment.ContentBytes);
+            Trace.WriteLine($"WINTODO_IMPORT_READ attachment=contentBytes bytes={content.LongLength}");
+            return content;
         }
     }
 
