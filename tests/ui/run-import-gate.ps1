@@ -33,11 +33,12 @@ function Invoke-Ui {
     Invoke-WinAppChecked (@('ui') + $Arguments + @('--on', $Target, '-a', "$appPid"))
 }
 function Start-App {
-    param([switch]$ShowOnboarding)
+    param([switch]$ShowOnboarding, [switch]$ExpireFirstSignIn)
     $arguments = @('run', $appDirectory, '--detach', '--json', '--',
         '--database-path', $databasePath, '--clock-file', $clockPath, '--import-fixture', $fixture,
         '--trace-file', ([IO.Path]::ChangeExtension($databasePath, ('trace-' + [DateTime]::UtcNow.ToString('HHmmss') + '.log'))))
     if ($ShowOnboarding) { $arguments += '--show-onboarding' }
+    if ($ExpireFirstSignIn) { $arguments += '--import-fixture-expire-once' }
     $launch = Invoke-WinAppChecked $arguments | ConvertFrom-Json
     if (-not $launch.ProcessId) { throw 'Import gate launch did not return a PID.' }
     $script:appPid = [int]$launch.ProcessId
@@ -239,6 +240,38 @@ try {
         Invoke-Ui @('invoke', 'Todo.Import.Cancel')
         Invoke-Ui @('wait-for', 'Todo.Settings.Title', '-t', '5000')
         Assert-Absent 'Todo.Import.Title'
+    }
+    Stop-App
+
+    # Live finding: a sign-in that expired on the review step failed the
+    # attachment download with 401 and was reported as "access denied".
+    $script:databasePath = Join-Path $artifactDirectory 'expired.db'
+    Start-App -ShowOnboarding -ExpireFirstSignIn
+    Test-UI 'Expired sign-in asks to sign in again and keeps list choices' {
+        Invoke-Ui @('wait-for', 'Todo.Welcome.MicrosoftTodo', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Welcome.MicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '15000')
+        Invoke-Ui @('invoke', 'Todo.Import.List.1')
+        Assert-Checked 'Todo.Import.List.1' $false
+        Invoke-Ui @('invoke', 'Todo.Import.Continue')
+        Invoke-Ui @('wait-for', 'Todo.Import.Start', '-t', '10000')
+        Invoke-Ui @('invoke', 'Todo.Import.Start')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '20000')
+        Assert-Text 'Your Microsoft sign-in has expired. Sign in again to continue. Your choices are kept.'
+        Assert-Absent 'Todo.Import.GoToTasks'
+        Save-Screenshot '09-sign-in-expired.png'
+        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '15000')
+        Assert-Checked 'Todo.Import.List.0' $true
+        Assert-Checked 'Todo.Import.List.1' $false
+        Invoke-Ui @('invoke', 'Todo.Import.Continue')
+        Invoke-Ui @('wait-for', 'Todo.Import.Start', '-t', '10000')
+        Invoke-Ui @('invoke', 'Todo.Import.Start')
+        Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-t', '20000')
+        Assert-Text 'Import complete'
+        Save-Screenshot '10-after-sign-in-again.png'
     }
     Stop-App
 

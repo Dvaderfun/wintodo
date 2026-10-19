@@ -9,15 +9,20 @@ namespace Wintodo.Import.MicrosoftTodo;
 /// <c>/v1.0/me/todo/lists/delta</c> reads <c>me/todo/lists/delta.json</c>. A raw
 /// attachment request (<c>…/$value</c>) reads <c>…/content.bin</c>. The query
 /// string is ignored, and a missing file returns a Graph-shaped 404.
+/// With <c>rejectAttachmentContent</c>, raw attachment requests return the 401
+/// Graph sends for an expired token, as seen live when an import started long
+/// after sign-in.
 /// </summary>
 public sealed class FixtureGraphHandler : HttpMessageHandler
 {
     private readonly string _root;
+    private readonly bool _rejectAttachmentContent;
 
-    public FixtureGraphHandler(string root)
+    public FixtureGraphHandler(string root, bool rejectAttachmentContent = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
         _root = Path.GetFullPath(root);
+        _rejectAttachmentContent = rejectAttachmentContent;
     }
 
     public int RequestCount { get; private set; }
@@ -34,6 +39,17 @@ public sealed class FixtureGraphHandler : HttpMessageHandler
         }
 
         bool raw = path.EndsWith("/$value", StringComparison.Ordinal);
+        if (raw && _rejectAttachmentContent)
+        {
+            return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+            {
+                Content = new StringContent(
+                    "{\"error\":{\"code\":\"InvalidAuthenticationToken\",\"message\":\"Access token has expired or is not yet valid.\"}}",
+                    Encoding.UTF8,
+                    "application/json"),
+            };
+        }
+
         string relative = raw ? path[..^"/$value".Length] + "/content.bin" : path + ".json";
         string file = Path.GetFullPath(Path.Combine(_root, relative.Replace('/', Path.DirectorySeparatorChar)));
         if (!file.StartsWith(_root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)

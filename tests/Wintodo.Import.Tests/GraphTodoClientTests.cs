@@ -167,6 +167,41 @@ public sealed class GraphTodoClientTests
 
         Assert.Equal("Authorization_RequestDenied", exception.Code);
         Assert.Equal("Admin consent required.", exception.Message);
+        Assert.False(exception.IsSignInExpired);
+    }
+
+    [Fact]
+    public async Task ExpiredToken_IsReportedAsAnExpiredSignInWithoutFallback()
+    {
+        // Seen live: an import started long after sign-in got 401 on the raw
+        // attachment download. It must not fall back to contentBytes with the
+        // same token, and it must not read as "access denied".
+        var handler = new ScriptedHandler(_ => ScriptedHandler.Json(
+            HttpStatusCode.Unauthorized,
+            """{"error":{"code":"InvalidAuthenticationToken","message":"Access token has expired or is not yet valid."}}"""));
+        var client = new GraphTodoClient(new HttpClient(handler), "token");
+
+        GraphAuthorizationException exception = await Assert.ThrowsAsync<GraphAuthorizationException>(
+            () => client.GetAttachmentContentAsync("L1", "T1", "A1", TestContext.Current.CancellationToken));
+
+        Assert.True(exception.IsSignInExpired);
+        Assert.Single(handler.Requests);
+    }
+
+    [Fact]
+    public async Task FixtureExpiredSignIn_ReadsEverythingButRejectsAttachmentContent()
+    {
+        var client = new GraphTodoClient(
+            new HttpClient(new FixtureGraphHandler(TestSupport.FixturePath("basic"), rejectAttachmentContent: true)),
+            "fixture-token");
+
+        MicrosoftTodoExport export = await new MicrosoftTodoReader(client)
+            .ReadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        GraphAuthorizationException exception = await Assert.ThrowsAsync<GraphAuthorizationException>(
+            () => client.GetAttachmentContentAsync("L-default", "T3", "A1", TestContext.Current.CancellationToken));
+
+        Assert.Equal(4, export.Lists.Count);
+        Assert.True(exception.IsSignInExpired);
     }
 
     [Fact]

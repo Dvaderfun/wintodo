@@ -313,4 +313,11 @@ public class GraphRequestException(HttpStatusCode statusCode, string? code, stri
 }
 
 public sealed class GraphAuthorizationException(HttpStatusCode statusCode, string? code, string? message)
-    : GraphRequestException(statusCode, code, message);
+    : GraphRequestException(statusCode, code, message)
+{
+    /// <summary>
+    /// HTTP 401: Graph rejected the access token, usually because it expired
+    /// while the wizard waited. Signing in again fixes it; a 403 does not.
+    /// </summary>
+    public bool IsSignInExpired => StatusCode == HttpStatusCode.Unauthorized;
+}

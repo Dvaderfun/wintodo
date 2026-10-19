@@ -217,7 +217,9 @@ Settings → Data.
   fresh, importing, or navigating away sets the key. Launches with
   `--database-path` skip onboarding unless `--show-onboarding` is passed. The
   Debug-only `--import-fixture <dir>` serves recorded Graph responses through
-  `FixtureGraphHandler` instead of signing in.
+  `FixtureGraphHandler` instead of signing in; adding
+  `--import-fixture-expire-once` makes the first session's attachment
+  downloads return 401, like a sign-in that expired.
 
 ## Windows integration
 

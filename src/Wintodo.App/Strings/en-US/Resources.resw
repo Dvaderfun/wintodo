@@ -1222,6 +1222,7 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <data name="Import_UntitledTask" xml:space="preserve"><value>Untitled task</value></data>
   <data name="Import_ErrorSignIn" xml:space="preserve"><value>Sign-in didn’t finish. Try again.</value></data>
   <data name="Import_ErrorSignInCancelled" xml:space="preserve"><value>Sign-in was cancelled.</value></data>
+  <data name="Import_ErrorSignInExpired" xml:space="preserve"><value>Your Microsoft sign-in has expired. Sign in again to continue. Your choices are kept.</value></data>
   <data name="Import_ErrorAccess" xml:space="preserve"><value>Microsoft didn’t allow access to your tasks. A work or school account may need an administrator’s approval.</value></data>
   <data name="Import_ErrorOffline" xml:space="preserve"><value>Can’t reach Microsoft. Check your connection and try again.</value></data>
   <data name="Import_ErrorRead" xml:space="preserve"><value>Microsoft To Do returned an error. Try again later.</value></data>
