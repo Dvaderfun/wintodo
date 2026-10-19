@@ -22,7 +22,8 @@ public sealed partial class SqliteTaskStore
                 new WriteContext(),
                 snapshot,
                 options,
-                runId: null),
+                runId: null,
+                cancellationToken),
             cancellationToken);
     }
 
@@ -218,7 +219,8 @@ public sealed partial class SqliteTaskStore
         WriteContext context,
         ImportSnapshot snapshot,
         ImportOptions options,
-        string? runId)
+        string? runId,
+        CancellationToken cancellationToken = default)
     {
         var run = new ImportRun(snapshot, options, runId, SqliteMapper.FormatInstant(_clock.UtcNow));
         run.Outcome.PreservedRepeats = snapshot.PreservedRepeats;
@@ -229,16 +231,22 @@ public sealed partial class SqliteTaskStore
 
         foreach (ImportList list in snapshot.Lists)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!run.Seen.Add((ImportEntityType.List, list.ExternalId)))
             {
                 continue;
             }
+
+            int beforeNew = run.Outcome.NewTasks;
+            int beforeUpdated = run.Outcome.UpdatedTasks;
+            int beforeUnchanged = run.Outcome.UnchangedTasks;
 
             long? listId = ResolveImportedList(connection, transaction, context, run, list);
             if (listId is null)
             {
                 run.Outcome.SkippedLists++;
                 run.Outcome.SkippedDeletedTasks += list.Tasks.Count;
+                run.Outcome.ListOutcomes[list.DisplayName] = new ImportOutcome { SkippedDeletedTasks = list.Tasks.Count };
                 continue;
             }
 
@@ -251,6 +259,7 @@ public sealed partial class SqliteTaskStore
                 listId.Value);
             foreach (ImportTask item in list.Tasks)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 if (!run.Seen.Add((ImportEntityType.Task, item.ExternalId)))
                 {
                     continue;
@@ -295,6 +304,12 @@ public sealed partial class SqliteTaskStore
                     }
                 }
             }
+            run.Outcome.ListOutcomes[list.DisplayName] = new ImportOutcome
+            {
+                NewTasks = run.Outcome.NewTasks - beforeNew,
+                UpdatedTasks = run.Outcome.UpdatedTasks - beforeUpdated,
+                UnchangedTasks = run.Outcome.UnchangedTasks - beforeUnchanged,
+            };
         }
 
         if (runId is not null)
@@ -582,9 +597,10 @@ public sealed partial class SqliteTaskStore
             return new ImportedTaskRef(local.Uid, local.ListId);
         }
 
-        if (isRoot && HasUnlinkedDuplicate(connection, transaction, listId, source))
+        if (isRoot && !run.Options.ImportPossibleDuplicates && HasUnlinkedDuplicate(connection, transaction, listId, source))
         {
             run.Outcome.PossibleDuplicates++;
+            if (run.Outcome.PossibleDuplicateTitles.Count < 50) run.Outcome.PossibleDuplicateTitles.Add(source.Summary);
             return null;
         }
 
@@ -764,6 +780,7 @@ public sealed partial class SqliteTaskStore
                 if (run.RunId is null)
                 {
                     run.Outcome.NewAttachments++;
+                    run.Outcome.NewAttachmentBytes += attachment.SizeBytes;
                     run.Outcome.PendingAttachmentIds.Add(attachment.ExternalId);
                 }
 
@@ -785,6 +802,7 @@ public sealed partial class SqliteTaskStore
             row.Id = InsertAttachment(connection, transaction, row);
             run.FileCopies.Add((attachment.StagedPath, Path.Combine(run.Options.AttachmentRoot, relativePath)));
             run.Outcome.NewAttachments++;
+            run.Outcome.NewAttachmentBytes += attachment.SizeBytes;
             SaveImportLink(
                 connection,
                 transaction,

@@ -387,3 +387,14 @@ Evidence: `tests/ui/artifacts/completion-measure/vm-20261017/timings.json` and
 `tests/ui/artifacts/completion-motion/run-20261017-203731/` (placement timings,
 reduced-motion timings, animation-setting.json, results.json, completion.mp4).
 The optional M9-VM memory/startup/scroll perf matrix was not run.
+
+### IMP-16 / IMP-20 — WintodoTest fixture measurement (2026-10-20)
+
+Debug x64; 1,000 tasks / 20 lists; FixtureGraphHandler with 50 ms request latency.
+Candidate is test-only; production parallelism has not been enabled for this comparison.
+
+| Reader | Time to Choose (read) | Preview | Total read + preview + save |
+|---|---|---|---|
+| serial production | 1434.9 ms | 893.4 ms | 3226.2 ms |
+| bounded candidate (4 lists) | 441.7 ms | 485.6 ms | 1765.6 ms |
+

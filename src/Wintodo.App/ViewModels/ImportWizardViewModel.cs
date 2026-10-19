@@ -166,6 +166,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         _reader = null;
         _export = null;
         _lastRunId = null;
+        ImportDuplicates = false;
         HasNoLists = false;
         Lists.Clear();
         SummaryLines.Clear();
@@ -259,22 +260,24 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanContinue))]
     private async Task ContinueAsync()
     {
-        IsErrorOpen = false;
-        IsBusy = true;
+        CancellationToken token = BeginWork(ImportWizardStep.Choose, _resources.GetString("Import_Checking"));
+        IsPreviewing = true;
         try
         {
-            ImportOutcome preview = await _store.PreviewImportAsync(await BuildSnapshotAsync(), BuildOptions());
+            ImportOutcome preview = await _store.PreviewImportAsync(await BuildSnapshotAsync(), BuildOptions(), token);
             _pendingAttachmentIds = preview.PendingAttachmentIds;
             DescribeOutcome(preview);
             Step = ImportWizardStep.Review;
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
+        catch (Exception exception)
         {
             ShowError(_resources.GetString("Import_ErrorSave"), exception);
         }
         finally
         {
-            IsBusy = false;
+            IsPreviewing = false;
+            EndWork();
         }
     }
 
@@ -418,6 +421,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         return new ImportOptions
         {
             OverwriteLocalEdits = HasPreviousImport && OverwriteLocalEdits,
+            ImportPossibleDuplicates = ImportDuplicates,
             AttachmentRoot = _environment.AttachmentRoot,
         };
     }
@@ -460,37 +464,6 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
 
         ContinueCommand.NotifyCanExecuteChanged();
-    }
-
-    private void DescribeOutcome(ImportOutcome outcome)
-    {
-        SummaryLines.Clear();
-        AddLine("Import_SummaryNewLists", outcome.NewLists);
-        AddLine("Import_SummaryExistingLists", outcome.ExistingLists);
-        AddLine("Import_SummaryNewTasks", outcome.NewTasks);
-        AddLine("Import_SummaryNewSteps", outcome.NewSteps);
-        AddLine("Import_SummaryAttachments", outcome.NewAttachments);
-        AddLine("Import_SummaryUpdated", outcome.UpdatedTasks);
-        AddLine("Import_SummaryUnchanged", outcome.UnchangedTasks);
-        AddLine("Import_SummaryKeptLocal", outcome.KeptLocalTasks);
-        AddLine("Import_SummaryDeleted", outcome.SkippedDeletedTasks);
-        AddLine("Import_SummarySkippedLists", outcome.SkippedLists);
-        AddLine("Import_SummaryDuplicates", outcome.PossibleDuplicates);
-        AddLine("Import_SummaryPreservedRepeats", outcome.PreservedRepeats);
-        AddLine("Import_SummaryRenamedTitles", outcome.RenamedEmptyTitles);
-        AddLine("Import_SummaryAcknowledged", outcome.AcknowledgedReminders);
-        if (!outcome.HasChanges)
-        {
-            SummaryLines.Add(_resources.GetString("Import_SummaryNothing"));
-        }
-    }
-
-    private void AddLine(string key, int count)
-    {
-        if (count > 0)
-        {
-            SummaryLines.Add(Format(key + "Format", count));
-        }
     }
 
     private void ReportProgress(MicrosoftTodoProgress progress)

@@ -3701,3 +3701,18 @@ Import tests verify hint data; gate verifies all/none/totals/disabled Continue.
 
 **Deviations:** Choice state is in a partial file to keep view models below 600
 lines. Header-only resource ids prevent localisation overwriting bound descriptions.
+
+## IMP-16 — Group review and expose duplicates          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 392/392 tests, zero skips;
+VM import 18/18, M8 17/17; performance fixture 1/1. Preview of 1,000 tasks
+measured 893.4 ms serial baseline (later production comparison 530.4/335.6 ms)
+in PERF.md. Review captures reviewed; alignment/empty-group findings fixed.
+winui-code-review no unresolved findings above informational.
+
+**Shipped:** Will add/update/left-alone groups, attachment sizes, up to 50
+in-memory duplicate titles and opt-in, per-list expander, cancellable preview.
+Tests cover opt-in, title cap and cancelled preview with no source rows.
+
+**Deviations:** A test-only four-list candidate was measured alongside preview
+before IMP-20; production parallelism is deferred to its own package.

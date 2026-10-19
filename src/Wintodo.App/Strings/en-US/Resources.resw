@@ -1152,6 +1152,15 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- UX-10 row completion -->
   <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
   <!-- IMP (Microsoft To Do import and onboarding) -->
+  <data name="Import_Checking" xml:space="preserve"><value>Checking what’s already here…</value></data>
+  <data name="ImportChecking.Text" xml:space="preserve"><value>Checking what’s already here…</value></data>
+  <data name="ImportWillAdd.Header" xml:space="preserve"><value>Will add</value></data>
+  <data name="ImportWillUpdate.Header" xml:space="preserve"><value>Will update</value></data>
+  <data name="ImportLeftAlone.Header" xml:space="preserve"><value>Left as they are</value></data>
+  <data name="ImportDuplicates.Header" xml:space="preserve"><value>Possible duplicates</value></data>
+  <data name="ImportDuplicatesToggle.Header" xml:space="preserve"><value>Import them anyway</value></data>
+  <data name="ImportPerList.Header" xml:space="preserve"><value>Per-list details</value></data>
+  <data name="Import_PerListFormat" xml:space="preserve"><value>{0}: {1:N0} new · {2:N0} updated · {3:N0} already imported</value></data>
   <data name="ImportAttachmentHeader.Header" xml:space="preserve"><value>Include attachments</value></data>
   <data name="ImportSelectAll.Content" xml:space="preserve"><value>Select all</value></data>
   <data name="Import_NoSelection.Text" xml:space="preserve"><value>Select at least one list to continue.</value></data>
