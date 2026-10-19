@@ -33,7 +33,7 @@ public sealed class MicrosoftTodoListData
     public List<GraphTodoTask> Tasks { get; init; } = [];
 }
 
-public sealed class MicrosoftTodoReader(GraphTodoClient client)
+public sealed class MicrosoftTodoReader(GraphTodoClient client, int listConcurrency = 4)
 {
     private readonly GraphTodoClient _client = client ?? throw new ArgumentNullException(nameof(client));
 
@@ -59,19 +59,22 @@ public sealed class MicrosoftTodoReader(GraphTodoClient client)
         progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Lists, 0, 1));
         List<GraphTodoList> lists = await _client.GetListsAsync(cancellationToken).ConfigureAwait(false);
         var export = new MicrosoftTodoExport { User = user };
-        for (int index = 0; index < lists.Count; index++)
-        {
-            GraphTodoList list = lists[index];
-            progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Tasks, index, lists.Count, list.DisplayName));
-            List<GraphTodoTask> tasks = await _client.GetTasksAsync(list.Id, cancellationToken).ConfigureAwait(false);
-            foreach (GraphTodoTask task in tasks.Where(task => task.HasAttachments))
+        var results = new MicrosoftTodoListData[lists.Count];
+        int completed = 0;
+        await Parallel.ForEachAsync(Enumerable.Range(0, lists.Count),
+            new ParallelOptions { MaxDegreeOfParallelism = Math.Clamp(listConcurrency, 1, 4), CancellationToken = cancellationToken },
+            async (index, token) =>
             {
-                task.Attachments.AddRange(
-                    await _client.GetAttachmentsAsync(list.Id, task.Id, cancellationToken).ConfigureAwait(false));
-            }
+                GraphTodoList list = lists[index];
+                List<GraphTodoTask> tasks = await _client.GetTasksAsync(list.Id, token).ConfigureAwait(false);
+                foreach (GraphTodoTask task in tasks.Where(task => task.HasAttachments))
+                    task.Attachments.AddRange(await _client.GetAttachmentsAsync(list.Id, task.Id, token).ConfigureAwait(false));
+                results[index] = new MicrosoftTodoListData { List = list, Tasks = tasks };
+                progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Tasks,
+                    Interlocked.Increment(ref completed), lists.Count));
+            }).ConfigureAwait(false);
 
-            export.Lists.Add(new MicrosoftTodoListData { List = list, Tasks = tasks });
-        }
+        export.Lists.AddRange(results);
 
         progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Tasks, lists.Count, lists.Count));
         return export;

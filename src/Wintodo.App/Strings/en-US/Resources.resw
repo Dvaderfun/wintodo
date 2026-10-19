@@ -1152,6 +1152,7 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- UX-10 row completion -->
   <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
   <!-- IMP (Microsoft To Do import and onboarding) -->
+  <data name="Import_ProgressListCountFormat" xml:space="preserve"><value>Reading lists: {0:N0} / {1:N0} complete</value></data>
   <data name="SettingsMicrosoftTodoDescription.Text" xml:space="preserve"><value>Import lists, tasks, steps, notes, dates, reminders and attachments. Importing again never duplicates tasks.</value></data>
   <data name="SettingsMicrosoftTodoHeader.Header" xml:space="preserve"><value>Microsoft To Do</value></data>
   <data name="Import_AccountHistoryFormat" xml:space="preserve"><value>{0} · {1}</value></data>

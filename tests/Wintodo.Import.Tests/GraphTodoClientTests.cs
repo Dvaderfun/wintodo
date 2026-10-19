@@ -16,6 +16,28 @@ public sealed class GraphTodoClientTests
         Assert.Equal(enabled, client.WorkTenantId is not null);
     }
 
+    [Fact]
+    public async Task ThrottlePausesAnotherRequestOnTheSameClient()
+    {
+        var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var handler = new ScriptedHandler(
+            _ => ScriptedHandler.Json(HttpStatusCode.TooManyRequests, "{}"),
+            _ => ScriptedHandler.Json(HttpStatusCode.OK, "{\"id\":\"u\"}"),
+            _ => ScriptedHandler.Json(HttpStatusCode.OK, "{\"id\":\"u\"}"));
+        var client = new GraphTodoClient(new HttpClient(handler), "fixture", delay: (_, _) =>
+        {
+            waiting.TrySetResult();
+            return release.Task;
+        });
+        Task first = client.GetMeAsync(TestContext.Current.CancellationToken);
+        await waiting.Task.WaitAsync(TestContext.Current.CancellationToken);
+        Task second = client.GetMeAsync(TestContext.Current.CancellationToken);
+        Assert.Single(handler.Requests);
+        release.TrySetResult();
+        await Task.WhenAll(first, second);
+        Assert.Equal(3, handler.Requests.Count);
+    }
     [Theory]
     [InlineData("same", true)]
     [InlineData("different", false)]

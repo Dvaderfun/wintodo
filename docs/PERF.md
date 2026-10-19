@@ -398,3 +398,12 @@ Candidate is test-only; production parallelism has not been enabled for this com
 | serial production | 1434.9 ms | 893.4 ms | 3226.2 ms |
 | bounded candidate (4 lists) | 441.7 ms | 485.6 ms | 1765.6 ms |
 
+### IMP-16 / IMP-20 — WintodoTest fixture measurement (2026-10-20)
+
+Debug x64; 1,000 tasks / 20 lists; FixtureGraphHandler with 50 ms request latency.
+Production reader compared at one and four list workers; attachment downloads remain serial.
+
+| Reader | Time to Choose (read) | Preview | Total read + preview + save |
+|---|---|---|---|
+| production serial (1 list) | 1434.7 ms | 530.4 ms | 2929.2 ms |
+| production bounded (4 lists) | 455.4 ms | 335.6 ms | 2264.2 ms |

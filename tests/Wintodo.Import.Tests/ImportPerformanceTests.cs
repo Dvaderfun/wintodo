@@ -39,17 +39,10 @@ public sealed class ImportPerformanceTests
             var client = new GraphTodoClient(new HttpClient(new FixtureGraphHandler(root, latency: TimeSpan.FromMilliseconds(50))), "fixture");
             Stopwatch timer = Stopwatch.StartNew();
             MicrosoftTodoExport export;
-            if (!parallel) export = await new MicrosoftTodoReader(client).ReadAsync(cancellationToken: token);
+            if (!parallel) export = await new MicrosoftTodoReader(client, listConcurrency: 1).ReadAsync(cancellationToken: token);
             else
             {
-                GraphUser user = await client.GetMeAsync(token);
-                List<GraphTodoList> sourceLists = await client.GetListsAsync(token);
-                var data = new MicrosoftTodoListData[sourceLists.Count];
-                await Parallel.ForEachAsync(Enumerable.Range(0, sourceLists.Count),
-                    new ParallelOptions { MaxDegreeOfParallelism = 4, CancellationToken = token }, async (index, ct) =>
-                        data[index] = new MicrosoftTodoListData { List = sourceLists[index], Tasks = await client.GetTasksAsync(sourceLists[index].Id, ct) });
-                export = new MicrosoftTodoExport { User = user };
-                export.Lists.AddRange(data);
+                export = await new MicrosoftTodoReader(client).ReadAsync(cancellationToken: token);
             }
             double read = timer.Elapsed.TotalMilliseconds;
             ImportSnapshot snapshot = GraphTodoMapper.Map(export, TestSupport.Options(store.Clock.UtcNow));
