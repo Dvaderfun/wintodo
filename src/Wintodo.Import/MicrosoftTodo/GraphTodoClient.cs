@@ -21,6 +21,11 @@ public sealed class GraphTodoClient
     private readonly IClock _clock;
     private bool _expandUnsupported;
 
+    public Action<TimeSpan>? Retrying { get; set; }
+
+    /// <summary>Only a tenant claim from this sign-in can enable administrator consent.</summary>
+    public string? WorkTenantId { get; }
+
     public GraphTodoClient(
         HttpClient httpClient,
         string accessToken,
@@ -35,6 +40,22 @@ public sealed class GraphTodoClient
         _baseUri = baseUri ?? DefaultBaseUri;
         _delay = delay ?? Task.Delay;
         _clock = clock ?? new SystemClock();
+        WorkTenantId = ReadWorkTenantId(accessToken);
+    }
+
+    private static string? ReadWorkTenantId(string token)
+    {
+        string[] parts = token.Split('.');
+        if (parts.Length != 3) return null;
+        try
+        {
+            string encoded = parts[1].Replace('-', '+').Replace('_', '/');
+            encoded = encoded.PadRight((encoded.Length + 3) / 4 * 4, '=');
+            var claims = JsonSerializer.Deserialize(Convert.FromBase64String(encoded), GraphJsonContext.Default.MicrosoftTokenClaims);
+            return Guid.TryParse(claims?.TenantId, out Guid tenant)
+                && tenant != Guid.Parse("9188040d-6c67-4c5b-b112-36a304b66dad") ? tenant.ToString("D") : null;
+        }
+        catch (Exception exception) when (exception is FormatException or JsonException) { return null; }
     }
 
     public Task<GraphUser> GetMeAsync(CancellationToken cancellationToken = default)
@@ -277,6 +298,7 @@ public sealed class GraphTodoClient
             if (transient && attempt < MaxAttempts)
             {
                 TimeSpan delay = GetRetryDelay(response, attempt);
+                Retrying?.Invoke(delay);
                 response.Dispose();
                 await _delay(delay, cancellationToken).ConfigureAwait(false);
                 continue;

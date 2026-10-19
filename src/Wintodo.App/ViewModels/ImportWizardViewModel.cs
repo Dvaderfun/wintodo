@@ -172,6 +172,10 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         _lastOutcome = null;
         _completedAt = null;
         ImportDuplicates = false;
+        _lastFailure = null;
+        _workTenantId = null;
+        ErrorActionText = string.Empty;
+        ResumeMessage = string.Empty;
         HasNoLists = false;
         Lists.Clear();
         SummaryLines.Clear();
@@ -209,6 +213,9 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         try
         {
             GraphTodoClient client = await _environment.Connector.ConnectAsync(token);
+            _workTenantId = client.WorkTenantId;
+            var retryProgress = new Progress<TimeSpan>(delay => SetProgress(Format("Import_RetryFormat", (int)Math.Ceiling(delay.TotalSeconds)), true));
+            client.Retrying = delay => ((IProgress<TimeSpan>)retryProgress).Report(delay);
             SetProgress(_resources.GetString("Import_ProgressAccount"), indeterminate: true);
             if (_resumeAfterExpired && _export is not null && await MicrosoftTodoReader.CanResumeAsync(client, _export, token))
             {
@@ -216,7 +223,8 @@ public sealed partial class ImportWizardViewModel : ObservableObject
                 _reader = new MicrosoftTodoReader(client);
                 Step = ImportWizardStep.Review;
                 ErrorMessage = _resources.GetString("Import_SignedInAgain");
-                IsErrorOpen = true;
+                IsErrorOpen = false;
+                ResumeMessage = ErrorMessage;
                 return;
             }
             _resumeAfterExpired = false;
@@ -539,6 +547,13 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     {
         Trace.WriteLine($"WINTODO_IMPORT_EXCEPTION={exception}");
         ErrorMessage = message;
+        _lastFailure = exception;
+        ErrorActionText = _resources.GetString(exception switch
+        {
+            GraphAuthorizationException { IsSignInExpired: true } => "Import_ErrorSignInAction",
+            GraphAuthorizationException when _workTenantId is not null => "Import_ErrorAdminAction",
+            _ => "Import_ErrorRetryAction",
+        });
         IsErrorOpen = true;
     }
 

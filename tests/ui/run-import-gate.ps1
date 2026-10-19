@@ -34,13 +34,14 @@ function Invoke-Ui {
     Invoke-WinAppChecked (@('ui') + $Arguments + @('--on', $Target, '-a', "$appPid"))
 }
 function Start-App {
-    param([switch]$ShowOnboarding, [switch]$ExpireFirstSignIn)
+    param([switch]$ShowOnboarding, [switch]$ExpireFirstSignIn, [switch]$ThrottleOnce)
     $script:tracePath = [IO.Path]::ChangeExtension($databasePath, ('trace-' + [DateTime]::UtcNow.ToString('HHmmss') + '.log'))
     $arguments = @('run', $appDirectory, '--detach', '--json', '--',
         '--database-path', $databasePath, '--clock-file', $clockPath, '--import-fixture', $fixture,
         '--trace-file', $tracePath)
     if ($ShowOnboarding) { $arguments += '--show-onboarding' }
     if ($ExpireFirstSignIn) { $arguments += '--import-fixture-expire-once' }
+    if ($ThrottleOnce) { $arguments += '--import-fixture-throttle-once' }
     $launch = Invoke-WinAppChecked $arguments | ConvertFrom-Json
     if (-not $launch.ProcessId) { throw 'Import gate launch did not return a PID.' }
     $script:appPid = [int]$launch.ProcessId
@@ -313,9 +314,10 @@ try {
         Invoke-Ui @('invoke', 'Todo.Import.Start')
         Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '20000')
         Assert-Text 'Your Microsoft sign-in has expired. Sign in again to continue. Your choices are kept.'
+        Assert-Present 'Todo.Import.ErrorAction'
         Assert-Absent 'Todo.Import.GoToTasks'
         Save-Screenshot '09-sign-in-expired.png'
-        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('invoke', 'Todo.Import.ErrorAction')
         Invoke-Ui @('wait-for', 'Todo.Import.Start', '-t', '10000')
         Assert-Text 'Signed in again. Select Import to continue.'
         if (@(Select-String -LiteralPath $tracePath -Pattern 'WINTODO_IMPORT_READ lists=').Count -ne 1) { throw 'Expired sign-in read lists again.' }
@@ -323,6 +325,20 @@ try {
         Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-t', '20000')
         Assert-Text 'Import complete'
         Save-Screenshot '10-after-sign-in-again.png'
+    }
+    Stop-App
+
+    $script:databasePath = Join-Path $artifactDirectory 'throttle.db'
+    Start-App -ShowOnboarding -ThrottleOnce
+    Test-UI 'Throttling is visible and retries automatically' {
+        Invoke-Ui @('invoke', 'Todo.Welcome.MicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('wait-for', 'Todo.Import.ProgressText', '--value', 'Microsoft is busy.', '--contains', '-t', '5000')
+        Save-Screenshot '11-throttle.png'
+        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '15000')
+        Invoke-Ui @('send-keys', 'escape', '--via', 'send-input')
+        Invoke-Ui @('wait-for', 'Todo.Welcome.Title', '-t', '5000')
     }
     Stop-App
 

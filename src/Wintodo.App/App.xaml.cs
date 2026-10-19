@@ -338,7 +338,8 @@ public partial class App : Application
             connector = new FixtureMicrosoftTodoConnector(
                 Path.GetFullPath(fixture),
                 clock,
-                expireFirstSignIn: HasCommandLineFlag("--import-fixture-expire-once"));
+                expireFirstSignIn: HasCommandLineFlag("--import-fixture-expire-once"),
+                throttleOnce: HasCommandLineFlag("--import-fixture-throttle-once"));
         }
 #endif
         return new ImportEnvironment(connector, onboardingAllowed, attachmentRoot);

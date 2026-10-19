@@ -332,6 +332,8 @@ Polish packages IMP-08 to IMP-24 are tracked in §11.1, not in this table.
 
 ## 10. As built (2026-10-19)
 
+- **IMP-18:** Titled errors, actionable retry/sign-in, visible throttling and
+  work-tenant admin link. **Verify** admin URL with owner work/school gate.
 - **IMP-17:** Done success/up-to-date InfoBar, count-only Copy details and My Day navigation.
 - **IMP-16:** Grouped summary, up to 50 in-memory duplicate titles and opt-in,
   per-list expander and cancellable preview. VM 1,000-task measurements in PERF.
@@ -466,8 +468,8 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-14 | Wizard frame: step indicator, fixed action bar, focus, keyboard | P2 UX | M | — | ImportWizardView(.xaml.cs), ImportWizardVM, DESIGN §10.2 | done (0ceb4dc; import 18/18, M8 17/17) |
 | IMP-15 | Choose step: open/completed counts, select all, merge hints, sizes | P2 UX | M | IMP-14 | ImportWizardView, ImportWizardVM, ImportListOptionVM | done (2e3bd21; import 18/18) |
 | IMP-16 | Review step: grouped summary, duplicates you can see, preview progress | P2 UX | M | IMP-13, IMP-14 | ImportWizardView, ImportWizardVM, Data import | done (c9cc7f6; import 18/18, preview measured) |
-| IMP-17 | Done step: success state, Copy details, My Day hand-off | P2 UX | S | IMP-16 | ImportWizardView, ImportWizardVM, ShellVM.Import | done (IMP-17 commit; import 18/18) |
-| IMP-18 | Errors you can act on; visible throttling | P2 UX | M | IMP-14 | GraphTodoClient, MicrosoftTodoReader, ImportWizardVM/View | open |
+| IMP-17 | Done step: success state, Copy details, My Day hand-off | P2 UX | S | IMP-16 | ImportWizardView, ImportWizardVM, ShellVM.Import | done (c215473; import 18/18) |
+| IMP-18 | Errors you can act on; visible throttling | P2 UX | M | IMP-14 | GraphTodoClient, MicrosoftTodoReader, ImportWizardVM/View | implemented (IMP-18 commit; import 18/18; admin URL verify) |
 | IMP-19 | Settings → Data shows every imported account | P2 UX | S | — | SettingsView, ShellVM settings, ImportWizardVM | done (07cfd6e; import 12/12) |
 | IMP-20 | Faster read: bounded parallel requests, measured | P3 perf | M | IMP-09 | MicrosoftTodoReader, GraphTodoClient, `docs/PERF.md` | open |
 | IMP-21 | Interrupted imports leave nothing behind | P3 robustness | S | IMP-09 | App startup, ImportWizardVM, Data import | open |

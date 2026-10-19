@@ -46,12 +46,20 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0" Spacing="16">
 
-                    <InfoBar
+                    <InfoBar x:Uid="ImportError"
                         AutomationProperties.AutomationId="Todo.Import.Error"
                         IsOpen="{x:Bind ViewModel.IsErrorOpen, Mode=TwoWay}"
                         Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
-                        Severity="Error" />
+                        Severity="Error">
+                        <InfoBar.ActionButton>
+                            <Button Content="{x:Bind ViewModel.ErrorActionText, Mode=OneWay}" AutomationProperties.AutomationId="Todo.Import.ErrorAction"
+                                Command="{x:Bind ViewModel.ErrorActionCommand, Mode=OneTime}" />
+                        </InfoBar.ActionButton>
+                    </InfoBar>
 
+                    <TextBlock Text="{x:Bind ViewModel.ResumeMessage, Mode=OneWay}" TextWrapping="Wrap"
+                        Style="{StaticResource BodyTextBlockStyle}" AutomationProperties.LiveSetting="Polite"
+                        Visibility="{x:Bind local:ImportWizardView.TextToVisibility(ViewModel.ResumeMessage), Mode=OneWay}" />
                     <!-- Connect -->
                     <StackPanel
                         Spacing="16"

@@ -3729,3 +3729,18 @@ Actions use two footer rows so they fit narrow panes. Finish focus verified.
 
 **Deviations:** Clipboard and package version belong to the view; model raises
 text/navigation requests. No task/list names are included in copied details.
+
+## IMP-18 — Actionable errors and visible Microsoft retries          2026-10-20
+
+**Gate:** AUTOMATED PASS — Debug x64 zero warnings/errors; 392/392 tests;
+VM import 18/18 and M8 17/17. Retry callback/tenant-claim tests pass;
+expiry action and 429 message gate pass. Error/throttle captures reviewed;
+winui-code-review no unresolved findings above informational.
+
+**Shipped:** Titled InfoBar with retry/sign-in action, visible capped retry delay,
+fixture 429 seam, tenant-specific administrator link only for a work-tenant claim.
+Same-account resume notice is informational rather than a red error.
+
+**Deviations / owner:** Admin-consent URL stays **verify** until owner work/school
+sign-in/consent gate. No live Microsoft sign-in was attempted. Existing exception
+trace repair remains the separate IMP-25 finding.
