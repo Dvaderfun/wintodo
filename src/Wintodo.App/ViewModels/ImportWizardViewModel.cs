@@ -62,6 +62,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     public ObservableCollection<string> SummaryLines { get; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StepCaption))]
     [NotifyPropertyChangedFor(nameof(IsConnectStep))]
     [NotifyPropertyChangedFor(nameof(IsProgressStep))]
     [NotifyPropertyChangedFor(nameof(IsChooseStep))]
@@ -79,6 +80,20 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     public bool IsReviewStep => Step == ImportWizardStep.Review;
 
     public bool IsDoneStep => Step == ImportWizardStep.Done;
+
+    public string StepCaption => Format("Import_StepFormat", Step switch
+    {
+        ImportWizardStep.Connect or ImportWizardStep.Reading => 1,
+        ImportWizardStep.Choose => 2,
+        ImportWizardStep.Review => 3,
+        _ => 4,
+    }, _resources.GetString(Step switch
+    {
+        ImportWizardStep.Connect or ImportWizardStep.Reading => "Import_StepSignIn",
+        ImportWizardStep.Choose => "Import_StepChoose",
+        ImportWizardStep.Review => "Import_StepReview",
+        _ => "Import_StepImport",
+    }));
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(SignInCommand))]

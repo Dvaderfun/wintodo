@@ -260,6 +260,16 @@ public sealed partial class ShellPage
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+        if (ViewModel.IsImportVisible)
+        {
+            if (Controls.ImportWizardView.HasOpenDialog(XamlRoot)) return;
+            var command = ViewModel.ImportWizard.IsReviewStep
+                ? (System.Windows.Input.ICommand)ViewModel.ImportWizard.BackCommand
+                : ViewModel.ImportWizard.CancelCommand;
+            if (command.CanExecute(null)) command.Execute(null);
+            args.Handled = true;
+            return;
+        }
 
         if (ViewModel.TaskList.SelectionCount > 0)
         {

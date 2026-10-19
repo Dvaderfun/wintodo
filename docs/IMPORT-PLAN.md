@@ -332,6 +332,9 @@ Polish packages IMP-08 to IMP-24 are tracked in §11.1, not in this table.
 
 ## 10. As built (2026-10-19)
 
+- **IMP-14:** Polite four-step caption, Level2 headings and fixed action footer;
+  programmatic step focus, Enter primary action and Escape Back/Cancel.
+
 - **IMP-13:** Review/Done report nonzero preserved repeat, renamed empty title
   (including steps), and acknowledged reminder counts from the selected snapshot.
 - **IMP-12:** Removal always confirms created counts with Cancel as default;
@@ -455,7 +458,7 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-11 | The Welcome `.ics` card keeps onboarding if the file picker is cancelled | P1 fix | S | — | ShellVM.Import, ShellVM `.ics` import | done (cbb0cf7; import 14/14) |
 | IMP-12 | Confirm before "Remove what was just imported" | P1 fix | S | — | ImportWizardView, ImportWizardVM, ShellPage dialogs | done (8885a7d; import 14/14) |
 | IMP-13 | Report what was kept but not converted | P1 fix | S | — | Core `ImportOutcome`, GraphTodoMapper, Data import | done (IMP-13 commit; import 14/14) |
-| IMP-14 | Wizard frame: step indicator, fixed action bar, focus, keyboard | P2 UX | M | — | ImportWizardView(.xaml.cs), ImportWizardVM, DESIGN §10.2 | open |
+| IMP-14 | Wizard frame: step indicator, fixed action bar, focus, keyboard | P2 UX | M | — | ImportWizardView(.xaml.cs), ImportWizardVM, DESIGN §10.2 | done (IMP-14 commit; import 18/18, M8 17/17) |
 | IMP-15 | Choose step: open/completed counts, select all, merge hints, sizes | P2 UX | M | IMP-14 | ImportWizardView, ImportWizardVM, ImportListOptionVM | open |
 | IMP-16 | Review step: grouped summary, duplicates you can see, preview progress | P2 UX | M | IMP-13, IMP-14 | ImportWizardView, ImportWizardVM, Data import | open |
 | IMP-17 | Done step: success state, Copy details, My Day hand-off | P2 UX | S | IMP-16 | ImportWizardView, ImportWizardVM, ShellVM.Import | open |

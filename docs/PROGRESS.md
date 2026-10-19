@@ -3671,3 +3671,19 @@ in Review/Done. Core and Import tests cover counting and mapper/store propagatio
 
 **Deviations:** Counts describe the selected snapshot, including unchanged
 items, so the preservation explanation remains visible on re-import.
+
+## IMP-14 — Wizard frame and keyboard orientation          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 392/392 unit tests, zero
+failed/skipped. WintodoTest import 18/18 and M8 17/17; returned import and
+contrast captures reviewed. Vendored winui-code-review: no unresolved findings
+above informational for this package.
+
+**Shipped:** Four-step polite caption, Level2 headings, fixed footer,
+programmatic primary-target focus, Enter primary action and Escape Back/Cancel.
+Shell Escape routes to the visible wizard; open ContentDialogs retain default
+keyboard handling. All original AutomationIds stay.
+
+**Deviations:** Shell accelerator routing was needed for Escape precedence.
+Earlier expanded import runs: 15/18 (Review Escape, Settings history, throttle
+Cancel) and 16/18 (Review Escape, Settings history); corrected run 18/18.

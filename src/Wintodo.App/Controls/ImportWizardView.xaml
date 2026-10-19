@@ -9,6 +9,10 @@
     xmlns:settings="using:CommunityToolkit.WinUI.Controls"
     xmlns:viewModels="using:Wintodo.ViewModels"
     mc:Ignorable="d">
+    <UserControl.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Escape" Invoked="OnEscape" />
+        <KeyboardAccelerator Key="Enter" Invoked="OnEnter" />
+    </UserControl.KeyboardAccelerators>
 
     <!--
         One wizard for onboarding and Settings → Data. Steps are panels shown by
@@ -17,21 +21,21 @@
     -->
     <Grid AutomationProperties.AutomationId="Todo.Import.Root">
         <Grid.RowDefinitions>
-            <RowDefinition Height="64" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock
-            x:Uid="ImportWizardTitle"
-            Grid.Row="0"
-            VerticalAlignment="Top"
-            AutomationProperties.AutomationId="Todo.Import.Title"
-            AutomationProperties.HeadingLevel="Level1"
-            Style="{StaticResource TitleTextBlockStyle}" />
+        <StackPanel Grid.Row="0" Spacing="8" Margin="0,0,0,16">
+            <TextBlock x:Uid="ImportWizardTitle" AutomationProperties.AutomationId="Todo.Import.Title"
+                AutomationProperties.HeadingLevel="Level1" Style="{StaticResource TitleTextBlockStyle}" />
+            <TextBlock AutomationProperties.AutomationId="Todo.Import.Step" AutomationProperties.LiveSetting="Polite"
+                Text="{x:Bind ViewModel.StepCaption, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" />
+        </StackPanel>
 
         <ScrollViewer
             Grid.Row="1"
-            Padding="0,0,12,48"
+            Padding="0,0,12,16"
             HorizontalScrollBarVisibility="Disabled"
             HorizontalScrollMode="Disabled">
             <!-- Same left-aligned, width-capped column as SettingsView. -->
@@ -52,6 +56,7 @@
                     <StackPanel
                         Spacing="16"
                         Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsConnectStep), Mode=OneWay}">
+                        <TextBlock x:Uid="ImportConnectHeader" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBlock
                             x:Uid="ImportConnectIntro"
                             Style="{StaticResource BodyTextBlockStyle}"
@@ -75,23 +80,14 @@
                             Text="{x:Bind ViewModel.LastImportText, Mode=OneWay}"
                             TextWrapping="Wrap"
                             Visibility="{x:Bind local:ImportWizardView.TextToVisibility(ViewModel.LastImportText), Mode=OneWay}" />
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button
-                                x:Uid="ImportSignInButton"
-                                AutomationProperties.AutomationId="Todo.Import.SignIn"
-                                Command="{x:Bind ViewModel.SignInCommand, Mode=OneTime}"
-                                Style="{StaticResource AccentButtonStyle}" />
-                            <Button
-                                x:Uid="ImportCancelButton"
-                                AutomationProperties.AutomationId="Todo.Import.Cancel"
-                                Command="{x:Bind ViewModel.CancelCommand, Mode=OneTime}" />
-                        </StackPanel>
+
                     </StackPanel>
 
                     <!-- Reading / importing -->
                     <StackPanel
                         Spacing="12"
                         Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsProgressStep), Mode=OneWay}">
+                        <TextBlock x:Uid="ImportWorkingHeader" AutomationProperties.HeadingLevel="Level2" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBlock
                             AutomationProperties.AutomationId="Todo.Import.ProgressText"
                             AutomationProperties.LiveSetting="Polite"
@@ -104,10 +100,7 @@
                             IsIndeterminate="{x:Bind ViewModel.IsProgressIndeterminate, Mode=OneWay}"
                             Maximum="{x:Bind ViewModel.ProgressMaximum, Mode=OneWay}"
                             Value="{x:Bind ViewModel.ProgressValue, Mode=OneWay}" />
-                        <Button
-                            x:Uid="ImportCancelButton"
-                            AutomationProperties.AutomationId="Todo.Import.CancelProgress"
-                            Command="{x:Bind ViewModel.CancelCommand, Mode=OneTime}" />
+
                     </StackPanel>
 
                     <!-- Choose -->
@@ -178,17 +171,7 @@
                             IsClosable="False"
                             IsOpen="True"
                             Severity="Informational" />
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button
-                                x:Uid="ImportContinueButton"
-                                AutomationProperties.AutomationId="Todo.Import.Continue"
-                                Command="{x:Bind ViewModel.ContinueCommand, Mode=OneTime}"
-                                Style="{StaticResource AccentButtonStyle}" />
-                            <Button
-                                x:Uid="ImportBackButton"
-                                AutomationProperties.AutomationId="Todo.Import.BackToConnect"
-                                Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
-                        </StackPanel>
+
                     </StackPanel>
 
                     <!-- Review and done share the summary list -->
@@ -223,12 +206,41 @@
                                 </DataTemplate>
                             </ItemsRepeater.ItemTemplate>
                         </ItemsRepeater>
-                        <StackPanel
+
+
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Padding="0,16,0,16" Spacing="8">
+<StackPanel Orientation="Horizontal" Spacing="8" Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsConnectStep), Mode=OneWay}">
+                            <Button
+                                x:Name="SignInButton" x:Uid="ImportSignInButton"
+                                AutomationProperties.AutomationId="Todo.Import.SignIn"
+                                Command="{x:Bind ViewModel.SignInCommand, Mode=OneTime}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                            <Button
+                                x:Uid="ImportCancelButton"
+                                AutomationProperties.AutomationId="Todo.Import.Cancel"
+                                Command="{x:Bind ViewModel.CancelCommand, Mode=OneTime}" />
+                        </StackPanel>
+<StackPanel Orientation="Horizontal" Spacing="8" Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsChooseStep), Mode=OneWay}">
+                            <Button
+                                x:Uid="ImportContinueButton"
+                                AutomationProperties.AutomationId="Todo.Import.Continue"
+                                Command="{x:Bind ViewModel.ContinueCommand, Mode=OneTime}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                            <Button
+                                x:Uid="ImportBackButton"
+                                AutomationProperties.AutomationId="Todo.Import.BackToConnect"
+                                Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
+                        </StackPanel>
+<StackPanel
                             Orientation="Horizontal"
                             Spacing="8"
                             Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsReviewStep), Mode=OneWay}">
                             <Button
-                                x:Uid="ImportStartButton"
+                                x:Name="ImportButton" x:Uid="ImportStartButton"
                                 AutomationProperties.AutomationId="Todo.Import.Start"
                                 Command="{x:Bind ViewModel.ImportCommand, Mode=OneTime}"
                                 Style="{StaticResource AccentButtonStyle}" />
@@ -237,12 +249,12 @@
                                 AutomationProperties.AutomationId="Todo.Import.BackToChoose"
                                 Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
                         </StackPanel>
-                        <StackPanel
+<StackPanel
                             Orientation="Horizontal"
                             Spacing="8"
                             Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsDoneStep), Mode=OneWay}">
                             <Button
-                                x:Uid="ImportGoToTasksButton"
+                                x:Name="FinishButton" x:Uid="ImportGoToTasksButton"
                                 AutomationProperties.AutomationId="Todo.Import.GoToTasks"
                                 Command="{x:Bind ViewModel.FinishCommand, Mode=OneTime}"
                                 Style="{StaticResource AccentButtonStyle}" />
@@ -252,9 +264,12 @@
                                 Command="{x:Bind ViewModel.RemoveImportedCommand, Mode=OneTime}"
                                 Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.CanRemoveImported), Mode=OneWay}" />
                         </StackPanel>
-                    </StackPanel>
-                </StackPanel>
-            </Grid>
-        </ScrollViewer>
+<StackPanel Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsProgressStep), Mode=OneWay}">
+<Button
+                            x:Uid="ImportCancelButton"
+                            AutomationProperties.AutomationId="Todo.Import.CancelProgress"
+                            Command="{x:Bind ViewModel.CancelCommand, Mode=OneTime}" />
+</StackPanel>
+        </StackPanel>
     </Grid>
 </UserControl>

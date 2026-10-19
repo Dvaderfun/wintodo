@@ -168,6 +168,10 @@ try {
         Assert-Absent 'Todo.Welcome.Title'
         Save-Screenshot '02-connect.png'
     }
+    Test-UI 'Connect primary target receives keyboard focus' {
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-p', 'HasKeyboardFocus', '--value', 'True', '-t', '5000')
+        Assert-Text 'Step 1 of 4 · Sign in'
+    }
     Test-UI 'Sign-in reads every list; flagged email starts unselected' {
         Invoke-Ui @('invoke', 'Todo.Import.SignIn')
         Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '15000')
@@ -190,6 +194,15 @@ try {
         Assert-Text 'New steps: 2'
         Assert-Text 'Attachments: 1'
         Save-Screenshot '04-review.png'
+    }
+    Test-UI 'Review focus and Escape return to Choose' {
+        Invoke-Ui @('wait-for', 'Todo.Import.Start', '-p', 'HasKeyboardFocus', '--value', 'True', '-t', '5000')
+        Invoke-Ui @('send-keys', 'escape', '--via', 'send-input')
+        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '5000')
+        Invoke-Ui @('wait-for', 'Todo.Import.List.0', '-p', 'HasKeyboardFocus', '--value', 'True', '-t', '5000')
+        Assert-Text 'Step 2 of 4 · Choose'
+        Invoke-Ui @('invoke', 'Todo.Import.Continue')
+        Invoke-Ui @('wait-for', 'Todo.Import.Start', '-t', '10000')
     }
     Test-UI 'Import completes and offers removal' {
         Invoke-Ui @('invoke', 'Todo.Import.Start')
