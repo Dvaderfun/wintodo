@@ -162,6 +162,7 @@ try {
         Assert-Checked 'Todo.Import.List.2' $false
         Assert-Present 'Todo.Import.LimitsInfo'
         Assert-Absent 'Todo.Import.OverwriteLocalEdits'
+        Assert-Absent 'Todo.Import.NoLists'
         Assert-AccessibilityClean 'choose'
         Save-Screenshot '03-choose.png'
     }

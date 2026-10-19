@@ -1169,6 +1169,8 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <data name="ImportOverwriteCard.Header" xml:space="preserve"><value>Replace my edits with the To Do version</value></data>
   <data name="ImportOverwriteCard.Description" xml:space="preserve"><value>For tasks you changed here after the last import. When off, your edits are kept.</value></data>
   <data name="ImportOverwriteToggle.AutomationProperties.Name" xml:space="preserve"><value>Replace my edits with the To Do version</value></data>
+  <data name="ImportNoListsInfo.Title" xml:space="preserve"><value>No lists found</value></data>
+  <data name="ImportNoListsInfo.Message" xml:space="preserve"><value>Microsoft returned no To Do lists for this account. Open Microsoft To Do with this account to check, or go back and sign in with a different account.</value></data>
   <data name="ImportLimitsInfo.Title" xml:space="preserve"><value>Not available from Microsoft</value></data>
   <data name="ImportLimitsInfo.Message" xml:space="preserve"><value>Microsoft doesn’t let other apps read My Day, list colours and backgrounds, list groups, the manual order of lists and tasks, or shared-list members. Add today’s tasks to My Day after importing.</value></data>
   <data name="ImportContinueButton.Content" xml:space="preserve"><value>Continue</value></data>

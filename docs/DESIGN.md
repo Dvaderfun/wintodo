@@ -779,7 +779,8 @@ title row (64 px, `TitleTextBlockStyle`). Its steps:
 3. **Choose.**
    - One `SettingsCard` per To Do list: a `CheckBox` with the emoji and
      name, and the task count as description. Flagged email starts
-     unchecked.
+     unchecked. An account with no lists shows a **No lists found**
+     warning instead, so the disabled **Continue** is explained.
    - Toggles for completed tasks and attachments, plus **Replace my
      edits** shown only after an earlier import from that account.
    - The "Not available from Microsoft" `InfoBar`.
