@@ -40,6 +40,10 @@ public sealed partial class ImportWizardView : UserControl
         Bindings.StopTracking();
         ListsRepeater.ItemsSource = null;
         SummaryRepeater.ItemsSource = null;
+        UpdateRepeater.ItemsSource = null;
+        KeepRepeater.ItemsSource = null;
+        DuplicateRepeater.ItemsSource = null;
+        ListSummaryRepeater.ItemsSource = null;
         _isDetached = true;
     }
 
@@ -54,6 +58,8 @@ public sealed partial class ImportWizardView : UserControl
             Bindings.Update();
         }
     }
+
+    public static Visibility CountToVisibility(int count) => count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
     private void OnStepChanged(object? sender, PropertyChangedEventArgs args)
     {

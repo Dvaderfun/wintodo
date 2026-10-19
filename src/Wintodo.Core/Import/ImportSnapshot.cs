@@ -101,6 +101,8 @@ public sealed class ImportOptions
     /// <summary>When set, a task changed on both sides takes the source version.</summary>
     public bool OverwriteLocalEdits { get; init; }
 
+    public bool ImportPossibleDuplicates { get; init; }
+
     /// <summary>App data folder that holds <c>attachments\</c>. Required to import attachments.</summary>
     public string? AttachmentRoot { get; init; }
 }

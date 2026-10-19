@@ -39,6 +39,12 @@ public sealed class ImportOutcome
 
     public HashSet<string> PreviouslyImportedListIds { get; } = new(StringComparer.Ordinal);
 
+    public List<string> PossibleDuplicateTitles { get; } = [];
+
+    public Dictionary<string, ImportOutcome> ListOutcomes { get; } = new(StringComparer.Ordinal);
+
+    public long NewAttachmentBytes { get; set; }
+
     /// <summary>External attachment ids the preview would create; held in memory only.</summary>
     public HashSet<string> PendingAttachmentIds { get; } = new(StringComparer.Ordinal);
 

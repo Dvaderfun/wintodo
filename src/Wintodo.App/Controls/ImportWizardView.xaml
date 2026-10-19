@@ -123,6 +123,11 @@
                             IsClosable="False"
                             IsOpen="{x:Bind ViewModel.HasNoLists, Mode=OneWay}"
                             Severity="Warning" />
+                        <StackPanel Orientation="Horizontal" Spacing="8" Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsPreviewing), Mode=OneWay}">
+                            <ProgressRing IsActive="{x:Bind ViewModel.IsPreviewing, Mode=OneWay}" AutomationProperties.AutomationId="Todo.Import.PreviewProgress" />
+                            <TextBlock x:Uid="ImportChecking" Style="{StaticResource BodyTextBlockStyle}" />
+                            <Button x:Uid="ImportCancelButton" AutomationProperties.AutomationId="Todo.Import.CancelPreview" Command="{x:Bind ViewModel.CancelCommand, Mode=OneTime}" />
+                        </StackPanel>
                         <CheckBox x:Uid="ImportSelectAll" AutomationProperties.AutomationId="Todo.Import.SelectAll"
                             IsThreeState="True" IsChecked="{x:Bind ViewModel.SelectAll, Mode=OneWay}"
                             Command="{x:Bind ViewModel.ToggleSelectAllCommand, Mode=OneTime}" />
@@ -196,23 +201,61 @@
                             Style="{StaticResource SubtitleTextBlockStyle}"
                             Text="{x:Bind ViewModel.ResultTitle, Mode=OneWay}"
                             Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsDoneStep), Mode=OneWay}" />
-                        <ItemsRepeater
-                            x:Name="SummaryRepeater"
-                            AutomationProperties.AutomationId="Todo.Import.Summary"
-                            ItemsSource="{x:Bind ViewModel.SummaryLines, Mode=OneTime}">
-                            <ItemsRepeater.Layout>
-                                <StackLayout Spacing="4" />
-                            </ItemsRepeater.Layout>
-                            <ItemsRepeater.ItemTemplate>
-                                <DataTemplate x:DataType="x:String">
-                                    <TextBlock
-                                        AutomationProperties.AutomationId="Todo.Import.SummaryLine"
-                                        Style="{StaticResource BodyTextBlockStyle}"
-                                        Text="{x:Bind Mode=OneTime}"
-                                        TextWrapping="Wrap" />
-                                </DataTemplate>
-                            </ItemsRepeater.ItemTemplate>
-                        </ItemsRepeater>
+                        <settings:SettingsCard x:Uid="ImportWillAdd" ContentAlignment="Vertical" HorizontalContentAlignment="Left"
+                            Visibility="{x:Bind local:ImportWizardView.CountToVisibility(ViewModel.AddLines.Count), Mode=OneWay}">
+                            <ItemsRepeater x:Name="SummaryRepeater" AutomationProperties.AutomationId="Todo.Import.Summary" ItemsSource="{x:Bind ViewModel.AddLines, Mode=OneTime}">
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock AutomationProperties.AutomationId="Todo.Import.SummaryLine" Text="{x:Bind Mode=OneTime}" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </settings:SettingsCard>
+                        <settings:SettingsCard x:Uid="ImportWillUpdate" ContentAlignment="Vertical" HorizontalContentAlignment="Left"
+                            Visibility="{x:Bind local:ImportWizardView.CountToVisibility(ViewModel.UpdateLines.Count), Mode=OneWay}">
+                            <ItemsRepeater x:Name="UpdateRepeater" ItemsSource="{x:Bind ViewModel.UpdateLines, Mode=OneTime}">
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Text="{x:Bind Mode=OneTime}" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </settings:SettingsCard>
+                        <settings:SettingsCard x:Uid="ImportLeftAlone" ContentAlignment="Vertical" HorizontalContentAlignment="Left">
+                            <ItemsRepeater x:Name="KeepRepeater" ItemsSource="{x:Bind ViewModel.KeepLines, Mode=OneTime}">
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <TextBlock Text="{x:Bind Mode=OneTime}" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </settings:SettingsCard>
+                        <settings:SettingsExpander x:Uid="ImportDuplicates" AutomationProperties.AutomationId="Todo.Import.PossibleDuplicates"
+                            Visibility="{x:Bind local:ImportWizardView.CountToVisibility(ViewModel.DuplicateTitles.Count), Mode=OneWay}">
+                            <settings:SettingsExpander.Items>
+                                <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Left">
+                                    <ItemsRepeater x:Name="DuplicateRepeater" ItemsSource="{x:Bind ViewModel.DuplicateTitles, Mode=OneTime}">
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate x:DataType="x:String"><TextBlock Text="{x:Bind Mode=OneTime}" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" /></DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
+                                </settings:SettingsCard>
+                            </settings:SettingsExpander.Items>
+                        </settings:SettingsExpander>
+                        <settings:SettingsExpander x:Uid="ImportPerList" AutomationProperties.AutomationId="Todo.Import.ImportPerList">
+                            <settings:SettingsExpander.Items>
+                                <settings:SettingsCard ContentAlignment="Vertical" HorizontalContentAlignment="Left">
+                                    <ItemsRepeater x:Name="ListSummaryRepeater" ItemsSource="{x:Bind ViewModel.ListSummaryLines, Mode=OneTime}">
+                                        <ItemsRepeater.ItemTemplate>
+                                            <DataTemplate x:DataType="x:String"><TextBlock Text="{x:Bind Mode=OneTime}" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" /></DataTemplate>
+                                        </ItemsRepeater.ItemTemplate>
+                                    </ItemsRepeater>
+                                </settings:SettingsCard>
+                            </settings:SettingsExpander.Items>
+                        </settings:SettingsExpander>
+                        <ToggleSwitch x:Uid="ImportDuplicatesToggle" AutomationProperties.AutomationId="Todo.Import.ImportDuplicates"
+                            IsOn="{x:Bind ViewModel.ImportDuplicates, Mode=TwoWay}"
+                            Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsReviewStep), Mode=OneWay}" />
 
 
                     </StackPanel>
@@ -256,27 +299,12 @@
                                 AutomationProperties.AutomationId="Todo.Import.BackToChoose"
                                 Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
                         </StackPanel>
-<StackPanel
-                            Orientation="Horizontal"
-                            Spacing="8"
-                            Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsDoneStep), Mode=OneWay}">
-                            <Button
-                                x:Name="FinishButton" x:Uid="ImportGoToTasksButton"
-                                AutomationProperties.AutomationId="Todo.Import.GoToTasks"
-                                Command="{x:Bind ViewModel.FinishCommand, Mode=OneTime}"
-                                Style="{StaticResource AccentButtonStyle}" />
-                            <Button
-                                x:Uid="ImportRemoveButton"
-                                AutomationProperties.AutomationId="Todo.Import.RemoveImported"
-                                Command="{x:Bind ViewModel.RemoveImportedCommand, Mode=OneTime}"
-                                Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.CanRemoveImported), Mode=OneWay}" />
-                        </StackPanel>
 <StackPanel Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsProgressStep), Mode=OneWay}">
-<Button
+                        <Button
                             x:Uid="ImportCancelButton"
                             AutomationProperties.AutomationId="Todo.Import.CancelProgress"
                             Command="{x:Bind ViewModel.CancelCommand, Mode=OneTime}" />
-</StackPanel>
+                    </StackPanel>
         </StackPanel>
     </Grid>
 </UserControl>

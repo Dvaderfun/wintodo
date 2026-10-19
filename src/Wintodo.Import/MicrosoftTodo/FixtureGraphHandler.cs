@@ -17,21 +17,26 @@ public sealed class FixtureGraphHandler : HttpMessageHandler
 {
     private readonly string _root;
     private readonly bool _rejectAttachmentContent;
+    private readonly TimeSpan _latency;
 
-    public FixtureGraphHandler(string root, bool rejectAttachmentContent = false)
+    public FixtureGraphHandler(string root, bool rejectAttachmentContent = false,
+        TimeSpan latency = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
         _root = Path.GetFullPath(root);
         _rejectAttachmentContent = rejectAttachmentContent;
+        _latency = latency;
     }
 
-    public int RequestCount { get; private set; }
+    private int _requestCount;
+    public int RequestCount => _requestCount;
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
         CancellationToken cancellationToken)
     {
-        RequestCount++;
+        Interlocked.Increment(ref _requestCount);
+        if (_latency > TimeSpan.Zero) await Task.Delay(_latency, cancellationToken).ConfigureAwait(false);
         string path = Uri.UnescapeDataString(request.RequestUri?.AbsolutePath ?? string.Empty).Trim('/');
         if (path.StartsWith("v1.0/", StringComparison.OrdinalIgnoreCase))
         {

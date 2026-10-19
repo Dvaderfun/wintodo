@@ -332,6 +332,8 @@ Polish packages IMP-08 to IMP-24 are tracked in §11.1, not in this table.
 
 ## 10. As built (2026-10-19)
 
+- **IMP-16:** Grouped summary, up to 50 in-memory duplicate titles and opt-in,
+  per-list expander and cancellable preview. VM 1,000-task measurements in PERF.
 - **IMP-15:** Open/completed counts, live totals, three-state Select all,
   prior-import/name-merge hints, flagged-email context and selected attachment size.
 - **IMP-14:** Polite four-step caption, Level2 headings and fixed action footer;
@@ -461,8 +463,8 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-12 | Confirm before "Remove what was just imported" | P1 fix | S | — | ImportWizardView, ImportWizardVM, ShellPage dialogs | done (8885a7d; import 14/14) |
 | IMP-13 | Report what was kept but not converted | P1 fix | S | — | Core `ImportOutcome`, GraphTodoMapper, Data import | done (IMP-13 commit; import 14/14) |
 | IMP-14 | Wizard frame: step indicator, fixed action bar, focus, keyboard | P2 UX | M | — | ImportWizardView(.xaml.cs), ImportWizardVM, DESIGN §10.2 | done (0ceb4dc; import 18/18, M8 17/17) |
-| IMP-15 | Choose step: open/completed counts, select all, merge hints, sizes | P2 UX | M | IMP-14 | ImportWizardView, ImportWizardVM, ImportListOptionVM | done (IMP-15 commit; import 18/18) |
-| IMP-16 | Review step: grouped summary, duplicates you can see, preview progress | P2 UX | M | IMP-13, IMP-14 | ImportWizardView, ImportWizardVM, Data import | open |
+| IMP-15 | Choose step: open/completed counts, select all, merge hints, sizes | P2 UX | M | IMP-14 | ImportWizardView, ImportWizardVM, ImportListOptionVM | done (2e3bd21; import 18/18) |
+| IMP-16 | Review step: grouped summary, duplicates you can see, preview progress | P2 UX | M | IMP-13, IMP-14 | ImportWizardView, ImportWizardVM, Data import | done (IMP-16 commit; import 18/18, preview measured) |
 | IMP-17 | Done step: success state, Copy details, My Day hand-off | P2 UX | S | IMP-16 | ImportWizardView, ImportWizardVM, ShellVM.Import | open |
 | IMP-18 | Errors you can act on; visible throttling | P2 UX | M | IMP-14 | GraphTodoClient, MicrosoftTodoReader, ImportWizardVM/View | open |
 | IMP-19 | Settings → Data shows every imported account | P2 UX | S | — | SettingsView, ShellVM settings, ImportWizardVM | done (07cfd6e; import 12/12) |

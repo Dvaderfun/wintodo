@@ -9,6 +9,37 @@ namespace Wintodo.Import.Tests;
 /// <summary>Real fixture → mapper → SQLite store, run more than once.</summary>
 public sealed class ImportStoreTests
 {
+    [Fact]
+    public async Task CancelledPreviewWritesNothing()
+    {
+        await using TempStore temp = await TempStore.CreateAsync();
+        using var cancelled = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        cancelled.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            temp.Store.PreviewImportAsync(new ImportSnapshot { Provider = "mstodo", AccountKey = "cancelled" }, new(), cancelled.Token));
+        Assert.Empty(await temp.Store.GetImportSourcesAsync("mstodo", Token));
+    }
+
+    [Fact]
+    public async Task DuplicatePreviewCapsTitlesAtFifty()
+    {
+        await using TempStore temp = await TempStore.CreateAsync();
+        TodoList list = await temp.Store.EnsureDefaultListAsync("Tasks", Token);
+        var imported = new ImportList { ExternalId = "list", DisplayName = "Tasks", Kind = ImportListKind.Default };
+        for (int index = 0; index < 55; index++)
+        {
+            string title = "Duplicate " + index;
+            await temp.Store.CreateTaskAsync(new TodoTask { ListId = list.Id, Summary = title }, Token);
+            imported.Tasks.Add(new ImportTask { ExternalId = "task-" + index,
+                Task = new TodoTask { Summary = title, Created = temp.Clock.UtcNow, LastModified = temp.Clock.UtcNow } });
+        }
+        var snapshot = new ImportSnapshot { Provider = "mstodo", AccountKey = "duplicates" };
+        snapshot.Lists.Add(imported);
+        var preview = await temp.Store.PreviewImportAsync(snapshot, new(), Token);
+        Assert.Equal(55, preview.PossibleDuplicates);
+        Assert.Equal(50, preview.PossibleDuplicateTitles.Count);
+        Assert.Equal(0, preview.NewTasks);
+    }
     private static readonly DateTimeOffset Now = new(2026, 10, 19, 12, 0, 0, TimeSpan.Zero);
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -197,9 +228,14 @@ public sealed class ImportStoreTests
         ImportOutcome outcome = await temp.Store.ApplyImportAsync(await MapFixtureAsync(), Options(temp), Token);
 
         Assert.Equal(1, outcome.PossibleDuplicates);
+        Assert.Equal(["Milk"], outcome.PossibleDuplicateTitles);
         Assert.Equal(2, outcome.ExistingLists);
         Assert.Equal(1, await CountAsync(temp, "SELECT COUNT(*) FROM tasks WHERE lower(trim(summary)) = 'milk' AND is_deleted = 0;"));
         Assert.Equal(1, await CountAsync(temp, "SELECT COUNT(*) FROM lists WHERE display_name LIKE 'groceries' AND is_deleted = 0;"));
+        ImportOutcome optIn = await temp.Store.ApplyImportAsync(await MapFixtureAsync(),
+            new ImportOptions { AttachmentRoot = temp.Directory, ImportPossibleDuplicates = true }, Token);
+        Assert.Equal(1, optIn.NewTasks);
+        Assert.Equal(2, await CountAsync(temp, "SELECT COUNT(*) FROM tasks WHERE lower(trim(summary)) = 'milk' AND is_deleted = 0;"));
     }
 
     [Fact]
