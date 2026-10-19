@@ -7,6 +7,20 @@ namespace Wintodo.ViewModels;
 
 public sealed partial class ImportWizardViewModel
 {
+    public bool DidChange => _lastOutcome?.HasChanges == true;
+
+    [RelayCommand]
+    private void OpenMyDay() => MyDayRequested?.Invoke();
+
+    [RelayCommand]
+    private void CopyDetails()
+    {
+        if (_lastOutcome is null || _completedAt is null) return;
+        CopyDetailsRequested?.Invoke(Format("Import_CopyDetailsFormat", AccountText,
+            TimeZoneInfo.ConvertTime(_completedAt.Value, _clock.LocalTimeZone).ToString("g", Services.DisplayCulture.Current),
+            "{app-version}",
+            string.Join(Environment.NewLine, SummaryLines)));
+    }
     [ObservableProperty]
     public partial bool IsPreviewing { get; set; }
 
@@ -26,6 +40,7 @@ public sealed partial class ImportWizardViewModel
 
     private void DescribeOutcome(ImportOutcome outcome)
     {
+        OnPropertyChanged(nameof(DidChange));
         SummaryLines.Clear();
         AddLines.Clear(); UpdateLines.Clear(); KeepLines.Clear(); DuplicateTitles.Clear(); ListSummaryLines.Clear();
         foreach (string title in outcome.PossibleDuplicateTitles) DuplicateTitles.Add(title);

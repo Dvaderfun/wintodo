@@ -195,11 +195,10 @@
                             AutomationProperties.HeadingLevel="Level2"
                             Style="{StaticResource SubtitleTextBlockStyle}"
                             Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsReviewStep), Mode=OneWay}" />
-                        <TextBlock
-                            AutomationProperties.AutomationId="Todo.Import.ResultTitle"
-                            AutomationProperties.HeadingLevel="Level2"
-                            Style="{StaticResource SubtitleTextBlockStyle}"
-                            Text="{x:Bind ViewModel.ResultTitle, Mode=OneWay}"
+                        <InfoBar AutomationProperties.AutomationId="Todo.Import.ResultTitle" IsClosable="False"
+                            IsOpen="{x:Bind ViewModel.IsDoneStep, Mode=OneWay}" Title="{x:Bind ViewModel.ResultTitle, Mode=OneWay}"
+                            Severity="{x:Bind local:ImportWizardView.SuccessSeverity(ViewModel.DidChange), Mode=OneWay}" />
+                        <TextBlock x:Uid="ImportMyDayHint" Style="{StaticResource CaptionTextBlockStyle}"
                             Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsDoneStep), Mode=OneWay}" />
                         <settings:SettingsCard x:Uid="ImportWillAdd" ContentAlignment="Vertical" HorizontalContentAlignment="Left"
                             Visibility="{x:Bind local:ImportWizardView.CountToVisibility(ViewModel.AddLines.Count), Mode=OneWay}">
@@ -298,6 +297,29 @@
                                 x:Uid="ImportBackButton"
                                 AutomationProperties.AutomationId="Todo.Import.BackToChoose"
                                 Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
+                        </StackPanel>
+<StackPanel
+                            Orientation="Vertical"
+                            Spacing="8"
+                            Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsDoneStep), Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                x:Name="FinishButton" x:Uid="ImportGoToTasksButton"
+                                AutomationProperties.AutomationId="Todo.Import.GoToTasks"
+                                Command="{x:Bind ViewModel.FinishCommand, Mode=OneTime}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                            <Button x:Uid="ImportCopyDetails" AutomationProperties.AutomationId="Todo.Import.CopyDetails"
+                                Command="{x:Bind ViewModel.CopyDetailsCommand, Mode=OneTime}" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button x:Uid="ImportOpenMyDay" AutomationProperties.AutomationId="Todo.Import.OpenMyDay"
+                                Command="{x:Bind ViewModel.OpenMyDayCommand, Mode=OneTime}" />
+                            <Button
+                                x:Uid="ImportRemoveButton"
+                                AutomationProperties.AutomationId="Todo.Import.RemoveImported"
+                                Command="{x:Bind ViewModel.RemoveImportedCommand, Mode=OneTime}"
+                                Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.CanRemoveImported), Mode=OneWay}" />
+                            </StackPanel>
                         </StackPanel>
 <StackPanel Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsProgressStep), Mode=OneWay}">
                         <Button

@@ -50,6 +50,9 @@ public sealed partial class ImportWizardViewModel : ObservableObject
 
     /// <summary>Raised when the wizard should close; true when the person asked to see their tasks.</summary>
     internal event Action<bool>? CloseRequested;
+    internal event Action? MyDayRequested;
+    internal event Action<string>? CopyDetailsRequested;
+    private DateTimeOffset? _completedAt;
     internal event Func<string, Task<bool>>? RemoveConfirmationRequested;
     private ImportOutcome? _lastOutcome;
 
@@ -166,6 +169,8 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         _reader = null;
         _export = null;
         _lastRunId = null;
+        _lastOutcome = null;
+        _completedAt = null;
         ImportDuplicates = false;
         HasNoLists = false;
         Lists.Clear();
@@ -304,6 +309,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
             ImportOutcome outcome = await _store.ApplyImportAsync(snapshot, BuildOptions(), CancellationToken.None);
             _lastRunId = outcome.RunId;
             _lastOutcome = outcome;
+            _completedAt = _clock.UtcNow;
             CanRemoveImported = outcome.NewTasks + outcome.NewSteps + outcome.NewLists > 0;
             ResultTitle = _resources.GetString(outcome.HasChanges ? "Import_DoneTitle" : "Import_DoneNothingTitle");
             DescribeOutcome(outcome);

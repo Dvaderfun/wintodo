@@ -222,6 +222,12 @@ try {
         Assert-AccessibilityClean 'done'
         Save-Screenshot '05-done.png'
     }
+    Test-UI 'Done primary target receives focus and details can be copied' {
+        Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-p', 'HasKeyboardFocus', '--value', 'True', '-t', '5000')
+        Assert-Present 'Todo.Import.CopyDetails'
+        Assert-Present 'Todo.Import.OpenMyDay'
+        Invoke-Ui @('invoke', 'Todo.Import.CopyDetails')
+    }
     Test-UI 'Removing this import always asks and Cancel keeps tasks' {
         Invoke-Ui @('invoke', 'Todo.Import.RemoveImported')
         Invoke-Ui @('wait-for', 'Todo.Import.RemoveConfirm.Primary', '-t', '5000')

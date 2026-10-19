@@ -37,6 +37,7 @@ public sealed partial class ImportWizardView : UserControl
     {
         ViewModel.RemoveConfirmationRequested -= ConfirmRemovalAsync;
         ViewModel.PropertyChanged -= OnStepChanged;
+        ViewModel.CopyDetailsRequested -= CopyDetails;
         Bindings.StopTracking();
         ListsRepeater.ItemsSource = null;
         SummaryRepeater.ItemsSource = null;
@@ -51,6 +52,7 @@ public sealed partial class ImportWizardView : UserControl
     {
         ViewModel.RemoveConfirmationRequested += ConfirmRemovalAsync;
         ViewModel.PropertyChanged += OnStepChanged;
+        ViewModel.CopyDetailsRequested += CopyDetails;
         QueueStepFocus();
         if (_isDetached)
         {
@@ -58,6 +60,17 @@ public sealed partial class ImportWizardView : UserControl
             Bindings.Update();
         }
     }
+
+    private static void CopyDetails(string text)
+    {
+        var version = Windows.ApplicationModel.Package.Current.Id.Version;
+        text = text.Replace("{app-version}", $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}", StringComparison.Ordinal);
+        var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+        package.SetText(text);
+        Windows.ApplicationModel.DataTransfer.Clipboard.SetContent(package);
+    }
+
+    public static InfoBarSeverity SuccessSeverity(bool changed) => changed ? InfoBarSeverity.Success : InfoBarSeverity.Informational;
 
     public static Visibility CountToVisibility(int count) => count > 0 ? Visibility.Visible : Visibility.Collapsed;
 
