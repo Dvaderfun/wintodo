@@ -3566,3 +3566,20 @@ and the repository URL.
 - Not changed here: these values remain in git history, and every commit's
   author address is a personal email. Removing them needs a history rewrite
   and force push, which is the owner's decision.
+
+## Repo hygiene — git history rewritten          2026-10-19
+
+**Gate:** history scan clean — every commit, file version and commit message
+checked for emails, directory/object ids, names, handles, host paths, secrets
+and image metadata. Final tree unchanged by the rewrite (same tree hash);
+87 commits, subjects and dates preserved.
+
+- At the owner's request, rewrote all of `main` (fast-export filter) and
+  force-pushed: the redactions of the entry above now apply to every
+  historical version, and all commits use the owner's GitHub noreply
+  identity instead of a personal name and email. This repository's git
+  config now sets that identity. Commit hashes changed; other clones must
+  be re-cloned.
+- The local `tests/ui/artifacts/ux13-baseline` worktree was moved to the
+  rewritten copy of its commit. The previous entry's "remain in git history"
+  note is superseded.
