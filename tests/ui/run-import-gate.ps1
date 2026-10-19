@@ -34,10 +34,10 @@ function Invoke-Ui {
     Invoke-WinAppChecked (@('ui') + $Arguments + @('--on', $Target, '-a', "$appPid"))
 }
 function Start-App {
-    param([switch]$ShowOnboarding, [switch]$ExpireFirstSignIn, [switch]$ThrottleOnce)
+    param([switch]$ShowOnboarding, [switch]$ExpireFirstSignIn, [switch]$ThrottleOnce, [string]$FixturePath = $fixture)
     $script:tracePath = [IO.Path]::ChangeExtension($databasePath, ('trace-' + [DateTime]::UtcNow.ToString('HHmmss') + '.log'))
     $arguments = @('run', $appDirectory, '--detach', '--json', '--',
-        '--database-path', $databasePath, '--clock-file', $clockPath, '--import-fixture', $fixture,
+        '--database-path', $databasePath, '--clock-file', $clockPath, '--import-fixture', $FixturePath,
         '--trace-file', $tracePath)
     if ($ShowOnboarding) { $arguments += '--show-onboarding' }
     if ($ExpireFirstSignIn) { $arguments += '--import-fixture-expire-once' }
@@ -299,6 +299,41 @@ try {
     }
     Stop-App
 
+    Test-UI 'Settings and Connect show two imported accounts' {
+        $secondFixture = Join-Path $artifactDirectory 'second-account'
+        Copy-Item -LiteralPath $fixture -Destination $secondFixture -Recurse
+        $mePath = Join-Path $secondFixture 'me.json'
+        $me = Get-Content -LiteralPath $mePath -Raw | ConvertFrom-Json
+        $me.id = 'user-second'
+        $me.mail = 'second.fixture@example.com'
+        $me | ConvertTo-Json | Set-Content -LiteralPath $mePath
+        Start-App -FixturePath $secondFixture
+        Invoke-Ui @('invoke', 'Todo.Nav.Settings')
+        Invoke-Ui @('wait-for', 'Todo.Settings.ScrollViewer', '-t', '5000')
+        Invoke-Ui @('scroll', 'Todo.Settings.ScrollViewer', '--to', 'bottom')
+        Invoke-Ui @('invoke', 'Todo.Settings.ImportMicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '15000')
+        Invoke-Ui @('invoke', 'Todo.Import.Continue')
+        Invoke-Ui @('wait-for', 'Todo.Import.Start', '-t', '10000')
+        Invoke-Ui @('invoke', 'Todo.Import.Start')
+        Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-t', '20000')
+        Invoke-Ui @('invoke', 'Todo.Import.OpenMyDay')
+        Invoke-Ui @('wait-for', 'Todo.List.AddTaskBox', '-t', '8000')
+        Invoke-Ui @('invoke', 'Todo.Nav.Settings')
+        Invoke-Ui @('wait-for', 'Todo.Settings.ScrollViewer', '-t', '5000')
+        Invoke-Ui @('scroll', 'Todo.Settings.ScrollViewer', '--to', 'bottom')
+        Invoke-Ui @('wait-for', 'Todo.Settings.Data.MicrosoftTodoAccounts', '--value', 'second.fixture@example.com', '--contains', '-t', '5000')
+        Invoke-Ui @('wait-for', 'Todo.Settings.Data.MicrosoftTodoAccounts', '--value', 'fixture.person@example.com', '--contains', '-t', '5000')
+        Save-Screenshot '12-accounts.png'
+        Invoke-Ui @('invoke', 'Todo.Settings.ImportMicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.LastImport', '--value', 'second.fixture@example.com', '--contains', '-t', '5000')
+        Invoke-Ui @('wait-for', 'Todo.Import.LastImport', '--value', 'fixture.person@example.com', '--contains', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.Cancel')
+        Stop-App
+    }
+
     # Live finding: a sign-in that expired on the review step failed the
     # attachment download with 401 and was reported as "access denied".
     $script:databasePath = Join-Path $artifactDirectory 'expired.db'
@@ -329,6 +364,26 @@ try {
         Save-Screenshot '10-after-sign-in-again.png'
     }
     Stop-App
+
+    Test-UI 'Read error action retries the failed sign-in step' {
+        $badFixture = Join-Path $artifactDirectory 'read-error'
+        Copy-Item -LiteralPath $fixture -Destination $badFixture -Recurse
+        $mePath = Join-Path $badFixture 'me.json'
+        $meText = Get-Content -LiteralPath $mePath -Raw
+        '{}' | Set-Content -LiteralPath $mePath
+        $script:databasePath = Join-Path $artifactDirectory 'read-error.db'
+        Start-App -ShowOnboarding -FixturePath $badFixture
+        Invoke-Ui @('invoke', 'Todo.Welcome.MicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('wait-for', 'Todo.Import.ErrorAction', '-t', '10000')
+        $meText | Set-Content -LiteralPath $mePath
+        Invoke-Ui @('invoke', 'Todo.Import.ErrorAction')
+        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '15000')
+        Invoke-Ui @('send-keys', 'escape', '--via', 'send-input')
+        Invoke-Ui @('wait-for', 'Todo.Welcome.Title', '-t', '5000')
+        Stop-App
+    }
 
     $script:databasePath = Join-Path $artifactDirectory 'throttle.db'
     Start-App -ShowOnboarding -ThrottleOnce

@@ -334,27 +334,18 @@ Polish packages IMP-08 to IMP-24 are tracked in §11.1, not in this table.
 
 ## 10. As built (2026-10-19)
 
-- **IMP-21:** Startup recovery removes abandoned staging/unreferenced UUID task
-  folders, skips shared-root scratch profiles; busy close confirms and waits for save.
-- **IMP-20:** Four ordered list workers and shared throttle wait; measured read
-  1434.7 → 455.4 ms, total 2929.2 → 2264.2 ms. Downloads remain serial: not measured.
-- **IMP-19:** Settings and Connect list all imported accounts with local dates.
-- **IMP-18:** Titled errors, actionable retry/sign-in, visible throttling and
-  work-tenant admin link. **Verify** admin URL with owner work/school gate.
-- **IMP-17:** Done success/up-to-date InfoBar, count-only Copy details and My Day navigation.
-- **IMP-16:** Grouped summary, up to 50 in-memory duplicate titles and opt-in,
-  per-list expander and cancellable preview. VM 1,000-task measurements in PERF.
-- **IMP-15:** Open/completed counts, live totals, three-state Select all,
-  prior-import/name-merge hints, flagged-email context and selected attachment size.
-- **IMP-14:** Polite four-step caption, Level2 headings and fixed action footer;
-  programmatic step focus, Enter primary action and Escape Back/Cancel.
+- **Polish IMP-11…21 (2026-10-20):** Welcome picker cancellation keeps
+  onboarding; current-run removal confirms counts. Four-step caption, fixed
+  footer, focus/keyboard and live Choose totals orient the wizard. Review groups
+  additions/updates/skips, lists possible duplicates (50-title cap), supports
+  opt-in and cancellable preview. Done offers count-only details and My Day.
+  Errors have recovery actions and visible retry delay. Settings and Connect
+  show all imported accounts. Four list workers preserve API order and share
+  throttle waits; VM measurements justify them (PERF.md). Downloads stay serial.
+  Startup recovers abandoned files in the normal profile; §5 documents copies
+  inside the transaction. Busy close waits through Saving. Admin URL remains
+  **verify**; close/Saving timing has no dedicated VM row.
 
-- **IMP-13:** Review/Done report nonzero preserved repeat, renamed empty title
-  (including steps), and acknowledged reminder counts from the selected snapshot.
-- **IMP-12:** Removal always confirms created counts with Cancel as default;
-  updates to existing tasks stay, and removal cannot be undone.
-- **IMP-11:** Welcome stays visible when the picker or preview is cancelled;
-  onboarding completes only after the .ics import applies.
 - **IMP-09:** Preview returns pending attachment ids; only those files download.
   Raw and contentBytes transfers stream into staging with byte progress.
 - **IMP-08:** Error redirects show the failed sign-in page. Both browser pages
@@ -375,8 +366,8 @@ Polish packages IMP-08 to IMP-24 are tracked in §11.1, not in this table.
   new.
 - **Step change detection:** checklist items have no modified time, so a step
   uses its parent task's `lastModifiedDateTime`.
-- **Possible duplicates** are skipped and not linked, so they are reported
-  again on each run until the person deletes one copy.
+- **Possible duplicates** are skipped and not linked by default, so they are
+  reported again; IMP-16 offers Import them anyway with up to 50 titles.
 - **Reopening the wizard:** the wizard and Settings are hosted with `x:Load`,
   so each open creates a fresh `ImportWizardView` over the one shared view
   model. A discarded view now stops its bindings and drops its repeaters'
@@ -471,7 +462,7 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-10 | An expired sign-in keeps what was read and resumes at Review | P1 fix | S | IMP-09 | ImportWizardVM | done (07cfd6e; import 12/12) |
 | IMP-11 | The Welcome `.ics` card keeps onboarding if the file picker is cancelled | P1 fix | S | — | ShellVM.Import, ShellVM `.ics` import | done (cbb0cf7; import 14/14) |
 | IMP-12 | Confirm before "Remove what was just imported" | P1 fix | S | — | ImportWizardView, ImportWizardVM, ShellPage dialogs | done (8885a7d; import 14/14) |
-| IMP-13 | Report what was kept but not converted | P1 fix | S | — | Core `ImportOutcome`, GraphTodoMapper, Data import | done (IMP-13 commit; import 14/14) |
+| IMP-13 | Report what was kept but not converted | P1 fix | S | — | Core `ImportOutcome`, GraphTodoMapper, Data import | done (9bd6654; import 14/14) |
 | IMP-14 | Wizard frame: step indicator, fixed action bar, focus, keyboard | P2 UX | M | — | ImportWizardView(.xaml.cs), ImportWizardVM, DESIGN §10.2 | done (0ceb4dc; import 18/18, M8 17/17) |
 | IMP-15 | Choose step: open/completed counts, select all, merge hints, sizes | P2 UX | M | IMP-14 | ImportWizardView, ImportWizardVM, ImportListOptionVM | done (2e3bd21; import 18/18) |
 | IMP-16 | Review step: grouped summary, duplicates you can see, preview progress | P2 UX | M | IMP-13, IMP-14 | ImportWizardView, ImportWizardVM, Data import | done (c9cc7f6; import 18/18, preview measured) |
@@ -479,11 +470,12 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-18 | Errors you can act on; visible throttling | P2 UX | M | IMP-14 | GraphTodoClient, MicrosoftTodoReader, ImportWizardVM/View | implemented (5d52010; import 18/18; admin URL verify) |
 | IMP-19 | Settings → Data shows every imported account | P2 UX | S | — | SettingsView, ShellVM settings, ImportWizardVM | done (7bd00d8; import 18/18) |
 | IMP-20 | Faster read: bounded parallel requests, measured | P3 perf | M | IMP-09 | MicrosoftTodoReader, GraphTodoClient, `docs/PERF.md` | done (3abee14; fixture perf 1/1, import 18/18) |
-| IMP-21 | Interrupted imports leave nothing behind | P3 robustness | S | IMP-09 | App startup, ImportWizardVM, Data import | done (IMP-21 commit; cleanup tests pass, import 18/18) |
-| IMP-22 | Gate rows, M8 re-run, code review and docs for the polish | P3 | M | IMP-08…21 | `tests/ui/run-import-gate.ps1`, DESIGN §10.2/§12, PROGRESS | open |
+| IMP-21 | Interrupted imports leave nothing behind | P3 robustness | S | IMP-09 | App startup, ImportWizardVM, Data import | done (fa1cd4d; cleanup tests pass, import 18/18) |
+| IMP-22 | Gate rows, M8 re-run, code review and docs for the polish | P3 | M | IMP-08…21 | `tests/ui/run-import-gate.ps1`, DESIGN §10.2/§12, PROGRESS | done (HEAD — IMP-22; import 20/20, M8 17/17, settings 9/9) |
 | IMP-23 | 🔒 Remove an earlier import from Settings | P4 | M | IMP-12, IMP-19 | ADR-016 amendment, SettingsView, Data import | awaiting owner |
 | IMP-24 | 🔒 Refresh the token in memory during long imports | P4 | S | IMP-10 | ADR-016 amendment, MicrosoftSignInService | awaiting owner |
 | IMP-25 | Sanitize existing import exception traces | follow-up | S | — | ImportWizardVM, shell import traces | open (found during polish; outside IMP-08…22) |
+| IMP-26 | SQLite initialization occasionally sees disposed pooled handles in tests | follow-up | S | — | StoreFixture, SqliteTaskStore initialization | open (found during polish; outside IMP-08…22) |
 
 Suggested order: the P1 fixes first (they are small and independent; IMP-10
 builds on IMP-09). Then IMP-14, because it changes the view's skeleton that
@@ -688,7 +680,11 @@ Add no concurrency the numbers don't justify.
   Stop it and close?" During Saving the close waits for the transaction to
   finish.
 
-**IMP-22 — Gate, review, docs.** New rows in `run-import-gate.ps1`:
+**IMP-22 — Gate, review, docs.** Completed 2026-10-20: import 20/20, M8 17/17,
+settings 9/9 in WintodoTest; no failed/skipped final rows. Review has no new
+findings above informational. Unit tests 392/392, Debug x64 zero warnings/errors.
+Owner work/school admin URL verification and dedicated close/Saving timing remain
+unclaimed. New rows in `run-import-gate.ps1`:
 - a re-run makes zero attachment requests (trace);
 - an expired sign-in resumes at Review with no second read;
 - the remove confirmation;
@@ -705,13 +701,6 @@ table, and add a PROGRESS entry.
 
 ### 11.5 P4 — needs the owner first (🔒)
 
-**IMP-25 — Existing exception traces may contain private values.**
-`ImportWizardViewModel.ShowError` writes the complete exception, which can
-include Graph response messages or file paths. Shell import exception traces
-have the same pattern. Replace these with type/category/count-only diagnostics
-and add regression coverage in a separate package; this finding is not folded
-into IMP-09 or the authorized polish packages.
-
 **IMP-23 — Remove an earlier import from Settings.** Today removal exists
 only on the Done step of the same session, because `_lastRunId` is held in
 memory. Proposal: a **Remove imported tasks** action for each account in
@@ -724,3 +713,16 @@ Requesting `offline_access` and keeping the refresh token **in memory only**
 for the wizard's lifetime would remove the expired-sign-in detour completely.
 Nothing would be persisted. Recommendation: ship IMP-10 first, and take this
 only if a second sign-in still happens in practice.
+
+### 11.6 Additional findings (not part of IMP-08…22)
+
+**IMP-25 — Existing exception traces may contain private values.**
+`ImportWizardViewModel.ShowError` writes the complete exception, which can
+include Graph response messages or file paths. Shell import exception traces
+have the same pattern. Replace these with type/category/count-only diagnostics
+and add regression coverage in a separate package; this finding is not folded
+into IMP-09 or the authorized polish packages.
+
+**IMP-26 — Intermittent SQLite initialization failure.** Full-suite runs sometimes
+fail existing Data tests with `ObjectDisposedException` in `ApplyPragmas`; complete
+reruns pass. Investigate pool clearing across parallel test fixtures separately.

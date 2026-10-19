@@ -769,42 +769,30 @@ preview leaves Welcome visible; it is completed only after the import applies.
 
 ### 10.2 Import wizard
 
-`ImportWizardView` replaces the list pane content and uses the Settings
-title row (`TitleTextBlockStyle`) with a polite Step n of 4 caption. Current
-actions sit in a fixed footer outside scrolling content. Step changes focus
-the primary target (Sign in, first checkbox, Import, Go to my tasks). Enter
-invokes the primary action; Escape goes Back on Review and cancels elsewhere.
-Each step has a Level2 heading. Its steps:
+`ImportWizardView` replaces the list pane content. A title and polite “Step n
+of 4 · name” caption precede the scrolling content; the current actions stay
+in a fixed footer. Sign in, Choose, Review and Import each have a Level2 heading.
+Step changes focus Sign in, the first list checkbox, Import, then Go to my tasks.
+Enter invokes the primary action; Escape goes Back on Review and cancels elsewhere.
 
-1. **Connect.** Intro text, a read-only `InfoBar`, an "isn't set up"
-   warning when the build has no client id, the last import date, and
-   **Sign in with Microsoft** (accent) + **Cancel**.
-2. **Reading.** Polite live-region text, a determinate `ProgressBar` per
-   list, and **Cancel**.
-3. **Choose.**
-   - One `SettingsCard` per To Do list: a `CheckBox` with the emoji and
-     name, open/completed counts, previous-import/merge hints, live selection
-     totals and three-state Select all. Selected attachment count/size updates
-     with choices; no selection explains disabled Continue. Flagged email starts
-     unchecked. An account with no lists shows a **No lists found**
-     warning instead, so the disabled **Continue** is explained.
-   - Toggles for completed tasks and attachments, plus **Replace my
-     edits** shown only after an earlier import from that account.
-   - The "Not available from Microsoft" `InfoBar`.
-   - **Continue** + **Back**.
-4. **Review.** Counts grouped into Will add, Will update and Left as they are.
-   Possible duplicate titles (up to 50) and per-list details expand in place;
-   Import them anyway is off by default. Preview shows progress and Cancel.
-   **Import** + **Back** stay in the footer.
-5. **Done.** Success/informational InfoBar, grouped counts, **Copy details**
-   (account/date/version/counts), **Open My Day**, **Go to my tasks** (accent), and
-   **Remove what was just imported** when the run created anything.
+Connect shows all previous imports. Reading reports completed list counts and
+visible Microsoft retry waits. Choose shows open/completed counts, a three-state
+Select all, live list/task totals, prior-import and merge hints, flagged-email
+context and selected attachment count/size. No selection explains disabled Continue.
 
-Errors show in a titled `InfoBar` with Try again or Sign in again. Work-tenant
-403 offers a tenant administrator-consent link; URL is owner-verify. Microsoft
-429/503 retry delay is visible. Same-account re-sign-in message is informational. AutomationIds are `Todo.Import.*`
-and `Todo.Welcome.*`. Closing while import is busy confirms; reading/download
-can stop, while Saving finishes its transaction before closing.
+Review groups nonzero counts into Will add, Will update and Left as they are.
+Possible duplicate titles (up to 50) and per-list counts expand in place; duplicates
+stay skipped unless Import them anyway is on. Preview has inline progress and Cancel.
+Preserved repeats, renamed empty titles and acknowledged reminders are reported.
+
+Done uses a success/informational InfoBar, the same grouped summary, Copy details
+(account/date/version/counts only) and Open My Day. Removal always confirms created
+counts, defaults to Cancel and explains that updates to existing tasks stay.
+
+Errors show a titled InfoBar with retry/sign-in actions. Administrator link copying
+requires a work tenant claim; its URL remains owner-verify. AutomationIds remain
+Todo.Import.* and Todo.Welcome.*. During a busy-window close, confirmation cancels
+read/download or waits for the saving transaction before closing.
 
 ---
 
@@ -872,7 +860,6 @@ stored alarms. Re-enabling reschedules them; changing snooze updates the
 preselection in pending toast payloads. Launch at login stays in Notifications.
 
 Data lists every imported Microsoft account and its local import date.
-Connect lists all earlier imports too.
 Data shows the resolved database path and file size from `StoreStats`, with
 a Show in Explorer command. About includes the repository link and locally
 bundled package/licence list and a command opening full notices from a bundled
