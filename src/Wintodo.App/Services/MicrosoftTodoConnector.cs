@@ -37,7 +37,8 @@ internal sealed class MicrosoftSignInException(MicrosoftSignInFailure failure, s
 }
 
 /// <summary>Real connector: system-browser sign-in, token kept in memory only.</summary>
-internal sealed class MicrosoftGraphConnector(HttpClient httpClient, string signInCompletePageText, IClock clock)
+internal sealed class MicrosoftGraphConnector(HttpClient httpClient, string signInCompletePageText,
+    string signInFailedPageText, string signInPageTitle, IClock clock)
     : IMicrosoftTodoConnector
 {
     public bool IsConfigured => !string.IsNullOrWhiteSpace(MicrosoftTodoRegistration.ClientId);
@@ -52,6 +53,8 @@ internal sealed class MicrosoftGraphConnector(HttpClient httpClient, string sign
         string token = await MicrosoftSignInService.SignInAsync(
             MicrosoftTodoRegistration.ClientId,
             signInCompletePageText,
+            signInFailedPageText,
+            signInPageTitle,
             cancellationToken);
         return new GraphTodoClient(httpClient, token, clock: clock);
     }
