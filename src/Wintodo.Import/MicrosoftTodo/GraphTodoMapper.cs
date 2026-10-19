@@ -250,7 +250,12 @@ public static class GraphTodoMapper
 
         task.IcalUnknown = IcalExtensionProperties.Merge(null, properties, []);
 
-        var item = new ImportTask { ExternalId = source.Id, Task = task };
+        var item = new ImportTask
+        {
+            ExternalId = source.Id, Task = task,
+            HasRenamedTitle = string.IsNullOrWhiteSpace(source.Title),
+            HasPreservedRepeat = source.Recurrence is not null && task.RRule is null,
+        };
         foreach (GraphChecklistItem step in source.ChecklistItems ?? [])
         {
             if (!string.IsNullOrWhiteSpace(step.Id))
@@ -304,7 +309,8 @@ public static class GraphTodoMapper
             task.CompletedAt = source.CheckedDateTime?.ToUniversalTime() ?? parentModified;
         }
 
-        return new ImportTask { ExternalId = source.Id, Task = task };
+        return new ImportTask { ExternalId = source.Id, Task = task,
+            HasRenamedTitle = string.IsNullOrWhiteSpace(source.DisplayName) };
     }
 
     private static void MapBody(GraphItemBody? body, TodoTask task, List<IcalExtensionProperty> properties)

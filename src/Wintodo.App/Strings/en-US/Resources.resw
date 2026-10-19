@@ -1152,6 +1152,9 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- UX-10 row completion -->
   <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
   <!-- IMP (Microsoft To Do import and onboarding) -->
+  <data name="Import_SummaryPreservedRepeatsFormat" xml:space="preserve"><value>Repeats Wintodo can’t use yet, kept with the task: {0:N0}</value></data>
+  <data name="Import_SummaryRenamedTitlesFormat" xml:space="preserve"><value>Empty titles renamed to Untitled task: {0:N0}</value></data>
+  <data name="Import_SummaryAcknowledgedFormat" xml:space="preserve"><value>Reminders imported as already acknowledged: {0:N0}</value></data>
   <data name="Import_RemoveConfirmTitle" xml:space="preserve"><value>Remove this import?</value></data>
   <data name="Import_RemoveConfirmPrimary" xml:space="preserve"><value>Remove</value></data>
   <data name="Import_RemoveConfirmCancel" xml:space="preserve"><value>Cancel</value></data>

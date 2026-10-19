@@ -221,6 +221,9 @@ public sealed partial class SqliteTaskStore
         string? runId)
     {
         var run = new ImportRun(snapshot, options, runId, SqliteMapper.FormatInstant(_clock.UtcNow));
+        run.Outcome.PreservedRepeats = snapshot.PreservedRepeats;
+        run.Outcome.RenamedEmptyTitles = snapshot.RenamedEmptyTitles;
+        run.Outcome.AcknowledgedReminders = snapshot.AcknowledgedReminders;
         run.SourceId = UpsertImportSource(connection, transaction, snapshot);
         LoadImportLinks(connection, transaction, run);
 
