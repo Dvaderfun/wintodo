@@ -81,3 +81,20 @@ Full design: [docs/IMPORT-PLAN.md](../IMPORT-PLAN.md).
 - **Graph delta queries for re-import.** Delta is efficient, but it misses the
   id-change-on-move case and needs stored delta tokens. A full read plus
   link/fingerprint comparison is simpler and correct at personal-task volumes.
+
+## Amendment 1 — `Tasks.ReadWrite` scope (2026-10-19)
+
+- **Status:** accepted. The owner chose "Always ask Tasks.ReadWrite" on
+  2026-10-19, over asking only when needed or staying with `Tasks.Read`.
+- **Why:** in the owner's manual gate, `GET /me/todo/lists` returned no lists
+  for a personal account (v1.0 and beta), and `$filter` returned only some.
+  `GET /me/todo/lists/delta` returns them all, but Microsoft documents
+  `Tasks.ReadWrite` as its only delegated permission; with `Tasks.Read` it
+  answers "access denied".
+- **Change:** sign-in requests `Tasks.ReadWrite` and `User.Read`, and lists
+  are read through the delta function. Wintodo still never writes to Graph:
+  `GraphTodoClient` sends GET requests only, and a unit test enforces it.
+  The wizard explains why Microsoft's consent screen asks to edit tasks.
+- **Cost:** every person sees Microsoft's "create, read, update and delete
+  your tasks" consent. Work tenants that block user consent to write scopes
+  need an administrator.

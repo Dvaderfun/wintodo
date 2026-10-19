@@ -20,6 +20,32 @@ public sealed class GraphTodoClientTests
     }
 
     [Fact]
+    public async Task Client_OnlySendsGetRequests()
+    {
+        // Sign-in asks for Tasks.ReadWrite (ADR-016 amendment 1); the import
+        // must still never change anything in Microsoft To Do.
+        var recorder = new MethodRecorder(new FixtureGraphHandler(TestSupport.FixturePath("basic")));
+        var client = new GraphTodoClient(new HttpClient(recorder), "token");
+
+        await new MicrosoftTodoReader(client).ReadAsync(cancellationToken: TestContext.Current.CancellationToken);
+        await client.GetAttachmentContentAsync("L-default", "T3", "A1", TestContext.Current.CancellationToken);
+
+        Assert.NotEmpty(recorder.Methods);
+        Assert.All(recorder.Methods, method => Assert.Equal(HttpMethod.Get, method));
+    }
+
+    private sealed class MethodRecorder(HttpMessageHandler inner) : DelegatingHandler(inner)
+    {
+        internal List<HttpMethod> Methods { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Methods.Add(request.Method);
+            return base.SendAsync(request, cancellationToken);
+        }
+    }
+
+    [Fact]
     public async Task Lists_AreReadThroughDeltaUntilTheDeltaLink()
     {
         var handler = new ScriptedHandler(

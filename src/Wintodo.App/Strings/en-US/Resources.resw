@@ -1154,8 +1154,8 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- IMP (Microsoft To Do import and onboarding) -->
   <data name="ImportWizardTitle.Text" xml:space="preserve"><value>Import from Microsoft To Do</value></data>
   <data name="ImportConnectIntro.Text" xml:space="preserve"><value>Bring over your lists, tasks, steps, notes, due dates, reminders, repeats and attachments. Running the import again never creates duplicates.</value></data>
-  <data name="ImportReadOnlyInfo.Title" xml:space="preserve"><value>Read-only access</value></data>
-  <data name="ImportReadOnlyInfo.Message" xml:space="preserve"><value>Wintodo only reads your tasks. Nothing in Microsoft To Do is changed or deleted, and your sign-in isn’t saved.</value></data>
+  <data name="ImportReadOnlyInfo.Title" xml:space="preserve"><value>Read-only import</value></data>
+  <data name="ImportReadOnlyInfo.Message" xml:space="preserve"><value>Wintodo only reads your tasks. Microsoft’s sign-in asks for permission to edit them, because that is the only way Microsoft lists all of your lists. Nothing in Microsoft To Do is changed or deleted, and your sign-in isn’t saved.</value></data>
   <data name="ImportNotConfiguredInfo.Title" xml:space="preserve"><value>Microsoft sign-in isn’t set up</value></data>
   <data name="ImportNotConfiguredInfo.Message" xml:space="preserve"><value>This build has no Microsoft app registration, so it can’t connect to Microsoft To Do yet.</value></data>
   <data name="ImportSignInButton.Content" xml:space="preserve"><value>Sign in with Microsoft</value></data>

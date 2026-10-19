@@ -17,7 +17,7 @@ internal static class MicrosoftTodoRegistration
     /// <summary>
     /// Application (client) id of the Entra public-client registration
     /// ("personal and work/school accounts", redirect <c>http://localhost</c>,
-    /// delegated <c>Tasks.Read</c> + <c>User.Read</c>). A public client id is
+    /// delegated <c>Tasks.ReadWrite</c> + <c>User.Read</c>). A public client id is
     /// not a secret. Registered 2026-10-19 as "Wintodo" in the owner's Entra
     /// directory, ADR-016.
     /// </summary>
