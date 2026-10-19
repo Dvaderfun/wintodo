@@ -770,7 +770,11 @@ preview leaves Welcome visible; it is completed only after the import applies.
 ### 10.2 Import wizard
 
 `ImportWizardView` replaces the list pane content and uses the Settings
-title row (64 px, `TitleTextBlockStyle`). Its steps:
+title row (`TitleTextBlockStyle`) with a polite Step n of 4 caption. Current
+actions sit in a fixed footer outside scrolling content. Step changes focus
+the primary target (Sign in, first checkbox, Import, Go to my tasks). Enter
+invokes the primary action; Escape goes Back on Review and cancels elsewhere.
+Each step has a Level2 heading. Its steps:
 
 1. **Connect.** Intro text, a read-only `InfoBar`, an "isn't set up"
    warning when the build has no client id, the last import date, and

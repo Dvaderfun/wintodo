@@ -1,6 +1,9 @@
+using System.ComponentModel;
+using System.Windows.Input;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.ViewModels;
@@ -33,6 +36,7 @@ public sealed partial class ImportWizardView : UserControl
     private void OnUnloaded(object sender, RoutedEventArgs args)
     {
         ViewModel.RemoveConfirmationRequested -= ConfirmRemovalAsync;
+        ViewModel.PropertyChanged -= OnStepChanged;
         Bindings.StopTracking();
         ListsRepeater.ItemsSource = null;
         SummaryRepeater.ItemsSource = null;
@@ -42,11 +46,64 @@ public sealed partial class ImportWizardView : UserControl
     private void OnLoaded(object sender, RoutedEventArgs args)
     {
         ViewModel.RemoveConfirmationRequested += ConfirmRemovalAsync;
+        ViewModel.PropertyChanged += OnStepChanged;
+        QueueStepFocus();
         if (_isDetached)
         {
             _isDetached = false;
             Bindings.Update();
         }
+    }
+
+    private void OnStepChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName is nameof(ImportWizardViewModel.Step) or nameof(ImportWizardViewModel.IsBusy))
+            QueueStepFocus();
+    }
+
+    private void QueueStepFocus() => DispatcherQueue.TryEnqueue(() =>
+    {
+        if (ViewModel.IsBusy) return;
+        Control? target = ViewModel.Step switch
+        {
+            ImportWizardStep.Connect => SignInButton,
+            ImportWizardStep.Choose => FindFirstCheckBox(ListsRepeater),
+            ImportWizardStep.Review => ImportButton,
+            ImportWizardStep.Done => FinishButton,
+            _ => null,
+        };
+        target?.Focus(FocusState.Programmatic);
+    });
+
+    private static CheckBox? FindFirstCheckBox(DependencyObject root)
+    {
+        if (root is CheckBox box) return box;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            if (FindFirstCheckBox(VisualTreeHelper.GetChild(root, i)) is CheckBox found) return found;
+        return null;
+    }
+
+    private void OnEscape(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (HasOpenDialog(XamlRoot)) return;
+        ICommand command = ViewModel.IsReviewStep ? ViewModel.BackCommand : ViewModel.CancelCommand;
+        if (command.CanExecute(null)) command.Execute(null);
+        args.Handled = true;
+    }
+
+    private void OnEnter(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        if (HasOpenDialog(XamlRoot)) return;
+        ICommand? command = ViewModel.Step switch
+        {
+            ImportWizardStep.Connect => ViewModel.SignInCommand,
+            ImportWizardStep.Choose => ViewModel.ContinueCommand,
+            ImportWizardStep.Review => ViewModel.ImportCommand,
+            ImportWizardStep.Done => ViewModel.FinishCommand,
+            _ => null,
+        };
+        if (command?.CanExecute(null) == true) command.Execute(null);
+        args.Handled = true;
     }
 
     private async Task<bool> ConfirmRemovalAsync(string message)
@@ -77,6 +134,17 @@ public sealed partial class ImportWizardView : UserControl
             AutomationProperties.SetAutomationId(button, "Todo.Import.RemoveConfirm.Primary");
         for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
             SetPrimaryId(VisualTreeHelper.GetChild(root, i));
+    }
+
+    public static bool HasOpenDialog(XamlRoot root)
+        => VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Any(popup => ContainsDialog(popup.Child));
+
+    private static bool ContainsDialog(DependencyObject root)
+    {
+        if (root is ContentDialog) return true;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            if (ContainsDialog(VisualTreeHelper.GetChild(root, i))) return true;
+        return false;
     }
 
     public ImportWizardViewModel ViewModel
