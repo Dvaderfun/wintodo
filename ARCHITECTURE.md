@@ -203,8 +203,8 @@ Settings → Data.
   `OAuth2Manager` (authorization code + PKCE, system browser) with a loopback
   redirect the app listens on. Scopes are `Tasks.Read` and `User.Read`. The
   access token lives in memory for one import and is never stored.
-  `MicrosoftTodoRegistration.ClientId` is empty until the Entra app is
-  registered, and the wizard then says sign-in isn't set up.
+  `MicrosoftTodoRegistration.ClientId` holds the public client id of the Entra
+  app; when it is empty the wizard says sign-in isn't set up.
 - **Reading and mapping.** `MicrosoftTodoReader` reads the account into a
   `MicrosoftTodoExport`. `GraphTodoMapper` turns it into an `ImportSnapshot`
   for the lists the person selected. Attachments download to `import-staging\`

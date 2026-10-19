@@ -18,7 +18,7 @@ As of 2026-10-19:
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
-| IMP Onboarding + Microsoft To Do import | AUTOMATED PASS | Entra app registration (owner, IMP-00); manual gate with real personal + work accounts |
+| IMP Onboarding + Microsoft To Do import | AUTOMATED PASS | Manual gate with real personal + work accounts (live Graph sign-in) |
 
 - **Build:** Debug and Release x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1
   after the completion viewport repair;
@@ -45,8 +45,8 @@ As of 2026-10-19:
   includes this fix; ARM64 and earlier test-signed copies predate it.
 - **IMP (2026-10-19):** Onboarding Welcome + one-way Microsoft To Do import (ADR-016).
   Import gate 11/11, M8 17/17, settings 9/9 in WintodoTest; Debug/Release and AOT x64
-  clean; 364/364 unit tests (Core 211, Data 95, Sync 10, Import 48). Real sign-in
-  waits on the owner's Entra client id.
+  clean; 364/364 unit tests (Core 211, Data 95, Sync 10, Import 48). Entra app
+  registered (client id `038f1bee-…a03e`); live sign-in awaits the manual gate.
 - **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
   `scripts\Invoke-VmGate.ps1` (ADR-013). The earlier sweep's 14 passing runs remain
   recorded. Follow-up: m8 17/17, settings 9/9 twice, list-stability 3/3 twice
@@ -3372,3 +3372,19 @@ and the owner's manual gate with real personal and work accounts.
   All need the Entra client id in `MicrosoftTodoRegistration.ClientId` and the
   owner's manual gate.
 - No ARM64 runtime or AOT runtime gate claimed for the import surfaces.
+
+## IMP-00 — Entra app registration          2026-10-19
+
+**Gate:** registration verified through Microsoft Graph; Debug/Release x64
+warnings-as-errors builds clean, 364/364 unit tests. No UI gate rerun: the
+client id is read only by the real connector, which the fixture-driven import
+gate does not use. Live sign-in remains the owner's manual gate.
+
+- On the owner's request and with their sign-in to the owner's Entra
+  directory, created app "Wintodo" via the Azure CLI and Graph: client id
+  `038f1bee-9c89-4f6c-9061-15210945a03e` (public by design), audience
+  `AzureADandPersonalMicrosoftAccount`, v2 access tokens, public-client
+  redirect `http://localhost`, delegated Graph `Tasks.Read` + `User.Read`
+  (both user-consentable). No secret or certificate. Not publisher-verified,
+  so consent shows "unverified"; some work tenants may need admin consent.
+- `MicrosoftTodoRegistration.ClientId` now holds the client id.

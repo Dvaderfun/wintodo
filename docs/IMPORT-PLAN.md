@@ -1,10 +1,10 @@
 # Import plan — onboarding and Microsoft To Do migration
 
 Status: **implemented** (2026-10-19). [ADR-016](adr/ADR-016-microsoft-todo-import.md)
-is accepted. Real Microsoft sign-in needs the owner's Entra app registration
-(IMP-00): until `MicrosoftTodoRegistration.ClientId` is set, the wizard shows
-"Microsoft sign-in isn't set up". Everything else runs and is gated against
-recorded Graph fixtures. See §10 for how the build differs from this plan.
+is accepted. The Entra app (IMP-00) is registered: "Wintodo", client id
+`038f1bee-9c89-4f6c-9061-15210945a03e` in the owner's directory. Everything
+is gated against recorded Graph fixtures; live sign-in awaits the owner's
+manual gate. See §10 for how the build differs from this plan.
 
 Goal: a first-run onboarding screen that offers to bring tasks over from
 another task manager, starting with **Microsoft To Do**. The same import must
@@ -290,11 +290,11 @@ scope here.
 
 | ID | Title | Size | Depends on | Status |
 |---|---|---|---|---|
-| IMP-00 | Owner sign-off: ADR-016, DESIGN §10/§12 additions, Entra app registration | — | — | sign-off done 2026-10-19; **Entra registration open (owner)** |
+| IMP-00 | Owner sign-off: ADR-016, DESIGN §10/§12 additions, Entra app registration | — | — | done 2026-10-19 (app "Wintodo", client id `038f1bee-9c89-4f6c-9061-15210945a03e`, public client `http://localhost`, delegated `Tasks.Read` + `User.Read`, no secret) |
 | IMP-01 | Core import model, mapping helpers, recurrence/timezone/HTML converters + tests | M | IMP-00 | done |
 | IMP-02 | Migration 004, `PreviewImportAsync`/`ApplyImportAsync`/`RemoveImportRunAsync`, idempotency suite | L | IMP-01 | done |
 | IMP-03 | `Wintodo.Import` project: Graph client, DTOs, mapper, fixtures + tests | M | IMP-01 | done |
-| IMP-04 | Sign-in spike → `MicrosoftSignInService` (activation routing, consent errors) | M | IMP-00 | code done (loopback redirect); **untested against Microsoft until IMP-00** |
+| IMP-04 | Sign-in spike → `MicrosoftSignInService` (activation routing, consent errors) | M | IMP-00 | code done (loopback redirect); **untested against Microsoft until the owner manual gate** |
 | IMP-05 | Import wizard control + Settings → Data entry + `--import-fixture` seam | L | IMP-02, IMP-03, IMP-04 | done |
 | IMP-06 | Onboarding Welcome surface (first-run detection, `.ics` card reuses M6) | M | IMP-05 | done |
 | IMP-07 | Import UI gate in the VM, M8 re-run, `/winui-code-review`, docs, PROGRESS, owner manual gate | M | IMP-06 | automated parts done (see PROGRESS); **owner manual gate with real accounts open** |
