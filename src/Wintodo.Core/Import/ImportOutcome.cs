@@ -28,6 +28,12 @@ public sealed class ImportOutcome
 
     public int NewAttachments { get; set; }
 
+    public int PreservedRepeats { get; set; }
+
+    public int RenamedEmptyTitles { get; set; }
+
+    public int AcknowledgedReminders { get; set; }
+
     /// <summary>External attachment ids the preview would create; held in memory only.</summary>
     public HashSet<string> PendingAttachmentIds { get; } = new(StringComparer.Ordinal);
 

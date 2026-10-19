@@ -3656,3 +3656,18 @@ Todo.Import.RemoveConfirm and .Primary added. Cancel preserves the run.
 shell dialog partial, so x:Load lifetime owns its callback subscription.
 First combined gate failed 2/14 rows (picker lookup and PowerShell apostrophe
 quoting in removal text); corrected rerun passes all rows.
+
+## IMP-13 — Report values kept but not converted          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 383/383 unit tests, zero skips;
+VM import 14/14 including visible preserved-repeat and acknowledged counts.
+Returned Review/Done captures reviewed; winui-code-review no new findings above
+informational. Intermittent Data initialization failures in existing tests are
+tracked separately as IMP-26; complete reruns pass.
+
+**Shipped:** Snapshot/outcome counts for repeats preserved as text, empty titles
+renamed (including steps), and acknowledged reminders. Only nonzero counts show
+in Review/Done. Core and Import tests cover counting and mapper/store propagation.
+
+**Deviations:** Counts describe the selected snapshot, including unchanged
+items, so the preservation explanation remains visible on re-import.

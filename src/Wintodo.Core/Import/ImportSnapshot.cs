@@ -17,6 +17,14 @@ public sealed class ImportSnapshot
 
     public List<ImportList> Lists { get; } = [];
 
+    public int PreservedRepeats => Lists.SelectMany(list => list.Tasks).Count(task => task.HasPreservedRepeat);
+
+    public int RenamedEmptyTitles => Lists.SelectMany(list => list.Tasks)
+        .SelectMany(task => task.Steps.Prepend(task)).Count(task => task.HasRenamedTitle);
+
+    public int AcknowledgedReminders => Lists.SelectMany(list => list.Tasks)
+        .Sum(task => task.Task.Alarms.Count(alarm => alarm.IsAcknowledged));
+
     /// <summary>
     /// Extension properties the importer owns. On re-import these are replaced
     /// in a task's unknown-property passthrough; every other entry is kept.
@@ -50,6 +58,10 @@ public sealed class ImportList
 
 public sealed class ImportTask
 {
+    public bool HasPreservedRepeat { get; init; }
+
+    public bool HasRenamedTitle { get; init; }
+
     public string ExternalId { get; init; } = string.Empty;
 
     /// <summary>

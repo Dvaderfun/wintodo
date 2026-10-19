@@ -440,6 +440,9 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         AddLine("Import_SummaryDeleted", outcome.SkippedDeletedTasks);
         AddLine("Import_SummarySkippedLists", outcome.SkippedLists);
         AddLine("Import_SummaryDuplicates", outcome.PossibleDuplicates);
+        AddLine("Import_SummaryPreservedRepeats", outcome.PreservedRepeats);
+        AddLine("Import_SummaryRenamedTitles", outcome.RenamedEmptyTitles);
+        AddLine("Import_SummaryAcknowledged", outcome.AcknowledgedReminders);
         if (!outcome.HasChanges)
         {
             SummaryLines.Add(_resources.GetString("Import_SummaryNothing"));
