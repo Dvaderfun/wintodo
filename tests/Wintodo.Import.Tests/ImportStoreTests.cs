@@ -28,6 +28,7 @@ public sealed class ImportStoreTests
         Assert.Equal(6, preview.NewTasks);
         Assert.Equal(2, preview.NewSteps);
         Assert.Equal(1, preview.NewAttachments);
+        Assert.Equal(["A1"], preview.PendingAttachmentIds);
         Assert.Equal(string.Empty, preview.RunId);
         Assert.Equivalent(preview, previewAgain);
         Assert.Equal(changesBefore, await CountAsync(temp, "SELECT COUNT(*) FROM change_log;"));
@@ -40,7 +41,9 @@ public sealed class ImportStoreTests
         Assert.Equal(preview.NewAttachments, applied.NewAttachments);
 
         ImportSnapshot again = await MapFixtureAsync();
-        Assert.Equal(0, (await temp.Store.PreviewImportAsync(again, Options(temp), Token)).NewAttachments);
+        ImportOutcome second = await temp.Store.PreviewImportAsync(again, Options(temp), Token);
+        Assert.Equal(0, second.NewAttachments);
+        Assert.Empty(second.PendingAttachmentIds);
     }
 
     [Fact]
@@ -251,12 +254,40 @@ public sealed class ImportStoreTests
         return new ImportOptions { AttachmentRoot = temp.Directory, OverwriteLocalEdits = overwriteLocalEdits };
     }
 
-    private static Task StageAttachmentsAsync(ImportSnapshot snapshot, TempStore temp)
+    private static async Task StageAttachmentsAsync(ImportSnapshot snapshot, TempStore temp)
     {
-        return new MicrosoftTodoReader(TestSupport.FixtureClient()).DownloadAttachmentsAsync(
+        ImportOutcome preview = await temp.Store.PreviewImportAsync(snapshot, Options(temp), Token);
+        await new MicrosoftTodoReader(TestSupport.FixtureClient()).DownloadAttachmentsAsync(
             snapshot,
             Path.Combine(temp.Directory, "staging", Guid.NewGuid().ToString("N")),
+            preview.PendingAttachmentIds,
             cancellationToken: Token);
+    }
+
+    [Fact]
+    public async Task SecondDownloadMakesNoAttachmentRequestsAndDeletedTaskIsNotPending()
+    {
+        await using TempStore temp = await TempStore.CreateAsync();
+        ImportSnapshot first = await MapFixtureAsync();
+        await StageAttachmentsAsync(first, temp);
+        await temp.Store.ApplyImportAsync(first, Options(temp), Token);
+        ImportSnapshot second = await MapFixtureAsync();
+        ImportOutcome preview = await temp.Store.PreviewImportAsync(second, Options(temp), Token);
+        var handler = new FixtureGraphHandler(TestSupport.FixturePath("basic"));
+        var reader = new MicrosoftTodoReader(new GraphTodoClient(new HttpClient(handler), "fixture"));
+        await reader.DownloadAttachmentsAsync(second, Path.Combine(temp.Directory, "second"),
+            preview.PendingAttachmentIds, cancellationToken: Token);
+        Assert.Equal(0, handler.RequestCount);
+
+        TodoTask report = await FindAsync(temp, "Send the quarterly report");
+        await temp.Store.DeleteTaskAsync(report.Uid, Token);
+        MicrosoftTodoExport export = await TestSupport.ReadFixtureAsync();
+        GraphTodoTask source = export.Lists.SelectMany(list => list.Tasks).Single(task => task.Id == "T3");
+        source.Attachments.Add(new GraphAttachment { Id = "new-attachment", Name = "new.txt", Size = 10 });
+        ImportOutcome deleted = await temp.Store.PreviewImportAsync(
+            GraphTodoMapper.Map(export, TestSupport.Options(Now)), Options(temp), Token);
+        Assert.Empty(deleted.PendingAttachmentIds);
+        Assert.Equal(0, deleted.NewAttachments);
     }
 
     private static async Task<TodoTask> FindAsync(TempStore temp, string summary)

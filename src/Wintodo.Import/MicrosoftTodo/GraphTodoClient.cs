@@ -133,29 +133,54 @@ public sealed class GraphTodoClient
         string attachmentId,
         CancellationToken cancellationToken = default)
     {
+        using var destination = new MemoryStream();
+        await CopyAttachmentContentAsync(listId, taskId, attachmentId, destination,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
+        return destination.ToArray();
+    }
+
+    /// <summary>Copies attachment content without buffering the file in memory.</summary>
+    public async Task<long> CopyAttachmentContentAsync(
+        string listId,
+        string taskId,
+        string attachmentId,
+        Stream destination,
+        Action<long>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
         string path = AttachmentsPath(listId, taskId) + "/" + Escape(attachmentId);
+        HttpResponseMessage raw;
         try
         {
-            using HttpResponseMessage raw = await SendAsync(
+            raw = await SendAsync(
                 new Uri(_baseUri, path + "/$value"),
                 cancellationToken).ConfigureAwait(false);
-            byte[] content = await raw.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
-            Trace.WriteLine($"WINTODO_IMPORT_READ attachment=raw bytes={content.LongLength}");
-            return content;
         }
         catch (GraphRequestException exception) when (
             exception.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.NotFound)
         {
             Trace.WriteLine($"WINTODO_IMPORT_READ attachment=fallback status={(int)exception.StatusCode}");
-            GraphAttachment attachment = await GetJsonAsync(
-                new Uri(_baseUri, path),
-                GraphJsonContext.Default.GraphAttachment,
-                cancellationToken).ConfigureAwait(false);
-            byte[] content = string.IsNullOrEmpty(attachment.ContentBytes)
-                ? []
-                : Convert.FromBase64String(attachment.ContentBytes);
-            Trace.WriteLine($"WINTODO_IMPORT_READ attachment=contentBytes bytes={content.LongLength}");
-            return content;
+            using HttpResponseMessage response = await SendAsync(new Uri(_baseUri, path), cancellationToken).ConfigureAwait(false);
+            await using Stream json = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            long count = await AttachmentContentDecoder.CopyAsync(json, destination, progress, cancellationToken).ConfigureAwait(false);
+            Trace.WriteLine($"WINTODO_IMPORT_READ attachment=contentBytes bytes={count}");
+            return count;
+        }
+
+        using (raw)
+        {
+            await using Stream source = await raw.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            byte[] buffer = new byte[64 * 1024];
+            long count = 0;
+            int read;
+            while ((read = await source.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+            {
+                await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                count += read;
+                progress?.Invoke(count);
+            }
+            Trace.WriteLine($"WINTODO_IMPORT_READ attachment=raw bytes={count}");
+            return count;
         }
     }
 

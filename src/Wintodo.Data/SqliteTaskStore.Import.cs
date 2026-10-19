@@ -755,6 +755,7 @@ public sealed partial class SqliteTaskStore
                 if (run.RunId is null)
                 {
                     run.Outcome.NewAttachments++;
+                    run.Outcome.PendingAttachmentIds.Add(attachment.ExternalId);
                 }
 
                 continue;

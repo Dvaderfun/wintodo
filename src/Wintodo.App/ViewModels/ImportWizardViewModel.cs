@@ -35,6 +35,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     private MicrosoftTodoReader? _reader;
     private MicrosoftTodoExport? _export;
     private string? _lastRunId;
+    private IReadOnlySet<string> _pendingAttachmentIds = new HashSet<string>(StringComparer.Ordinal);
 
     internal ImportWizardViewModel(ITaskStore store, IClock clock, ImportEnvironment environment)
     {
@@ -150,6 +151,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         HasNoLists = false;
         Lists.Clear();
         SummaryLines.Clear();
+        _pendingAttachmentIds = new HashSet<string>(StringComparer.Ordinal);
         _ = RefreshLastImportAsync();
     }
 
@@ -218,6 +220,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         try
         {
             ImportOutcome preview = await _store.PreviewImportAsync(await BuildSnapshotAsync(), BuildOptions());
+            _pendingAttachmentIds = preview.PendingAttachmentIds;
             DescribeOutcome(preview);
             Step = ImportWizardStep.Review;
         }
@@ -244,7 +247,8 @@ public sealed partial class ImportWizardViewModel : ObservableObject
             if (IncludeAttachments && _reader is not null)
             {
                 staging = Path.Combine(_environment.AttachmentRoot, "import-staging", Guid.NewGuid().ToString("N"));
-                await _reader.DownloadAttachmentsAsync(snapshot, staging, new Progress<MicrosoftTodoProgress>(ReportProgress), token);
+                await _reader.DownloadAttachmentsAsync(snapshot, staging, _pendingAttachmentIds,
+                    new Progress<MicrosoftTodoProgress>(ReportProgress), token);
             }
 
             SetProgress(_resources.GetString("Import_ProgressSaving"), indeterminate: true);
@@ -442,10 +446,10 @@ public sealed partial class ImportWizardViewModel : ObservableObject
                 break;
             case MicrosoftTodoReadPhase.Attachments when progress.Completed < progress.Total:
                 SetProgress(
-                    Format("Import_ProgressAttachmentsFormat", progress.Completed + 1, progress.Total),
+                    Format("Import_ProgressAttachmentBytesFormat", progress.CompletedBytes, progress.TotalBytes),
                     indeterminate: false,
-                    progress.Completed,
-                    progress.Total);
+                    progress.CompletedBytes,
+                    Math.Max(1, progress.TotalBytes));
                 break;
             case MicrosoftTodoReadPhase.Account or MicrosoftTodoReadPhase.Lists:
                 SetProgress(_resources.GetString("Import_ProgressAccount"), indeterminate: true);
@@ -453,7 +457,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
     }
 
-    private void SetProgress(string text, bool indeterminate, int value = 0, int maximum = 1)
+    private void SetProgress(string text, bool indeterminate, double value = 0, double maximum = 1)
     {
         ProgressText = text;
         IsProgressIndeterminate = indeterminate;
