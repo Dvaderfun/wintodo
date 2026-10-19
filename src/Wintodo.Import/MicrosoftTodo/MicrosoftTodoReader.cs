@@ -14,7 +14,9 @@ public readonly record struct MicrosoftTodoProgress(
     MicrosoftTodoReadPhase Phase,
     int Completed,
     int Total,
-    string? ListName = null);
+    string? ListName = null,
+    long CompletedBytes = 0,
+    long TotalBytes = 0);
 
 /// <summary>Everything read from one Microsoft To Do account, before mapping.</summary>
 public sealed class MicrosoftTodoExport
@@ -74,30 +76,39 @@ public sealed class MicrosoftTodoReader(GraphTodoClient client)
     public async Task DownloadAttachmentsAsync(
         ImportSnapshot snapshot,
         string stagingDirectory,
+        IReadOnlySet<string> pendingAttachmentIds,
         IProgress<MicrosoftTodoProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
         ArgumentException.ThrowIfNullOrWhiteSpace(stagingDirectory);
+        ArgumentNullException.ThrowIfNull(pendingAttachmentIds);
         List<ImportAttachment> attachments = snapshot.Lists
             .SelectMany(list => list.Tasks)
             .SelectMany(task => task.Attachments)
-            .Where(attachment => attachment.SourcePath is not null)
+            .Where(attachment => attachment.SourcePath is not null && pendingAttachmentIds.Contains(attachment.ExternalId))
             .ToList();
+        long totalBytes = attachments.Sum(attachment => Math.Max(0, attachment.SizeBytes));
+        long completedBytes = 0;
         Directory.CreateDirectory(stagingDirectory);
         for (int index = 0; index < attachments.Count; index++)
         {
             progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Attachments, index, attachments.Count));
             ImportAttachment attachment = attachments[index];
             string[] parts = attachment.SourcePath!.Split('\n');
-            byte[] content = await _client.GetAttachmentContentAsync(parts[0], parts[1], parts[2], cancellationToken)
-                .ConfigureAwait(false);
             string path = Path.Combine(stagingDirectory, index.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            await File.WriteAllBytesAsync(path, content, cancellationToken).ConfigureAwait(false);
+            await using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
+            long size = await _client.CopyAttachmentContentAsync(parts[0], parts[1], parts[2], file,
+                bytes => progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Attachments,
+                    index, attachments.Count, CompletedBytes: completedBytes + bytes, TotalBytes: totalBytes)),
+                cancellationToken).ConfigureAwait(false);
             attachment.StagedPath = path;
-            attachment.SizeBytes = content.LongLength;
+            attachment.SizeBytes = size;
+            completedBytes += size;
         }
 
-        progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Attachments, attachments.Count, attachments.Count));
+        progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Attachments, attachments.Count,
+            attachments.Count, CompletedBytes: completedBytes, TotalBytes: totalBytes));
     }
 }

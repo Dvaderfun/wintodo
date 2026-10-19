@@ -332,6 +332,8 @@ Polish packages IMP-08 to IMP-24 are tracked in §11.1, not in this table.
 
 ## 10. As built (2026-10-19)
 
+- **IMP-09:** Preview returns pending attachment ids; only those files download.
+  Raw and contentBytes transfers stream into staging with byte progress.
 - **IMP-08:** Error redirects show the failed sign-in page. Both browser pages
   have an encoded localised title/message, dark mode and no external resources.
 
@@ -440,8 +442,8 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 
 | ID | Title | Phase | Size | Depends on | Touches (hot files) | Status |
 |---|---|---|---|---|---|---|
-| IMP-08 | The browser page says "signed in" after a cancelled or failed sign-in | P1 fix | S | — | MicrosoftSignInService | done (IMP-08 commit; import 12/12) |
-| IMP-09 | A re-import downloads only new attachments, streamed to disk | P1 fix | M | — | MicrosoftTodoReader, GraphTodoClient, Data import, ImportWizardVM | open |
+| IMP-08 | The browser page says "signed in" after a cancelled or failed sign-in | P1 fix | S | — | MicrosoftSignInService | done (924ef77; import 12/12) |
+| IMP-09 | A re-import downloads only new attachments, streamed to disk | P1 fix | M | — | MicrosoftTodoReader, GraphTodoClient, Data import, ImportWizardVM | done (IMP-09 commit; import 12/12) |
 | IMP-10 | An expired sign-in keeps what was read and resumes at Review | P1 fix | S | IMP-09 | ImportWizardVM | open |
 | IMP-11 | The Welcome `.ics` card keeps onboarding if the file picker is cancelled | P1 fix | S | — | ShellVM.Import, ShellVM `.ics` import | open |
 | IMP-12 | Confirm before "Remove what was just imported" | P1 fix | S | — | ImportWizardView, ImportWizardVM, ShellPage dialogs | open |
@@ -457,6 +459,7 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-22 | Gate rows, M8 re-run, code review and docs for the polish | P3 | M | IMP-08…21 | `tests/ui/run-import-gate.ps1`, DESIGN §10.2/§12, PROGRESS | open |
 | IMP-23 | 🔒 Remove an earlier import from Settings | P4 | M | IMP-12, IMP-19 | ADR-016 amendment, SettingsView, Data import | awaiting owner |
 | IMP-24 | 🔒 Refresh the token in memory during long imports | P4 | S | IMP-10 | ADR-016 amendment, MicrosoftSignInService | awaiting owner |
+| IMP-25 | Sanitize existing import exception traces | follow-up | S | — | ImportWizardVM, shell import traces | open (found during polish; outside IMP-08…22) |
 
 Suggested order: the P1 fixes first (they are small and independent; IMP-10
 builds on IMP-09). Then IMP-14, because it changes the view's skeleton that
@@ -677,6 +680,13 @@ above informational, update DESIGN §10.2/§12, update this section's status
 table, and add a PROGRESS entry.
 
 ### 11.5 P4 — needs the owner first (🔒)
+
+**IMP-25 — Existing exception traces may contain private values.**
+`ImportWizardViewModel.ShowError` writes the complete exception, which can
+include Graph response messages or file paths. Shell import exception traces
+have the same pattern. Replace these with type/category/count-only diagnostics
+and add regression coverage in a separate package; this finding is not folded
+into IMP-09 or the authorized polish packages.
 
 **IMP-23 — Remove an earlier import from Settings.** Today removal exists
 only on the Done step of the same session, because `_lastRunId` is held in

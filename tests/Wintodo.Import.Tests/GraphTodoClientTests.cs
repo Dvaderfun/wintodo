@@ -5,6 +5,27 @@ namespace Wintodo.Import.Tests;
 
 public sealed class GraphTodoClientTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task LargeAttachmentStreamsWithIncrementalProgress(bool fallback)
+    {
+        byte[] expected = Enumerable.Range(0, 200_000).Select(i => (byte)i).ToArray();
+        Func<HttpRequestMessage, HttpResponseMessage> body = _ => fallback
+            ? ScriptedHandler.Json(HttpStatusCode.OK, "{\"contentBytes\":\"" + Convert.ToBase64String(expected) + "\"}")
+            : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(expected) };
+        var handler = fallback
+            ? new ScriptedHandler(_ => ScriptedHandler.Json(HttpStatusCode.NotFound, "{}"), body)
+            : new ScriptedHandler(body);
+        using var target = new MemoryStream();
+        var progress = new List<long>();
+        long bytes = await new GraphTodoClient(new HttpClient(handler), "fixture").CopyAttachmentContentAsync(
+            "L1", "T1", "A1", target, progress.Add, TestContext.Current.CancellationToken);
+        Assert.Equal(expected.Length, bytes);
+        Assert.Equal(expected, target.ToArray());
+        Assert.True(progress.Count > 1);
+        Assert.Equal(bytes, progress[^1]);
+    }
     [Fact]
     public async Task Reader_FollowsPagingAndLoadsStepsLinksAndAttachments()
     {

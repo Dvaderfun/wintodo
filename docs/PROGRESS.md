@@ -3596,3 +3596,20 @@ response builder HTML-encodes title and messages, supports dark mode and loads
 no external resources. Four Import test cases cover success/failure and encoding.
 
 **Deviations:** None. Live Microsoft sign-in remains owner-only.
+
+## IMP-09 — Download only new attachments, streamed          2026-10-19
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 378/378 tests, zero skips.
+WintodoTest import 12/12, zero failed/skipped; second-run trace has zero raw
+attachment downloads. Returned captures reviewed; winui-code-review has no new
+findings above informational. An earlier full test run failed the existing
+Import_CannotMoveAParentAwayFromExistingChildren in SQLite initialization with
+ObjectDisposedException; the complete rerun passed.
+
+**Shipped:** Preview exposes an in-memory pending id set. Downloads filter by
+that set and stream raw or base64 JSON content to staging, reporting bytes.
+Data and Import tests cover re-runs, deleted tasks and incremental transfers.
+
+**Deviations:** The BCL streaming JSON reader decodes contentBytes directly;
+all object JSON remains source-generated. Existing exception traces need a
+separate privacy repair, recorded as IMP-25 without expanding this package.
