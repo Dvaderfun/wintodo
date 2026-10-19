@@ -10,6 +10,17 @@ namespace Wintodo.Import.Tests;
 public sealed class ImportStoreTests
 {
     [Fact]
+    public async Task HistoryReturnsEveryImportedAccount()
+    {
+        await using TempStore temp = await TempStore.CreateAsync();
+        await temp.Store.ApplyImportAsync(new ImportSnapshot { Provider = "mstodo", AccountKey = "first", AccountDisplayName = "first@example.com" }, new(), Token);
+        await temp.Store.ApplyImportAsync(new ImportSnapshot { Provider = "mstodo", AccountKey = "second", AccountDisplayName = "second@example.com" }, new(), Token);
+        var sources = await temp.Store.GetImportSourcesAsync("mstodo", Token);
+        Assert.Equal(2, sources.Count);
+        Assert.All(sources, source => Assert.NotNull(source.LastImport));
+    }
+
+    [Fact]
     public async Task CancelledPreviewWritesNothing()
     {
         await using TempStore temp = await TempStore.CreateAsync();

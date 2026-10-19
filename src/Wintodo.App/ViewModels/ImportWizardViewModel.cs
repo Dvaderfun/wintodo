@@ -189,14 +189,12 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         try
         {
             IReadOnlyList<ImportSourceInfo> sources = await _store.GetImportSourcesAsync(GraphTodoMapper.Provider);
-            ImportSourceInfo? latest = sources.FirstOrDefault();
-            LastImportText = latest?.LastImport is DateTimeOffset when
-                ? string.Format(
+            LastImportText = string.Join(Environment.NewLine, sources.Where(source => source.LastImport is not null).Select(source =>
+                string.Format(
                     DisplayCulture.Current,
                     _resources.GetString("Import_LastImportFormat"),
-                    latest.DisplayName,
-                    TimeZoneInfo.ConvertTime(when, _clock.LocalTimeZone).ToString("d", DisplayCulture.Current))
-                : string.Empty;
+                    source.DisplayName,
+                    TimeZoneInfo.ConvertTime(source.LastImport!.Value, _clock.LocalTimeZone).ToString("d", DisplayCulture.Current))));
         }
         catch (Exception exception) when (exception is InvalidOperationException or ObjectDisposedException)
         {

@@ -870,6 +870,8 @@ between Settings and Windows integration: `notifications.enabled` defaults to
 stored alarms. Re-enabling reschedules them; changing snooze updates the
 preselection in pending toast payloads. Launch at login stays in Notifications.
 
+Data lists every imported Microsoft account and its local import date.
+Connect lists all earlier imports too.
 Data shows the resolved database path and file size from `StoreStats`, with
 a Show in Explorer command. About includes the repository link and locally
 bundled package/licence list and a command opening full notices from a bundled
