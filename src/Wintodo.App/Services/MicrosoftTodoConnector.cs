@@ -18,9 +18,10 @@ internal static class MicrosoftTodoRegistration
     /// Application (client) id of the Entra public-client registration
     /// ("personal and work/school accounts", redirect <c>http://localhost</c>,
     /// delegated <c>Tasks.Read</c> + <c>User.Read</c>). A public client id is
-    /// not a secret. Empty until the owner registers the app (ADR-016).
+    /// not a secret. Registered 2026-10-19 as "Wintodo" in the owner's Entra
+    /// directory, ADR-016.
     /// </summary>
-    internal const string ClientId = "";
+    internal const string ClientId = "038f1bee-9c89-4f6c-9061-15210945a03e";
 }
 
 internal enum MicrosoftSignInFailure

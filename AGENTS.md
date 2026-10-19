@@ -9,7 +9,7 @@ Humans: start with [README.md](README.md).
 Microsoft To Do clone built on open standards (iCalendar `VTODO`, CalDAV) instead of
 Microsoft Graph. Native AOT, x64 + ARM64, MSIX. Implemented: M0–M9 and M13 (CalDAV
 sync), with some manual gate rows still open. Onboarding with a one-way Microsoft
-To Do import (ADR-016) is implemented; it needs an Entra client id to sign in. Not started: M10 packaging, M11 deep
+To Do import (ADR-016) is implemented; live sign-in awaits the owner's manual gate. Not started: M10 packaging, M11 deep
 subtasks, M12 tags. `Wintodo` is a placeholder name.
 
 ## Read before changing code
