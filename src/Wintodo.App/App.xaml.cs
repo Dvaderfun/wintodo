@@ -140,6 +140,8 @@ public partial class App : Application
             TraceStartupStage("first-frame", launchStartTimestamp);
             await store.InitializeAsync();
             TraceStartupStage("store", launchStartTimestamp);
+            if (string.IsNullOrWhiteSpace(commandLineDatabasePath))
+                await store.CleanupInterruptedImportsAsync(ApplicationData.Current.LocalFolder.Path);
             Task integrationTask = windowsIntegration.InitializeAsync();
             await window.InitializeAsync();
             TraceStartupStage("window", launchStartTimestamp);

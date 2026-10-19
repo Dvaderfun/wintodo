@@ -1152,9 +1152,13 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- UX-10 row completion -->
   <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
   <!-- IMP (Microsoft To Do import and onboarding) -->
-  <data name="Import_ProgressListCountFormat" xml:space="preserve"><value>Reading lists: {0:N0} / {1:N0} complete</value></data>
   <data name="SettingsMicrosoftTodoDescription.Text" xml:space="preserve"><value>Import lists, tasks, steps, notes, dates, reminders and attachments. Importing again never duplicates tasks.</value></data>
   <data name="SettingsMicrosoftTodoHeader.Header" xml:space="preserve"><value>Microsoft To Do</value></data>
+  <data name="ImportAttachmentHeader.Header" xml:space="preserve"><value>Include attachments</value></data>
+  <data name="Import_ProgressListCountFormat" xml:space="preserve"><value>Reading lists: {0:N0} / {1:N0} complete</value></data>
+  <data name="Import_CloseTitle" xml:space="preserve"><value>Stop the import?</value></data>
+  <data name="Import_CloseMessage" xml:space="preserve"><value>An import is in progress. Stop it and close? If saving has started, Wintodo waits for it to finish.</value></data>
+  <data name="Import_ClosePrimary" xml:space="preserve"><value>Stop and close</value></data>
   <data name="Import_AccountHistoryFormat" xml:space="preserve"><value>{0} · {1}</value></data>
   <data name="ImportError.Title" xml:space="preserve"><value>Import needs your attention</value></data>
   <data name="Import_ErrorSignInAction" xml:space="preserve"><value>Sign in again</value></data>
@@ -1174,7 +1178,6 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <data name="ImportDuplicatesToggle.Header" xml:space="preserve"><value>Import them anyway</value></data>
   <data name="ImportPerList.Header" xml:space="preserve"><value>Per-list details</value></data>
   <data name="Import_PerListFormat" xml:space="preserve"><value>{0}: {1:N0} new · {2:N0} updated · {3:N0} already imported</value></data>
-  <data name="ImportAttachmentHeader.Header" xml:space="preserve"><value>Include attachments</value></data>
   <data name="ImportSelectAll.Content" xml:space="preserve"><value>Select all</value></data>
   <data name="Import_NoSelection.Text" xml:space="preserve"><value>Select at least one list to continue.</value></data>
   <data name="Import_SelectionTotalFormat" xml:space="preserve"><value>Importing {0:N0} lists · {1:N0} tasks</value></data>

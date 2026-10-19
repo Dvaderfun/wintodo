@@ -803,7 +803,8 @@ Each step has a Level2 heading. Its steps:
 Errors show in a titled `InfoBar` with Try again or Sign in again. Work-tenant
 403 offers a tenant administrator-consent link; URL is owner-verify. Microsoft
 429/503 retry delay is visible. Same-account re-sign-in message is informational. AutomationIds are `Todo.Import.*`
-and `Todo.Welcome.*`.
+and `Todo.Welcome.*`. Closing while import is busy confirms; reading/download
+can stop, while Saving finishes its transaction before closing.
 
 ---
 
