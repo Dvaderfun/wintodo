@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-10-19:
+As of 2026-10-20:
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -43,10 +43,14 @@ As of 2026-10-19:
   and 307/307 unit tests pass.
   Signed x64 MSIX version `1.0.0.3` now
   includes this fix; ARM64 and earlier test-signed copies predate it.
-- **IMP (2026-10-19):** Onboarding Welcome + one-way Microsoft To Do import (ADR-016).
-  Import gate 11/11, M8 17/17, settings 9/9 in WintodoTest; Debug/Release and AOT x64
-  clean; 364/364 unit tests (Core 211, Data 95, Sync 10, Import 48). Entra app
-  registered (client id `038f1bee-…a03e`); live sign-in awaits the manual gate.
+- **IMP polish (2026-10-20):** IMP-08…21 implemented in individual local commits.
+  Debug x64 clean; 392/392 unit tests, zero failed/skipped. WintodoTest import
+  20/20, M8 17/17, settings 9/9; IMP-22 fixture polish gate complete.
+  Four-list read justified by VM latency fixture: 1434.7 → 455.4 ms; downloads
+  remain serial because attachment concurrency is unmeasured. Work/school consent
+  and admin URL verify stay owner-only. Dedicated close-during-Saving timing is
+  unclaimed. IMP-25 exception-trace privacy and IMP-26 intermittent SQLite test
+  initialization are separate open findings. IMP-23/24 remain untouched.
 - **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
   `scripts\Invoke-VmGate.ps1` (ADR-013). The earlier sweep's 14 passing runs remain
   recorded. Follow-up: m8 17/17, settings 9/9 twice, list-stability 3/3 twice
@@ -3788,3 +3792,32 @@ and make §5 match it, avoiding a new post-commit rename failure path. Normal
 profile sweeps only; scratch DBs share its attachment root and must not delete
 files belonging to another DB. The close-confirm Saving timing is implemented
 but has no dedicated VM kill/close timing row; it remains unclaimed.
+
+## IMP-22 — Final polish gate, review and documentation          2026-10-20
+
+**Gate:** PASS — final Debug x64 zero warnings/errors; 392/392 unit tests,
+zero failed/skipped. WintodoTest final import 20/20, M8 17/17, settings 9/9.
+Both latency-fixture measurement runs 1/1. Returned import (including two-account),
+Settings and four contrast-palette captures reviewed. Vendored winui-code-review
+no unresolved findings above informational for implemented changes.
+
+**Shipped:** Gate checks pending-only attachment downloads, expiry resume with
+one read, removal confirmation, Welcome picker cancellation, primary focus,
+Escape, Select all/live totals, recovery action, throttle message, two accounts
+and My Day hand-off. DESIGN §10.2/§12, IMPORT-PLAN §10/§11 and Current state updated.
+All IMP-08…22 have separate local commits. No push.
+
+**Gate history:** Import runs 12/12 (three), 12/14 then 14/14 (two), 15/18,
+16/18, then 18/18 (two) and final 20/20. Failed rows were cancelled Welcome
+picker lookup, removal text quote truncation, Review Escape, Settings account
+history and throttle Cancel. Corrected harness/window lookup, localisation,
+popup keyboard routing and UI alignment; no row skipped or tolerance relaxed.
+M8 17/17; settings 9/9; perf 1/1 twice. Logs/captures under tests/ui/artifacts.
+
+**Deviations / remaining:** IMP-20 downloads stay serial (unmeasured);
+IMP-21 uses existing copy-before-commit with normal-profile recovery, skipping
+shared-root scratch DBs. Close/Saving timing has no dedicated VM gate and is
+unclaimed. IMP-18 admin-consent URL remains **verify**, owner work/school gate.
+IMP-23/24 untouched. New findings IMP-25 exception-trace privacy and IMP-26
+intermittent SQLite initialization remain open; earlier Data failures are named
+in package entries, final complete suite passes. No AOT runtime publish claim.
