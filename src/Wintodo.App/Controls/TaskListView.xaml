@@ -256,6 +256,7 @@
                             Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                             Style="{StaticResource TitleTextBlockStyle}"
                             Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                            TextLineBounds="Tight"
                             TextTrimming="CharacterEllipsis" />
                     </StackPanel>
                     <Button
@@ -280,6 +281,7 @@
                                     x:Name="ListIconPlaceholder"
                                     Width="16"
                                     Height="16"
+                                    Margin="0,4,0,0"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     AutomationProperties.AccessibilityView="Raw"
@@ -360,6 +362,7 @@
                             Foreground="{ThemeResource ListAccentBrush}"
                             Style="{StaticResource TitleTextBlockStyle}"
                             Text="{x:Bind ViewModel.Title, Mode=OneWay}"
+                            TextLineBounds="Tight"
                             TextTrimming="CharacterEllipsis" />
                     </Button>
                     <!--

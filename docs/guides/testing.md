@@ -107,6 +107,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-ux-regression-gate.ps1` | Runs existing M4/M13/M8/M7/M0 gates sequentially in one guest restore |
 | `run-share-regression-gate.ps1 -Aot` | Final UX-18 startup regressions: M0, M7 preflight, and published x64 M13 |
 
+| `run-header-alignment-gate.ps1` | Screenshot ink-center alignment for five fixed categories and new user lists in Light/Dark; fixed glyphs within 1 px; unset dot uses owner-selected 2 px optical lowering (±1 px); fixed-icon crop follows its 44 px XAML slot |
 The scripts drive real input on the desktop they run on. Host runs require the
 explicit opt-in above. The VM being unavailable does not authorize host automation.
 

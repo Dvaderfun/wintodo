@@ -1,7 +1,7 @@
 # Packaging groundwork (M10)
 
 The app name and publisher remain the placeholders in `Package.appxmanifest`:
-`5826186B-4750-4C22-BC50-B5DD1EED9CA5`, `CN=AppPublisher`, version `1.0.0.0`.
+`5826186B-4750-4C22-BC50-B5DD1EED9CA5`, `CN=AppPublisher`, version `1.0.0.3`.
 Final identity and production signing require the owner's decision (PLAN §10).
 The remaining decisions, owner-run checks and clean-install premise are tracked
 in [release-checklist.md](release-checklist.md). The standard `WintodoTest`
@@ -81,3 +81,26 @@ remain pending. SignTool verification exits 1 because the development certificat
 is untrusted on the host; full signature/trust verification is not reported as
 passed. No certificate was installed. Test copies are not timestamped production
 artifacts. The original public certificate and PFX remain in the ignored folder.
+
+## Current local x64 update
+
+The later header-alignment update is version `1.0.0.3` in
+`publish/msix/Wintodo-x64.msix`. This exact filename is now signed with the existing
+development certificate; it contains the fixed title line bounds. Signature
+verification returned Valid on the host. Metadata/hash are in
+`Wintodo-x64.details.json`. Earlier ARM64/test-signed copies and `inspection.json`
+describe the preceding `1.0.0.0` build.
+
+To reproduce a signed local update at this filename:
+
+```powershell
+winapp package src/Wintodo.App/Wintodo.csproj --arch x64 `
+  --cert publish/msix/m10-test.pfx --self-contained `
+  -p Platform=x64 -p PublishAot=true -p SelfContained=true `
+  -p PublishTrimmed=true -p PublishReadyToRun=false -p TreatWarningsAsErrors=true `
+  --output publish/msix/Wintodo-x64.msix
+```
+
+The unsigned commands above produce unsigned output again if rerun. Local
+certificate trust on the installing machine is still required; production
+identity/signing remains undecided.
