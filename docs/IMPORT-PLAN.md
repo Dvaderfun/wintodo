@@ -332,6 +332,8 @@ Polish packages IMP-08 to IMP-24 are tracked in §11.1, not in this table.
 
 ## 10. As built (2026-10-19)
 
+- **IMP-20:** Four ordered list workers and shared throttle wait; measured read
+  1434.7 → 455.4 ms, total 2929.2 → 2264.2 ms. Downloads remain serial: not measured.
 - **IMP-19:** Settings and Connect list all imported accounts with local dates.
 - **IMP-18:** Titled errors, actionable retry/sign-in, visible throttling and
   work-tenant admin link. **Verify** admin URL with owner work/school gate.
@@ -471,8 +473,8 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-16 | Review step: grouped summary, duplicates you can see, preview progress | P2 UX | M | IMP-13, IMP-14 | ImportWizardView, ImportWizardVM, Data import | done (c9cc7f6; import 18/18, preview measured) |
 | IMP-17 | Done step: success state, Copy details, My Day hand-off | P2 UX | S | IMP-16 | ImportWizardView, ImportWizardVM, ShellVM.Import | done (c215473; import 18/18) |
 | IMP-18 | Errors you can act on; visible throttling | P2 UX | M | IMP-14 | GraphTodoClient, MicrosoftTodoReader, ImportWizardVM/View | implemented (5d52010; import 18/18; admin URL verify) |
-| IMP-19 | Settings → Data shows every imported account | P2 UX | S | — | SettingsView, ShellVM settings, ImportWizardVM | done (IMP-19 commit; import 18/18) |
-| IMP-20 | Faster read: bounded parallel requests, measured | P3 perf | M | IMP-09 | MicrosoftTodoReader, GraphTodoClient, `docs/PERF.md` | open |
+| IMP-19 | Settings → Data shows every imported account | P2 UX | S | — | SettingsView, ShellVM settings, ImportWizardVM | done (7bd00d8; import 18/18) |
+| IMP-20 | Faster read: bounded parallel requests, measured | P3 perf | M | IMP-09 | MicrosoftTodoReader, GraphTodoClient, `docs/PERF.md` | done (IMP-20 commit; fixture perf 1/1, import 18/18) |
 | IMP-21 | Interrupted imports leave nothing behind | P3 robustness | S | IMP-09 | App startup, ImportWizardVM, Data import | open |
 | IMP-22 | Gate rows, M8 re-run, code review and docs for the polish | P3 | M | IMP-08…21 | `tests/ui/run-import-gate.ps1`, DESIGN §10.2/§12, PROGRESS | open |
 | IMP-23 | 🔒 Remove an earlier import from Settings | P4 | M | IMP-12, IMP-19 | ADR-016 amendment, SettingsView, Data import | awaiting owner |

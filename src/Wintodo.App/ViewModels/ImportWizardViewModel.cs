@@ -484,7 +484,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         {
             case MicrosoftTodoReadPhase.Tasks when progress.Completed < progress.Total:
                 SetProgress(
-                    Format("Import_ProgressListsFormat", progress.ListName ?? string.Empty, progress.Completed + 1, progress.Total),
+                    Format("Import_ProgressListCountFormat", progress.Completed, progress.Total),
                     indeterminate: false,
                     progress.Completed,
                     progress.Total);

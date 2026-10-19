@@ -20,6 +20,8 @@ public sealed class GraphTodoClient
     private readonly Func<TimeSpan, CancellationToken, Task> _delay;
     private readonly IClock _clock;
     private bool _expandUnsupported;
+    private readonly object _throttleLock = new();
+    private Task _throttleWait = Task.CompletedTask;
 
     public Action<TimeSpan>? Retrying { get; set; }
 
@@ -279,6 +281,9 @@ public sealed class GraphTodoClient
     {
         for (int attempt = 1; ; attempt++)
         {
+            Task throttle;
+            lock (_throttleLock) throttle = _throttleWait;
+            await throttle.WaitAsync(cancellationToken).ConfigureAwait(false);
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -300,7 +305,13 @@ public sealed class GraphTodoClient
                 TimeSpan delay = GetRetryDelay(response, attempt);
                 Retrying?.Invoke(delay);
                 response.Dispose();
-                await _delay(delay, cancellationToken).ConfigureAwait(false);
+                lock (_throttleLock)
+                {
+                    Task wait = _delay(delay, cancellationToken);
+                    _throttleWait = _throttleWait.IsCompleted ? wait : Task.WhenAll(_throttleWait, wait);
+                    throttle = _throttleWait;
+                }
+                await throttle.WaitAsync(cancellationToken).ConfigureAwait(false);
                 continue;
             }
 

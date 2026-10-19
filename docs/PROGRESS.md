@@ -3758,3 +3758,17 @@ the bound description intact alongside the existing explanatory text.
 
 **Deviations:** Corrected an earlier status-edit mistake that marked this row
 done before implementation; current status and this commit reflect actual work.
+
+## IMP-20 — Measured bounded list reads          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 392/392 tests, VM import 18/18,
+M8 17/17, settings 9/9. VM performance runs 1/1 each; PERF.md records candidate
+before production change and production one/four-worker comparison.
+
+**Shipped:** Four list workers, source-order output, completed-list progress and
+shared retry wait. Shared-client throttle test ensures another request waits.
+Production read 1434.7 → 455.4 ms; total read/preview/save 2929.2 → 2264.2 ms.
+
+**Deviations:** Downloads stay serial: the 1,000-task fixture has no attachments,
+so measurements do not justify adding download concurrency. No live-account
+performance claim. The owner may supply that measurement later.
