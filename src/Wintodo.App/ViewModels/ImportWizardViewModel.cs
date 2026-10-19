@@ -263,6 +263,15 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         {
             Step = ImportWizardStep.Review;
         }
+        catch (GraphAuthorizationException exception) when (exception.IsSignInExpired)
+        {
+            // The token is only valid for this sign-in; retrying with it fails
+            // again. Signing in re-reads To Do and keeps the list choices.
+            _reader = null;
+            _export = null;
+            Step = ImportWizardStep.Connect;
+            ShowError(DescribeReadFailure(exception), exception);
+        }
         catch (Exception exception)
         {
             Step = ImportWizardStep.Review;
@@ -360,9 +369,13 @@ public sealed partial class ImportWizardViewModel : ObservableObject
 
     private void ShowLists(MicrosoftTodoExport export)
     {
+        // Signing in again within one wizard session (an expired sign-in) keeps
+        // the person's choices; Reset() clears them when the wizard reopens.
+        Dictionary<string, bool> previousSelection = new(StringComparer.Ordinal);
         foreach (ImportListOptionViewModel option in Lists)
         {
             option.SelectionChanged -= ContinueCommand.NotifyCanExecuteChanged;
+            previousSelection[option.ExternalId] = option.IsSelected;
         }
 
         Lists.Clear();
@@ -377,7 +390,9 @@ public sealed partial class ImportWizardViewModel : ObservableObject
             (string? emoji, string name) = GraphTodoMapper.SplitListEmoji(data.List.DisplayName);
             string label = emoji is null ? name : emoji + " " + name;
             string detail = Format(data.List.IsShared ? "Import_ListSharedFormat" : "Import_ListTaskCountFormat", data.Tasks.Count);
-            bool selected = GraphTodoMapper.GetListKind(data.List) != ImportListKind.FlaggedEmail;
+            bool selected = previousSelection.TryGetValue(data.List.Id, out bool previous)
+                ? previous
+                : GraphTodoMapper.GetListKind(data.List) != ImportListKind.FlaggedEmail;
             var option = new ImportListOptionViewModel(data.List.Id, label, detail, index, selected);
             option.SelectionChanged += ContinueCommand.NotifyCanExecuteChanged;
             Lists.Add(option);
@@ -470,6 +485,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         {
             MicrosoftSignInException { Failure: MicrosoftSignInFailure.Cancelled } => _resources.GetString("Import_ErrorSignInCancelled"),
             MicrosoftSignInException => _resources.GetString("Import_ErrorSignIn"),
+            GraphAuthorizationException { IsSignInExpired: true } => _resources.GetString("Import_ErrorSignInExpired"),
             GraphAuthorizationException => _resources.GetString("Import_ErrorAccess"),
             HttpRequestException or TaskCanceledException => _resources.GetString("Import_ErrorOffline"),
             _ => _resources.GetString("Import_ErrorRead"),

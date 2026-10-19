@@ -297,7 +297,7 @@ scope here.
 | IMP-04 | Sign-in spike → `MicrosoftSignInService` (activation routing, consent errors) | M | IMP-00 | code done (loopback redirect); personal-account sign-in, consent and token exchange passed 2026-10-19; **work/school account pending** |
 | IMP-05 | Import wizard control + Settings → Data entry + `--import-fixture` seam | L | IMP-02, IMP-03, IMP-04 | done |
 | IMP-06 | Onboarding Welcome surface (first-run detection, `.ics` card reuses M6) | M | IMP-05 | done |
-| IMP-07 | Import UI gate in the VM, M8 re-run, `/winui-code-review`, docs, PROGRESS, owner manual gate | M | IMP-06 | automated parts done; personal-account owner gate passed 2026-10-19 (see §10); **work/school account and the expired-sign-in finding open** |
+| IMP-07 | Import UI gate in the VM, M8 re-run, `/winui-code-review`, docs, PROGRESS, owner manual gate | M | IMP-06 | automated parts done; personal-account owner gate passed 2026-10-19 (see §10); expired-sign-in finding fixed; **work/school account open** |
 
 IMP-02/03/04 can run in parallel once IMP-01 lands. Skills: `winui-design`
 before IMP-05/06 XAML, `winui-ui-testing` for IMP-07, and `winui-code-review`
@@ -378,13 +378,18 @@ before each UI commit.
     each linked exactly once, with no duplicate lists or attachments.
   - Field fidelity: the owner spot-checked imported tasks against To Do and
     reported the content correct. Fields were not itemised one by one.
-- **Open finding — expired sign-in reported as "access denied":** the access
-  token is taken once at sign-in and never refreshed. When the person waits
-  on the review step longer than the token lifetime, the attachment download
-  gets HTTP 401 (`AuthenticationException`) and the wizard shows
-  `Import_ErrorAccess` ("…may need an administrator's approval"). Retrying
-  fails the same way; signing in again succeeds. Seen once in the owner's
-  run; cause inferred from the trace, not reproduced.
+- **Expired sign-in (found live, fixed):** the access token is taken once at
+  sign-in and never refreshed. When the person waited on the review step
+  longer than the token lifetime, the attachment download got HTTP 401 and
+  the wizard showed `Import_ErrorAccess` ("…may need an administrator's
+  approval"); Retry reused the same token and failed again. Now any Graph
+  401 is `GraphAuthorizationException.IsSignInExpired`: the wizard says
+  `Import_ErrorSignInExpired`, returns to the Connect step and drops the
+  stale reader; signing in again re-reads To Do and keeps the list choices
+  and options. A 403 still shows `Import_ErrorAccess`. The import gate
+  reproduces it with the Debug-only `--import-fixture-expire-once` (first
+  session's raw attachment requests return 401). No silent token refresh:
+  the token lives in memory for one sign-in only (ADR-016).
 - **Not verified yet:**
   - **Work/school account:** sign-in, consent and import; tenant policy may
     require administrator approval for `Tasks.ReadWrite`.

@@ -58,15 +58,24 @@ internal sealed class MicrosoftGraphConnector(HttpClient httpClient, string sign
 }
 
 #if DEBUG
-/// <summary>UI-gate connector: serves a recorded Graph folder, no sign-in.</summary>
-internal sealed class FixtureMicrosoftTodoConnector(string fixtureDirectory, IClock clock) : IMicrosoftTodoConnector
+/// <summary>
+/// UI-gate connector: serves a recorded Graph folder, no sign-in. With
+/// <paramref name="expireFirstSignIn"/>, the first session's token is rejected
+/// when attachments download, like a sign-in that expired on the review step.
+/// </summary>
+internal sealed class FixtureMicrosoftTodoConnector(string fixtureDirectory, IClock clock, bool expireFirstSignIn)
+    : IMicrosoftTodoConnector
 {
+    private bool _expireNext = expireFirstSignIn;
+
     public bool IsConfigured => true;
 
     public async Task<GraphTodoClient> ConnectAsync(CancellationToken cancellationToken)
     {
         await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
-        return new GraphTodoClient(new HttpClient(new FixtureGraphHandler(fixtureDirectory)), "fixture", clock: clock);
+        var handler = new FixtureGraphHandler(fixtureDirectory, rejectAttachmentContent: _expireNext);
+        _expireNext = false;
+        return new GraphTodoClient(new HttpClient(handler), "fixture", clock: clock);
     }
 }
 #endif

@@ -333,7 +333,10 @@ public partial class App : Application
         string? fixture = GetCommandLineOption("--import-fixture");
         if (!string.IsNullOrWhiteSpace(fixture))
         {
-            connector = new FixtureMicrosoftTodoConnector(Path.GetFullPath(fixture), clock);
+            connector = new FixtureMicrosoftTodoConnector(
+                Path.GetFullPath(fixture),
+                clock,
+                expireFirstSignIn: HasCommandLineFlag("--import-fixture-expire-once"));
         }
 #endif
         return new ImportEnvironment(connector, onboardingAllowed, attachmentRoot);

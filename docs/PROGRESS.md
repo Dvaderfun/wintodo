@@ -18,7 +18,7 @@ As of 2026-10-19:
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
-| IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account; expired sign-in shown as "access denied" (open finding) |
+| IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
 - **Build:** Debug and Release x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1
   after the completion viewport repair;
@@ -3527,3 +3527,26 @@ finding below.
 - Personal account details and list names were removed from the earlier
   uncommitted IMP entries at the owner's request. No code change, build or
   test run in this entry.
+
+## IMP — Expired sign-in asks to sign in again          2026-10-19
+
+**Gate:** AUTOMATED PASS — import 12/12 in WintodoTest
+(`import/run-20261019-201052`, one new row); Debug x64 warnings-as-errors
+build clean; 370/370 unit tests (Import 54). `/winui-code-review`: nothing
+above informational. Release build, AOT publish and the M8/settings gates
+were not re-run (no XAML or shell change).
+
+- Fixes the live finding above. Any Graph 401 is now
+  `GraphAuthorizationException.IsSignInExpired`. During import the wizard
+  drops the stale reader, returns to the Connect step and shows
+  `Import_ErrorSignInExpired`; signing in again re-reads To Do and keeps the
+  list choices and options for this wizard session. A 403 still shows
+  `Import_ErrorAccess`. A 401 never falls back to `contentBytes` with the
+  same token (unit test).
+- Debug-only `--import-fixture-expire-once`: the first fixture session's raw
+  attachment requests return Graph's expired-token 401. The new gate row
+  deselects a list, imports, gets the expired message, signs in again, finds
+  the list still deselected and completes the import (3 tasks, 1 new list).
+- Deliberately no silent token refresh: the token stays in memory for one
+  sign-in (ADR-016). ARCHITECTURE, IMPORT-PLAN §8/§10 and the testing guide
+  updated.
