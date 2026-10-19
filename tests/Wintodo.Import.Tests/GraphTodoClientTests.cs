@@ -6,6 +6,17 @@ namespace Wintodo.Import.Tests;
 public sealed class GraphTodoClientTests
 {
     [Theory]
+    [InlineData("11111111-1111-1111-1111-111111111111", true)]
+    [InlineData("9188040d-6c67-4c5b-b112-36a304b66dad", false)]
+    [InlineData("not-a-tenant", false)]
+    public void AdminConsentIsEnabledOnlyByWorkTenantClaim(string tenant, bool enabled)
+    {
+        string payload = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("{\"tid\":\"" + tenant + "\"}"));
+        var client = new GraphTodoClient(new HttpClient(), "header." + payload + ".signature");
+        Assert.Equal(enabled, client.WorkTenantId is not null);
+    }
+
+    [Theory]
     [InlineData("same", true)]
     [InlineData("different", false)]
     [InlineData("", false)]
@@ -113,6 +124,7 @@ public sealed class GraphTodoClientTests
     public async Task Throttling_HonoursRetryAfterThenSucceeds()
     {
         var delays = new List<TimeSpan>();
+        var retries = new List<TimeSpan>();
         var handler = new ScriptedHandler(
             _ =>
             {
@@ -131,10 +143,12 @@ public sealed class GraphTodoClientTests
                 return Task.CompletedTask;
             });
 
+        client.Retrying = retries.Add;
         GraphUser user = await client.GetMeAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal("u1", user.Id);
         Assert.Equal([TimeSpan.FromSeconds(7), TimeSpan.FromSeconds(2)], delays);
+        Assert.Equal(delays, retries);
         Assert.Equal(3, handler.Requests.Count);
     }
 

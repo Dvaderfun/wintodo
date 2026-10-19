@@ -800,7 +800,9 @@ Each step has a Level2 heading. Its steps:
    (account/date/version/counts), **Open My Day**, **Go to my tasks** (accent), and
    **Remove what was just imported** when the run created anything.
 
-Errors show in an `InfoBar` at the top. AutomationIds are `Todo.Import.*`
+Errors show in a titled `InfoBar` with Try again or Sign in again. Work-tenant
+403 offers a tenant administrator-consent link; URL is owner-verify. Microsoft
+429/503 retry delay is visible. Same-account re-sign-in message is informational. AutomationIds are `Todo.Import.*`
 and `Todo.Welcome.*`.
 
 ---

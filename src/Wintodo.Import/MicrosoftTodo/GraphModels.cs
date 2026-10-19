@@ -26,6 +26,12 @@ public sealed class GraphUser
     public string? UserPrincipalName { get; set; }
 }
 
+public sealed class MicrosoftTokenClaims
+{
+    [JsonPropertyName("tid")]
+    public string? TenantId { get; set; }
+}
+
 public sealed class GraphTodoList
 {
     public string Id { get; set; } = string.Empty;
@@ -203,6 +209,7 @@ public sealed class GraphError
     PropertyNameCaseInsensitive = true,
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(GraphUser))]
+[JsonSerializable(typeof(MicrosoftTokenClaims))]
 [JsonSerializable(typeof(GraphCollection<GraphTodoList>))]
 [JsonSerializable(typeof(GraphCollection<GraphTodoTask>))]
 [JsonSerializable(typeof(GraphCollection<GraphChecklistItem>))]

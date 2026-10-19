@@ -18,14 +18,16 @@ public sealed class FixtureGraphHandler : HttpMessageHandler
     private readonly string _root;
     private readonly bool _rejectAttachmentContent;
     private readonly TimeSpan _latency;
+    private int _throttleOnce;
 
     public FixtureGraphHandler(string root, bool rejectAttachmentContent = false,
-        TimeSpan latency = default)
+        TimeSpan latency = default, bool throttleOnce = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(root);
         _root = Path.GetFullPath(root);
         _rejectAttachmentContent = rejectAttachmentContent;
         _latency = latency;
+        _throttleOnce = throttleOnce ? 1 : 0;
     }
 
     private int _requestCount;
@@ -37,6 +39,12 @@ public sealed class FixtureGraphHandler : HttpMessageHandler
     {
         Interlocked.Increment(ref _requestCount);
         if (_latency > TimeSpan.Zero) await Task.Delay(_latency, cancellationToken).ConfigureAwait(false);
+        if (Interlocked.Exchange(ref _throttleOnce, 0) == 1)
+        {
+            var throttled = new HttpResponseMessage(HttpStatusCode.TooManyRequests) { Content = new StringContent("{}") };
+            throttled.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(3));
+            return throttled;
+        }
         string path = Uri.UnescapeDataString(request.RequestUri?.AbsolutePath ?? string.Empty).Trim('/');
         if (path.StartsWith("v1.0/", StringComparison.OrdinalIgnoreCase))
         {

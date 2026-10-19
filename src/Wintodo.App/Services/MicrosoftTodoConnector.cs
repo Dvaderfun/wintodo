@@ -66,7 +66,7 @@ internal sealed class MicrosoftGraphConnector(HttpClient httpClient, string sign
 /// <paramref name="expireFirstSignIn"/>, the first session's token is rejected
 /// when attachments download, like a sign-in that expired on the review step.
 /// </summary>
-internal sealed class FixtureMicrosoftTodoConnector(string fixtureDirectory, IClock clock, bool expireFirstSignIn)
+internal sealed class FixtureMicrosoftTodoConnector(string fixtureDirectory, IClock clock, bool expireFirstSignIn, bool throttleOnce = false)
     : IMicrosoftTodoConnector
 {
     private bool _expireNext = expireFirstSignIn;
@@ -76,7 +76,7 @@ internal sealed class FixtureMicrosoftTodoConnector(string fixtureDirectory, ICl
     public async Task<GraphTodoClient> ConnectAsync(CancellationToken cancellationToken)
     {
         await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
-        var handler = new FixtureGraphHandler(fixtureDirectory, rejectAttachmentContent: _expireNext);
+        var handler = new FixtureGraphHandler(fixtureDirectory, rejectAttachmentContent: _expireNext, throttleOnce: throttleOnce);
         _expireNext = false;
         return new GraphTodoClient(new HttpClient(handler), "fixture", clock: clock);
     }
