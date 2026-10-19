@@ -357,6 +357,12 @@ before each UI commit.
 - **Timeouts:** an `HttpClient` timeout is reported as offline instead of
   being treated as the person cancelling. `Retry-After` dates are measured
   with `IClock`.
+- **Lists come from `me/todo/lists/delta`.** On the owner's personal account the
+  plain `me/todo/lists` call (v1.0 and beta) returns an empty `value`, and
+  `$filter` returns only some lists, while the delta function returns all of
+  them, with paging. This is a known Graph behaviour for consumer accounts.
+  `@removed` delta entries are skipped. Tasks still use the plain list-tasks
+  call; the owner's run compares the traced task count with To Do.
 - **Not verified yet:**
   - Live Graph behaviour: the emoji-prefixed list names, `$expand` on the
     list-tasks endpoint (falls back automatically), raw attachment `$value`

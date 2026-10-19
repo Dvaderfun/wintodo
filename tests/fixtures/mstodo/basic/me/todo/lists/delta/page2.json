@@ -1,0 +1,9 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(microsoft.graph.todoTaskList)",
+  "@odata.deltaLink": "https://graph.microsoft.com/v1.0/me/todo/lists/delta?$deltatoken=fixture",
+  "value": [
+    {"id":"L-flag","displayName":"Flagged email","isOwner":true,"isShared":false,"wellknownListName":"flaggedEmails"},
+    {"id":"L-team","displayName":"Team plans","isOwner":false,"isShared":true,"wellknownListName":"none"},
+    {"id":"L-gone","@removed":{"reason":"deleted"}}
+  ]
+}

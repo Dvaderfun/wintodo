@@ -44,12 +44,21 @@ public sealed class GraphTodoClient
             cancellationToken);
     }
 
-    public Task<List<GraphTodoList>> GetListsAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Reads every list through the delta function. For some personal
+    /// accounts the plain <c>me/todo/lists</c> call returns no lists, or only
+    /// "Flagged email", while delta returns all of them (found in the owner's
+    /// manual gate, 2026-10-19). A first delta round has no removals, but any
+    /// <c>@removed</c> entry is skipped.
+    /// </summary>
+    public async Task<List<GraphTodoList>> GetListsAsync(CancellationToken cancellationToken = default)
     {
-        return GetAllPagesAsync(
-            new Uri(_baseUri, "me/todo/lists?$top=100"),
+        List<GraphTodoList> lists = await GetAllPagesAsync(
+            new Uri(_baseUri, "me/todo/lists/delta"),
             GraphJsonContext.Default.GraphCollectionGraphTodoList,
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
+        lists.RemoveAll(list => list.Removed is not null || string.IsNullOrEmpty(list.Id));
+        return lists;
     }
 
     public async Task<List<GraphTodoTask>> GetTasksAsync(

@@ -37,6 +37,15 @@ public sealed class GraphTodoList
     public bool IsShared { get; set; }
 
     public string? WellknownListName { get; set; }
+
+    /// <summary>Set on delta entries for lists that no longer exist.</summary>
+    [JsonPropertyName("@removed")]
+    public GraphRemoved? Removed { get; set; }
+}
+
+public sealed class GraphRemoved
+{
+    public string? Reason { get; set; }
 }
 
 public sealed class GraphTodoTask

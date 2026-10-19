@@ -1,8 +1,0 @@
-{
-  "value": [
-    {"id":"L-default","displayName":"Tasks","isOwner":true,"isShared":false,"wellknownListName":"defaultList"},
-    {"id":"L-groc","displayName":"🛒 Groceries","isOwner":true,"isShared":false,"wellknownListName":"none"},
-    {"id":"L-flag","displayName":"Flagged email","isOwner":true,"isShared":false,"wellknownListName":"flaggedEmails"},
-    {"id":"L-team","displayName":"Team plans","isOwner":false,"isShared":true,"wellknownListName":"none"}
-  ]
-}

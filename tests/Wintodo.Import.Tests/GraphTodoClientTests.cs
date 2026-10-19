@@ -20,6 +20,28 @@ public sealed class GraphTodoClientTests
     }
 
     [Fact]
+    public async Task Lists_AreReadThroughDeltaUntilTheDeltaLink()
+    {
+        var handler = new ScriptedHandler(
+            _ => ScriptedHandler.Json(HttpStatusCode.OK, """
+                {"@odata.nextLink":"https://graph.microsoft.com/v1.0/me/todo/lists/delta?$skiptoken=a",
+                 "value":[{"id":"L1","displayName":"Tasks","wellknownListName":"defaultList"}]}
+                """),
+            _ => ScriptedHandler.Json(HttpStatusCode.OK, """
+                {"@odata.deltaLink":"https://graph.microsoft.com/v1.0/me/todo/lists/delta?$deltatoken=b",
+                 "value":[{"id":"L2","displayName":"♥ Sweetheart","wellknownListName":"none"},
+                          {"id":"L3","@removed":{"reason":"deleted"}}]}
+                """));
+        var client = new GraphTodoClient(new HttpClient(handler), "token");
+
+        List<GraphTodoList> lists = await client.GetListsAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(["L1", "L2"], lists.Select(list => list.Id));
+        Assert.Equal("/v1.0/me/todo/lists/delta", handler.Requests[0].AbsolutePath);
+        Assert.Equal(2, handler.Requests.Count);
+    }
+
+    [Fact]
     public async Task AttachmentContent_IsReadRaw()
     {
         byte[] content = await TestSupport.FixtureClient().GetAttachmentContentAsync(
