@@ -294,10 +294,10 @@ scope here.
 | IMP-01 | Core import model, mapping helpers, recurrence/timezone/HTML converters + tests | M | IMP-00 | done |
 | IMP-02 | Migration 004, `PreviewImportAsync`/`ApplyImportAsync`/`RemoveImportRunAsync`, idempotency suite | L | IMP-01 | done |
 | IMP-03 | `Wintodo.Import` project: Graph client, DTOs, mapper, fixtures + tests | M | IMP-01 | done |
-| IMP-04 | Sign-in spike → `MicrosoftSignInService` (activation routing, consent errors) | M | IMP-00 | code done (loopback redirect); **untested against Microsoft until the owner manual gate** |
+| IMP-04 | Sign-in spike → `MicrosoftSignInService` (activation routing, consent errors) | M | IMP-00 | code done (loopback redirect); personal-account sign-in, consent and token exchange passed 2026-10-19; **work/school account pending** |
 | IMP-05 | Import wizard control + Settings → Data entry + `--import-fixture` seam | L | IMP-02, IMP-03, IMP-04 | done |
 | IMP-06 | Onboarding Welcome surface (first-run detection, `.ics` card reuses M6) | M | IMP-05 | done |
-| IMP-07 | Import UI gate in the VM, M8 re-run, `/winui-code-review`, docs, PROGRESS, owner manual gate | M | IMP-06 | automated parts done (see PROGRESS); **owner manual gate with real accounts open** |
+| IMP-07 | Import UI gate in the VM, M8 re-run, `/winui-code-review`, docs, PROGRESS, owner manual gate | M | IMP-06 | automated parts done; personal-account owner gate passed 2026-10-19 (see §10); **work/school account and the expired-sign-in finding open** |
 
 IMP-02/03/04 can run in parallel once IMP-01 lands. Skills: `winui-design`
 before IMP-05/06 XAML, `winui-ui-testing` for IMP-07, and `winui-code-review`
@@ -362,10 +362,42 @@ before each UI commit.
   `$filter` returns only some lists, while the delta function returns all of
   them, with paging. This is a known Graph behaviour for consumer accounts. Delta requires `Tasks.ReadWrite` ("access denied" with `Tasks.Read`), so sign-in requests it (ADR-016 amendment 1).
   `@removed` delta entries are skipped. Tasks still use the plain list-tasks
-  call; the owner's run compares the traced task count with To Do.
+  call; the owner's open-task count comparison (below) passed for this account.
+- **Verified live, personal account (owner gate, 2026-10-19):**
+  - Sign-in, consent, token exchange, every list shown with its emoji, and
+    import completion. Per-list open-task counts compared on six lists equal
+    Microsoft To Do, so the plain list-tasks call returns complete data.
+  - `$expand=checklistItems,linkedResources` on list tasks works: all 16
+    lists traced `expand=success`; no fallback was needed.
+  - Attachments download through raw `$value`: 24 of 24 traced
+    `attachment=raw` (14 KB to 7.2 MB); the `contentBytes` fallback was not
+    needed.
+  - Re-import from Settings → Data into the same database: the second run
+    added only the 3 tasks and 1 step created in To Do since the first run.
+    The database holds 16 lists, 897 tasks, 296 steps and 24 attachments,
+    each linked exactly once, with no duplicate lists or attachments.
+  - Field fidelity: the owner spot-checked imported tasks against To Do and
+    reported the content correct. Fields were not itemised one by one.
+- **Open finding — expired sign-in reported as "access denied":** the access
+  token is taken once at sign-in and never refreshed. When the person waits
+  on the review step longer than the token lifetime, the attachment download
+  gets HTTP 401 (`AuthenticationException`) and the wizard shows
+  `Import_ErrorAccess` ("…may need an administrator's approval"). Retrying
+  fails the same way; signing in again succeeds. Seen once in the owner's
+  run; cause inferred from the trace, not reproduced.
 - **Not verified yet:**
-  - Live Graph behaviour: the emoji-prefixed list names, `$expand` on the
-    list-tasks endpoint (falls back automatically), raw attachment `$value`
-    (falls back to `contentBytes`), and the token exchange through
-    `OAuth2Manager`.
-  - These all need IMP-00 and the owner's manual gate.
+  - **Work/school account:** sign-in, consent and import; tenant policy may
+    require administrator approval for `Tasks.ReadWrite`.
+  - **Non-migratable by design:** My Day, list colours/backgrounds, groups
+    and manual order (ADR-016); these are not field-fidelity failures.
+
+Owner launch (Debug; a scratch database keeps real data out of the default
+profile):
+
+```powershell
+.\BuildAndRun.ps1 --args "--database-path C:\temp\imp-test.db --show-onboarding --trace-file C:\temp\imp-trace.log"
+```
+
+The trace's `WINTODO_IMPORT_READ` lines report `expand=success/fallback` with
+per-list counts and `attachment=raw/contentBytes` with byte sizes; they hold
+no names, ids or URLs.

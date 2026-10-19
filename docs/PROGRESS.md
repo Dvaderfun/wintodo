@@ -18,7 +18,7 @@ As of 2026-10-19:
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
-| IMP Onboarding + Microsoft To Do import | AUTOMATED PASS | Manual gate with real personal + work accounts (live Graph sign-in) |
+| IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account; expired sign-in shown as "access denied" (open finding) |
 
 - **Build:** Debug and Release x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1
   after the completion viewport repair;
@@ -3437,3 +3437,93 @@ requests only, across a full fixture read and an attachment download).
 - The Connect step's info bar is now "Read-only import" and explains that
   Microsoft's sign-in asks for edit permission. IMPORT-PLAN, ARCHITECTURE and
   the client id comment updated.
+
+## IMP — Personal-account owner gate, partial          2026-10-19
+
+**Gate:** MANUAL PARTIAL PASS — owner-run against the owner's personal
+Microsoft account: sign-in, consent, all lists shown with emoji and import
+completion pass. IMP's full manual gate remains open.
+
+- Owner compared per-list open-task counts on six lists with Microsoft To Do
+  and found them equal. The plain list-tasks call therefore supplies complete
+  open-task data for this account; completed-task completeness and field
+  fidelity are not yet verified. No task delta change is justified by this
+  result.
+- Still pending: steps, HTML notes/links, due dates, reminder times,
+  recurrence, importance and completed tasks; a live attachment (raw `$value`
+  versus `contentBytes` fallback); whether `$expand` on list tasks succeeded
+  or fell back. Inspect `WINTODO_IMPORT_READ` and any
+  `WINTODO_IMPORT_EXCEPTION` lines from an owner run with `--trace-file`.
+- Re-import through Settings → Data must report nothing new and create no
+  duplicates. A work/school-account gate is also pending; `Tasks.ReadWrite`
+  consent may need administrator approval.
+- My Day, list colours/backgrounds, groups and manual order remain
+  non-migratable by design (ADR-016). IMPORT-PLAN §8/§10 now distinguishes
+  verified personal sign-in from the remaining checks. No ADR change.
+- Preceding automated evidence remains: import 11/11, M8 17/17, settings 9/9
+  in WintodoTest; 366/366 unit tests; Debug/Release and Native AOT x64 clean.
+  These are prior results, not new runs in this documentation update. No host
+  UI automation, commit or push performed.
+
+## IMP — Diagnostics for the remaining live gate          2026-10-19
+
+**Gate:** AUTOMATED PASS — import 11/11 in WintodoTest
+(`import/run-20261019-174314`); Debug/Release x64 warnings-as-errors builds
+clean; 368/368 unit tests, zero failed/skipped (Core 211, Data 95, Sync 10,
+Import 52). Focused Graph client tests 11/11. Native AOT x64 publish clean
+with no trim/AOT warnings. WinUI code review of the changed C# finds no
+issues above informational. The owner's remaining manual rows stay open.
+
+- The existing owner trace at `C:\temp\imp-trace.log` records
+  `WINTODO_IMPORT_READ lists=16 tasks=894` after earlier access-denied
+  attempts. It cannot identify whether expand or attachment fallback was
+  used, so neither live path is claimed as verified.
+- Added `WINTODO_IMPORT_READ expand=success/fallback` with task, completed,
+  step and link counts per list, and `attachment=raw/contentBytes` with byte
+  counts. Fallback HTTP statuses are traced separately. No names, account
+  ids, task ids, request URLs, credentials or attachment contents are logged
+  by the new diagnostics. Graph reads, fallback conditions and mapping are
+  unchanged; no dependency or ADR change.
+- Added two regression cases for the existing raw-attachment HTTP 400/404
+  fallback, asserting decoded bytes and the raw → metadata request sequence.
+  The existing GET-only test remains passing.
+- VM trace confirms `expand=success` with fixture counts (including steps,
+  links and a completed task), `attachment=raw bytes=24`, and no
+  `WINTODO_IMPORT_EXCEPTION`. All eight returned captures reviewed with no
+  clipping or overlap. These are fixture results, not live Graph proof.
+- IMPORT-PLAN §10 includes the owner launch command, field comparisons,
+  attachment check, re-import and work/school-account checklist. Preserve
+  `C:\temp\imp-test.db` for the live re-import and keep local overwrite off.
+- M8 17/17 and settings 9/9 remain preceding evidence; no XAML or shell
+  changes in this follow-up. No host app launch or UI automation, Azure
+  account change, AOT runtime test, ARM64 run, commit or push performed.
+  PROGRESS history and this update are append-only as requested.
+
+## IMP — Personal-account owner gate: fidelity and re-import          2026-10-19
+
+**Gate:** MANUAL PASS (personal account) — owner-run against the owner's
+personal Microsoft account with `--trace-file`; trace and scratch database
+checked read-only afterwards. Work/school account still pending; one open
+finding below.
+
+- `$expand` on list tasks works live: 16/16 lists traced `expand=success`,
+  no fallback. Attachments download through raw `$value`: 24/24 traced
+  `attachment=raw` (14 KB–7.2 MB); `contentBytes` fallback not needed.
+- Re-import from Settings → Data into the same database: the second run
+  created only 3 tasks and 1 step, all added in To Do after the first run.
+  Database: 16 lists, 897 tasks, 296 steps (equals the traced step total),
+  24 attachments; every row linked once, no duplicate lists or attachments,
+  nothing soft-deleted.
+- Field fidelity: owner spot-checked imported tasks against To Do and
+  reported the content correct. Not itemised per field.
+- **Finding (open):** the first Import click in this session failed twice
+  with HTTP 401 `AuthenticationException` on the attachment download, after
+  a successful read. Signing in again fixed it. The access token is taken
+  once at sign-in and never refreshed, so a long pause on the review step
+  likely outlived it; inferred from the trace, not reproduced. The wizard
+  then shows `Import_ErrorAccess` ("…may need an administrator's approval"),
+  which is misleading for an expired sign-in, and Retry reuses the expired
+  token.
+- Personal account details and list names were removed from the earlier
+  uncommitted IMP entries at the owner's request. No code change, build or
+  test run in this entry.

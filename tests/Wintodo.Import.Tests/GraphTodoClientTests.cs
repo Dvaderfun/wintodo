@@ -105,6 +105,26 @@ public sealed class GraphTodoClientTests
         Assert.Equal(3, handler.Requests.Count);
     }
 
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.NotFound)]
+    public async Task AttachmentContent_UnsupportedRawFallsBackToContentBytes(HttpStatusCode rawStatus)
+    {
+        var handler = new ScriptedHandler(
+            _ => ScriptedHandler.Json(rawStatus, "{}"),
+            _ => ScriptedHandler.Json(HttpStatusCode.OK, """
+                {"id":"A1","contentBytes":"AQID/w=="}
+                """));
+        var client = new GraphTodoClient(new HttpClient(handler), "token");
+
+        byte[] content = await client.GetAttachmentContentAsync("L1", "T1", "A1", TestContext.Current.CancellationToken);
+
+        Assert.Equal(new byte[] { 1, 2, 3, 255 }, content);
+        Assert.Equal(2, handler.Requests.Count);
+        Assert.EndsWith("/attachments/A1/$value", handler.Requests[0].AbsolutePath);
+        Assert.EndsWith("/attachments/A1", handler.Requests[1].AbsolutePath);
+    }
+
     [Fact]
     public async Task Throttling_RetryAfterDateIsMeasuredFromTheClock()
     {
