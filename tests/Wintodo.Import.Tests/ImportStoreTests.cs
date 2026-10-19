@@ -25,6 +25,7 @@ public sealed class ImportStoreTests
 
         Assert.Equal(3, preview.NewLists);
         Assert.Equal(1, preview.ExistingLists);
+        Assert.Equal("Tasks", preview.ListMergeNames["L-default"]);
         Assert.Equal(6, preview.NewTasks);
         Assert.Equal(2, preview.NewSteps);
         Assert.Equal(1, preview.NewAttachments);
@@ -103,6 +104,7 @@ public sealed class ImportStoreTests
         Assert.False(outcome.HasChanges);
         Assert.Equal(6, outcome.UnchangedTasks);
         Assert.Equal(4, outcome.ExistingLists);
+        Assert.Equal(4, outcome.PreviouslyImportedListIds.Count);
         Assert.Equal(tasksAfterFirst, await CountAsync(temp, "SELECT COUNT(*) FROM tasks WHERE is_deleted = 0;"));
         Assert.Equal(listsAfterFirst, await CountAsync(temp, "SELECT COUNT(*) FROM lists WHERE is_deleted = 0;"));
         Assert.Equal(attachmentsAfterFirst, await CountAsync(temp, "SELECT COUNT(*) FROM attachments;"));

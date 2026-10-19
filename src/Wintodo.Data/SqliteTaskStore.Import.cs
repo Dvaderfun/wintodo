@@ -413,6 +413,7 @@ public sealed partial class SqliteTaskStore
             if (query.ExecuteScalar() is long linkedId)
             {
                 run.Outcome.ExistingLists++;
+                run.Outcome.PreviouslyImportedListIds.Add(list.ExternalId);
                 return linkedId;
             }
 
@@ -444,6 +445,11 @@ public sealed partial class SqliteTaskStore
         else
         {
             run.Outcome.ExistingLists++;
+            using SqliteCommand name = connection.CreateCommand();
+            name.Transaction = transaction;
+            name.CommandText = "SELECT display_name FROM lists WHERE id = @id;";
+            name.Parameters.AddWithValue("@id", listId);
+            run.Outcome.ListMergeNames[list.ExternalId] = (string)name.ExecuteScalar()!;
         }
 
         SaveImportLink(

@@ -123,6 +123,13 @@
                             IsClosable="False"
                             IsOpen="{x:Bind ViewModel.HasNoLists, Mode=OneWay}"
                             Severity="Warning" />
+                        <CheckBox x:Uid="ImportSelectAll" AutomationProperties.AutomationId="Todo.Import.SelectAll"
+                            IsThreeState="True" IsChecked="{x:Bind ViewModel.SelectAll, Mode=OneWay}"
+                            Command="{x:Bind ViewModel.ToggleSelectAllCommand, Mode=OneTime}" />
+                        <TextBlock AutomationProperties.AutomationId="Todo.Import.SelectionTotal" Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.SelectionTotal, Mode=OneWay}" />
+                        <TextBlock x:Uid="Import_NoSelection" Style="{StaticResource CaptionTextBlockStyle}"
+                            Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.HasNoSelection), Mode=OneWay}" />
                         <ItemsRepeater
                             x:Name="ListsRepeater"
                             AutomationProperties.AutomationId="Todo.Import.Lists"
@@ -132,7 +139,7 @@
                             </ItemsRepeater.Layout>
                             <ItemsRepeater.ItemTemplate>
                                 <DataTemplate x:DataType="viewModels:ImportListOptionViewModel">
-                                    <settings:SettingsCard Description="{x:Bind Detail, Mode=OneTime}">
+                                    <settings:SettingsCard Description="{x:Bind Detail, Mode=OneWay}">
                                         <settings:SettingsCard.Header>
                                             <CheckBox
                                                 AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
@@ -150,7 +157,7 @@
                                     AutomationProperties.AutomationId="Todo.Import.IncludeCompleted"
                                     IsOn="{x:Bind ViewModel.IncludeCompleted, Mode=TwoWay}" />
                             </settings:SettingsCard>
-                            <settings:SettingsCard x:Uid="ImportIncludeAttachmentsCard">
+                            <settings:SettingsCard x:Uid="ImportAttachmentHeader" Description="{x:Bind ViewModel.AttachmentDescription, Mode=OneWay}">
                                 <ToggleSwitch
                                     x:Uid="ImportIncludeAttachmentsToggle"
                                     AutomationProperties.AutomationId="Todo.Import.IncludeAttachments"

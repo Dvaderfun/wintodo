@@ -34,6 +34,11 @@ public sealed class ImportOutcome
 
     public int AcknowledgedReminders { get; set; }
 
+    /// <summary>List preview hints, by external id; never persisted or traced.</summary>
+    public Dictionary<string, string> ListMergeNames { get; } = new(StringComparer.Ordinal);
+
+    public HashSet<string> PreviouslyImportedListIds { get; } = new(StringComparer.Ordinal);
+
     /// <summary>External attachment ids the preview would create; held in memory only.</summary>
     public HashSet<string> PendingAttachmentIds { get; } = new(StringComparer.Ordinal);
 

@@ -20,7 +20,12 @@ public sealed partial class ImportListOptionViewModel : ObservableObject
 
     public string Label { get; }
 
-    public string Detail { get; }
+    [ObservableProperty]
+    public partial string Detail { get; set; }
+
+    public int OpenCount { get; internal set; }
+
+    public int CompletedCount { get; internal set; }
 
     public string AutomationId { get; }
 

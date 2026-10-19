@@ -201,6 +201,15 @@ try {
         Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '5000')
         Invoke-Ui @('wait-for', 'Todo.Import.List.0', '-p', 'HasKeyboardFocus', '--value', 'True', '-t', '5000')
         Assert-Text 'Step 2 of 4 · Choose'
+        Invoke-Ui @('invoke', 'Todo.Import.SelectAll')
+        Assert-Text 'Importing 4 lists · 6 tasks'
+        Invoke-Ui @('invoke', 'Todo.Import.SelectAll')
+        Assert-Text 'Importing 0 lists · 0 tasks'
+        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-p', 'IsEnabled', '--value', 'False', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.List.0')
+        Invoke-Ui @('invoke', 'Todo.Import.List.1')
+        Invoke-Ui @('invoke', 'Todo.Import.List.3')
+        Assert-Text 'Importing 3 lists · 5 tasks'
         Invoke-Ui @('invoke', 'Todo.Import.Continue')
         Invoke-Ui @('wait-for', 'Todo.Import.Start', '-t', '10000')
     }

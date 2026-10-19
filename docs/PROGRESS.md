@@ -3687,3 +3687,17 @@ keyboard handling. All original AutomationIds stay.
 **Deviations:** Shell accelerator routing was needed for Escape precedence.
 Earlier expanded import runs: 15/18 (Review Escape, Settings history, throttle
 Cancel) and 16/18 (Review Escape, Settings history); corrected run 18/18.
+
+## IMP-15 — Explain list choices and attachment cost          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 392/392 tests, zero skips;
+VM import 18/18 and M8 17/17. Choice/selection captures reviewed;
+winui-code-review no unresolved findings above informational.
+
+**Shipped:** Open/completed counts, three-state Select all with deterministic
+all/none command, live list/task totals, prior-import and name-merge hints,
+flagged-email explanation, selected attachment count/size, no-selection caption.
+Import tests verify hint data; gate verifies all/none/totals/disabled Continue.
+
+**Deviations:** Choice state is in a partial file to keep view models below 600
+lines. Header-only resource ids prevent localisation overwriting bound descriptions.

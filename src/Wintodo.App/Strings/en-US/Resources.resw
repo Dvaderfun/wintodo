@@ -1152,6 +1152,16 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- UX-10 row completion -->
   <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
   <!-- IMP (Microsoft To Do import and onboarding) -->
+  <data name="ImportAttachmentHeader.Header" xml:space="preserve"><value>Include attachments</value></data>
+  <data name="ImportSelectAll.Content" xml:space="preserve"><value>Select all</value></data>
+  <data name="Import_NoSelection.Text" xml:space="preserve"><value>Select at least one list to continue.</value></data>
+  <data name="Import_SelectionTotalFormat" xml:space="preserve"><value>Importing {0:N0} lists · {1:N0} tasks</value></data>
+  <data name="Import_ListOpenCompletedFormat" xml:space="preserve"><value>{0:N0} open · {1:N0} completed</value></data>
+  <data name="Import_AttachmentSizeFormat" xml:space="preserve"><value>{0:N0} attachments · {1:N1} MB</value></data>
+  <data name="Import_PreviouslyImported" xml:space="preserve"><value>Imported before</value></data>
+  <data name="Import_MergeHintFormat" xml:space="preserve"><value>Adds to your list ‘{0}’</value></data>
+  <data name="Import_SharedList" xml:space="preserve"><value>Shared list</value></data>
+  <data name="Import_FlaggedDescription" xml:space="preserve"><value>Emails you flagged in Outlook. Off by default.</value></data>
   <data name="Import_StepFormat" xml:space="preserve"><value>Step {0} of 4 · {1}</value></data>
   <data name="Import_StepSignIn" xml:space="preserve"><value>Sign in</value></data>
   <data name="Import_StepChoose" xml:space="preserve"><value>Choose</value></data>
