@@ -1152,6 +1152,10 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- UX-10 row completion -->
   <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
   <!-- IMP (Microsoft To Do import and onboarding) -->
+  <data name="Import_RemoveConfirmTitle" xml:space="preserve"><value>Remove this import?</value></data>
+  <data name="Import_RemoveConfirmPrimary" xml:space="preserve"><value>Remove</value></data>
+  <data name="Import_RemoveConfirmCancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Import_RemoveConfirmFormat" xml:space="preserve"><value>Remove {0:N0} tasks, {1:N0} lists and {2:N0} steps imported just now? Tasks you already had aren’t affected. Updates made to existing tasks stay. This can’t be undone.</value></data>
   <data name="Import_SignedInAgain" xml:space="preserve"><value>Signed in again. Select Import to continue.</value></data>
   <data name="Import_ProgressAttachmentBytesFormat" xml:space="preserve"><value>Downloading attachments: {0:N0} / {1:N0} bytes</value></data>
   <data name="Import_SignInFailedPage" xml:space="preserve"><value>Sign-in didn’t finish. Go back to Wintodo to try again.</value></data>

@@ -200,6 +200,16 @@ try {
         Assert-AccessibilityClean 'done'
         Save-Screenshot '05-done.png'
     }
+    Test-UI 'Removing this import always asks and Cancel keeps tasks' {
+        Invoke-Ui @('invoke', 'Todo.Import.RemoveImported')
+        Invoke-Ui @('wait-for', 'Todo.Import.RemoveConfirm.Primary', '-t', '5000')
+        Assert-Present 'Todo.Import.RemoveConfirm'
+        Assert-Text "Remove 5 tasks, 2 lists and 2 steps imported just now? Tasks you already had aren’t affected. Updates made to existing tasks stay. This can’t be undone."
+        Save-Screenshot '05-remove-confirm.png'
+        Invoke-Ui @('invoke', 'CloseButton')
+        Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-t', '5000')
+        Assert-Present 'Todo.Import.RemoveImported'
+    }
     Test-UI 'Imported tasks land in the default Tasks list' {
         Invoke-Ui @('invoke', 'Todo.Import.GoToTasks')
         Invoke-Ui @('wait-for', 'Water the plants', '-t', '8000')

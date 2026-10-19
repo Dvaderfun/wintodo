@@ -1,5 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.ViewModels;
 
 namespace Wintodo.Controls;
@@ -29,6 +32,7 @@ public sealed partial class ImportWizardView : UserControl
     // fails inside the button's Click (found by the import gate).
     private void OnUnloaded(object sender, RoutedEventArgs args)
     {
+        ViewModel.RemoveConfirmationRequested -= ConfirmRemovalAsync;
         Bindings.StopTracking();
         ListsRepeater.ItemsSource = null;
         SummaryRepeater.ItemsSource = null;
@@ -37,11 +41,42 @@ public sealed partial class ImportWizardView : UserControl
 
     private void OnLoaded(object sender, RoutedEventArgs args)
     {
+        ViewModel.RemoveConfirmationRequested += ConfirmRemovalAsync;
         if (_isDetached)
         {
             _isDetached = false;
             Bindings.Update();
         }
+    }
+
+    private async Task<bool> ConfirmRemovalAsync(string message)
+    {
+        var resources = new ResourceLoader();
+        var dialog = new ContentDialog
+        {
+            XamlRoot = XamlRoot,
+            Title = resources.GetString("Import_RemoveConfirmTitle"),
+            Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap,
+                Style = (Style)Application.Current.Resources["BodyTextBlockStyle"] },
+            PrimaryButtonText = resources.GetString("Import_RemoveConfirmPrimary"),
+            CloseButtonText = resources.GetString("Import_RemoveConfirmCancel"),
+            DefaultButton = ContentDialogButton.Close,
+        };
+        AutomationProperties.SetAutomationId(dialog, "Todo.Import.RemoveConfirm");
+        dialog.Opened += (_, _) => DispatcherQueue.TryEnqueue(() =>
+        {
+            foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(XamlRoot))
+                SetPrimaryId(popup.Child);
+        });
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+    }
+
+    private static void SetPrimaryId(DependencyObject root)
+    {
+        if (root is Button { Name: "PrimaryButton" } button)
+            AutomationProperties.SetAutomationId(button, "Todo.Import.RemoveConfirm.Primary");
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            SetPrimaryId(VisualTreeHelper.GetChild(root, i));
     }
 
     public ImportWizardViewModel ViewModel

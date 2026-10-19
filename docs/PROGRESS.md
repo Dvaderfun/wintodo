@@ -3640,3 +3640,19 @@ remove-dialog text assertion failed. The picker row now waits and uses ID 2.
 .ics import applies. Picker and preview cancellation preserve Welcome.
 
 **Deviations:** Preserve the async command type used by generated x:Bind code.
+
+## IMP-12 — Confirm removal of this import          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 381/381 package tests; VM
+import 14/14, zero failed/skipped. Remove dialog capture reviewed. Vendored
+winui-code-review: no new findings above informational.
+
+**Shipped:** Always confirm created task/list/step counts, regardless of task
+confirmation preferences. Cancel is default; explain that existing tasks and
+updates remain and removal cannot be undone. Existing action ID preserved;
+Todo.Import.RemoveConfirm and .Primary added. Cancel preserves the run.
+
+**Deviations:** Dialog coordination stays in the wizard view rather than the
+shell dialog partial, so x:Load lifetime owns its callback subscription.
+First combined gate failed 2/14 rows (picker lookup and PowerShell apostrophe
+quoting in removal text); corrected rerun passes all rows.
