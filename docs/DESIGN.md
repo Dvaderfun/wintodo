@@ -796,7 +796,8 @@ Each step has a Level2 heading. Its steps:
    Possible duplicate titles (up to 50) and per-list details expand in place;
    Import them anyway is off by default. Preview shows progress and Cancel.
    **Import** + **Back** stay in the footer.
-5. **Done.** The result title and lines, **Go to my tasks** (accent), and
+5. **Done.** Success/informational InfoBar, grouped counts, **Copy details**
+   (account/date/version/counts), **Open My Day**, **Go to my tasks** (accent), and
    **Remove what was just imported** when the run created anything.
 
 Errors show in an `InfoBar` at the top. AutomationIds are `Todo.Import.*`

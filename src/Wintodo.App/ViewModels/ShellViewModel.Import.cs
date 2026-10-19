@@ -52,6 +52,12 @@ public sealed partial class ShellViewModel
         ImportWizard = new ImportWizardViewModel(taskStore, clock, environment);
         ImportWizard.Imported += OnImportCompletedAsync;
         ImportWizard.CloseRequested += OnImportCloseRequested;
+        ImportWizard.MyDayRequested += () =>
+        {
+            IsSettingsVisible = false;
+            IsImportVisible = false;
+            NavigationRequested?.Invoke(MyDayNavigationKey);
+        };
     }
 
     /// <summary>

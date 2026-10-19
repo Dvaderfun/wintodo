@@ -3716,3 +3716,16 @@ Tests cover opt-in, title cap and cancelled preview with no source rows.
 
 **Deviations:** A test-only four-list candidate was measured alongside preview
 before IMP-20; production parallelism is deferred to its own package.
+
+## IMP-17 — Clear completion and My Day hand-off          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 392/392 tests; VM import 18/18
+and M8 17/17, zero failed/skipped. Done/expiry captures reviewed;
+winui-code-review no unresolved findings above informational.
+
+**Shipped:** Success/up-to-date InfoBar, grouped counts, Copy details containing
+account/date/version/counts, and ordinary Open My Day navigation with its hint.
+Actions use two footer rows so they fit narrow panes. Finish focus verified.
+
+**Deviations:** Clipboard and package version belong to the view; model raises
+text/navigation requests. No task/list names are included in copied details.

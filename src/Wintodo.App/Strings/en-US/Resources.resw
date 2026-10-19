@@ -1152,6 +1152,10 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- UX-10 row completion -->
   <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
   <!-- IMP (Microsoft To Do import and onboarding) -->
+  <data name="Import_CopyDetailsFormat" xml:space="preserve"><value>{0}&#10;Imported: {1}&#10;Wintodo {2}&#10;{3}</value></data>
+  <data name="ImportCopyDetails.Content" xml:space="preserve"><value>Copy details</value></data>
+  <data name="ImportOpenMyDay.Content" xml:space="preserve"><value>Open My Day</value></data>
+  <data name="ImportMyDayHint.Text" xml:space="preserve"><value>Add today’s tasks to My Day</value></data>
   <data name="Import_Checking" xml:space="preserve"><value>Checking what’s already here…</value></data>
   <data name="ImportChecking.Text" xml:space="preserve"><value>Checking what’s already here…</value></data>
   <data name="ImportWillAdd.Header" xml:space="preserve"><value>Will add</value></data>
