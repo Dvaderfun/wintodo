@@ -783,7 +783,9 @@ Each step has a Level2 heading. Its steps:
    list, and **Cancel**.
 3. **Choose.**
    - One `SettingsCard` per To Do list: a `CheckBox` with the emoji and
-     name, and the task count as description. Flagged email starts
+     name, open/completed counts, previous-import/merge hints, live selection
+     totals and three-state Select all. Selected attachment count/size updates
+     with choices; no selection explains disabled Continue. Flagged email starts
      unchecked. An account with no lists shows a **No lists found**
      warning instead, so the disabled **Continue** is explained.
    - Toggles for completed tasks and attachments, plus **Replace my

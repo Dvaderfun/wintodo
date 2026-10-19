@@ -222,6 +222,21 @@ public sealed partial class ImportWizardViewModel : ObservableObject
             Trace.WriteLine(
                 $"WINTODO_IMPORT_READ lists={_export.Lists.Count} tasks={_export.Lists.Sum(list => list.Tasks.Count)}");
             ShowLists(_export);
+            ImportSnapshot allLists = GraphTodoMapper.Map(_export, new MicrosoftTodoMapOptions
+            {
+                Now = _clock.UtcNow, LocalTimeZone = _clock.LocalTimeZone,
+                UntitledTaskTitle = _resources.GetString("Import_UntitledTask"),
+            });
+            ImportOutcome hints = await _store.PreviewImportAsync(allLists, BuildOptions(), token);
+            foreach (var option in Lists)
+            {
+                if (hints.PreviouslyImportedListIds.Contains(option.ExternalId))
+                    option.Detail += "\n" + _resources.GetString("Import_PreviouslyImported");
+                else if (hints.ListMergeNames.TryGetValue(option.ExternalId, out string? name))
+                    option.Detail += "\n" + Format("Import_MergeHintFormat", name);
+            }
+            SelectionChanged();
+            OnPropertyChanged(nameof(AttachmentDescription));
             Step = ImportWizardStep.Choose;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
@@ -414,7 +429,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         Dictionary<string, bool> previousSelection = new(StringComparer.Ordinal);
         foreach (ImportListOptionViewModel option in Lists)
         {
-            option.SelectionChanged -= ContinueCommand.NotifyCanExecuteChanged;
+            option.SelectionChanged -= SelectionChanged;
             previousSelection[option.ExternalId] = option.IsSelected;
         }
 
@@ -429,12 +444,18 @@ public sealed partial class ImportWizardViewModel : ObservableObject
             MicrosoftTodoListData data = export.Lists[index];
             (string? emoji, string name) = GraphTodoMapper.SplitListEmoji(data.List.DisplayName);
             string label = emoji is null ? name : emoji + " " + name;
-            string detail = Format(data.List.IsShared ? "Import_ListSharedFormat" : "Import_ListTaskCountFormat", data.Tasks.Count);
+            int completedCount = data.Tasks.Count(task => task.Status == "completed");
+            string detail = Format("Import_ListOpenCompletedFormat", data.Tasks.Count - completedCount, completedCount);
+            if (data.List.IsShared) detail += "\n" + _resources.GetString("Import_SharedList");
+            if (GraphTodoMapper.GetListKind(data.List) == ImportListKind.FlaggedEmail)
+                detail += "\n" + _resources.GetString("Import_FlaggedDescription");
             bool selected = previousSelection.TryGetValue(data.List.Id, out bool previous)
                 ? previous
                 : GraphTodoMapper.GetListKind(data.List) != ImportListKind.FlaggedEmail;
             var option = new ImportListOptionViewModel(data.List.Id, label, detail, index, selected);
-            option.SelectionChanged += ContinueCommand.NotifyCanExecuteChanged;
+            option.OpenCount = data.Tasks.Count - completedCount;
+            option.CompletedCount = completedCount;
+            option.SelectionChanged += SelectionChanged;
             Lists.Add(option);
         }
 
