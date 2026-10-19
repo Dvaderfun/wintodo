@@ -51,6 +51,11 @@ As of 2026-10-20:
   and admin URL verify stay owner-only. Dedicated close-during-Saving timing is
   unclaimed. IMP-25 exception-trace privacy and IMP-26 intermittent SQLite test
   initialization are separate open findings. IMP-23/24 remain untouched.
+- **Local install package (2026-10-20):** Signed self-contained Native AOT x64
+  `publish/msix/Wintodo-1.0.0.4-x64.msix` includes the import polish. Existing
+  identity and signer retained; version raised from `1.0.0.3` for an update.
+  Signature and native package inspection pass; 392/392 tests pass. Owner
+  installation/runtime check pending; no host installation or automation run.
 - **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
   `scripts\Invoke-VmGate.ps1` (ADR-013). The earlier sweep's 14 passing runs remain
   recorded. Follow-up: m8 17/17, settings 9/9 twice, list-stability 3/3 twice
@@ -3821,3 +3826,20 @@ unclaimed. IMP-18 admin-consent URL remains **verify**, owner work/school gate.
 IMP-23/24 untouched. New findings IMP-25 exception-trace privacy and IMP-26
 intermittent SQLite initialization remain open; earlier Data failures are named
 in package entries, final complete suite passes. No AOT runtime publish claim.
+
+## Local import-polish MSIX 1.0.0.4          2026-10-20
+
+**Gate:** PASS — Release x64 Native AOT project packaging with warnings as errors;
+392/392 unit tests, zero failed/skipped. Authenticode Valid and SignTool /pa /v
+verify: one file, zero warnings/errors. Package inspected for identity/version,
+native x64 executable, WinUI/WindowsAppRuntime/SQLite, resources and extensions.
+
+**Delivered:** publish/msix/Wintodo-1.0.0.4-x64.msix (58,253,662 bytes), built
+from import-polish e65b605 plus the version-only manifest change. Existing test
+certificate and package identity retained. SHA-256:
+96AE306FBD07E66B2FABF709A866BDF01663005C3783C6510FE9F1A3A89A5716.
+Metadata: publish/msix/Wintodo-1.0.0.4-x64.details.json.
+
+**Deviations / remaining:** x64 only, matching the owner's machine. No host
+installation, trust change, launch or UI automation; owner installs and checks.
+No production timestamp/signing or M10 clean-install/runtime gate claimed.
