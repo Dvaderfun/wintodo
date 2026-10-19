@@ -10,6 +10,7 @@ public sealed partial class ShellViewModel
     internal const string OnboardingCompletedSetting = "onboarding.completed";
     private Services.ImportEnvironment _importEnvironment = null!;
     private bool _importOpenedFromWelcome;
+    private IClock _importClock = null!;
 
     public ImportWizardViewModel ImportWizard { get; private set; } = null!;
 
@@ -49,6 +50,7 @@ public sealed partial class ShellViewModel
     private void InitializeImport(ITaskStore taskStore, IClock clock, Services.ImportEnvironment environment)
     {
         _importEnvironment = environment;
+        _importClock = clock;
         ImportWizard = new ImportWizardViewModel(taskStore, clock, environment);
         ImportWizard.Imported += OnImportCompletedAsync;
         ImportWizard.CloseRequested += OnImportCloseRequested;

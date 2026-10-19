@@ -23,6 +23,9 @@ public sealed partial class ShellViewModel
     public partial string DatabaseSizeText { get; set; } = string.Empty;
 
     [ObservableProperty]
+    public partial string MicrosoftTodoAccountsText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial bool IsDataSettingsErrorOpen { get; set; }
 
     [ObservableProperty]
@@ -46,6 +49,11 @@ public sealed partial class ShellViewModel
             DatabasePath = stats.DatabasePath;
             DatabaseSizeText = string.Format(DisplayCulture.Current,
                 _resources.GetString("Settings_DatabaseSizeFormat"), stats.DatabaseSizeBytes / 1024d);
+            var sources = await _taskStore.GetImportSourcesAsync("mstodo");
+            MicrosoftTodoAccountsText = string.Join(Environment.NewLine,
+                sources.Where(source => source.LastImport is not null).Select(source => string.Format(DisplayCulture.Current,
+                    _resources.GetString("Import_AccountHistoryFormat"), source.DisplayName,
+                    TimeZoneInfo.ConvertTime(source.LastImport!.Value, _importClock.LocalTimeZone).ToString("d", DisplayCulture.Current))));
             IsDataSettingsErrorOpen = false;
         }
         catch (Exception exception)

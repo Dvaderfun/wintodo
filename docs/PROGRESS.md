@@ -3744,3 +3744,17 @@ Same-account resume notice is informational rather than a red error.
 **Deviations / owner:** Admin-consent URL stays **verify** until owner work/school
 sign-in/consent gate. No live Microsoft sign-in was attempted. Existing exception
 trace repair remains the separate IMP-25 finding.
+
+## IMP-19 — Show every imported account          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 392/392 tests; VM import 18/18,
+M8 17/17 and settings 9/9, zero failed/skipped. Settings captures reviewed;
+winui-code-review no unresolved findings above informational.
+
+**Shipped:** Settings Data and Connect list every imported account with a local
+import date. New Todo.Settings.Data.MicrosoftTodoAccounts ID retained as API.
+Two-account store test verifies complete history. Header-only localisation keeps
+the bound description intact alongside the existing explanatory text.
+
+**Deviations:** Corrected an earlier status-edit mistake that marked this row
+done before implementation; current status and this commit reflect actual work.

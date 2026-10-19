@@ -261,6 +261,8 @@ try {
         Invoke-Ui @('wait-for', 'Todo.Settings.ScrollViewer', '-t', '5000')
         Invoke-Ui @('scroll', 'Todo.Settings.ScrollViewer', '--to', 'bottom')
         Invoke-Ui @('wait-for', 'Todo.Settings.ImportMicrosoftTodo', '-t', '5000')
+        Assert-Present 'Todo.Settings.Data.MicrosoftTodoAccounts'
+        Assert-Text 'fixture.person@example.com · 10/19/2026'
         Invoke-Ui @('invoke', 'Todo.Settings.ImportMicrosoftTodo')
         Invoke-Ui @('wait-for', 'Todo.Import.LastImport', '-t', '5000')
         Invoke-Ui @('invoke', 'Todo.Import.SignIn')

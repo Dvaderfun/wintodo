@@ -373,8 +373,15 @@
                         </settings:SettingsCard>
 
                         <settings:SettingsCard
-                            x:Uid="SettingsMicrosoftTodoCard"
+                            x:Uid="SettingsMicrosoftTodoHeader"
                             AutomationProperties.AutomationId="Todo.Settings.Data.MicrosoftTodoCard">
+                            <settings:SettingsCard.Description>
+                                <StackPanel Spacing="4">
+                                <TextBlock x:Uid="SettingsMicrosoftTodoDescription" TextWrapping="Wrap" />
+                                <TextBlock AutomationProperties.AutomationId="Todo.Settings.Data.MicrosoftTodoAccounts"
+                                    Text="{x:Bind ViewModel.MicrosoftTodoAccountsText, Mode=OneWay}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </settings:SettingsCard.Description>
                             <settings:SettingsCard.HeaderIcon>
                                 <FontIcon Glyph="&#xE9D5;" />
                             </settings:SettingsCard.HeaderIcon>
