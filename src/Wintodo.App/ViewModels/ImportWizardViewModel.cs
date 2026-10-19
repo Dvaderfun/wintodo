@@ -50,6 +50,8 @@ public sealed partial class ImportWizardViewModel : ObservableObject
 
     /// <summary>Raised when the wizard should close; true when the person asked to see their tasks.</summary>
     internal event Action<bool>? CloseRequested;
+    internal event Func<string, Task<bool>>? RemoveConfirmationRequested;
+    private ImportOutcome? _lastOutcome;
 
     public bool IsSignInConfigured => _environment.Connector.IsConfigured;
 
@@ -268,6 +270,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
             // Saving is one transaction; it is not cancelled half-way.
             ImportOutcome outcome = await _store.ApplyImportAsync(snapshot, BuildOptions(), CancellationToken.None);
             _lastRunId = outcome.RunId;
+            _lastOutcome = outcome;
             CanRemoveImported = outcome.NewTasks + outcome.NewSteps + outcome.NewLists > 0;
             ResultTitle = _resources.GetString(outcome.HasChanges ? "Import_DoneTitle" : "Import_DoneNothingTitle");
             DescribeOutcome(outcome);
@@ -336,6 +339,12 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRemove))]
     private async Task RemoveImportedAsync()
     {
+        if (_lastOutcome is null || RemoveConfirmationRequested is null
+            || !await RemoveConfirmationRequested.Invoke(Format("Import_RemoveConfirmFormat",
+                _lastOutcome.NewTasks, _lastOutcome.NewLists, _lastOutcome.NewSteps)))
+        {
+            return;
+        }
         IsBusy = true;
         try
         {
