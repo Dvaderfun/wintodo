@@ -49,7 +49,7 @@ Bring your tasks with you, or start with an empty list.
 
 | Step | Content |
 |---|---|
-| 1. Connect | "Wintodo asks for **read-only** access. Nothing in Microsoft To Do is changed or deleted. Your sign-in is not saved." Button **Sign in with Microsoft**. Works for personal and work/school accounts. |
+| 1. Connect | "Wintodo only reads your tasks. Microsoft's sign-in asks for permission to edit them (§10). Nothing in Microsoft To Do is changed or deleted. Your sign-in is not saved." Button **Sign in with Microsoft**. Works for personal and work/school accounts. |
 | 2. Choose | Account shown (name + email). One checkbox per To Do list with its task count; shared lists are marked "shared". Options: **Include completed tasks** (on), **Include attachments** (on), **Include Flagged email list** (off). An InfoBar lists what To Do does not let apps read (§3.3). |
 | 3. Review | A dry-run preview: "12 lists (3 merge with lists you already have) · 1,180 new tasks · 20 updated · 940 already imported, skipped". On a second run this step does most of the work: it shows that nothing will be duplicated. |
 | 4. Import | Determinate `ProgressBar` with phases: reading lists → reading tasks (n/N) → downloading attachments → saving. **Cancel** is available until saving starts. Saving is one transaction, so a cancel or failure leaves nothing half-imported. |
@@ -74,10 +74,10 @@ Microsoft documents only one programmatic path, which this plan uses: the
 **Microsoft Graph To Do API** (`/me/todo/lists`, `/tasks`, `checklistItems`,
 `linkedResources`, `attachments`).
 
-- **Permission:** delegated `Tasks.Read`, the least-privileged scope. It
-  supports both personal Microsoft accounts and work/school accounts. Add
-  `User.Read` to get a stable account id and email for dedupe and display.
-  We never request `Tasks.ReadWrite`.
+- **Permission:** delegated `Tasks.ReadWrite` and `User.Read`. The plan was
+  `Tasks.Read`, but the list delta call (§10) accepts only `Tasks.ReadWrite`
+  (ADR-016 amendment 1). Wintodo still sends GET requests only. `User.Read`
+  gives a stable account id and email for dedupe and display.
 - **Sign-in:** the Windows App SDK `OAuth2Manager`
   (`Microsoft.Security.Authentication.OAuth`) does authorization code + PKCE in
   the system browser. **It is already in our SDK** (`winapp find-api` resolves it
@@ -90,7 +90,7 @@ Microsoft documents only one programmatic path, which this plan uses: the
   browser SSO makes that a click.
 - **Entra app registration** (owner, outside the repo): a public client for
   "personal + work/school accounts", a redirect URI matching the chosen
-  activation path (§7.3), and the scopes `Tasks.Read` and `User.Read`. The
+  activation path (§7.3), and the scopes `Tasks.ReadWrite` and `User.Read`. The
   client ID is public and can live in source. Until the app has publisher
   verification, Microsoft's consent screen shows it as **unverified**. Some
   work tenants block user consent entirely, and their admins must approve.
@@ -290,7 +290,7 @@ scope here.
 
 | ID | Title | Size | Depends on | Status |
 |---|---|---|---|---|
-| IMP-00 | Owner sign-off: ADR-016, DESIGN §10/§12 additions, Entra app registration | — | — | done 2026-10-19 (app "Wintodo", client id `038f1bee-9c89-4f6c-9061-15210945a03e`, public client `http://localhost`, delegated `Tasks.Read` + `User.Read`, no secret) |
+| IMP-00 | Owner sign-off: ADR-016, DESIGN §10/§12 additions, Entra app registration | — | — | done 2026-10-19 (app "Wintodo", client id `038f1bee-9c89-4f6c-9061-15210945a03e`, public client `http://localhost`, delegated `Tasks.ReadWrite` + `User.Read` (amendment 1), no secret) |
 | IMP-01 | Core import model, mapping helpers, recurrence/timezone/HTML converters + tests | M | IMP-00 | done |
 | IMP-02 | Migration 004, `PreviewImportAsync`/`ApplyImportAsync`/`RemoveImportRunAsync`, idempotency suite | L | IMP-01 | done |
 | IMP-03 | `Wintodo.Import` project: Graph client, DTOs, mapper, fixtures + tests | M | IMP-01 | done |
@@ -360,7 +360,7 @@ before each UI commit.
 - **Lists come from `me/todo/lists/delta`.** On the owner's personal account the
   plain `me/todo/lists` call (v1.0 and beta) returns an empty `value`, and
   `$filter` returns only some lists, while the delta function returns all of
-  them, with paging. This is a known Graph behaviour for consumer accounts.
+  them, with paging. This is a known Graph behaviour for consumer accounts. Delta requires `Tasks.ReadWrite` ("access denied" with `Tasks.Read`), so sign-in requests it (ADR-016 amendment 1).
   `@removed` delta entries are skipped. Tasks still use the plain list-tasks
   call; the owner's run compares the traced task count with To Do.
 - **Not verified yet:**

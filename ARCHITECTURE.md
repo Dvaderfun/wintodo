@@ -201,7 +201,7 @@ Settings → Data.
 
 - **Sign-in.** `MicrosoftSignInService` uses the Windows App SDK
   `OAuth2Manager` (authorization code + PKCE, system browser) with a loopback
-  redirect the app listens on. Scopes are `Tasks.Read` and `User.Read`. The
+  redirect the app listens on. Scopes are `Tasks.ReadWrite` (the list delta call requires it; ADR-016 amendment 1) and `User.Read`; the client sends GET requests only. The
   access token lives in memory for one import and is never stored.
   `MicrosoftTodoRegistration.ClientId` holds the public client id of the Entra
   app; when it is empty the wizard says sign-in isn't set up.

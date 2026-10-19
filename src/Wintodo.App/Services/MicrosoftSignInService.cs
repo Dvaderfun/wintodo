@@ -9,13 +9,15 @@ namespace Wintodo.Services;
 /// <summary>
 /// Microsoft identity platform sign-in via the Windows App SDK OAuth2Manager:
 /// authorization code + PKCE in the system browser, redirect to a loopback
-/// port this process listens on (RFC 8252). Only <c>Tasks.Read</c> and
+/// port this process listens on (RFC 8252). Only <c>Tasks.ReadWrite</c> and
 /// <c>User.Read</c> are requested, and the access token is never stored.
 /// </summary>
 internal static class MicrosoftSignInService
 {
     private const string Authority = "https://login.microsoftonline.com/common/oauth2/v2.0/";
-    private const string Scopes = "Tasks.Read User.Read";
+    // Tasks.ReadWrite only because Microsoft's list delta function requires it
+    // (ADR-016 amendment 1); GraphTodoClient sends GET requests only.
+    private const string Scopes = "Tasks.ReadWrite User.Read";
     private const int MaxRequestBytes = 16 * 1024;
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 

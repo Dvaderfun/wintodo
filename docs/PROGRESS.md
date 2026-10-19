@@ -3419,3 +3419,21 @@ warnings-as-errors clean; 365/365 unit tests (new delta paging test).
 - Community reports also mention missing tasks in the plain list-tasks call;
   not seen yet. The next owner run compares `WINTODO_IMPORT_READ` task counts
   with To Do before switching tasks to delta too.
+
+## IMP — `Tasks.ReadWrite` for the list delta call (ADR-016 amendment 1)   2026-10-19
+
+**Gate:** import 11/11 in WintodoTest (`import/run-20261019-145829`); Debug
+x64 warnings-as-errors clean; 366/366 unit tests (new: the client sends GET
+requests only, across a full fixture read and an attachment download).
+
+- Owner's rerun after the delta change failed with "access denied": Microsoft
+  documents `Tasks.ReadWrite` as the only delegated permission for
+  `todoTaskList: delta`. The previous entry's "`Tasks.ReadWrite` would not
+  help" was wrong for delta; it held only for the plain list call.
+- Owner chose to always request `Tasks.ReadWrite` + `User.Read` (amendment 1
+  to ADR-016, recorded with the alternatives). The Entra app's permissions
+  were changed to match through Graph with the owner's directory sign-in;
+  az was switched back to the owner's default account afterwards.
+- The Connect step's info bar is now "Read-only import" and explains that
+  Microsoft's sign-in asks for edit permission. IMPORT-PLAN, ARCHITECTURE and
+  the client id comment updated.
