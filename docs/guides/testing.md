@@ -29,6 +29,10 @@ Rules:
 - Data tests use a fresh temp database per test; never a shared file.
 - New iCalendar behaviour gets a fixture in `tests/fixtures/ical/` and a
   round-trip assertion. Unknown properties must survive byte-for-byte.
+- Import behaviour (ADR-016) is tested in `tests/Wintodo.Import.Tests`: the
+  converters, the Graph client against `FixtureGraphHandler`/scripted handlers,
+  the mapper, and real-store re-import scenarios (`ImportStoreTests`). A new
+  Graph field gets a fixture change in `tests/fixtures/mstodo/` and an assertion.
 - Perf assertions (10 000-task query ≤ 5 ms, search ≤ 60 ms) live in
   `SmartListPerformanceTests` / `PerformanceFixtureTests` — keep them green.
 
@@ -96,18 +100,19 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-m4-gate.ps1` | Detail pane fields and restart persistence |
 | `run-m5-gate.ps1` | Smart lists, search, sort; single/repeated/multi-task drops on My Day and Important, original-list retention and restart persistence |
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |
+| `run-import-gate.ps1` | Onboarding Welcome on a fresh database, Microsoft To Do wizard end to end against `tests/fixtures/mstodo/basic` (`--import-fixture`, Debug only), dry-run counts, second import from Settings duplicates nothing, cancel, Start fresh, scratch databases skip Welcome, accessibility audit |
 | `run-m7-gate.ps1` | Reminders, toasts, badge, jump list (`-VerifyToastCompletion`, `-VerifyToastSnooze`) |
 | `run-m8-gate.ps1` | Design, responsive layout, all four Windows contrast palettes (selected/unselected custom list, search border and header focus), accessibility audit |
 | `run-m13-gate.ps1` | CalDAV Configure dialog, cancel/retry, sync, list toggles, footer visibility before connect/after connect/restart/disconnect (`-Aot` for published x64) |
 | `run-notification-settings-gate.ps1` | Reminder enable/disable, actual scheduled payload defaults, restart, Data/About and accessibility |
 | `run-settings-gate.ps1` | Tasks settings, immediate delete/undo, restart, reminder default, ordering and accessibility |
 | `run-list-icon-gate.ps1` | Emoji list icons and navigation counts; UX-15 unset header dot, hover, keyboard focus/Enter, clear, Light/Dark, detail-open and minimum-width screenshots |
+| `run-header-alignment-gate.ps1` | Screenshot ink-center alignment for five fixed categories and new user lists in Light/Dark; fixed glyphs within 1 px; unset dot uses owner-selected 2 px optical lowering (±1 px); fixed-icon crop follows its 44 px XAML slot |
 | `run-undo-gate.ps1` | Undo history across navigation/expiry, preserved newer title, due/reminder/repeat clears, step/list deletion, moves and bulk field/completion actions |
 | `run-share-gate.ps1 -Aot` | Real Windows Share source, target discovery, Text/WebLink, errors, exact local persistence, process exit and open-main/restart refresh; include the host-built source fixture |
 | `run-ux-regression-gate.ps1` | Runs existing M4/M13/M8/M7/M0 gates sequentially in one guest restore |
 | `run-share-regression-gate.ps1 -Aot` | Final UX-18 startup regressions: M0, M7 preflight, and published x64 M13 |
 
-| `run-header-alignment-gate.ps1` | Screenshot ink-center alignment for five fixed categories and new user lists in Light/Dark; fixed glyphs within 1 px; unset dot uses owner-selected 2 px optical lowering (±1 px); fixed-icon crop follows its 44 px XAML slot |
 The scripts drive real input on the desktop they run on. Host runs require the
 explicit opt-in above. The VM being unavailable does not authorize host automation.
 
@@ -260,13 +265,21 @@ breaks a gate — search `tests/ui/` before you change an id.
    `$ArtifactDirectory\results.json`, non-zero exit on any failure.
 3. Add a `run-<area>-gate.ps1` that launches with a scratch `--database-path`
    (and `--clock-file` if time matters) and always stops the app in `finally`.
-4. Record the gate result in `docs/PROGRESS.md`. A partial pass is reported as
+   Scratch databases skip the onboarding Welcome surface; pass
+   `--show-onboarding` to test it. Debug builds also accept
+   `--trace-file <path>`, which writes the app's trace lines (unhandled and
+   command exceptions, binding failures) next to the gate's artifacts.
+5. If `winapp ui invoke` reports "does not support any invoke pattern" for a
+   button the capture shows as invokable, the bound command threw: WinRT
+   swallows the exception at the `ICommand` boundary and the button stays
+   drawn as pressed. Capture a trace and fix the product; don't retry.
+6. Record the gate result in `docs/PROGRESS.md`. A partial pass is reported as
    partial, naming what failed.
 
 ## CI
 
 `.github/workflows/ci.yml` builds x64 Debug with warnings as errors and runs the
-three test projects (TRX + coverage uploaded as artifacts) on `windows-latest`. UI gates are not in CI: they need an
+four test projects (TRX + coverage uploaded as artifacts) on `windows-latest`. UI gates are not in CI: they need an
 interactive desktop session and Developer Mode, which the test VM provides.
 
 On `v*` tag pushes, a separate release job publishes Native AOT and packages

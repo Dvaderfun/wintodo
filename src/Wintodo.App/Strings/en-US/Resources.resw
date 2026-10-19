@@ -1151,4 +1151,77 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <data name="Sort_CompletionDate" xml:space="preserve"><value>Completion date</value></data>
   <!-- UX-10 row completion -->
   <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
+  <!-- IMP (Microsoft To Do import and onboarding) -->
+  <data name="ImportWizardTitle.Text" xml:space="preserve"><value>Import from Microsoft To Do</value></data>
+  <data name="ImportConnectIntro.Text" xml:space="preserve"><value>Bring over your lists, tasks, steps, notes, due dates, reminders, repeats and attachments. Running the import again never creates duplicates.</value></data>
+  <data name="ImportReadOnlyInfo.Title" xml:space="preserve"><value>Read-only access</value></data>
+  <data name="ImportReadOnlyInfo.Message" xml:space="preserve"><value>Wintodo only reads your tasks. Nothing in Microsoft To Do is changed or deleted, and your sign-in isn’t saved.</value></data>
+  <data name="ImportNotConfiguredInfo.Title" xml:space="preserve"><value>Microsoft sign-in isn’t set up</value></data>
+  <data name="ImportNotConfiguredInfo.Message" xml:space="preserve"><value>This build has no Microsoft app registration, so it can’t connect to Microsoft To Do yet.</value></data>
+  <data name="ImportSignInButton.Content" xml:space="preserve"><value>Sign in with Microsoft</value></data>
+  <data name="ImportCancelButton.Content" xml:space="preserve"><value>Cancel</value></data>
+  <data name="ImportProgressBar.AutomationProperties.Name" xml:space="preserve"><value>Import progress</value></data>
+  <data name="ImportChooseHeader.Text" xml:space="preserve"><value>Choose what to import</value></data>
+  <data name="ImportIncludeCompletedCard.Header" xml:space="preserve"><value>Include completed tasks</value></data>
+  <data name="ImportIncludeCompletedToggle.AutomationProperties.Name" xml:space="preserve"><value>Include completed tasks</value></data>
+  <data name="ImportIncludeAttachmentsCard.Header" xml:space="preserve"><value>Include attachments</value></data>
+  <data name="ImportIncludeAttachmentsToggle.AutomationProperties.Name" xml:space="preserve"><value>Include attachments</value></data>
+  <data name="ImportOverwriteCard.Header" xml:space="preserve"><value>Replace my edits with the To Do version</value></data>
+  <data name="ImportOverwriteCard.Description" xml:space="preserve"><value>For tasks you changed here after the last import. When off, your edits are kept.</value></data>
+  <data name="ImportOverwriteToggle.AutomationProperties.Name" xml:space="preserve"><value>Replace my edits with the To Do version</value></data>
+  <data name="ImportLimitsInfo.Title" xml:space="preserve"><value>Not available from Microsoft</value></data>
+  <data name="ImportLimitsInfo.Message" xml:space="preserve"><value>Microsoft doesn’t let other apps read My Day, list colours and backgrounds, list groups, the manual order of lists and tasks, or shared-list members. Add today’s tasks to My Day after importing.</value></data>
+  <data name="ImportContinueButton.Content" xml:space="preserve"><value>Continue</value></data>
+  <data name="ImportBackButton.Content" xml:space="preserve"><value>Back</value></data>
+  <data name="ImportReviewHeader.Text" xml:space="preserve"><value>Ready to import</value></data>
+  <data name="ImportStartButton.Content" xml:space="preserve"><value>Import</value></data>
+  <data name="ImportGoToTasksButton.Content" xml:space="preserve"><value>Go to my tasks</value></data>
+  <data name="ImportRemoveButton.Content" xml:space="preserve"><value>Remove what was just imported</value></data>
+  <data name="WelcomeTitle.Text" xml:space="preserve"><value>Welcome to Wintodo</value></data>
+  <data name="WelcomeSubtitle.Text" xml:space="preserve"><value>Bring your tasks with you, or start with an empty list.</value></data>
+  <data name="WelcomeMicrosoftTodoCard.Header" xml:space="preserve"><value>Microsoft To Do</value></data>
+  <data name="WelcomeMicrosoftTodoCard.Description" xml:space="preserve"><value>Lists, tasks, steps, notes, due dates, reminders, repeats and attachments.</value></data>
+  <data name="WelcomeIcalCard.Header" xml:space="preserve"><value>iCalendar file</value></data>
+  <data name="WelcomeIcalCard.Description" xml:space="preserve"><value>From Nextcloud, Tasks.org, Thunderbird or Apple Reminders (.ics).</value></data>
+  <data name="WelcomeIcalButton.Content" xml:space="preserve"><value>Choose files</value></data>
+  <data name="WelcomeIcalButton.AutomationProperties.Name" xml:space="preserve"><value>Choose iCalendar files to import</value></data>
+  <data name="WelcomeMicrosoftTodoButton.Content" xml:space="preserve"><value>Import</value></data>
+  <data name="WelcomeMicrosoftTodoButton.AutomationProperties.Name" xml:space="preserve"><value>Import from Microsoft To Do</value></data>
+  <data name="WelcomeStartFreshButton.Content" xml:space="preserve"><value>Start fresh</value></data>
+  <data name="SettingsMicrosoftTodoCard.Header" xml:space="preserve"><value>Microsoft To Do</value></data>
+  <data name="SettingsMicrosoftTodoCard.Description" xml:space="preserve"><value>Import lists, tasks, steps, notes, dates, reminders and attachments. Importing again never duplicates tasks.</value></data>
+  <data name="SettingsMicrosoftTodoButton.Content" xml:space="preserve"><value>Import from To Do</value></data>
+  <data name="Import_SignInCompletePage" xml:space="preserve"><value>You’re signed in. You can close this tab and go back to Wintodo.</value></data>
+  <data name="Import_ProgressSigningIn" xml:space="preserve"><value>Finish signing in in your browser…</value></data>
+  <data name="Import_ProgressAccount" xml:space="preserve"><value>Connecting to Microsoft To Do…</value></data>
+  <data name="Import_ProgressListsFormat" xml:space="preserve"><value>Reading “{0}” ({1} of {2})…</value></data>
+  <data name="Import_ProgressAttachmentsFormat" xml:space="preserve"><value>Downloading attachments ({0} of {1})…</value></data>
+  <data name="Import_ProgressSaving" xml:space="preserve"><value>Saving your tasks…</value></data>
+  <data name="Import_AccountFormat" xml:space="preserve"><value>Signed in as {0}</value></data>
+  <data name="Import_LastImportFormat" xml:space="preserve"><value>Last imported from {0} on {1}</value></data>
+  <data name="Import_ListTaskCountFormat" xml:space="preserve"><value>Tasks: {0}</value></data>
+  <data name="Import_ListSharedFormat" xml:space="preserve"><value>Tasks: {0} · Shared list</value></data>
+  <data name="Import_SummaryNewListsFormat" xml:space="preserve"><value>New lists: {0}</value></data>
+  <data name="Import_SummaryExistingListsFormat" xml:space="preserve"><value>Lists already in Wintodo: {0}</value></data>
+  <data name="Import_SummaryNewTasksFormat" xml:space="preserve"><value>New tasks: {0}</value></data>
+  <data name="Import_SummaryNewStepsFormat" xml:space="preserve"><value>New steps: {0}</value></data>
+  <data name="Import_SummaryAttachmentsFormat" xml:space="preserve"><value>Attachments: {0}</value></data>
+  <data name="Import_SummaryUpdatedFormat" xml:space="preserve"><value>Updated from To Do: {0}</value></data>
+  <data name="Import_SummaryUnchangedFormat" xml:space="preserve"><value>Already imported, skipped: {0}</value></data>
+  <data name="Import_SummaryKeptLocalFormat" xml:space="preserve"><value>Changed here, your edits kept: {0}</value></data>
+  <data name="Import_SummaryDeletedFormat" xml:space="preserve"><value>Deleted here, left deleted: {0}</value></data>
+  <data name="Import_SummarySkippedListsFormat" xml:space="preserve"><value>Lists deleted here, left deleted: {0}</value></data>
+  <data name="Import_SummaryDuplicatesFormat" xml:space="preserve"><value>Same as a task you already have, skipped: {0}</value></data>
+  <data name="Import_SummaryNothing" xml:space="preserve"><value>Everything is already here. Nothing will be duplicated.</value></data>
+  <data name="Import_DoneTitle" xml:space="preserve"><value>Import complete</value></data>
+  <data name="Import_DoneNothingTitle" xml:space="preserve"><value>Already up to date</value></data>
+  <data name="Import_RemovedTitle" xml:space="preserve"><value>Import removed</value></data>
+  <data name="Import_RemovedFormat" xml:space="preserve"><value>Removed tasks and steps: {0}</value></data>
+  <data name="Import_UntitledTask" xml:space="preserve"><value>Untitled task</value></data>
+  <data name="Import_ErrorSignIn" xml:space="preserve"><value>Sign-in didn’t finish. Try again.</value></data>
+  <data name="Import_ErrorSignInCancelled" xml:space="preserve"><value>Sign-in was cancelled.</value></data>
+  <data name="Import_ErrorAccess" xml:space="preserve"><value>Microsoft didn’t allow access to your tasks. A work or school account may need an administrator’s approval.</value></data>
+  <data name="Import_ErrorOffline" xml:space="preserve"><value>Can’t reach Microsoft. Check your connection and try again.</value></data>
+  <data name="Import_ErrorRead" xml:space="preserve"><value>Microsoft To Do returned an error. Try again later.</value></data>
+  <data name="Import_ErrorSave" xml:space="preserve"><value>The import couldn’t be saved. Nothing was changed.</value></data>
 </root>

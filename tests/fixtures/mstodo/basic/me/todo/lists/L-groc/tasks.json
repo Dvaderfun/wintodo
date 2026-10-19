@@ -1,0 +1,9 @@
+{
+  "value": [
+    {"id":"T4","title":"Milk","importance":"normal","status":"notStarted","isReminderOn":false,"createdDateTime":"2026-10-05T07:00:00Z","lastModifiedDateTime":"2026-10-05T07:00:00Z","categories":[],"hasAttachments":false,"checklistItems":[],"linkedResources":[]},
+    {"id":"T5","title":"Pay rent","importance":"normal","status":"inProgress","isReminderOn":false,"createdDateTime":"2026-07-01T07:00:00Z","lastModifiedDateTime":"2026-07-01T07:00:00Z",
+     "dueDateTime":{"dateTime":"2026-11-02T00:00:00.0000000","timeZone":"UTC"},
+     "recurrence":{"pattern":{"type":"relativeMonthly","interval":1,"daysOfWeek":["monday","tuesday"],"firstDayOfWeek":"sunday","index":"first"},"range":{"type":"numbered","startDate":"2026-07-06","numberOfOccurrences":12}},
+     "categories":[],"hasAttachments":false,"checklistItems":[],"linkedResources":[]}
+  ]
+}

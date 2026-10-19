@@ -753,6 +753,45 @@ Each empty state is `x:Load`-deferred.
 | Search (no results) | Search | "No results for \"{query}\"" | "Try a different word." |
 | No lists at all (first run) | Add | "Welcome" | "Create your first list to get started." + an `AccentButton` "New list" |
 
+### 10.1 Onboarding Welcome (ADR-016)
+
+A fresh database (`onboarding.completed` unset, no tasks, only the default
+list) shows `WelcomeView` in the list pane instead of the task list. The
+shell paints first; nothing blocks startup. The layout follows the empty
+states: an accent `EmptyStateIconSize` glyph, a Subtitle title and a
+secondary-text subtitle. Below them, in a column at most 560 wide, sit two
+`SettingsCard`s, each with an action button (a clickable card exposes no
+Invoke pattern to UI Automation): **Microsoft To Do** opens the import
+wizard and **iCalendar file** opens the `.ics` picker. A centred **Start fresh**
+button follows. Starting fresh, finishing an import, or choosing any
+navigation item dismisses Welcome for good.
+
+### 10.2 Import wizard
+
+`ImportWizardView` replaces the list pane content and uses the Settings
+title row (64 px, `TitleTextBlockStyle`). Its steps:
+
+1. **Connect.** Intro text, a read-only `InfoBar`, an "isn't set up"
+   warning when the build has no client id, the last import date, and
+   **Sign in with Microsoft** (accent) + **Cancel**.
+2. **Reading.** Polite live-region text, a determinate `ProgressBar` per
+   list, and **Cancel**.
+3. **Choose.**
+   - One `SettingsCard` per To Do list: a `CheckBox` with the emoji and
+     name, and the task count as description. Flagged email starts
+     unchecked.
+   - Toggles for completed tasks and attachments, plus **Replace my
+     edits** shown only after an earlier import from that account.
+   - The "Not available from Microsoft" `InfoBar`.
+   - **Continue** + **Back**.
+4. **Review.** One line per non-zero dry-run count, then **Import** +
+   **Back**.
+5. **Done.** The result title and lines, **Go to my tasks** (accent), and
+   **Remove what was just imported** when the run created anything.
+
+Errors show in an `InfoBar` at the top. AutomationIds are `Todo.Import.*`
+and `Todo.Welcome.*`.
+
 ---
 
 ## 11. Accessibility
@@ -798,7 +837,7 @@ show list backgrounds; colour fixed-category icons) · **Tasks** (default remind
 confirm before delete; add new tasks to the top; move starred tasks to the top) · **My Day** (reset time —
 default midnight) · **Notifications** (enable reminders; default snooze;
 launch at login) · **Data** (import `.ics`, export all, database location,
-database size) · **About** (version, GitHub link, licences).
+database size, **Import from Microsoft To Do**) · **About** (version, GitHub link, licences).
 
 Completed tasks already have their own section (§3.6), so a “move completed
 to bottom” preference would be redundant.

@@ -362,6 +362,57 @@ in-memory index competing for the working-set budget.
 - Migrations are **forward-only**. No down-migrations.
 - `002_list_icon_emoji.sql` adds nullable `lists.icon_emoji`; existing lists keep
   the colour-dot fallback.
+- `003_list_delete_membership.sql` records which tasks a list delete removed (§3.2).
+- `004_import_links.sql` adds `import_sources` and `import_links` (§3.6).
+
+### 3.6 Import links (migration 004, ADR-016)
+
+```sql
+CREATE TABLE import_sources (id INTEGER PRIMARY KEY, provider TEXT NOT NULL,
+    account_key TEXT NOT NULL, display_name TEXT NOT NULL, last_import_utc TEXT NULL,
+    UNIQUE (provider, account_key));
+CREATE TABLE import_links (source_id INTEGER NOT NULL REFERENCES import_sources(id) ON DELETE CASCADE,
+    entity_type INTEGER NOT NULL,      -- 0 task, 1 list, 2 step, 3 attachment
+    external_id TEXT NOT NULL, local_uid TEXT NOT NULL, fingerprint TEXT NOT NULL,
+    external_modified TEXT NULL, local_modified TEXT NULL, imported_utc TEXT NOT NULL,
+    created_run_id TEXT NULL,
+    PRIMARY KEY (source_id, entity_type, external_id)) WITHOUT ROWID;
+```
+
+These tables let an import from another task manager run again without
+duplicating anything. `provider` is `mstodo`. `account_key` is the Graph user
+id, and `display_name` is the email shown in Settings. Each imported list,
+task, step and attachment keeps a link to its source id. Attachment links store
+the owning task's uid.
+
+`IImportStore.ApplyImportAsync` runs one writer transaction. Every new or
+updated task is dirty and gets a change-log row, so CalDAV pushes it.
+`PreviewImportAsync` runs the same code in a transaction that is rolled back.
+Matching order:
+
+1. Link by external id.
+2. For a task whose id disappeared from the source (Graph re-identifies a task
+   that moves list), the `fingerprint`: creation second + normalised title.
+3. The Graph default list maps to the local default list. Other lists merge
+   with a non-deleted list of the same name (case-insensitive).
+4. An unlinked local root task in the same list with the same normalised title
+   and due date counts as a possible duplicate and is skipped.
+
+New rows get UUIDv5 uids from provider + account + type + external id. If such
+a uid exists without a link, the row is adopted. If it is soft-deleted, a
+random uid is used.
+
+For a matched task:
+- Source unchanged (`external_modified` equal): skip.
+- Source changed and local unchanged (`local_modified` equal to the row's
+  `modified_utc`): update it, keeping My Day, sync identity and other clients'
+  unknown properties.
+- Both changed: keep the local edits, unless the overwrite option is set.
+- Soft-deleted locally, or the imported list was deleted: never resurrected.
+
+Nothing is deleted because it disappeared from the source.
+`RemoveImportRunAsync(runId)` soft-deletes the lists, tasks and steps a run
+created (`created_run_id`) and forgets those links.
 
 ---
 
@@ -399,6 +450,23 @@ The wire format. `VCALENDAR` wrapper with `PRODID:-//Wintodo//Wintodo 1.0//EN`,
 | `X-WINTODO-LIST-COLOR` | `lists.color` | Only on export of a whole list |
 | `X-WINTODO-LIST-ICON` | `lists.icon_emoji` | One emoji grapheme; only on export of a whole list |
 | **anything else** | `ical_unknown` | Verbatim, re-emitted in original order |
+
+Microsoft To Do imports (ADR-016) keep Graph values Wintodo doesn't model as
+extension properties in `ical_unknown`:
+
+| Property | Holds |
+|---|---|
+| `X-MSTODO-ID` | Graph task id |
+| `X-MSTODO-LIST-ID` | Graph list id |
+| `X-MSTODO-STATUS` | `waitingOnOthers` or `deferred`; the task itself is `NEEDS-ACTION` |
+| `X-MSTODO-RECURRENCE` | Raw `patternedRecurrence` JSON when RRULE can't express it exactly |
+| `X-MSTODO-LINKED-RESOURCE` | One JSON value per linked resource; the first web URL also goes to `URL` |
+| `X-MSTODO-EXTRA` | JSON of task properties this version doesn't know |
+| `X-ALT-DESC;FMTTYPE=text/html` | Original HTML note; `DESCRIPTION` holds the plain text |
+
+To Do importance maps `high`→`PRIORITY:1`, `normal`→`0` and `low`→`9`.
+Due and start dates are date-only. A reminder becomes one absolute `VALARM`.
+It is acknowledged when it is already past or the task is completed.
 
 Importance (the To Do star) maps to `PRIORITY`: starring writes `1`, unstarring
 writes `0`. A task arriving from another client with `PRIORITY` 1–4 displays as

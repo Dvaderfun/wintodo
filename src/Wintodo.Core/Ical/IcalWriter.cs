@@ -402,7 +402,7 @@ public sealed class IcalWriter
         }
     }
 
-    private static void AppendLine(StringBuilder output, string line)
+    internal static void AppendLine(StringBuilder output, string line)
     {
         if (line.Contains('\r') || line.Contains('\n'))
         {
@@ -448,7 +448,7 @@ public sealed class IcalWriter
             .Replace(",", "\\,", StringComparison.Ordinal);
     }
 
-    private static string EscapeParameter(string value)
+    internal static string EscapeParameter(string value)
     {
         bool quote = value.IndexOfAny([':', ';', ',']) >= 0;
         string escaped = value

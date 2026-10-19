@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Wintodo.Controls.WelcomeView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:settings="using:CommunityToolkit.WinUI.Controls"
+    mc:Ignorable="d">
+
+    <!--
+        First-run surface in the list pane (DESIGN §10). The shell is already
+        painted behind it; nothing here blocks startup. Placed at 40% height
+        like the empty states.
+    -->
+    <Grid AutomationProperties.AutomationId="Todo.Welcome.Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="2*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="3*" />
+        </Grid.RowDefinitions>
+
+        <StackPanel
+            Grid.Row="1"
+            MaxWidth="560"
+            HorizontalAlignment="Center"
+            Spacing="16">
+            <FontIcon
+                HorizontalAlignment="Center"
+                AutomationProperties.AccessibilityView="Raw"
+                FontSize="{StaticResource EmptyStateIconSize}"
+                Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                Glyph="&#xE8F4;" />
+            <StackPanel Spacing="4">
+                <TextBlock
+                    x:Uid="WelcomeTitle"
+                    HorizontalAlignment="Center"
+                    AutomationProperties.AutomationId="Todo.Welcome.Title"
+                    AutomationProperties.HeadingLevel="Level1"
+                    Style="{StaticResource SubtitleTextBlockStyle}" />
+                <TextBlock
+                    x:Uid="WelcomeSubtitle"
+                    HorizontalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{StaticResource BodyTextBlockStyle}"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap" />
+            </StackPanel>
+
+            <StackPanel Spacing="4">
+                <settings:SettingsCard x:Uid="WelcomeMicrosoftTodoCard">
+                    <settings:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE9D5;" />
+                    </settings:SettingsCard.HeaderIcon>
+                    <Button
+                        x:Uid="WelcomeMicrosoftTodoButton"
+                        AutomationProperties.AutomationId="Todo.Welcome.MicrosoftTodo"
+                        Command="{x:Bind ViewModel.StartMicrosoftTodoImportCommand, Mode=OneTime}"
+                        Style="{StaticResource AccentButtonStyle}" />
+                </settings:SettingsCard>
+                <settings:SettingsCard x:Uid="WelcomeIcalCard">
+                    <settings:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE8B5;" />
+                    </settings:SettingsCard.HeaderIcon>
+                    <Button
+                        x:Uid="WelcomeIcalButton"
+                        AutomationProperties.AutomationId="Todo.Welcome.Ical"
+                        Command="{x:Bind ViewModel.WelcomeImportIcalCommand, Mode=OneTime}" />
+                </settings:SettingsCard>
+            </StackPanel>
+
+            <Button
+                x:Uid="WelcomeStartFreshButton"
+                HorizontalAlignment="Center"
+                AutomationProperties.AutomationId="Todo.Welcome.StartFresh"
+                Command="{x:Bind ViewModel.DismissWelcomeCommand, Mode=OneTime}" />
+        </StackPanel>
+    </Grid>
+</UserControl>

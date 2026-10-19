@@ -473,11 +473,19 @@
                                 x:Name="TaskList"
                                 Loaded="OnTaskListLoaded"
                                 ViewModel="{x:Bind ViewModel.TaskList, Mode=OneWay}"
-                                Visibility="{x:Bind controls:TaskListView.InverseBoolToVisibility(ViewModel.IsSettingsVisible), Mode=OneWay}" />
+                                Visibility="{x:Bind controls:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}" />
                             <controls:SettingsView
                                 x:Name="SettingsContent"
                                 ViewModel="{x:Bind ViewModel, Mode=OneWay}"
-                                x:Load="{x:Bind ViewModel.IsSettingsVisible, Mode=OneWay}" />
+                                x:Load="{x:Bind ViewModel.IsSettingsContentVisible, Mode=OneWay}" />
+                            <controls:WelcomeView
+                                x:Name="WelcomeContent"
+                                ViewModel="{x:Bind ViewModel, Mode=OneWay}"
+                                x:Load="{x:Bind ViewModel.IsWelcomeContentVisible, Mode=OneWay}" />
+                            <controls:ImportWizardView
+                                x:Name="ImportContent"
+                                ViewModel="{x:Bind ViewModel.ImportWizard, Mode=OneWay}"
+                                x:Load="{x:Bind ViewModel.IsImportVisible, Mode=OneWay}" />
                         </Grid>
                     </Grid>
                 </Border>

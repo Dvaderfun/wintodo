@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Wintodo.Controls.ImportWizardView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="using:Wintodo.Controls"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:settings="using:CommunityToolkit.WinUI.Controls"
+    xmlns:viewModels="using:Wintodo.ViewModels"
+    mc:Ignorable="d">
+
+    <!--
+        One wizard for onboarding and Settings → Data. Steps are panels shown by
+        the view model's step flags; the title row matches SettingsView so the
+        surface reads as part of the same shell.
+    -->
+    <Grid AutomationProperties.AutomationId="Todo.Import.Root">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="64" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            x:Uid="ImportWizardTitle"
+            Grid.Row="0"
+            VerticalAlignment="Top"
+            AutomationProperties.AutomationId="Todo.Import.Title"
+            AutomationProperties.HeadingLevel="Level1"
+            Style="{StaticResource TitleTextBlockStyle}" />
+
+        <ScrollViewer
+            Grid.Row="1"
+            Padding="0,0,12,48"
+            HorizontalScrollBarVisibility="Disabled"
+            HorizontalScrollMode="Disabled">
+            <!-- Same left-aligned, width-capped column as SettingsView. -->
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="1000" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Spacing="16">
+
+                    <InfoBar
+                        AutomationProperties.AutomationId="Todo.Import.Error"
+                        IsOpen="{x:Bind ViewModel.IsErrorOpen, Mode=TwoWay}"
+                        Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                        Severity="Error" />
+
+                    <!-- Connect -->
+                    <StackPanel
+                        Spacing="16"
+                        Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsConnectStep), Mode=OneWay}">
+                        <TextBlock
+                            x:Uid="ImportConnectIntro"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <InfoBar
+                            x:Uid="ImportReadOnlyInfo"
+                            AutomationProperties.AutomationId="Todo.Import.ReadOnlyInfo"
+                            IsClosable="False"
+                            IsOpen="True"
+                            Severity="Informational" />
+                        <InfoBar
+                            x:Uid="ImportNotConfiguredInfo"
+                            AutomationProperties.AutomationId="Todo.Import.NotConfigured"
+                            IsClosable="False"
+                            IsOpen="{x:Bind ViewModel.IsSignInNotConfigured, Mode=OneTime}"
+                            Severity="Warning" />
+                        <TextBlock
+                            AutomationProperties.AutomationId="Todo.Import.LastImport"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource CaptionTextBlockStyle}"
+                            Text="{x:Bind ViewModel.LastImportText, Mode=OneWay}"
+                            TextWrapping="Wrap"
+                            Visibility="{x:Bind local:ImportWizardView.TextToVisibility(ViewModel.LastImportText), Mode=OneWay}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                x:Uid="ImportSignInButton"
+                                AutomationProperties.AutomationId="Todo.Import.SignIn"
+                                Command="{x:Bind ViewModel.SignInCommand, Mode=OneTime}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                            <Button
+                                x:Uid="ImportCancelButton"
+                                AutomationProperties.AutomationId="Todo.Import.Cancel"
+                                Command="{x:Bind ViewModel.CancelCommand, Mode=OneTime}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Reading / importing -->
+                    <StackPanel
+                        Spacing="12"
+                        Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsProgressStep), Mode=OneWay}">
+                        <TextBlock
+                            AutomationProperties.AutomationId="Todo.Import.ProgressText"
+                            AutomationProperties.LiveSetting="Polite"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            Text="{x:Bind ViewModel.ProgressText, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <ProgressBar
+                            x:Uid="ImportProgressBar"
+                            AutomationProperties.AutomationId="Todo.Import.Progress"
+                            IsIndeterminate="{x:Bind ViewModel.IsProgressIndeterminate, Mode=OneWay}"
+                            Maximum="{x:Bind ViewModel.ProgressMaximum, Mode=OneWay}"
+                            Value="{x:Bind ViewModel.ProgressValue, Mode=OneWay}" />
+                        <Button
+                            x:Uid="ImportCancelButton"
+                            AutomationProperties.AutomationId="Todo.Import.CancelProgress"
+                            Command="{x:Bind ViewModel.CancelCommand, Mode=OneTime}" />
+                    </StackPanel>
+
+                    <!-- Choose -->
+                    <StackPanel
+                        Spacing="16"
+                        Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsChooseStep), Mode=OneWay}">
+                        <TextBlock
+                            AutomationProperties.AutomationId="Todo.Import.Account"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{StaticResource BodyTextBlockStyle}"
+                            Text="{x:Bind ViewModel.AccountText, Mode=OneWay}"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            x:Uid="ImportChooseHeader"
+                            AutomationProperties.HeadingLevel="Level2"
+                            Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <ItemsRepeater
+                            x:Name="ListsRepeater"
+                            AutomationProperties.AutomationId="Todo.Import.Lists"
+                            ItemsSource="{x:Bind ViewModel.Lists, Mode=OneTime}">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Spacing="4" />
+                            </ItemsRepeater.Layout>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="viewModels:ImportListOptionViewModel">
+                                    <settings:SettingsCard Description="{x:Bind Detail, Mode=OneTime}">
+                                        <settings:SettingsCard.Header>
+                                            <CheckBox
+                                                AutomationProperties.AutomationId="{x:Bind AutomationId, Mode=OneTime}"
+                                                Content="{x:Bind Label, Mode=OneTime}"
+                                                IsChecked="{x:Bind IsSelected, Mode=TwoWay}" />
+                                        </settings:SettingsCard.Header>
+                                    </settings:SettingsCard>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                        <StackPanel Spacing="4">
+                            <settings:SettingsCard x:Uid="ImportIncludeCompletedCard">
+                                <ToggleSwitch
+                                    x:Uid="ImportIncludeCompletedToggle"
+                                    AutomationProperties.AutomationId="Todo.Import.IncludeCompleted"
+                                    IsOn="{x:Bind ViewModel.IncludeCompleted, Mode=TwoWay}" />
+                            </settings:SettingsCard>
+                            <settings:SettingsCard x:Uid="ImportIncludeAttachmentsCard">
+                                <ToggleSwitch
+                                    x:Uid="ImportIncludeAttachmentsToggle"
+                                    AutomationProperties.AutomationId="Todo.Import.IncludeAttachments"
+                                    IsOn="{x:Bind ViewModel.IncludeAttachments, Mode=TwoWay}" />
+                            </settings:SettingsCard>
+                            <settings:SettingsCard
+                                x:Uid="ImportOverwriteCard"
+                                Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.HasPreviousImport), Mode=OneWay}">
+                                <ToggleSwitch
+                                    x:Uid="ImportOverwriteToggle"
+                                    AutomationProperties.AutomationId="Todo.Import.OverwriteLocalEdits"
+                                    IsOn="{x:Bind ViewModel.OverwriteLocalEdits, Mode=TwoWay}" />
+                            </settings:SettingsCard>
+                        </StackPanel>
+                        <InfoBar
+                            x:Uid="ImportLimitsInfo"
+                            AutomationProperties.AutomationId="Todo.Import.LimitsInfo"
+                            IsClosable="False"
+                            IsOpen="True"
+                            Severity="Informational" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                x:Uid="ImportContinueButton"
+                                AutomationProperties.AutomationId="Todo.Import.Continue"
+                                Command="{x:Bind ViewModel.ContinueCommand, Mode=OneTime}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                            <Button
+                                x:Uid="ImportBackButton"
+                                AutomationProperties.AutomationId="Todo.Import.BackToConnect"
+                                Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Review and done share the summary list -->
+                    <StackPanel
+                        Spacing="16"
+                        Visibility="{x:Bind local:ImportWizardView.EitherToVisibility(ViewModel.IsReviewStep, ViewModel.IsDoneStep), Mode=OneWay}">
+                        <TextBlock
+                            x:Uid="ImportReviewHeader"
+                            AutomationProperties.HeadingLevel="Level2"
+                            Style="{StaticResource SubtitleTextBlockStyle}"
+                            Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsReviewStep), Mode=OneWay}" />
+                        <TextBlock
+                            AutomationProperties.AutomationId="Todo.Import.ResultTitle"
+                            AutomationProperties.HeadingLevel="Level2"
+                            Style="{StaticResource SubtitleTextBlockStyle}"
+                            Text="{x:Bind ViewModel.ResultTitle, Mode=OneWay}"
+                            Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsDoneStep), Mode=OneWay}" />
+                        <ItemsRepeater
+                            x:Name="SummaryRepeater"
+                            AutomationProperties.AutomationId="Todo.Import.Summary"
+                            ItemsSource="{x:Bind ViewModel.SummaryLines, Mode=OneTime}">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Spacing="4" />
+                            </ItemsRepeater.Layout>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <TextBlock
+                                        AutomationProperties.AutomationId="Todo.Import.SummaryLine"
+                                        Style="{StaticResource BodyTextBlockStyle}"
+                                        Text="{x:Bind Mode=OneTime}"
+                                        TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsReviewStep), Mode=OneWay}">
+                            <Button
+                                x:Uid="ImportStartButton"
+                                AutomationProperties.AutomationId="Todo.Import.Start"
+                                Command="{x:Bind ViewModel.ImportCommand, Mode=OneTime}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                            <Button
+                                x:Uid="ImportBackButton"
+                                AutomationProperties.AutomationId="Todo.Import.BackToChoose"
+                                Command="{x:Bind ViewModel.BackCommand, Mode=OneTime}" />
+                        </StackPanel>
+                        <StackPanel
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.IsDoneStep), Mode=OneWay}">
+                            <Button
+                                x:Uid="ImportGoToTasksButton"
+                                AutomationProperties.AutomationId="Todo.Import.GoToTasks"
+                                Command="{x:Bind ViewModel.FinishCommand, Mode=OneTime}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                            <Button
+                                x:Uid="ImportRemoveButton"
+                                AutomationProperties.AutomationId="Todo.Import.RemoveImported"
+                                Command="{x:Bind ViewModel.RemoveImportedCommand, Mode=OneTime}"
+                                Visibility="{x:Bind local:ImportWizardView.BoolToVisibility(ViewModel.CanRemoveImported), Mode=OneWay}" />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -26,6 +26,7 @@ public sealed partial class MainWindow : Window
     private readonly IStartupTaskService _startupTaskService;
     private readonly CalDavSyncService _syncService;
     private readonly HttpClient _syncHttpClient;
+    private readonly ImportEnvironment _importEnvironment;
     private ShellPage? _shellPage;
     private PointInt32 _restoredPosition;
     private SizeInt32 _restoredSize;
@@ -40,7 +41,8 @@ public sealed partial class MainWindow : Window
         WindowsIntegrationService windowsIntegration,
         IStartupTaskService startupTaskService,
         CalDavSyncService syncService,
-        HttpClient syncHttpClient)
+        HttpClient syncHttpClient,
+        ImportEnvironment importEnvironment)
     {
         _store = store;
         _clock = clock;
@@ -49,6 +51,7 @@ public sealed partial class MainWindow : Window
         _startupTaskService = startupTaskService;
         _syncService = syncService;
         _syncHttpClient = syncHttpClient;
+        _importEnvironment = importEnvironment;
 
         InitializeComponent();
         Title = new ResourceLoader().GetString("MainWindowTitle");
@@ -75,7 +78,8 @@ public sealed partial class MainWindow : Window
             _stateService,
             _windowsIntegration,
             _startupTaskService,
-            _syncService);
+            _syncService,
+            _importEnvironment);
         _shellPage.SearchFocusRequested += TitleSearch.FocusSearch;
         _shellPage.SearchClearRequested += TitleSearch.TryClear;
         _shellPage.ThemeChanged += OnShellThemeChanged;

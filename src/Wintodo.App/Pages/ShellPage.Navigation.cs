@@ -50,6 +50,7 @@ public sealed partial class ShellPage
             return;
         }
 
+        ViewModel.LeaveImportSurfaces();
         await ApplySelectionAsync(args.SelectedItem, args.IsSettingsSelected);
     }
 

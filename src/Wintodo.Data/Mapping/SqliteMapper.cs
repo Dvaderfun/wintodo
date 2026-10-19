@@ -186,7 +186,7 @@ internal static class SqliteMapper
         return ParseInstant(value);
     }
 
-    private static DateTimeOffset? ReadInstant(SqliteDataReader reader, int ordinal)
+    internal static DateTimeOffset? ReadInstant(SqliteDataReader reader, int ordinal)
     {
         return reader.IsDBNull(ordinal) ? null : ParseInstant(reader.GetString(ordinal));
     }

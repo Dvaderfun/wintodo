@@ -39,6 +39,14 @@ public partial class App : Application
         UnhandledException += (_, args) =>
             Trace.WriteLine($"WINTODO_UNHANDLED_EXCEPTION={args.Exception}");
 #if DEBUG
+        // UI gates collect the app's trace lines (exceptions, binding
+        // failures) from a file; Debug builds only, like --import-fixture.
+        if (GetCommandLineOption("--trace-file") is { Length: > 0 } traceFile)
+        {
+            Trace.Listeners.Add(new TextWriterTraceListener(Path.GetFullPath(traceFile)));
+            Trace.AutoFlush = true;
+        }
+
         DebugSettings.IsBindingTracingEnabled = true;
         DebugSettings.BindingFailed += (_, args) =>
             Trace.WriteLine($"WINTODO_BINDING_FAILED={args.Message}");
@@ -122,7 +130,8 @@ public partial class App : Application
                 windowsIntegration,
                 startupTaskService,
                 syncService,
-                syncHttpClient);
+                syncHttpClient,
+                CreateImportEnvironment(commandLineDatabasePath, clock));
             TraceStartupStage("window-created", launchStartTimestamp);
             Window = window;
             Task firstFrame = ObserveFirstFrameAsync(launchStartTimestamp);
@@ -309,6 +318,33 @@ public partial class App : Application
             && File.Exists(Path.GetFullPath(path));
     }
 #endif
+
+    private static ImportEnvironment CreateImportEnvironment(string? commandLineDatabasePath, IClock clock)
+    {
+        // Scratch databases used by UI gates skip onboarding unless they opt in.
+        bool onboardingAllowed = string.IsNullOrWhiteSpace(commandLineDatabasePath)
+            || HasCommandLineFlag("--show-onboarding");
+        string attachmentRoot = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
+        IMicrosoftTodoConnector connector = new MicrosoftGraphConnector(
+            new HttpClient { Timeout = TimeSpan.FromSeconds(100) },
+            new Microsoft.Windows.ApplicationModel.Resources.ResourceLoader().GetString("Import_SignInCompletePage"),
+            clock);
+#if DEBUG
+        string? fixture = GetCommandLineOption("--import-fixture");
+        if (!string.IsNullOrWhiteSpace(fixture))
+        {
+            connector = new FixtureMicrosoftTodoConnector(Path.GetFullPath(fixture), clock);
+        }
+#endif
+        return new ImportEnvironment(connector, onboardingAllowed, attachmentRoot);
+    }
+
+    private static bool HasCommandLineFlag(string flag)
+    {
+        return Environment.GetCommandLineArgs()
+            .Skip(1)
+            .Contains(flag, StringComparer.Ordinal);
+    }
 
     private static IClock ResolveClock()
     {

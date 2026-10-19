@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="Microsoft.Testing.Extensions.TrxReport" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Wintodo.Core\Wintodo.Core.csproj" />
+    <ProjectReference Include="..\..\src\Wintodo.Data\Wintodo.Data.csproj" />
+    <ProjectReference Include="..\..\src\Wintodo.Import\Wintodo.Import.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\fixtures\mstodo\**\*" LinkBase="fixtures\mstodo" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>
