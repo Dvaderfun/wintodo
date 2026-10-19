@@ -6,7 +6,7 @@ namespace Wintodo.Import.MicrosoftTodo;
 /// <summary>
 /// Serves recorded Graph responses from a folder, so tests and UI gates run
 /// the real client and mapper without a Microsoft account. A request for
-/// <c>/v1.0/me/todo/lists</c> reads <c>me/todo/lists.json</c>. A raw
+/// <c>/v1.0/me/todo/lists/delta</c> reads <c>me/todo/lists/delta.json</c>. A raw
 /// attachment request (<c>…/$value</c>) reads <c>…/content.bin</c>. The query
 /// string is ignored, and a missing file returns a Graph-shaped 404.
 /// </summary>

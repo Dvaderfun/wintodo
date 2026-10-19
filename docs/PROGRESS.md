@@ -3402,3 +3402,20 @@ asserting the new warning stays hidden); Debug x64 warnings-as-errors clean;
   (`WINTODO_IMPORT_READ`), never names, for `--trace-file` diagnosis.
 - Cause of the empty result is not yet known: the owner is checking whether
   that account holds the To Do data. The manual gate stays open.
+
+## IMP — Read lists through Graph delta          2026-10-19
+
+**Gate:** import 11/11 in WintodoTest (`import/run-20261019-145038`, fixture
+now served as two delta pages with a removed entry); Debug x64
+warnings-as-errors clean; 365/365 unit tests (new delta paging test).
+
+- Owner's manual gate: sign-in succeeded, but `GET me/todo/lists` returned
+  `"value": []` for the personal account (also in Graph Explorer, v1.0 and
+  beta, with more permissions). `$filter=startswith(displayName,'U')` returned
+  only one of three matching lists. `GET me/todo/lists/delta` returned the
+  lists. `GraphTodoClient.GetListsAsync` now reads delta pages to the
+  `@odata.deltaLink` and skips `@removed` entries. Requesting
+  `Tasks.ReadWrite` would not help and stays out (read-only, ADR-016).
+- Community reports also mention missing tasks in the plain list-tasks call;
+  not seen yet. The next owner run compares `WINTODO_IMPORT_READ` task counts
+  with To Do before switching tasks to delta too.

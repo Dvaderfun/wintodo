@@ -1,0 +1,8 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#Collection(microsoft.graph.todoTaskList)",
+  "@odata.nextLink": "https://graph.microsoft.com/v1.0/me/todo/lists/delta/page2?$skiptoken=fixture",
+  "value": [
+    {"id":"L-default","displayName":"Tasks","isOwner":true,"isShared":false,"wellknownListName":"defaultList"},
+    {"id":"L-groc","displayName":"🛒 Groceries","isOwner":true,"isShared":false,"wellknownListName":"none"}
+  ]
+}
