@@ -3627,3 +3627,16 @@ account rereads. Three Import identity tests cover same/different/missing ids.
 
 **Deviations:** None; tokens remain in memory for a single sign-in. The
 pre-existing exception-trace finding remains in the separate IMP-25 row.
+
+## IMP-11 — Keep Welcome when the iCalendar picker is cancelled          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 381/381 unit tests for the
+package build. VM import 14/14, zero failed/skipped, including cancelled picker.
+Returned Welcome/flow captures reviewed; winui-code-review no new findings above
+informational. First gate: 12/14; cancelled-picker window lookup and the separate
+remove-dialog text assertion failed. The picker row now waits and uses ID 2.
+
+**Shipped:** Open the picker over Welcome; complete onboarding only after an
+.ics import applies. Picker and preview cancellation preserve Welcome.
+
+**Deviations:** Preserve the async command type used by generated x:Bind code.

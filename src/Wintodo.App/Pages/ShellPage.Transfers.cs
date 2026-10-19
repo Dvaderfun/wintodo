@@ -76,6 +76,7 @@ public sealed partial class ShellPage
             try
             {
                 IcalImportResult result = await _taskStore.ImportIcalAsync(calendars);
+                await ViewModel.OnIcalImportAppliedAsync();
                 await ViewModel.RefreshNavigationAsync();
                 ShowTransferStatus(
                     _resources.GetString("Transfer_StatusTitleSuccess"),

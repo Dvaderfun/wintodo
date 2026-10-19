@@ -105,11 +105,19 @@ public sealed partial class ShellViewModel
     }
 
     [RelayCommand]
-    private async Task WelcomeImportIcalAsync()
+    private Task WelcomeImportIcalAsync()
     {
-        await CompleteOnboardingAsync();
-        ShowDefaultList();
         ImportIcalRequested?.Invoke();
+        return Task.CompletedTask;
+    }
+
+    internal async Task OnIcalImportAppliedAsync()
+    {
+        if (IsWelcomeVisible)
+        {
+            await CompleteOnboardingAsync();
+            ShowDefaultList();
+        }
     }
 
     /// <summary>Navigating anywhere leaves the Welcome and import surfaces.</summary>
