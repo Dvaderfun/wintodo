@@ -764,7 +764,8 @@ secondary-text subtitle. Below them, in a column at most 560 wide, sit two
 Invoke pattern to UI Automation): **Microsoft To Do** opens the import
 wizard and **iCalendar file** opens the `.ics` picker. A centred **Start fresh**
 button follows. Starting fresh, finishing an import, or choosing any
-navigation item dismisses Welcome for good.
+navigation item dismisses Welcome for good. Cancelling the `.ics` picker or
+preview leaves Welcome visible; it is completed only after the import applies.
 
 ### 10.2 Import wizard
 

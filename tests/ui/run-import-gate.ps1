@@ -149,6 +149,18 @@ try {
         Assert-AccessibilityClean 'welcome'
         Save-Screenshot '01-welcome.png'
     }
+    Test-UI 'Cancelled Welcome iCalendar picker keeps Welcome' {
+        Invoke-Ui @('invoke', 'Todo.Welcome.Ical')
+        $picker = $null
+        for ($attempt = 0; $attempt -lt 40 -and -not $picker; $attempt++) {
+            Start-Sleep -Milliseconds 250
+            $windows = Invoke-Ui @('list-windows', '--json') | ConvertFrom-Json
+            $picker = $windows | Where-Object { $_.hwnd -and $_.title -eq 'Open' } | Select-Object -First 1
+        }
+        if (-not $picker) { throw 'No Open picker found in the VM.' }
+        Invoke-WinAppChecked @('ui', 'invoke', '2', '-w', "$($picker.hwnd)", '--on', $Target)
+        Invoke-Ui @('wait-for', 'Todo.Welcome.Title', '-t', '5000')
+    }
     Test-UI 'Microsoft To Do card opens the wizard on its connect step' {
         Invoke-Ui @('invoke', 'Todo.Welcome.MicrosoftTodo')
         Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
