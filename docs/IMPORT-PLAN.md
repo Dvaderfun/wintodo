@@ -221,7 +221,9 @@ never hard-deletes anything locally.
 - One writer transaction for the whole save, with change-log rows and
   `is_dirty=1`, so CalDAV pushes the imported tasks when sync is on, and a
   single `StoreChanged`. Attachments download to a staging folder first and
-  move into place only after the commit.
+  copy into place inside the writer transaction, before the commit. Startup
+  sweeps abandoned staging and unreferenced task folders for the normal profile.
+  Scratch databases skip this sweep because their attachment root is shared.
 - Parameterised SQL only. Graph JSON is parsed with a source-generated
   `JsonSerializerContext`.
 - Graph paging via `@odata.nextLink`, with `$top=100`. Throttling (`429`/`503`)
@@ -332,6 +334,8 @@ Polish packages IMP-08 to IMP-24 are tracked in §11.1, not in this table.
 
 ## 10. As built (2026-10-19)
 
+- **IMP-21:** Startup recovery removes abandoned staging/unreferenced UUID task
+  folders, skips shared-root scratch profiles; busy close confirms and waits for save.
 - **IMP-20:** Four ordered list workers and shared throttle wait; measured read
   1434.7 → 455.4 ms, total 2929.2 → 2264.2 ms. Downloads remain serial: not measured.
 - **IMP-19:** Settings and Connect list all imported accounts with local dates.
@@ -474,8 +478,8 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-17 | Done step: success state, Copy details, My Day hand-off | P2 UX | S | IMP-16 | ImportWizardView, ImportWizardVM, ShellVM.Import | done (c215473; import 18/18) |
 | IMP-18 | Errors you can act on; visible throttling | P2 UX | M | IMP-14 | GraphTodoClient, MicrosoftTodoReader, ImportWizardVM/View | implemented (5d52010; import 18/18; admin URL verify) |
 | IMP-19 | Settings → Data shows every imported account | P2 UX | S | — | SettingsView, ShellVM settings, ImportWizardVM | done (7bd00d8; import 18/18) |
-| IMP-20 | Faster read: bounded parallel requests, measured | P3 perf | M | IMP-09 | MicrosoftTodoReader, GraphTodoClient, `docs/PERF.md` | done (IMP-20 commit; fixture perf 1/1, import 18/18) |
-| IMP-21 | Interrupted imports leave nothing behind | P3 robustness | S | IMP-09 | App startup, ImportWizardVM, Data import | open |
+| IMP-20 | Faster read: bounded parallel requests, measured | P3 perf | M | IMP-09 | MicrosoftTodoReader, GraphTodoClient, `docs/PERF.md` | done (3abee14; fixture perf 1/1, import 18/18) |
+| IMP-21 | Interrupted imports leave nothing behind | P3 robustness | S | IMP-09 | App startup, ImportWizardVM, Data import | done (IMP-21 commit; cleanup tests pass, import 18/18) |
 | IMP-22 | Gate rows, M8 re-run, code review and docs for the polish | P3 | M | IMP-08…21 | `tests/ui/run-import-gate.ps1`, DESIGN §10.2/§12, PROGRESS | open |
 | IMP-23 | 🔒 Remove an earlier import from Settings | P4 | M | IMP-12, IMP-19 | ADR-016 amendment, SettingsView, Data import | awaiting owner |
 | IMP-24 | 🔒 Refresh the token in memory during long imports | P4 | S | IMP-10 | ADR-016 amendment, MicrosoftSignInService | awaiting owner |

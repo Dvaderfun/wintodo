@@ -3772,3 +3772,19 @@ Production read 1434.7 → 455.4 ms; total read/preview/save 2929.2 → 2264.2 m
 **Deviations:** Downloads stay serial: the 1,000-task fixture has no attachments,
 so measurements do not justify adding download concurrency. No live-account
 performance claim. The owner may supply that measurement later.
+
+## IMP-21 — Recover interrupted import files          2026-10-20
+
+**Gate:** PASS — Debug x64 zero warnings/errors; 392/392 tests including Data
+recovery preservation/orphan cleanup, zero skips. VM import 18/18, M8 17/17,
+settings 9/9. winui-code-review no unresolved findings above informational.
+
+**Shipped:** Off-thread startup sweep of abandoned staging and UUID task folders
+with no attachment rows. Keep referenced files. Busy close confirms, cancels
+reading/download, and waits for Saving before closing.
+
+**Choice / deviations:** Keep the current copy-inside-transaction implementation
+and make §5 match it, avoiding a new post-commit rename failure path. Normal
+profile sweeps only; scratch DBs share its attachment root and must not delete
+files belonging to another DB. The close-confirm Saving timing is implemented
+but has no dedicated VM kill/close timing row; it remains unclaimed.

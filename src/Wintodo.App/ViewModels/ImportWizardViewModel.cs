@@ -107,6 +107,9 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     public partial bool IsBusy { get; set; }
 
     [ObservableProperty]
+    public partial bool IsSaving { get; set; }
+
+    [ObservableProperty]
     public partial bool IsErrorOpen { get; set; }
 
     [ObservableProperty]
@@ -312,6 +315,8 @@ public sealed partial class ImportWizardViewModel : ObservableObject
             SetProgress(_resources.GetString("Import_ProgressSaving"), indeterminate: true);
 
             // Saving is one transaction; it is not cancelled half-way.
+            IsSaving = true;
+            token.ThrowIfCancellationRequested();
             ImportOutcome outcome = await _store.ApplyImportAsync(snapshot, BuildOptions(), CancellationToken.None);
             _lastRunId = outcome.RunId;
             _lastOutcome = outcome;
@@ -523,6 +528,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
 
     private void EndWork()
     {
+        IsSaving = false;
         IsBusy = false;
         _cancellation?.Dispose();
         _cancellation = null;
