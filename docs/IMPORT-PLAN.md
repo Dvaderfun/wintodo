@@ -3,8 +3,9 @@
 Status: **implemented** (2026-10-19). [ADR-016](adr/ADR-016-microsoft-todo-import.md)
 is accepted. The Entra app (IMP-00) is registered: "Wintodo", client id
 `038f1bee-9c89-4f6c-9061-15210945a03e` in the owner's directory. Everything
-is gated against recorded Graph fixtures; live sign-in awaits the owner's
-manual gate. See §10 for how the build differs from this plan.
+is gated against recorded Graph fixtures; live import passed the owner's
+manual gate on a personal account, and a work/school account is pending. See
+§10 for how the build differs from this plan.
 
 Goal: a first-run onboarding screen that offers to bring tasks over from
 another task manager, starting with **Microsoft To Do**. The same import must

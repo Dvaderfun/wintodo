@@ -3550,3 +3550,19 @@ were not re-run (no XAML or shell change).
 - Deliberately no silent token refresh: the token stays in memory for one
   sign-in (ADR-016). ARCHITECTURE, IMPORT-PLAN §8/§10 and the testing guide
   updated.
+
+## Repo hygiene — personal data removed          2026-10-19
+
+**Gate:** n/a (documentation and one code comment). Full scan of tracked
+files for emails, directory/object ids, personal handles, host paths,
+secrets, tokens and keys; nothing remains except the public Entra client id
+and the repository URL.
+
+- At the owner's request, edited earlier entries in place (an exception to
+  append-only history): IMP-00 and the amendment-1 entry no longer name the
+  directory account, directory id or app object id; PLAN, ADR-011/012/013
+  say "the owner" instead of a personal handle; the client-id comment no
+  longer names the directory.
+- Not changed here: these values remain in git history, and every commit's
+  author address is a personal email. Removing them needs a history rewrite
+  and force push, which is the owner's decision.
