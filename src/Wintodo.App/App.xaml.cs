@@ -328,6 +328,8 @@ public partial class App : Application
         IMicrosoftTodoConnector connector = new MicrosoftGraphConnector(
             new HttpClient { Timeout = TimeSpan.FromSeconds(100) },
             new Microsoft.Windows.ApplicationModel.Resources.ResourceLoader().GetString("Import_SignInCompletePage"),
+            new Microsoft.Windows.ApplicationModel.Resources.ResourceLoader().GetString("Import_SignInFailedPage"),
+            new Microsoft.Windows.ApplicationModel.Resources.ResourceLoader().GetString("Import_SignInPageTitle"),
             clock);
 #if DEBUG
         string? fixture = GetCommandLineOption("--import-fixture");

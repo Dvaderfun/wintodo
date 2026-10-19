@@ -3583,3 +3583,16 @@ and image metadata. Final tree unchanged by the rewrite (same tree hash);
 - The local `tests/ui/artifacts/ux13-baseline` worktree was moved to the
   rewritten copy of its commit. The previous entry's "remain in git history"
   note is superseded.
+
+## IMP-08 — Correct the sign-in browser response          2026-10-19
+
+**Gate:** PASS — Debug x64 build: zero warnings/errors; 374/374 tests, zero
+failed/skipped; WintodoTest import gate 12/12, zero failed/skipped. Returned
+screenshots visually reviewed. Vendored winui-code-review: no findings above
+informational; the browser page is HTML and no XAML changed.
+
+**Shipped:** Error redirects use a separate localised failure message. The pure
+response builder HTML-encodes title and messages, supports dark mode and loads
+no external resources. Four Import test cases cover success/failure and encoding.
+
+**Deviations:** None. Live Microsoft sign-in remains owner-only.

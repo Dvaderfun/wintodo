@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using Microsoft.Security.Authentication.OAuth;
+using Wintodo.Import.MicrosoftTodo;
 
 namespace Wintodo.Services;
 
@@ -24,6 +25,8 @@ internal static class MicrosoftSignInService
     internal static async Task<string> SignInAsync(
         string clientId,
         string completePageText,
+        string failedPageText,
+        string pageTitle,
         CancellationToken cancellationToken)
     {
         using var listener = new TcpListener(IPAddress.Loopback, 0);
@@ -36,7 +39,7 @@ internal static class MicrosoftSignInService
         authParams.AdditionalParams["prompt"] = "select_account";
 
         using var listenerCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        Task redirectTask = AcceptRedirectAsync(listener, port, completePageText, listenerCancellation.Token);
+        Task redirectTask = AcceptRedirectAsync(listener, port, completePageText, failedPageText, pageTitle, listenerCancellation.Token);
         AuthRequestResult authResult;
         try
         {
@@ -89,6 +92,8 @@ internal static class MicrosoftSignInService
         TcpListener listener,
         int port,
         string completePageText,
+        string failedPageText,
+        string pageTitle,
         CancellationToken cancellationToken)
     {
         // Any local process can reach the port, so a stalled, broken or
@@ -107,7 +112,11 @@ internal static class MicrosoftSignInService
                     && target.StartsWith("/?", StringComparison.Ordinal)
                     && (target.Contains("code=", StringComparison.Ordinal)
                         || target.Contains("error=", StringComparison.Ordinal));
-                await WriteResponseAsync(stream, isRedirect, completePageText, requestTimeout.Token);
+                string body = isRedirect
+                    ? SignInResponsePage.Build(target!.Contains("error=", StringComparison.Ordinal),
+                        pageTitle, completePageText, failedPageText)
+                    : string.Empty;
+                await WriteResponseAsync(stream, isRedirect, body, requestTimeout.Token);
                 if (isRedirect)
                 {
                     bool matched = OAuth2Manager.CompleteAuthRequest(new Uri($"http://localhost:{port}{target}"));
@@ -154,15 +163,9 @@ internal static class MicrosoftSignInService
     private static async Task WriteResponseAsync(
         NetworkStream stream,
         bool isRedirect,
-        string completePageText,
+        string body,
         CancellationToken cancellationToken)
     {
-        string body = isRedirect
-            ? "<!doctype html><html><head><meta charset=\"utf-8\"><title>Wintodo</title></head>"
-                + "<body style=\"font-family:'Segoe UI',sans-serif;margin:48px\"><p>"
-                + WebUtility.HtmlEncode(completePageText)
-                + "</p></body></html>"
-            : string.Empty;
         byte[] content = Encoding.UTF8.GetBytes(body);
         string status = isRedirect ? "200 OK" : "404 Not Found";
         byte[] header = Encoding.ASCII.GetBytes(
