@@ -6,6 +6,18 @@ namespace Wintodo.Import.Tests;
 public sealed class GraphTodoClientTests
 {
     [Theory]
+    [InlineData("same", true)]
+    [InlineData("different", false)]
+    [InlineData("", false)]
+    public async Task ResumeChecksOnlyAccountIdentity(string id, bool expected)
+    {
+        var handler = new ScriptedHandler(_ => ScriptedHandler.Json(HttpStatusCode.OK, "{\"id\":\"" + id + "\"}"));
+        var client = new GraphTodoClient(new HttpClient(handler), "new-token");
+        var export = new MicrosoftTodoExport { User = new GraphUser { Id = "same" } };
+        Assert.Equal(expected, await MicrosoftTodoReader.CanResumeAsync(client, export, TestContext.Current.CancellationToken));
+        Assert.Equal("/v1.0/me", Assert.Single(handler.Requests).AbsolutePath);
+    }
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task LargeAttachmentStreamsWithIncrementalProgress(bool fallback)

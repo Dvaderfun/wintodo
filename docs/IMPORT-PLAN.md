@@ -394,8 +394,9 @@ Polish packages IMP-08 to IMP-24 are tracked in §11.1, not in this table.
   approval"); Retry reused the same token and failed again. Now any Graph
   401 is `GraphAuthorizationException.IsSignInExpired`: the wizard says
   `Import_ErrorSignInExpired`, returns to the Connect step and drops the
-  stale reader; signing in again re-reads To Do and keeps the list choices
-  and options. A 403 still shows `Import_ErrorAccess`. The import gate
+  stale reader; IMP-10 keeps the export and preview pending ids. A fresh
+  sign-in checks /me only and resumes Review for the same account; a different
+  account gets a full read. List choices and options stay. A 403 still shows `Import_ErrorAccess`. The import gate
   reproduces it with the Debug-only `--import-fixture-expire-once` (first
   session's raw attachment requests return 401). No silent token refresh:
   the token lives in memory for one sign-in only (ADR-016).
@@ -443,8 +444,8 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | ID | Title | Phase | Size | Depends on | Touches (hot files) | Status |
 |---|---|---|---|---|---|---|
 | IMP-08 | The browser page says "signed in" after a cancelled or failed sign-in | P1 fix | S | — | MicrosoftSignInService | done (924ef77; import 12/12) |
-| IMP-09 | A re-import downloads only new attachments, streamed to disk | P1 fix | M | — | MicrosoftTodoReader, GraphTodoClient, Data import, ImportWizardVM | done (IMP-09 commit; import 12/12) |
-| IMP-10 | An expired sign-in keeps what was read and resumes at Review | P1 fix | S | IMP-09 | ImportWizardVM | open |
+| IMP-09 | A re-import downloads only new attachments, streamed to disk | P1 fix | M | — | MicrosoftTodoReader, GraphTodoClient, Data import, ImportWizardVM | done (333dbb2; import 12/12) |
+| IMP-10 | An expired sign-in keeps what was read and resumes at Review | P1 fix | S | IMP-09 | ImportWizardVM | done (IMP-10 commit; import 12/12) |
 | IMP-11 | The Welcome `.ics` card keeps onboarding if the file picker is cancelled | P1 fix | S | — | ShellVM.Import, ShellVM `.ics` import | open |
 | IMP-12 | Confirm before "Remove what was just imported" | P1 fix | S | — | ImportWizardView, ImportWizardVM, ShellPage dialogs | open |
 | IMP-13 | Report what was kept but not converted | P1 fix | S | — | Core `ImportOutcome`, GraphTodoMapper, Data import | open |
@@ -453,7 +454,7 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-16 | Review step: grouped summary, duplicates you can see, preview progress | P2 UX | M | IMP-13, IMP-14 | ImportWizardView, ImportWizardVM, Data import | open |
 | IMP-17 | Done step: success state, Copy details, My Day hand-off | P2 UX | S | IMP-16 | ImportWizardView, ImportWizardVM, ShellVM.Import | open |
 | IMP-18 | Errors you can act on; visible throttling | P2 UX | M | IMP-14 | GraphTodoClient, MicrosoftTodoReader, ImportWizardVM/View | open |
-| IMP-19 | Settings → Data shows every imported account | P2 UX | S | — | SettingsView, ShellVM settings, ImportWizardVM | open |
+| IMP-19 | Settings → Data shows every imported account | P2 UX | S | — | SettingsView, ShellVM settings, ImportWizardVM | done (IMP-10 commit; import 12/12) |
 | IMP-20 | Faster read: bounded parallel requests, measured | P3 perf | M | IMP-09 | MicrosoftTodoReader, GraphTodoClient, `docs/PERF.md` | open |
 | IMP-21 | Interrupted imports leave nothing behind | P3 robustness | S | IMP-09 | App startup, ImportWizardVM, Data import | open |
 | IMP-22 | Gate rows, M8 re-run, code review and docs for the polish | P3 | M | IMP-08…21 | `tests/ui/run-import-gate.ps1`, DESIGN §10.2/§12, PROGRESS | open |

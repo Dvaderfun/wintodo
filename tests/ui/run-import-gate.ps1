@@ -20,6 +20,7 @@ $env:WINAPP_UI_WORKFLOW_ID = [guid]::NewGuid().ToString('N')
 $appPid = 0
 $mainHwnd = ''
 $databasePath = ''
+$tracePath = ''
 $results = [Collections.Generic.List[object]]::new()
 
 function Invoke-WinAppChecked {
@@ -34,9 +35,10 @@ function Invoke-Ui {
 }
 function Start-App {
     param([switch]$ShowOnboarding, [switch]$ExpireFirstSignIn)
+    $script:tracePath = [IO.Path]::ChangeExtension($databasePath, ('trace-' + [DateTime]::UtcNow.ToString('HHmmss') + '.log'))
     $arguments = @('run', $appDirectory, '--detach', '--json', '--',
         '--database-path', $databasePath, '--clock-file', $clockPath, '--import-fixture', $fixture,
-        '--trace-file', ([IO.Path]::ChangeExtension($databasePath, ('trace-' + [DateTime]::UtcNow.ToString('HHmmss') + '.log'))))
+        '--trace-file', $tracePath)
     if ($ShowOnboarding) { $arguments += '--show-onboarding' }
     if ($ExpireFirstSignIn) { $arguments += '--import-fixture-expire-once' }
     $launch = Invoke-WinAppChecked $arguments | ConvertFrom-Json
@@ -223,6 +225,7 @@ try {
         Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-t', '20000')
         Assert-Text 'Already up to date'
         Assert-Absent 'Todo.Import.RemoveImported'
+        if (Select-String -LiteralPath $tracePath -Pattern 'attachment=raw|attachment=contentBytes') { throw 'Re-run downloaded an attachment.' }
         Invoke-Ui @('invoke', 'Todo.Import.GoToTasks')
         Invoke-Ui @('wait-for', 'Water the plants', '-t', '8000')
         if ((Get-RowCount 'Water the plants') -ne 1) { throw 'Second import duplicated "Water the plants".' }
@@ -263,11 +266,9 @@ try {
         Assert-Absent 'Todo.Import.GoToTasks'
         Save-Screenshot '09-sign-in-expired.png'
         Invoke-Ui @('invoke', 'Todo.Import.SignIn')
-        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '15000')
-        Assert-Checked 'Todo.Import.List.0' $true
-        Assert-Checked 'Todo.Import.List.1' $false
-        Invoke-Ui @('invoke', 'Todo.Import.Continue')
         Invoke-Ui @('wait-for', 'Todo.Import.Start', '-t', '10000')
+        Assert-Text 'Signed in again. Select Import to continue.'
+        if (@(Select-String -LiteralPath $tracePath -Pattern 'WINTODO_IMPORT_READ lists=').Count -ne 1) { throw 'Expired sign-in read lists again.' }
         Invoke-Ui @('invoke', 'Todo.Import.Start')
         Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-t', '20000')
         Assert-Text 'Import complete'

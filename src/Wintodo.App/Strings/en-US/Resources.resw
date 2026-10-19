@@ -1152,6 +1152,7 @@ xunit.v3 4.0.2 — Apache-2.0</value></data>
   <!-- UX-10 row completion -->
   <data name="Undo_TaskCompleted" xml:space="preserve"><value>Completed</value></data>
   <!-- IMP (Microsoft To Do import and onboarding) -->
+  <data name="Import_SignedInAgain" xml:space="preserve"><value>Signed in again. Select Import to continue.</value></data>
   <data name="Import_ProgressAttachmentBytesFormat" xml:space="preserve"><value>Downloading attachments: {0:N0} / {1:N0} bytes</value></data>
   <data name="Import_SignInFailedPage" xml:space="preserve"><value>Sign-in didn’t finish. Go back to Wintodo to try again.</value></data>
   <data name="Import_SignInPageTitle" xml:space="preserve"><value>Wintodo — Microsoft sign-in</value></data>
