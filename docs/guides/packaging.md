@@ -1,7 +1,7 @@
 # Packaging groundwork (M10)
 
 The app name and publisher remain the placeholders in `Package.appxmanifest`:
-`5826186B-4750-4C22-BC50-B5DD1EED9CA5`, `CN=AppPublisher`, version `1.0.0.3`.
+`5826186B-4750-4C22-BC50-B5DD1EED9CA5`, `CN=AppPublisher`, version `1.0.0.4`.
 Final identity and production signing require the owner's decision (PLAN §10).
 The remaining decisions, owner-run checks and clean-install premise are tracked
 in [release-checklist.md](release-checklist.md). The standard `WintodoTest`
@@ -83,6 +83,18 @@ passed. No certificate was installed. Test copies are not timestamped production
 artifacts. The original public certificate and PFX remain in the ignored folder.
 
 ## Current local x64 update
+
+The import-polish update (2026-10-20) is
+`publish/msix/Wintodo-1.0.0.4-x64.msix` (55.6 MiB), built from `e65b605`
+plus the manifest version bump. It is self-contained Native AOT and signed
+with the existing `m10-test.pfx`; Authenticode and SignTool verify it as Valid
+on the owner's machine. Package identity is unchanged for an update from
+`1.0.0.3`. Native x64 executable/runtime/SQLite, assets and extensions were
+inspected. Details and SHA-256 are in `Wintodo-1.0.0.4-x64.details.json`.
+Installation and runtime checking of this exact package are owner-pending;
+no host app installation or UI automation was performed.
+
+The preceding artifact remains available below:
 
 The later header-alignment update is version `1.0.0.3` in
 `publish/msix/Wintodo-x64.msix`. This exact filename is now signed with the existing
