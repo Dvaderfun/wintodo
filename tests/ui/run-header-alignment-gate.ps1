@@ -97,7 +97,10 @@ try {
                 $results.Add(@{ name=$name; status='PASS'; inkCenterDelta=$inkDelta })
             } catch { $results.Add(@{ name=$name; status='FAIL'; detail="$_" }) }
         }
-        foreach ($listName in @('adwawd', 'Project gy')) {
+        # 'adwawd' has no descenders, so its ink bottom is the title baseline for
+        # this theme; the later names must draw descenders below it, unclipped.
+        $baseline = $null
+        foreach ($listName in @('adwawd', 'Project gy', 'Покращити гру')) {
             $name = "$($theme[0])-UserList-$listName"
             try {
                 Ui @('invoke', 'Todo.Nav.NewListButton') | Out-Null
@@ -119,12 +122,16 @@ try {
                     $iconInk = Ink-Bounds $bitmap $icon $windowRect
                     $titleInk = Ink-Bounds $bitmap $title $windowRect
                 } finally { $bitmap.Dispose() }
-                $inkDelta = $iconInk.center - $titleInk.center
-                $measurements.Add(@{name=$name;icon=$icon;title=$title;iconInk=$iconInk;titleInk=$titleInk;inkCenterDelta=$inkDelta})
+                if ($null -eq $baseline) { $baseline = $titleInk.bottom }
+                $descent = $titleInk.bottom - $baseline
+                # Align on the cap-to-baseline band so descenders do not move the center.
+                $inkDelta = $iconInk.center - ($titleInk.top + $baseline) / 2.0
+                $measurements.Add(@{name=$name;icon=$icon;title=$title;iconInk=$iconInk;titleInk=$titleInk;baseline=$baseline;descent=$descent;inkCenterDelta=$inkDelta})
+                if ($listName -ne 'adwawd' -and $descent -lt 5) { throw "Title descenders clipped: $descent px below baseline" }
                 # Owner-requested optical alignment places only the dot 2 px
                 # below the title's geometric ink center. Emoji stay unchanged.
                 if ([Math]::Abs($inkDelta - 2) -gt 1) { throw "Placeholder optical offset differs: $inkDelta px" }
-                $results.Add(@{name=$name;status='PASS';inkCenterDelta=$inkDelta})
+                $results.Add(@{name=$name;status='PASS';inkCenterDelta=$inkDelta;descent=$descent})
             } catch { $results.Add(@{name=$name;status='FAIL';detail="$_"}) }
         }
     }
@@ -135,6 +142,6 @@ try {
     if ($appPid) { winapp ui yield | Out-Null }
     $env:WINAPP_UI_WORKFLOW_ID = $previousWorkflow
 }
-$results | ForEach-Object { [pscustomobject]$_ } | Format-Table name,status,inkCenterDelta,detail
+$results | ForEach-Object { [pscustomobject]$_ } | Format-Table name,status,inkCenterDelta,descent,detail
 Write-Host "Artifacts: $artifactDirectory"
-if (@($results | Where-Object status -eq 'FAIL').Count -gt 0 -or $results.Count -ne 14) { exit 1 }
+if (@($results | Where-Object status -eq 'FAIL').Count -gt 0 -or $results.Count -ne 16) { exit 1 }

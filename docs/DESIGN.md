@@ -133,7 +133,8 @@ Width `*`, horizontal padding **24**, top padding **16**, bottom padding **0**
   theme.
   Fixed-category and user-list display titles use tight text line bounds so
   their visible letters center with the glyph or dot in the 44 px icon slot.
-  The unset user-list dot has a 4 px top margin within its centered slot,
+  The user-list title button stretches to that 44 px row so descenders
+  (`g`, `y`, `р`, `у`) below the tight baseline are not clipped. The unset user-list dot has a 4 px top margin within its centered slot,
   lowering its visible center 2 px for owner-requested optical alignment.
   Emoji and the hover affordance keep their existing placement.
 - Editable in place on click for user lists (turns into a borderless `TextBox`,
