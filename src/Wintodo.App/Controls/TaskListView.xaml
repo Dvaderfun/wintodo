@@ -348,10 +348,15 @@
                             </Flyout>
                         </Button.Flyout>
                     </Button>
+                    <!--
+                        Stretch to the 44 px icon row: tight line bounds end the text box
+                        at the baseline, and a content-sized button clips descenders.
+                    -->
                     <Button
                         x:Name="UserListTitleButton"
                         Grid.Column="1"
                         HorizontalAlignment="Left"
+                        VerticalAlignment="Stretch"
                         Padding="8,0"
                         AutomationProperties.AutomationId="Todo.List.TitleButton"
                         BorderThickness="{ThemeResource ListHeaderButtonBorderThickness}"

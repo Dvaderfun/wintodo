@@ -34,7 +34,8 @@ As of 2026-10-20:
   and settled completion/uncompletion against the unchanged 54 px limit.
   Final app name and MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
-- **Header alignment:** Fixed-category and user-list display title text now use tight line bounds;
+- **Header alignment:** Fixed-category and user-list display title text now use tight line bounds
+  (user-list title button stretched to 44 px on 2026-10-20 so descenders are not clipped);
   icon containers were already centered, but full font line metrics placed the
   visible Tasks letters 2 px lower than the glyph. Light/Dark pixel checks pass
   14/14; fixed-category headers within 1 px, unset dots optically lowered by
@@ -52,8 +53,9 @@ As of 2026-10-20:
   unclaimed. IMP-25 exception-trace privacy and IMP-26 intermittent SQLite test
   initialization are separate open findings. IMP-23/24 remain untouched.
 - **Local install package (2026-10-20):** Signed self-contained Native AOT x64
-  `publish/msix/Wintodo-1.0.0.4-x64.msix` includes the import polish. Existing
-  identity and signer retained; version raised from `1.0.0.3` for an update.
+  `publish/msix/Wintodo-1.0.0.5-x64.msix` adds the header title descender fix
+  to `1.0.0.4`, which included the import polish. Existing
+  identity and signer retained; version raised from `1.0.0.4` for an update.
   Signature and native package inspection pass; 392/392 tests pass. Owner
   installation/runtime check pending; no host installation or automation run.
 - **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
@@ -3843,3 +3845,37 @@ Metadata: publish/msix/Wintodo-1.0.0.4-x64.details.json.
 **Deviations / remaining:** x64 only, matching the owner's machine. No host
 installation, trust change, launch or UI automation; owner installs and checks.
 No production timestamp/signing or M10 clean-install/runtime gate claimed.
+
+## Header title descender clipping          2026-10-20
+
+**Gate:** PASS — header alignment 16/16, M8 17/17, list-icon 14/14 in
+WintodoTest; Debug x64 warnings-as-errors build clean; 392/392 unit tests.
+WinUI code review: nothing above informational.
+
+**Cause and fix**
+- Owner screenshot: user-list title `Покращити гру` lost the bottoms of `р`/`у`.
+  `TextLineBounds="Tight"` ends the title's text box at the baseline, and the
+  vertically centred `UserListTitleButton` sized itself to that 22 px box; its
+  content presenter clipped everything below the baseline.
+- `UserListTitleButton` now stretches to the 44 px icon row. The text stays
+  centred, so ink alignment is unchanged; the hover/focus plate is 44 px tall,
+  matching the icon button. Fixed-category titles were not clipped (no button).
+
+**Gate change:** `run-header-alignment-gate.ps1` adds a Cyrillic descender list,
+aligns user-list titles on the cap-to-baseline band (baseline from `adwawd`),
+and fails if descender titles draw less than 5 px below it. Before the fix it
+failed 4/16 (1 px descent); after, every descender title draws 6 px, deltas
+2.0–2.5 px. The earlier 2026-10-19 `Project gy` pass had missed the clipping.
+Artifacts: `header-alignment/run-20261019-223424` (fail run `…-222943`),
+`m8/run-20261019-223832`, `list-icon/run-20261019-224850`.
+
+**Package:** signed self-contained Native AOT x64
+`publish/msix/Wintodo-1.0.0.5-x64.msix` (58,253,915 bytes; SHA-256
+D766052B75FF6F8208C2174D4187EF314ADB7B3DE5DEC9674D8CF773D3025F36) includes the
+fix; version raised from `1.0.0.4`, identity and test signer unchanged.
+Authenticode Valid; SignTool `/pa /v` zero warnings/errors; native x64
+binaries, assets, extensions and capabilities inspected.
+
+**Deviations / remaining:** Built from the uncommitted working tree on top of
+`8c5a066`. Owner installation/runtime check pending; no host installation or
+UI automation. ARM64 not rebuilt.

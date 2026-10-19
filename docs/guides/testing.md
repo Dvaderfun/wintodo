@@ -107,7 +107,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-notification-settings-gate.ps1` | Reminder enable/disable, actual scheduled payload defaults, restart, Data/About and accessibility |
 | `run-settings-gate.ps1` | Tasks settings, immediate delete/undo, restart, reminder default, ordering and accessibility |
 | `run-list-icon-gate.ps1` | Emoji list icons and navigation counts; UX-15 unset header dot, hover, keyboard focus/Enter, clear, Light/Dark, detail-open and minimum-width screenshots |
-| `run-header-alignment-gate.ps1` | Screenshot ink-center alignment for five fixed categories and new user lists in Light/Dark; fixed glyphs within 1 px; unset dot uses owner-selected 2 px optical lowering (±1 px); fixed-icon crop follows its 44 px XAML slot |
+| `run-header-alignment-gate.ps1` | Screenshot ink-center alignment for five fixed categories and new user lists in Light/Dark; fixed glyphs within 1 px; unset dot uses owner-selected 2 px optical lowering (±1 px) against the cap-to-baseline band; Latin and Cyrillic descender titles must draw ≥5 px below the baseline (no clipping); fixed-icon crop follows its 44 px XAML slot |
 | `run-undo-gate.ps1` | Undo history across navigation/expiry, preserved newer title, due/reminder/repeat clears, step/list deletion, moves and bulk field/completion actions |
 | `run-share-gate.ps1 -Aot` | Real Windows Share source, target discovery, Text/WebLink, errors, exact local persistence, process exit and open-main/restart refresh; include the host-built source fixture |
 | `run-ux-regression-gate.ps1` | Runs existing M4/M13/M8/M7/M0 gates sequentially in one guest restore |
