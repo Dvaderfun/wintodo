@@ -124,6 +124,12 @@
                             x:Uid="ImportChooseHeader"
                             AutomationProperties.HeadingLevel="Level2"
                             Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <InfoBar
+                            x:Uid="ImportNoListsInfo"
+                            AutomationProperties.AutomationId="Todo.Import.NoLists"
+                            IsClosable="False"
+                            IsOpen="{x:Bind ViewModel.HasNoLists, Mode=OneWay}"
+                            Severity="Warning" />
                         <ItemsRepeater
                             x:Name="ListsRepeater"
                             AutomationProperties.AutomationId="Todo.Import.Lists"

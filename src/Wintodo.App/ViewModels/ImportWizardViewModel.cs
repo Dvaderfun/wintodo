@@ -105,6 +105,10 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     [ObservableProperty]
     public partial bool HasPreviousImport { get; set; }
 
+    /// <summary>The signed-in account returned no To Do lists at all.</summary>
+    [ObservableProperty]
+    public partial bool HasNoLists { get; set; }
+
     [ObservableProperty]
     public partial double ProgressValue { get; set; }
 
@@ -143,6 +147,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         _reader = null;
         _export = null;
         _lastRunId = null;
+        HasNoLists = false;
         Lists.Clear();
         SummaryLines.Clear();
         _ = RefreshLastImportAsync();
@@ -182,6 +187,9 @@ public sealed partial class ImportWizardViewModel : ObservableObject
             _export = await _reader.ReadAsync(new Progress<MicrosoftTodoProgress>(ReportProgress), token);
             IReadOnlyList<ImportSourceInfo> sources = await _store.GetImportSourcesAsync(GraphTodoMapper.Provider, token);
             HasPreviousImport = sources.Any(source => source.AccountKey == _export.User.Id);
+            // Counts only: list and task names are personal data.
+            Trace.WriteLine(
+                $"WINTODO_IMPORT_READ lists={_export.Lists.Count} tasks={_export.Lists.Sum(list => list.Tasks.Count)}");
             ShowLists(_export);
             Step = ImportWizardStep.Choose;
         }
@@ -358,6 +366,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
 
         Lists.Clear();
+        HasNoLists = export.Lists.Count == 0;
         AccountText = Format(
             "Import_AccountFormat",
             new[] { export.User.Mail, export.User.UserPrincipalName, export.User.DisplayName, export.User.Id }

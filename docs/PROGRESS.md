@@ -3388,3 +3388,17 @@ gate does not use. Live sign-in remains the owner's manual gate.
   (both user-consentable). No secret or certificate. Not publisher-verified,
   so consent shows "unverified"; some work tenants may need admin consent.
 - `MicrosoftTodoRegistration.ClientId` now holds the client id.
+
+## IMP — Empty-account message during live testing          2026-10-19
+
+**Gate:** import 11/11 in WintodoTest (`import/run-20261019-143901`, now also
+asserting the new warning stays hidden); Debug x64 warnings-as-errors clean;
+364/364 unit tests.
+
+- First live sign-in (personal account) succeeded against Microsoft, but the
+  account returned no To Do lists, so the Choose step showed no cards and a
+  disabled **Continue** with no explanation. It now shows a **No lists found**
+  warning (`Todo.Import.NoLists`). The read logs list/task counts only
+  (`WINTODO_IMPORT_READ`), never names, for `--trace-file` diagnosis.
+- Cause of the empty result is not yet known: the owner is checking whether
+  that account holds the To Do data. The manual gate stays open.
