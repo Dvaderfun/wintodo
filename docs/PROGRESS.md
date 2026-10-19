@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-10-18:
+As of 2026-10-19:
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -33,6 +33,15 @@ As of 2026-10-18:
   and settled completion/uncompletion against the unchanged 54 px limit.
   Final app name and MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
+- **Header alignment:** Fixed-category and user-list display title text now use tight line bounds;
+  icon containers were already centered, but full font line metrics placed the
+  visible Tasks letters 2 px lower than the glyph. Light/Dark pixel checks pass
+  14/14; fixed-category headers within 1 px, unset dots optically lowered by
+  an owner-selected 2 px. M8 17/17
+  from the fixed-category change; list-icon regression 14/14, Debug/Release builds
+  and 307/307 unit tests pass.
+  Signed x64 MSIX version `1.0.0.3` now
+  includes this fix; ARM64 and earlier test-signed copies predate it.
 - **UI execution:** UI gates run in the `WintodoTest` Hyper-V VM via
   `scripts\Invoke-VmGate.ps1` (ADR-013). The earlier sweep's 14 passing runs remain
   recorded. Follow-up: m8 17/17, settings 9/9 twice, list-stability 3/3 twice
@@ -3179,3 +3188,119 @@ and ARM64. Local test signing succeeds; full trust verification does not pass.
   provisioning, certificate trust, installation or owner desktop automation
   was performed. Guest changes outside the repo require owner authorization.
 - No ADR or accepted product decision changed. M9 remains owner-deferred.
+
+## Header alignment — Center fixed-category title lettering  2026-10-18
+
+**Gate:** PASS — header alignment 10/10, M8 17/17 in WintodoTest;
+Debug/Release x64 warnings-as-errors builds clean, 307/307 tests pass without
+failures/skips. WinUI code review has no findings above informational.
+
+**Cause and fix**
+- The fixed icon and title already share the center of a 44 px horizontal row.
+  TextBlock's full font line metrics nevertheless put visible Tasks lettering
+  2 px below the icon's ink center (115 vs 117 in the baseline capture).
+- Set `TextLineBounds="Tight"` only on `SmartListTitle` so the visible letters
+  center beside the fixed icon. Existing glyph size, 44 px slot, spacing, theme
+  resources and AutomationIds remain intact. No arbitrary offset or new control.
+  My Day/search use this title too; editable user-list titles are unchanged.
+- Grounded the change with the vendored design skill, TextBlock Gallery sample,
+  and restored-project TextLineBounds/API checks. DESIGN and the testing guide
+  now describe the alignment and focused regression gate.
+
+**Proof and limits**
+- Header run `header-alignment/run-20261018-203731`: Tasks, Important, Planned,
+  All and Completed in Light/Dark pass 10/10. Tasks differs by -0.5 px in Light
+  and -1 px in Dark; every measured header is within 1 px. Returned captures and
+  the `headers.png` contact sheet reviewed with no clipping/overlap.
+- The first diagnostic could not locate the decorative icon in CLI control-view
+  search. A raw UIA probe also found no FontIcon peer and was stopped. A later
+  diagnostic captured a labeled multi-window composite, which could not map to
+  UIA coordinates. Final measurement crops the known XAML icon slot relative to
+  the adjacent title and uses an actual screen-region capture; it requires visible
+  ink and retains measurements/screenshots. Original diagnostic failures remain
+  in ignored artifacts; no product gate is claimed from them.
+- The final pixel gate initially checked a 2 px ceiling; saved measurements were
+  re-evaluated against the committed stricter 1 px limit, all 10 passing. The
+  diagnostic-only bypass was removed. M8 `m8/run-20261018-204001` passes 17/17,
+  including all four contrast palettes and accepted state restoration.
+- All input, captures and UI execution stayed inside WintodoTest. No host UI
+  automation or ADR change. Earlier MSIX packages are unchanged; fresh AOT/MSIX
+  runtime execution and ARM64 were not part of this layout repair.
+
+## M10 follow-up — Signed x64 header-alignment update         2026-10-18
+
+**Gate:** PACKAGE PASS — self-contained x64 Native AOT MSIX builds with warnings
+as errors, signature verified as Valid on the host. New package runtime/install
+gate not executed in this session; preceding header/M8 evidence remains.
+
+- Built the current header-alignment source into `publish/msix/Wintodo-x64.msix`
+  and signed that exact filename with the existing development PFX, as requested.
+- Incremented manifest version to `1.0.0.1` so it can update the prior `1.0.0.0`
+  installation with the same identity/publisher. No identity or certificate change.
+- Inspected packaged version, x64 PE architecture, absence of a CLR directory,
+  signature presence and signer `CN=AppPublisher`. Get-AuthenticodeSignature
+  returns Valid / "Signature verified." No certificate trust was added by the agent.
+- Artifact: 57,082,493 bytes; SHA-256
+  `072143AA0DF06AFB4AA6C7416E4E363AFA53976A18BCD436503208AFE36A3224`.
+  Metadata is saved to `publish/msix/Wintodo-x64.details.json`; earlier
+  `inspection.json` remains historical and describes the previous packages.
+- ARM64 and the separately named test-signed packages were not rebuilt. No app
+  installation, launch or host UI automation was performed. M10 production
+  signing/clean-install gates and M9 remain open.
+
+## Header alignment follow-up — Newly created user lists      2026-10-19
+
+**Gate:** Header alignment PASS 14/14 in WintodoTest; Debug/Release x64 builds
+clean, 307/307 tests pass. Signed Native AOT x64 MSIX package creation succeeds;
+Get-AuthenticodeSignature returns Valid. List-icon regression PASS 14/14.
+
+- Owner's new-list screenshot showed the same optical offset in the separate
+  user-list display TextBlock. The previous correction only covered fixed
+  categories. Applied `TextLineBounds="Tight"` to that display TextBlock too,
+  retaining the icon picker target, bindings, title-edit command and editor.
+- Expanded `run-header-alignment-gate.ps1` with freshly created lowercase
+  `adwawd` and descender-bearing `Project gy` lists in Light/Dark. The new-list
+  dot/title centers differ by 0.5 px and 0 px respectively in both themes.
+  Fixed-category checks continue to pass; all 14 measurements meet the 1 px limit.
+  Evidence: `header-alignment/run-20261018-205709`, measurements and screenshots.
+  Light/Dark new-list captures visually reviewed without clipping/overlap.
+- WinUI code review of the additional XAML change has no findings above
+  informational. No new API, dependency, theme brush or ADR change.
+- Incremented package version to `1.0.0.2`, retaining identity and the existing
+  developer certificate. Rebuilt/signed the requested
+  `publish/msix/Wintodo-x64.msix`: 57,082,508 bytes; SHA-256
+  `BFB9A85D4FADF17734D7217D4A7F0D5C73072599C44300EA1FD045DA27D6C0EE`.
+  `Wintodo-x64.details.json` records current metadata. Earlier ARM64 and
+  separately named test-signed packages remain unchanged.
+- All synthetic input and captures stayed in WintodoTest. No host app launch,
+  install or certificate trust change. New MSIX runtime/install gate remains
+  unclaimed; M9 and M10 production/clean-install rows stay open.
+- Existing list-icon gate `list-icon/run-20261018-210145` passes 14/14, including
+  title editing, emoji picker, persisted icon/count, placeholder hover/focus,
+  Light/Dark and narrow/detail-open cases. No original assertion was relaxed.
+
+## Placeholder dot — Owner-selected optical lowering         2026-10-19
+
+**Gate:** PASS — header 14/14 in WintodoTest, Debug warnings-as-errors build
+clean, 307/307 tests pass; Release Native AOT signed MSIX builds successfully
+with warnings as errors and verifies Valid. No new MSIX runtime claim.
+
+- Owner still perceived the dot as high while confirming emoji placement was
+  good. Lowered only `ListIconPlaceholder` by 2 px using a 4 px top margin in
+  its centered slot. The emoji, hover affordance and title retain their positions;
+  16 px dot size and 44 px picker target remain unchanged.
+- This is an explicit optical preference beyond geometric ink centering.
+  Updated DESIGN and the focused pixel gate: fixed glyphs retain the 1 px
+  center check; the dot now targets a 2 px lower ink center, with 1 px tolerance.
+  This changes the assertion to the owner's requested position, rather than
+  claiming the previous centered-dot criterion still passes.
+- `header-alignment/run-20261018-210942` passes 14/14. Dot centers are 2.5 px
+  below lowercase `adwawd` and 2 px below `Project gy` in Light and Dark.
+  Returned dark new-list capture reviewed. WinUI diff review finds no issues
+  above informational; emoji XAML is untouched. Prior list-icon gate 14/14
+  remains preceding evidence and was not rerun for this dot-only change.
+- Rebuilt exact requested filename `publish/msix/Wintodo-x64.msix` as version
+  `1.0.0.3`, signed with the same developer certificate. Size 57,082,571 bytes;
+  SHA-256 `A3499B9F92FA9D1DA440C6D746485F2F4C8888C8E81A84850EFECB3468A46CD7`.
+  Current metadata is in `Wintodo-x64.details.json`. No host install, launch,
+  input automation, certificate change or ARM64 rebuild. M9/M10 open rows remain.

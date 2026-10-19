@@ -12,7 +12,7 @@ M9 performance remains owner-deferred.
 | App display name | Wintodo (placeholder) | Final icons, screenshots and listing copy |
 | Package identity / publisher | GUID identity, `CN=AppPublisher` | Production signing and final install gates |
 | Distribution | Undecided: Store, direct MSIX, or both | Signing and release CI |
-| Release version | `1.0.0.0` in the manifest | Release tag; tags do not change this value |
+| Release version | `1.0.0.3` in the manifest (local placeholder optical-alignment update) | Release tag; tags do not change this value |
 
 For Store distribution, use the exact reserved Partner Center identity and
 publisher. For direct distribution, the signing certificate subject must match

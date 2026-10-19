@@ -131,6 +131,11 @@ Width `*`, horizontal padding **24**, top padding **16**, bottom padding **0**
 - Title: `TitleTextBlockStyle` (28 px SemiBold). Foreground is the list's theme
   colour brush (§9.3), or `TextFillColorPrimaryBrush` for smart lists without a
   theme.
+  Fixed-category and user-list display titles use tight text line bounds so
+  their visible letters center with the glyph or dot in the 44 px icon slot.
+  The unset user-list dot has a 4 px top margin within its centered slot,
+  lowering its visible center 2 px for owner-requested optical alignment.
+  Emoji and the hover affordance keep their existing placement.
 - Editable in place on click for user lists (turns into a borderless `TextBox`,
   commits on `Enter` / focus loss, `Esc` cancels).
 - A 44 px icon button precedes an editable user-list title. It shows the
