@@ -56,6 +56,11 @@ public partial class App
                 Trace.WriteLine("WINTODO_SHARE_STAGE=completed");
             }
         }
+        catch (UnsupportedDatabaseSchemaException)
+        {
+            Trace.WriteLine("WINTODO_SHARE_DATABASE_SCHEMA_UNSUPPORTED");
+            error = resources.GetString("Database_NewerSchemaMessage");
+        }
         catch (Exception exception)
         {
             Trace.WriteLine($"WINTODO_SHARE_TARGET_EXCEPTION={exception};COMMITTED={committed}");

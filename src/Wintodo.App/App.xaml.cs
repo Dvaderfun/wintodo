@@ -56,6 +56,7 @@ public partial class App : Application
 
     protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
+        SqliteTaskStore? launchingStore = null;
         try
         {
             long launchStartTimestamp = Stopwatch.GetTimestamp();
@@ -80,6 +81,7 @@ public partial class App : Application
                 activation,
                 commandLineDatabasePath);
             var store = new SqliteTaskStore(databasePath, clock);
+            launchingStore = store;
             var windowsIntegration = new WindowsIntegrationService(
                 store,
                 clock
@@ -164,6 +166,27 @@ public partial class App : Application
             }
 
             window.ApplyDeferredPresenterState();
+        }
+        catch (UnsupportedDatabaseSchemaException exception)
+        {
+            _integrationReady.TrySetException(exception);
+            Trace.WriteLine(string.Create(
+                System.Globalization.CultureInfo.InvariantCulture,
+                $"WINTODO_DATABASE_SCHEMA_UNSUPPORTED={exception.DatabaseVersion};SUPPORTED={exception.SupportedVersion}"));
+            if (launchingStore is not null)
+            {
+                await launchingStore.DisposeAsync();
+            }
+            UnregisterAppNotifications();
+            if (Window is MainWindow window)
+            {
+                await window.ShowUnsupportedDatabaseAsync();
+                window.Close();
+            }
+            else
+            {
+                Current.Exit();
+            }
         }
         catch (Exception exception)
         {

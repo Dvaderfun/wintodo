@@ -254,7 +254,11 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            await _stateService.SaveWindowPlacementAsync(placement);
+            // A rejected database must never receive a placement write on close.
+            if (_isInitialized)
+            {
+                await _stateService.SaveWindowPlacementAsync(placement);
+            }
         }
         finally
         {

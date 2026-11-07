@@ -81,11 +81,23 @@ public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
                         Directory.CreateDirectory(directory);
                     }
 
-                    _writer = new SqliteConnection(_writeConnectionString);
-                    _writer.Open();
-                    ApplyPragmas(_writer);
-                    ApplyMigrations(_writer);
-                    Volatile.Write(ref _initialized, 1);
+                    var writer = new SqliteConnection(_writeConnectionString);
+                    try
+                    {
+                        writer.Open();
+                        _ = ReadSupportedSchemaVersion(writer);
+                        ApplyPragmas(writer);
+                        ApplyMigrations(writer);
+                        _writer = writer;
+                        Volatile.Write(ref _initialized, 1);
+                    }
+                    catch
+                    {
+                        // Failed initialization must not leave a pooled handle blocking recovery.
+                        SqliteConnection.ClearPool(writer);
+                        writer.Dispose();
+                        throw;
+                    }
                 }
                 finally
                 {
@@ -219,14 +231,7 @@ public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
 
     private void ApplyMigrations(SqliteConnection connection)
     {
-        long version = 0;
-        if (SchemaVersionTableExists(connection))
-        {
-            using SqliteCommand versionCommand = connection.CreateCommand();
-            versionCommand.CommandText = "SELECT COALESCE(MAX(version), 0) FROM schema_version;";
-            version = (long)(versionCommand.ExecuteScalar() ?? 0L);
-        }
-
+        long version = ReadSupportedSchemaVersion(connection);
         long initialVersion = version;
         for (int index = checked((int)version); index < MigrationResourceNames.Length; index++)
         {
@@ -267,6 +272,24 @@ public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
         }.ToString());
         backup.Open();
         connection.BackupDatabase(backup);
+    }
+
+    private static long ReadSupportedSchemaVersion(SqliteConnection connection)
+    {
+        long version = 0;
+        if (SchemaVersionTableExists(connection))
+        {
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT COALESCE(MAX(version), 0) FROM schema_version;";
+            version = (long)(command.ExecuteScalar() ?? 0L);
+        }
+
+        if (version > MigrationResourceNames.Length)
+        {
+            throw new UnsupportedDatabaseSchemaException(version, MigrationResourceNames.Length);
+        }
+
+        return version;
     }
 
     private static bool SchemaVersionTableExists(SqliteConnection connection)
