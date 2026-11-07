@@ -6,6 +6,7 @@ using Windows.ApplicationModel.Activation;
 using Windows.Storage;
 using Wintodo.Core.Services;
 using Wintodo.Data;
+using Wintodo.Import.MicrosoftTodo;
 using Wintodo.Services;
 using Wintodo.Sync;
 using WinRT;
@@ -328,7 +329,7 @@ public partial class App : Application
             || HasCommandLineFlag("--show-onboarding");
         string attachmentRoot = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
         IMicrosoftTodoConnector connector = new MicrosoftGraphConnector(
-            new HttpClient { Timeout = TimeSpan.FromSeconds(100) },
+            GraphTodoClient.CreateHttpClient(),
             new Microsoft.Windows.ApplicationModel.Resources.ResourceLoader().GetString("Import_SignInCompletePage"),
             new Microsoft.Windows.ApplicationModel.Resources.ResourceLoader().GetString("Import_SignInFailedPage"),
             new Microsoft.Windows.ApplicationModel.Resources.ResourceLoader().GetString("Import_SignInPageTitle"),

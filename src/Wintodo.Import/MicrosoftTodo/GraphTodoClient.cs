@@ -28,6 +28,16 @@ public sealed class GraphTodoClient
     /// <summary>Only a tenant claim from this sign-in can enable administrator consent.</summary>
     public string? WorkTenantId { get; }
 
+    /// <summary>Creates the production Graph transport without implicit redirects.</summary>
+    public static HttpClient CreateHttpClient() => new(new HttpClientHandler { AllowAutoRedirect = false })
+    {
+        Timeout = TimeSpan.FromSeconds(100),
+    };
+
+    /// <summary>
+    /// Uses an HTTP transport with automatic redirects disabled. Use
+    /// <see cref="CreateHttpClient"/> for the production network handler.
+    /// </summary>
     public GraphTodoClient(
         HttpClient httpClient,
         string accessToken,
@@ -40,6 +50,13 @@ public sealed class GraphTodoClient
         _httpClient = httpClient;
         _accessToken = accessToken;
         _baseUri = baseUri ?? DefaultBaseUri;
+        if (!_baseUri.IsAbsoluteUri
+            || (_baseUri.Scheme != Uri.UriSchemeHttps && _baseUri.Scheme != Uri.UriSchemeHttp)
+            || _baseUri.UserInfo.Length != 0
+            || _baseUri.Fragment.Length != 0)
+        {
+            throw new ArgumentException("Graph base URI must be an absolute HTTP(S) origin without user information or fragments.", nameof(baseUri));
+        }
         _delay = delay ?? Task.Delay;
         _clock = clock ?? new SystemClock();
         WorkTenantId = ReadWorkTenantId(accessToken);
@@ -243,20 +260,22 @@ public sealed class GraphTodoClient
 
     private Uri ResolveNextLink(string nextLink)
     {
-        var uri = new Uri(nextLink, UriKind.RelativeOrAbsolute);
-        if (!uri.IsAbsoluteUri)
-        {
-            return new Uri(_baseUri, nextLink);
-        }
+        return new Uri(_baseUri, nextLink);
+    }
 
-        // Never send the token anywhere but the Graph host we started with.
-        if (!string.Equals(uri.Host, _baseUri.Host, StringComparison.OrdinalIgnoreCase)
-            || uri.Scheme != _baseUri.Scheme)
+    private void ValidateRequestUri(Uri uri)
+    {
+        // Validate the final destination, including network-path links, before
+        // constructing any authenticated request (paging and downloads alike).
+        if (!uri.IsAbsoluteUri
+            || !string.Equals(uri.IdnHost, _baseUri.IdnHost, StringComparison.OrdinalIgnoreCase)
+            || uri.Scheme != _baseUri.Scheme
+            || uri.Port != _baseUri.Port
+            || uri.UserInfo.Length != 0
+            || uri.Fragment.Length != 0)
         {
-            throw new GraphRequestException(HttpStatusCode.OK, "unexpectedHost", "Graph returned a page link for another host.");
+            throw new GraphRequestException(HttpStatusCode.OK, "unexpectedHost", "Graph returned a request destination outside the approved origin.");
         }
-
-        return uri;
     }
 
     private async Task<T> GetJsonAsync<T>(
@@ -279,6 +298,7 @@ public sealed class GraphTodoClient
 
     private async Task<HttpResponseMessage> SendAsync(Uri uri, CancellationToken cancellationToken)
     {
+        ValidateRequestUri(uri);
         for (int attempt = 1; ; attempt++)
         {
             Task throttle;
