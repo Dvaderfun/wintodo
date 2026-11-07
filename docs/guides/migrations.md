@@ -8,6 +8,18 @@ backup to `<db>.bak-<N>`.
 
 Migrations are forward-only. A user's database is never rebuilt from scratch.
 
+Initialization rejects a schema version above the highest embedded migration
+before changing the database's journal mode or applying any migration. Normal
+launch shows localized update guidance; ShareTarget reports the same recovery
+message instead of saving a task. Closing the startup warning does not persist
+window settings into the rejected database.
+
+For recovery, preserve the database and use an app version that supports its
+schema. A migration backup describes the database before that upgrade; it can
+omit later edits. Restore a backup to a separate disposable path and verify
+its supported upgrade before replacing any user data. An older binary is not
+a schema downgrade or a safe rollback for a newer database.
+
 ## Steps
 
 1. Update [docs/DATA-MODEL.md](../DATA-MODEL.md) first: the model (§2), the
@@ -31,6 +43,8 @@ Migrations are forward-only. A user's database is never rebuilt from scratch.
    - a fresh database reaches the new version;
    - an old-version database upgrades, keeps its rows, and gets a `.bak-N` file;
    - running the store twice is a no-op.
+   `SchemaCompatibilityTests` also verifies every supported starting version,
+   backup restoration/re-upgrade, and unchanged rejection of newer schemas.
 6. If the column is synced, extend `IcalReader`/`IcalWriter` and add a
    round-trip fixture assertion.
 

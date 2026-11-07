@@ -91,6 +91,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | Script | Covers |
 |---|---|
 | `run-m0-gate.ps1` / `m0-smoke.ps1 -AppPid <pid>` | Window exists, interactive tree, screenshot |
+| `run-schema-guard-gate.ps1` | Newer-schema startup warning, localized update guidance, command/Escape close, byte-identical database after rejection/reopening; use the synthetic seed procedure below |
 | `m2-shell.ps1`, `m2-theme.ps1` | Shell layout, Light/Dark/High Contrast |
 | `run-m3-gate.ps1` / `m3-lists-tasks.ps1` / `m3-restart.ps1` | List CRUD, add/complete/reorder/delete/undo tasks and drag-order persistence after restart; runner uses a fresh database with delete confirmation off |
 | `run-list-stability-gate.ps1` | 200-task middle-of-list fixture: Ctrl+I and Alt+Down retain selection/focus; completion keeps viewport within one row, exact completed-row focus, and Space restores that same task |
@@ -117,6 +118,22 @@ The scripts drive real input on the desktop they run on. Host runs require the
 explicit opt-in above. The VM being unavailable does not authorize host automation.
 
 ## Running gates in the test VM
+
+For the schema-compatibility startup gate, create a synthetic schema-5 database
+on the host using the Python standard library, then copy only that fixture into
+the guest. The generator preserves any existing seed; keep it for subsequent
+runs. No live user database is used.
+
+```powershell
+python .\tests\ui\New-SchemaGuardSeed.py  # once, if the seed does not exist
+dotnet build Wintodo.sln -p:Platform=x64 -warnaserror
+.\scripts\Invoke-VmGate.ps1 -Gate run-schema-guard-gate.ps1 `
+  -Include 'tests\ui\artifacts\schema-guard\seed.db'
+```
+
+The gate runs five checks in one guest session and saves a warning screenshot
+and `results.json` under `tests/ui/artifacts/schema-guard/run-*`. Review the
+captured warning visually before marking the gate passed.
 
 `WintodoTest` is a Generation 2 Hyper-V VM (4 vCPUs, 8 GB, 80 GB dynamic disk,
 Default Switch, Secure Boot, vTPM). Its `clean` checkpoint is a signed-in Windows 11
