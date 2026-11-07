@@ -13,6 +13,14 @@ Read what the task needs, not everything. Start from `AGENTS.md`, then
 | [UX-PLAN.md](UX-PLAN.md) | Picking up a UX work package (`UX-xx`): status table, scope, acceptance |
 | [IMPORT-PLAN.md](IMPORT-PLAN.md) | Onboarding and Microsoft To Do import (`IMP-xx`): status, design, open owner steps |
 
+## Plans
+
+All new planning documents belong under `docs/plans/`.
+
+| Plan | Scope |
+|---|---|
+| [Deployment readiness and GitHub release](plans/deployment-readiness.md) | Audit remediation, data/API security, privacy, CI/CD, signing and final deployment gates (`DEP-01`–`DEP-20`) |
+
 ## Records
 
 | Doc | What it holds |

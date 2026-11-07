@@ -97,7 +97,7 @@ by ADR-010). Index and template: [`docs/adr/README.md`](docs/adr/README.md).
 | Layer | Choice | Why |
 |---|---|---|
 | UI framework | **WinUI (WinUI 3)**, Windows App SDK **2.3.1+ stable** (2.5.1 since 2026-10-10) | Current native Windows stack. Microsoft now writes "WinUI" for what was WinUI 3. |
-| Runtime | **.NET 10** (`net10.0-windows10.0.26100.0`) | Current LTS. SDK pinned in `global.json` (10.0.401 since 2026-10-10). Do not use .NET 11 previews; .NET 11 is STS — stay on the LTS line. |
+| Runtime | **.NET 10** (`net10.0-windows10.0.26100.0`) | Current LTS. SDK minimum pinned in `global.json` (10.0.403 since 2026-11-08, DEP-02 security patch). Do not use .NET 11 previews; .NET 11 is STS — stay on the LTS line. |
 | Language | C# 14 | Partial properties (required by the modern `[ObservableProperty]` pattern), collection expressions. |
 | Packaging | **Packaged MSIX**, x64 + ARM64 | Required for `winapp run`, toasts, jump lists, badges, Store. |
 | MVVM | `CommunityToolkit.Mvvm` 8.4+ | Source-generated, zero reflection, AOT-clean. Use **partial properties**, not the legacy field-backed `[ObservableProperty]` — the WinUI analyzer flags the old form. |
