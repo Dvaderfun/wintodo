@@ -487,7 +487,7 @@ public sealed partial class SqliteTaskStore
             {
                 using SqliteCommand command = connection.CreateCommand();
                 command.CommandText = """
-                    SELECT uid, remote_href, remote_etag, is_dirty, is_deleted
+                    SELECT uid, remote_href, remote_etag, is_dirty, is_deleted, sequence
                     FROM tasks
                     WHERE list_id = @listId AND remote_href IS NOT NULL;
                     """;
@@ -503,6 +503,7 @@ public sealed partial class SqliteTaskStore
                         RemoteETag = reader.IsDBNull(2) ? null : reader.GetString(2),
                         IsDirty = reader.GetBoolean(3),
                         IsDeleted = reader.GetBoolean(4),
+                        Sequence = reader.GetInt32(5),
                     });
                 }
 
@@ -534,7 +535,30 @@ public sealed partial class SqliteTaskStore
         long listId,
         IReadOnlyList<RemoteTaskUpdate> updates,
         IReadOnlyList<string> deletedHrefs,
+        CancellationToken cancellationToken = default,
+        bool deleteLocalSteps = false)
+    {
+        return ApplyRemoteChangesCoreAsync(listId, updates, deletedHrefs, null, cancellationToken, deleteLocalSteps);
+    }
+
+    public Task<RemotePullApplyResult> ApplyRemotePullAsync(
+        long listId,
+        IReadOnlyList<RemoteTaskUpdate> updates,
+        IReadOnlyList<string> deletedHrefs,
+        IReadOnlyList<RemoteTaskState> expectedStates,
         CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(expectedStates);
+        return ApplyRemoteChangesCoreAsync(listId, updates, deletedHrefs, expectedStates, cancellationToken);
+    }
+
+    private Task<RemotePullApplyResult> ApplyRemoteChangesCoreAsync(
+        long listId,
+        IReadOnlyList<RemoteTaskUpdate> updates,
+        IReadOnlyList<string> deletedHrefs,
+        IReadOnlyList<RemoteTaskState>? expectedStates,
+        CancellationToken cancellationToken,
+        bool deleteLocalSteps = false)
     {
         ArgumentNullException.ThrowIfNull(updates);
         ArgumentNullException.ThrowIfNull(deletedHrefs);
@@ -542,6 +566,11 @@ public sealed partial class SqliteTaskStore
             (connection, transaction, context) =>
             {
                 GetListUid(connection, transaction, listId);
+                var result = new RemotePullApplyResult();
+                Dictionary<string, RemoteTaskState>? expectedByUid = expectedStates?.ToDictionary(
+                    state => state.Uid, StringComparer.Ordinal);
+                Dictionary<string, RemoteTaskState>? expectedByHref = expectedStates?.ToDictionary(
+                    state => state.RemoteHref, StringComparer.OrdinalIgnoreCase);
                 var parents = new List<(long TaskId, string Uid, string ParentUid)>();
                 context.IsRemoteChange = true;
                 foreach (RemoteTaskUpdate remote in updates)
@@ -557,6 +586,24 @@ public sealed partial class SqliteTaskStore
                         transaction,
                         task.Uid,
                         includeDeleted: true);
+                    if (expectedByUid is not null)
+                    {
+                        expectedByUid.TryGetValue(task.Uid, out RemoteTaskState? expected);
+                        if (existing is null && expected is not null)
+                        {
+                            result.HasDeferredChanges = true;
+                            continue;
+                        }
+
+                        if (existing is not null && IsPullConflict(
+                            connection, transaction, listId, existing, expected))
+                        {
+                            AddPullConflict(connection, transaction, result, existing,
+                                task, remote.Href, remote.ETag);
+                            continue;
+                        }
+                    }
+
                     string? parentUid = task.ParentUid;
                     task.ParentUid = null;
                     task.ListId = listId;
@@ -597,6 +644,7 @@ public sealed partial class SqliteTaskStore
                     ReplaceTaskCollections(connection, transaction, task);
                     MarkEntityChangesSynced(connection, transaction, SyncEntityType.Task, task.Uid);
                     context.AddTask(listId, task.Uid);
+                    result.AppliedCount++;
                     if (parentUid is not null)
                     {
                         parents.Add((task.Id, task.Uid, parentUid));
@@ -637,9 +685,33 @@ public sealed partial class SqliteTaskStore
                     find.Parameters.AddWithValue("@listId", listId);
                     find.Parameters.AddWithValue("@href", href);
                     string? uid = find.ExecuteScalar() as string;
+                    RemoteTaskState? expected = null;
+                    if (expectedByHref is not null && expectedByHref.TryGetValue(href, out expected))
+                    {
+                        uid = expected.Uid;
+                    }
+
                     if (uid is null)
                     {
                         continue;
+                    }
+
+                    if (expectedByHref is not null)
+                    {
+                        TodoTask? existing = ReadTaskByUid(connection, transaction, uid, includeDeleted: true);
+                        if (existing is null)
+                        {
+                            result.HasDeferredChanges |= expected is not null;
+                            continue;
+                        }
+
+                        if (IsPullConflict(connection, transaction, listId, existing, expected)
+                            || HasPullStepConflict(connection, transaction, existing, expectedByUid!))
+                        {
+                            AddPullConflict(connection, transaction, result, existing,
+                                remote: null, href, etag: null);
+                            continue;
+                        }
                     }
 
                     using SqliteCommand delete = connection.CreateCommand();
@@ -651,12 +723,94 @@ public sealed partial class SqliteTaskStore
                         """;
                     delete.Parameters.AddWithValue("@listId", listId);
                     delete.Parameters.AddWithValue("@href", href);
-                    delete.ExecuteNonQuery();
+                    int deletedCount = delete.ExecuteNonQuery();
                     MarkEntityChangesSynced(connection, transaction, SyncEntityType.Task, uid);
                     context.AddTask(listId, uid);
+                    result.AppliedCount += deletedCount;
+                    if (deleteLocalSteps)
+                    {
+                        foreach (string stepUid in GetConflictStepUids(connection, transaction, uid))
+                        {
+                            using SqliteCommand discard = connection.CreateCommand();
+                            discard.Transaction = transaction;
+                            discard.CommandText = """
+                                UPDATE tasks SET is_deleted = 1, is_dirty = 1,
+                                    modified_utc = @modifiedUtc, sequence = sequence + 1
+                                WHERE uid = @uid;
+                                """;
+                            discard.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(_clock.UtcNow));
+                            discard.Parameters.AddWithValue("@uid", stepUid);
+                            discard.ExecuteNonQuery();
+                            LogChange(connection, transaction, TaskEntityType, stepUid, ChangeOperation.Delete);
+                            context.AddTask(listId, stepUid);
+                        }
+                    }
                 }
+
+                return result;
             },
             cancellationToken);
+    }
+
+    private static bool IsPullConflict(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        long listId,
+        TodoTask existing,
+        RemoteTaskState? expected)
+    {
+        return existing.IsDirty
+            || HasUnsyncedEntityChange(connection, transaction, SyncEntityType.Task, existing.Uid)
+            || expected is null
+            || existing.ListId != listId
+            || existing.Sequence != expected.Sequence
+            || existing.IsDeleted != expected.IsDeleted
+            || !string.Equals(existing.RemoteHref, expected.RemoteHref, StringComparison.Ordinal)
+            || !string.Equals(existing.RemoteETag, expected.RemoteETag, StringComparison.Ordinal);
+    }
+
+    private static void AddPullConflict(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        RemotePullApplyResult result,
+        TodoTask local,
+        TodoTask? remote,
+        string href,
+        string? etag)
+    {
+        LoadTaskCollections(connection, local, transaction);
+        result.Conflicts.Add(new SyncConflict
+        {
+            LocalTask = local,
+            RemoteTask = remote,
+            RemoteHref = href,
+            RemoteETag = etag,
+            RemoteDeleted = remote is null,
+        });
+    }
+
+    private static bool HasPullStepConflict(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        TodoTask parent,
+        IReadOnlyDictionary<string, RemoteTaskState> expectedByUid)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = $"SELECT {SqliteMapper.TaskColumns} FROM tasks t WHERE t.parent_uid = @parentUid AND t.is_deleted = 0;";
+        command.Parameters.AddWithValue("@parentUid", parent.Uid);
+        using SqliteDataReader reader = command.ExecuteReader();
+        while (reader.Read())
+        {
+            TodoTask step = SqliteMapper.ReadTask(reader);
+            expectedByUid.TryGetValue(step.Uid, out RemoteTaskState? expected);
+            if (IsPullConflict(connection, transaction, parent.ListId, step, expected))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public Task MarkTaskChangeSyncedAsync(
@@ -733,25 +887,39 @@ public sealed partial class SqliteTaskStore
         string uid,
         string? remoteHref,
         string? remoteETag,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool ensureLocalChange = false)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(uid);
         return ExecuteWriteAsync(
-            (connection, transaction, _) =>
+            (connection, transaction, context) =>
             {
+                TodoTask task = ReadTaskByUid(connection, transaction, uid, includeDeleted: true)
+                    ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
+                bool queueLocalChoice = ensureLocalChange && !task.IsDirty
+                    && !HasUnsyncedEntityChange(connection, transaction, SyncEntityType.Task, uid);
                 using SqliteCommand command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = """
                     UPDATE tasks
-                    SET remote_href = @remoteHref, remote_etag = @remoteETag
+                    SET remote_href = @remoteHref, remote_etag = @remoteETag,
+                        is_dirty = CASE WHEN @queueLocalChoice THEN 1 ELSE is_dirty END
                     WHERE uid = @uid;
                     """;
                 AddParameter(command, "@remoteHref", remoteHref);
                 AddParameter(command, "@remoteETag", remoteETag);
+                command.Parameters.AddWithValue("@queueLocalChoice", queueLocalChoice);
                 command.Parameters.AddWithValue("@uid", uid);
                 if (command.ExecuteNonQuery() != 1)
                 {
                     throw new KeyNotFoundException($"Task '{uid}' was not found.");
+                }
+
+                if (queueLocalChoice)
+                {
+                    LogChange(connection, transaction, TaskEntityType, uid,
+                        task.IsDeleted ? ChangeOperation.Delete : ChangeOperation.Update);
+                    context.AddTask(task.ListId, uid);
                 }
             },
             cancellationToken);
@@ -759,7 +927,8 @@ public sealed partial class SqliteTaskStore
 
     public Task<TodoTask> CreateConflictCopyAsync(
         TodoTask source,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        bool preserveSteps = false)
     {
         ArgumentNullException.ThrowIfNull(source);
         TodoTask copy = CloneTask(source);
@@ -772,7 +941,60 @@ public sealed partial class SqliteTaskStore
         copy.Created = default;
         copy.LastModified = default;
         copy.SortOrder = 0;
-        return CreateTaskAsync(copy, cancellationToken);
+        if (!preserveSteps)
+        {
+            return CreateTaskAsync(copy, cancellationToken);
+        }
+
+        return ExecuteWriteAsync(
+            (connection, transaction, context) =>
+            {
+                GetListUid(connection, transaction, copy.ListId);
+                PrepareNewTask(connection, transaction, copy);
+                copy.Id = InsertTask(connection, transaction, copy);
+                ReplaceTaskCollections(connection, transaction, copy);
+                LogChange(connection, transaction, TaskEntityType, copy.Uid, ChangeOperation.Create);
+                context.AddTask(copy.ListId, copy.Uid);
+                foreach (string stepUid in GetConflictStepUids(connection, transaction, source.Uid))
+                {
+                    using SqliteCommand reparent = connection.CreateCommand();
+                    reparent.Transaction = transaction;
+                    reparent.CommandText = """
+                        UPDATE tasks SET parent_uid = @parentUid, is_dirty = 1,
+                            modified_utc = @modifiedUtc, sequence = sequence + 1
+                        WHERE uid = @uid;
+                        """;
+                    reparent.Parameters.AddWithValue("@parentUid", copy.Uid);
+                    reparent.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(_clock.UtcNow));
+                    reparent.Parameters.AddWithValue("@uid", stepUid);
+                    reparent.ExecuteNonQuery();
+                    LogChange(connection, transaction, TaskEntityType, stepUid, ChangeOperation.Update);
+                    context.AddTask(copy.ListId, stepUid);
+                }
+
+                context.AddTask(source.ListId, source.Uid);
+                return copy;
+            },
+            cancellationToken);
+    }
+
+    private static IReadOnlyList<string> GetConflictStepUids(
+        SqliteConnection connection,
+        SqliteTransaction transaction,
+        string parentUid)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = "SELECT uid FROM tasks WHERE parent_uid = @parentUid AND is_deleted = 0;";
+        command.Parameters.AddWithValue("@parentUid", parentUid);
+        using SqliteDataReader reader = command.ExecuteReader();
+        var uids = new List<string>();
+        while (reader.Read())
+        {
+            uids.Add(reader.GetString(0));
+        }
+
+        return uids;
     }
 
     private static Account ReadAccount(SqliteDataReader reader)

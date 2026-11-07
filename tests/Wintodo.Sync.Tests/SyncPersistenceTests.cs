@@ -9,7 +9,7 @@ using Wintodo.Sync;
 
 namespace Wintodo.Sync.Tests;
 
-public sealed class SyncPersistenceTests
+public sealed partial class SyncPersistenceTests
 {
     [Fact]
     public async Task PulledUnknownProperty_SurvivesLocalEditAndNextPutPayload()
@@ -208,6 +208,8 @@ public sealed class SyncPersistenceTests
         internal SqliteTaskStore Store { get; }
 
         internal FixedClock Clock { get; }
+
+        internal string DatabasePath => Path.Combine(_directory, "wintodo.db");
 
         internal static async Task<SyncFixture> CreateAsync()
         {

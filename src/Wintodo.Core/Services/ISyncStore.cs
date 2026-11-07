@@ -69,6 +69,18 @@ public interface ISyncStore
         long listId,
         IReadOnlyList<RemoteTaskUpdate> updates,
         IReadOnlyList<string> deletedHrefs,
+        CancellationToken cancellationToken = default,
+        bool deleteLocalSteps = false);
+
+    /// <summary>
+    /// Applies a pull only while its original task snapshots still match.
+    /// Conflicts and deferred changes never acknowledge local change-log rows.
+    /// </summary>
+    Task<RemotePullApplyResult> ApplyRemotePullAsync(
+        long listId,
+        IReadOnlyList<RemoteTaskUpdate> updates,
+        IReadOnlyList<string> deletedHrefs,
+        IReadOnlyList<RemoteTaskState> expectedStates,
         CancellationToken cancellationToken = default);
 
     Task MarkTaskChangeSyncedAsync(
@@ -88,9 +100,11 @@ public interface ISyncStore
         string uid,
         string? remoteHref,
         string? remoteETag,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        bool ensureLocalChange = false);
 
     Task<TodoTask> CreateConflictCopyAsync(
         TodoTask source,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        bool preserveSteps = false);
 }
