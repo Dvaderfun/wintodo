@@ -698,10 +698,18 @@ public sealed partial class SqliteTaskStore
         return reader.Read() ? SqliteMapper.ReadTask(reader) : null;
     }
 
-    private static void LoadTaskCollections(SqliteConnection connection, TodoTask task)
+    private static void LoadTaskCollections(
+        SqliteConnection connection,
+        TodoTask task,
+        SqliteTransaction? transaction = null)
     {
         using (SqliteCommand tags = connection.CreateCommand())
         {
+            // Preserve CreateCommand's automatic enlistment for existing callers.
+            if (transaction is not null)
+            {
+                tags.Transaction = transaction;
+            }
             tags.CommandText = """
                 SELECT tags.name
                 FROM task_tags
@@ -719,6 +727,10 @@ public sealed partial class SqliteTaskStore
 
         using (SqliteCommand alarms = connection.CreateCommand())
         {
+            if (transaction is not null)
+            {
+                alarms.Transaction = transaction;
+            }
             alarms.CommandText = $"SELECT {AlarmColumns} FROM alarms WHERE task_id = @taskId ORDER BY id;";
             alarms.Parameters.AddWithValue("@taskId", task.Id);
             using SqliteDataReader reader = alarms.ExecuteReader();
@@ -729,6 +741,10 @@ public sealed partial class SqliteTaskStore
         }
 
         using SqliteCommand attachments = connection.CreateCommand();
+        if (transaction is not null)
+        {
+            attachments.Transaction = transaction;
+        }
         attachments.CommandText = $"SELECT {AttachmentColumns} FROM attachments WHERE task_id = @taskId ORDER BY id;";
         attachments.Parameters.AddWithValue("@taskId", task.Id);
         using SqliteDataReader attachmentReader = attachments.ExecuteReader();

@@ -10,7 +10,7 @@ using Wintodo.Sync;
 
 namespace Wintodo.Sync.Tests;
 
-public sealed class CalDavSyncServiceTests
+public sealed partial class CalDavSyncServiceTests
 {
     [Fact]
     public async Task RestoredList_RecreatesCollectionBeforePushingItsTasks()
@@ -218,6 +218,10 @@ public sealed class CalDavSyncServiceTests
         private readonly List<JournalEntry> _journal = [];
         private int _version;
 
+        internal Func<string, CancellationToken, Task>? BeforeGetAsync { get; set; }
+
+        internal List<string> Writes { get; } = [];
+
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
@@ -258,6 +262,11 @@ public sealed class CalDavSyncServiceTests
 
             if (method == "GET")
             {
+                if (BeforeGetAsync is not null)
+                {
+                    await BeforeGetAsync(path, cancellationToken);
+                }
+
                 if (!_resources.TryGetValue(path, out StoredResource? resource))
                 {
                     return new HttpResponseMessage(HttpStatusCode.NotFound);
@@ -274,6 +283,7 @@ public sealed class CalDavSyncServiceTests
 
             if (method == "PUT")
             {
+                Writes.Add(path);
                 _resources.TryGetValue(path, out StoredResource? existing);
                 if (GetHeader(request, "If-None-Match") == "*" && existing is not null
                     || GetHeader(request, "If-Match") is string expected
@@ -294,6 +304,7 @@ public sealed class CalDavSyncServiceTests
 
             if (method == "DELETE")
             {
+                Writes.Add(path);
                 if (!_resources.TryGetValue(path, out StoredResource? existing))
                 {
                     return new HttpResponseMessage(HttpStatusCode.NotFound);

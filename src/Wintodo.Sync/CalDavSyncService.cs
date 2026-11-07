@@ -241,13 +241,15 @@ public sealed class CalDavSyncService : IDisposable
                         conflict.LocalTask.Uid,
                         conflict.RemoteDeleted ? null : conflict.RemoteHref,
                         conflict.RemoteDeleted ? null : conflict.RemoteETag,
-                        cancellationToken).ConfigureAwait(false);
+                        cancellationToken,
+                        ensureLocalChange: true).ConfigureAwait(false);
                     break;
                 case SyncConflictChoice.KeepTheirs:
                     await ApplyConflictRemoteAsync(conflict, cancellationToken).ConfigureAwait(false);
                     break;
                 case SyncConflictChoice.KeepBoth:
-                    await _store.CreateConflictCopyAsync(conflict.LocalTask, cancellationToken)
+                    await _store.CreateConflictCopyAsync(conflict.LocalTask, cancellationToken,
+                        preserveSteps: conflict.RemoteDeleted)
                         .ConfigureAwait(false);
                     await ApplyConflictRemoteAsync(conflict, cancellationToken).ConfigureAwait(false);
                     break;
@@ -525,12 +527,30 @@ public sealed class CalDavSyncService : IDisposable
 
         if (updates.Count > 0 || deletions.Count > 0)
         {
-            await _store.ApplyRemoteChangesAsync(
+            RemotePullApplyResult applied = await _store.ApplyRemotePullAsync(
                 list.Id,
                 updates,
                 deletions,
+                states,
                 cancellationToken).ConfigureAwait(false);
-            result.PulledCount += updates.Count + deletions.Count;
+            result.PulledCount += applied.AppliedCount;
+            foreach (SyncConflict conflict in applied.Conflicts)
+            {
+                AddConflict(result, conflictedUids, account, list, conflict.LocalTask,
+                    conflict.RemoteTask, conflict.RemoteHref, conflict.RemoteETag, conflict.RemoteDeleted);
+            }
+
+            if (applied.HasDeferredChanges)
+            {
+                result.Status = SyncRunStatus.AttentionRequired;
+                return;
+            }
+        }
+
+        if (result.Conflicts.Any(conflict => conflict.ListId == list.Id))
+        {
+            // Retain the delta position so unresolved pulls survive dismissal/restart.
+            return;
         }
 
         await _store.SetListSyncMetadataAsync(
@@ -575,6 +595,7 @@ public sealed class CalDavSyncService : IDisposable
                 TodoTask task = change.Task
                     ?? throw new InvalidOperationException("A task sync change has no task.");
                 if (conflictedUids.Contains(task.Uid)
+                    || task.ParentUid is not null && conflictedUids.Contains(task.ParentUid)
                     || !listsById.TryGetValue(task.ListId, out TodoList? list)
                     || string.IsNullOrWhiteSpace(list.RemoteUrl))
                 {
@@ -782,7 +803,8 @@ public sealed class CalDavSyncService : IDisposable
                 conflict.ListId,
                 [],
                 [conflict.RemoteHref],
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken,
+                deleteLocalSteps: true).ConfigureAwait(false);
             return;
         }
 

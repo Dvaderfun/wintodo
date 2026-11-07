@@ -51,6 +51,21 @@ public sealed class RemoteTaskState
     public bool IsDirty { get; set; }
 
     public bool IsDeleted { get; set; }
+
+    /// <summary>
+    /// Task SEQUENCE observed before pull application. Local task and owned-
+    /// collection writes increment it even when the clock has not advanced.
+    /// </summary>
+    public int Sequence { get; set; }
+}
+
+public sealed class RemotePullApplyResult
+{
+    public int AppliedCount { get; set; }
+
+    public bool HasDeferredChanges { get; set; }
+
+    public List<SyncConflict> Conflicts { get; } = [];
 }
 
 public sealed class RemoteTaskUpdate
