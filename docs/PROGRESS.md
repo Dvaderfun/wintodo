@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-10-20:
+As of 2026-11-08:
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -20,15 +20,23 @@ As of 2026-10-20:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
-- **Build:** Debug and Release x64 clean on 2026-10-18 with `WinUIAnalyzer` 0.7.1
-  after the completion viewport repair;
-  Release/AOT x64 and ARM64 republished on 2026-10-18 after the viewport repair
-  for M10 package preparation; fresh runtime execution is not claimed.
-  Tests (xunit v3 on Microsoft Testing Platform): Core 202, Data 95, Sync 10 — 307/307,
-  zero failed/skipped on the latest 2026-10-18 run. One intervening existing
-  InvalidListMutation test failed transiently; focused and full reruns pass.
-- **Toolchain:** .NET SDK 10.0.401 (runtime 10.0.12), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
+- **Build:** Fresh isolated Windows checkout of `2e149ca`'s exact source tree
+  passed Debug x64 with zero warnings/errors on 2026-11-08. All four MTP suites
+  passed 392/392, zero failed/skipped (Core 212, Data 97, Import 73, Sync 10).
+  Fresh Release/Native AOT x64 and ARM64 publishes passed with warnings-as-errors
+  using patched compiler/runtime 10.0.14. Intermediate native architecture
+  checks pass; fresh runtime, MSIX and installation evidence are not claimed.
+  GitHub CI for the configuration fixes has not run.
+- **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
+- **Deployment preparation (2026-11-08):** Three agents split DEP-01 fixture
+  repair, DEP-02 patched-toolchain proof and preliminary DEP-13 privacy scans.
+  Commit `2e149ca` preserves raw attachment checkout bytes and pins the patched
+  SDK. Gitleaks 8.30.1 scans of reachable history, source archive and current
+  source found zero matches; identifying image metadata checks were clear in
+  inspected fields. GitHub CI, native/tool advisory coverage, attribution/archive
+  policy and final privacy/deployment gates remain pending. Details and local
+  redacted evidence links are in [the deployment plan](plans/deployment-readiness.md).
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
   strengthened list stability passes 3/3 twice, with 10 px drift on immediate
   and settled completion/uncompletion against the unchanged 54 px limit.
@@ -3879,3 +3887,54 @@ binaries, assets, extensions and capabilities inspected.
 **Deviations / remaining:** Built from the uncommitted working tree on top of
 `8c5a066`. Owner installation/runtime check pending; no host installation or
 UI automation. ARM64 not rebuilt.
+
+### 2026-11-08 — Deployment readiness and GitHub release plan
+
+- Added `docs/plans/deployment-readiness.md`, covering the read-only audit's
+  data-integrity/API findings, credential and personal-data safeguards,
+  patched AOT toolchain, CI reproducibility, packaging/versioning/signing,
+  release documentation, clean deployment gates and authorized publication.
+- Defined DEP-01 through DEP-20 with dependencies, pending ownership/status,
+  acceptance criteria and an evidence register. Owner decisions and the
+  existing M9 deferral remain explicit; no runtime gate was marked passed.
+- Linked the plan from `docs/README.md`; new planning documents belong under
+  `docs/plans/`.
+- Validation: all 20 work packages have matching tracking rows; relative links
+  resolve; targeted private-path/key/token patterns are absent; diff whitespace
+  checks pass. Builds, unit tests and UI gates were not run for this
+  documentation-only change. Application code, CI and signing remain unchanged.
+
+### 2026-11-08 — M10 / DEP-01, DEP-02 and preliminary DEP-13 parallel batch
+
+- **Shipped:** Commit `2e149ca` adds a narrow `.gitattributes` rule for raw
+  Microsoft To Do `.bin` attachment fixtures and raises `global.json`'s stable
+  .NET 10 SDK minimum from 10.0.401 to 10.0.403. Production code, fixture bytes,
+  assertions, package identity and signing configuration were not changed.
+- **DEP-01 — LOCAL PASS; GitHub CI PENDING:** Fresh Windows checkout with
+  `core.autocrlf=true` reproduced both planned byte-preservation failures:
+  71/73 import tests passed and the fixture expanded from 24 to 26 bytes.
+  With the attribute, the 24-byte working-tree blob equals the repository blob.
+  Clean `dotnet build Wintodo.sln -p:Platform=x64 -warnaserror` and all four MTP
+  suites passed 392/392 with zero failures/skips, TRX and coverage collected.
+  Candidate tree `b68275dacebc6683ac36810f47a01122792715cd` exactly matches the
+  committed configuration fixes. Evidence: `artifacts/dep01/evidence.json`.
+- **DEP-02 — LOCAL AOT/NuGet PASS; runner/native review PENDING:** Official
+  metadata confirms 10.0.14 fixes GHSA-p3jp-9v83-76w9. Fresh x64/ARM64 AOT
+  publishes with warnings-as-errors resolved patched compiler/runtime packs.
+  PE architecture and absent-CLR checks pass. Direct/transitive NuGet scans
+  report zero vulnerable packages across nine solution projects and separate
+  target app graphs. Evidence: `artifacts/dep02-toolchain/result.json`.
+- **DEP-13 — PRELIMINARY SCANS PASS; policy/final review PENDING:** Official-
+  checksum-verified Gitleaks 8.30.1 found zero matches in reachable history,
+  committed source archive and current tree including the new plan. Reviewed
+  401 tracked files, 106 reachable commits, 1,239 blobs, synthetic email
+  markers and identifying metadata fields of eight JPEGs, eight PNGs and one
+  ICO. Evidence: `artifacts/dep13/privacy-audit.json`; raw data stays ignored.
+- **Remaining / deviations:** No push or new GitHub CI run, UI automation,
+  MSIX packaging, signing, installation, trust or runtime verification was
+  performed. Comprehensive native/tool advisory coverage, chosen runner proof,
+  public attribution/licence, source archive tooling policy, screenshot
+  visual/OCR review and final release gates remain pending. DEP-01/02/13 are
+  not marked complete. Owner decisions and M9 deferral are preserved. Existing
+  plan/index/progress edits remain in the working tree; only the two validated
+  configuration fixes were committed.
