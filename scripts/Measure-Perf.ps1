@@ -624,7 +624,7 @@ if (-not $SkipScrollGate) {
                 MaxFrameMilliseconds = $null
                 CallbackAllocatedBytes = $null
                 Passed = $false
-                Error = $_.Exception.Message
+                Error = 'WINTODO_PERF_MEASUREMENT_FAILED'
             })
         }
     }

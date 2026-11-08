@@ -30,8 +30,8 @@ internal enum MicrosoftSignInFailure
     Failed,
 }
 
-internal sealed class MicrosoftSignInException(MicrosoftSignInFailure failure, string? detail)
-    : Exception(detail ?? failure.ToString())
+internal sealed class MicrosoftSignInException(MicrosoftSignInFailure failure)
+    : Exception(failure.ToString())
 {
     internal MicrosoftSignInFailure Failure { get; } = failure;
 }
@@ -78,7 +78,7 @@ internal sealed class FixtureMicrosoftTodoConnector(string fixtureDirectory, ICl
         await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken);
         var handler = new FixtureGraphHandler(fixtureDirectory, rejectAttachmentContent: _expireNext, throttleOnce: throttleOnce);
         _expireNext = false;
-        return new GraphTodoClient(new HttpClient(handler), "fixture", clock: clock);
+        return new GraphTodoClient(new HttpClient(handler), "fixture", clock: clock, ownsHttpClient: true);
     }
 }
 #endif

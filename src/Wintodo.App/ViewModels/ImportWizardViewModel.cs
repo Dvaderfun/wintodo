@@ -31,8 +31,8 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     private readonly IClock _clock;
     private readonly ImportEnvironment _environment;
     private readonly ResourceLoader _resources = new();
-    private CancellationTokenSource? _cancellation;
-    private MicrosoftTodoReader? _reader;
+    private readonly MicrosoftTodoImportSession _session = new();
+    private MicrosoftTodoReader? Reader => _session.Reader;
     private MicrosoftTodoExport? _export;
     private string? _lastRunId;
     private IReadOnlySet<string> _pendingAttachmentIds = new HashSet<string>(StringComparer.Ordinal);
@@ -163,13 +163,13 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         {
             return;
         }
-
+        _session.Reset();
+        ClearSensitiveState();
         Step = ImportWizardStep.Connect;
         IsErrorOpen = false;
         AccountText = string.Empty;
         OverwriteLocalEdits = false;
         CanRemoveImported = false;
-        _reader = null;
         _export = null;
         _lastRunId = null;
         _lastOutcome = null;
@@ -189,9 +189,11 @@ public sealed partial class ImportWizardViewModel : ObservableObject
 
     internal async Task RefreshLastImportAsync()
     {
+        int generation = _session.Generation;
         try
         {
             IReadOnlyList<ImportSourceInfo> sources = await _store.GetImportSourcesAsync(GraphTodoMapper.Provider);
+            if (!_session.IsCurrent(generation)) return;
             LastImportText = string.Join(Environment.NewLine, sources.Where(source => source.LastImport is not null).Select(source =>
                 string.Format(
                     DisplayCulture.Current,
@@ -201,27 +203,31 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
         catch (Exception exception) when (exception is InvalidOperationException or ObjectDisposedException)
         {
-            Trace.WriteLine($"WINTODO_IMPORT_SOURCES_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_IMPORT_SOURCES_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 
-    private bool CanSignIn() => !IsBusy && IsSignInConfigured;
+    private bool CanSignIn() => !IsBusy && !_session.IsDismissed && IsSignInConfigured;
 
     [RelayCommand(CanExecute = nameof(CanSignIn))]
     private async Task SignInAsync()
     {
         CancellationToken token = BeginWork(ImportWizardStep.Reading, _resources.GetString("Import_ProgressSigningIn"));
+        int generation = _session.Generation;
         try
         {
             GraphTodoClient client = await _environment.Connector.ConnectAsync(token);
+            _session.Connect(client);
             _workTenantId = client.WorkTenantId;
-            var retryProgress = new Progress<TimeSpan>(delay => SetProgress(Format("Import_RetryFormat", (int)Math.Ceiling(delay.TotalSeconds)), true));
+            var retryProgress = new Progress<TimeSpan>(delay =>
+            {
+                if (_session.IsCurrent(generation)) SetProgress(Format("Import_RetryFormat", (int)Math.Ceiling(delay.TotalSeconds)), true);
+            });
             client.Retrying = delay => ((IProgress<TimeSpan>)retryProgress).Report(delay);
             SetProgress(_resources.GetString("Import_ProgressAccount"), indeterminate: true);
             if (_resumeAfterExpired && _export is not null && await MicrosoftTodoReader.CanResumeAsync(client, _export, token))
             {
                 _resumeAfterExpired = false;
-                _reader = new MicrosoftTodoReader(client);
                 Step = ImportWizardStep.Review;
                 ErrorMessage = _resources.GetString("Import_SignedInAgain");
                 IsErrorOpen = false;
@@ -229,8 +235,9 @@ public sealed partial class ImportWizardViewModel : ObservableObject
                 return;
             }
             _resumeAfterExpired = false;
-            _reader = new MicrosoftTodoReader(client);
-            _export = await _reader.ReadAsync(new Progress<MicrosoftTodoProgress>(ReportProgress), token);
+            MicrosoftTodoExport export = await Reader!.ReadAsync(CreateProgress(generation), token);
+            token.ThrowIfCancellationRequested();
+            _export = export;
             IReadOnlyList<ImportSourceInfo> sources = await _store.GetImportSourcesAsync(GraphTodoMapper.Provider, token);
             HasPreviousImport = sources.Any(source => source.AccountKey == _export.User.Id);
             // Counts only: list and task names are personal data.
@@ -256,6 +263,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
+            ClearSensitiveState();
             Step = ImportWizardStep.Connect;
         }
         catch (Exception exception)
@@ -265,11 +273,12 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
         finally
         {
+            if (IsConnectStep) _session.ReleaseConnection();
             EndWork();
         }
     }
 
-    private bool CanContinue() => !IsBusy && Lists.Any(list => list.IsSelected);
+    private bool CanContinue() => !IsBusy && _export is not null && Lists.Any(list => list.IsSelected);
 
     [RelayCommand(CanExecute = nameof(CanContinue))]
     private async Task ContinueAsync()
@@ -295,21 +304,22 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
     }
 
-    private bool CanImport() => !IsBusy && _export is not null;
+    private bool CanImport() => !IsBusy && IsReviewStep && _export is not null && Reader is not null;
 
     [RelayCommand(CanExecute = nameof(CanImport))]
     private async Task ImportAsync()
     {
         CancellationToken token = BeginWork(ImportWizardStep.Importing, _resources.GetString("Import_ProgressSaving"));
+        int generation = _session.Generation;
         string? staging = null;
         try
         {
             ImportSnapshot snapshot = await BuildSnapshotAsync();
-            if (IncludeAttachments && _reader is not null)
+            if (IncludeAttachments && Reader is not null)
             {
                 staging = Path.Combine(_environment.AttachmentRoot, "import-staging", Guid.NewGuid().ToString("N"));
-                await _reader.DownloadAttachmentsAsync(snapshot, staging, _pendingAttachmentIds,
-                    new Progress<MicrosoftTodoProgress>(ReportProgress), token);
+                await Reader.DownloadAttachmentsAsync(snapshot, staging, _pendingAttachmentIds,
+                    CreateProgress(generation), token);
             }
 
             SetProgress(_resources.GetString("Import_ProgressSaving"), indeterminate: true);
@@ -318,6 +328,16 @@ public sealed partial class ImportWizardViewModel : ObservableObject
             IsSaving = true;
             token.ThrowIfCancellationRequested();
             ImportOutcome outcome = await _store.ApplyImportAsync(snapshot, BuildOptions(), CancellationToken.None);
+            _session.ReleaseConnection();
+            _export = null;
+            _workTenantId = null;
+            _lastFailure = null;
+            _pendingAttachmentIds = new HashSet<string>(StringComparer.Ordinal);
+            if (_session.IsDismissed)
+            {
+                await RaiseImportedAsync();
+                return;
+            }
             _lastRunId = outcome.RunId;
             _lastOutcome = outcome;
             _completedAt = _clock.UtcNow;
@@ -336,7 +356,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         {
             // Keep the read and preview. A new sign-in checks account identity
             // before reusing them; no token is refreshed or persisted.
-            _reader = null;
+            _session.ReleaseConnection();
             _resumeAfterExpired = true;
             Step = ImportWizardStep.Connect;
             ShowError(DescribeReadFailure(exception), exception);
@@ -357,30 +377,32 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
     }
 
-    private bool CanGoBack() => !IsBusy;
+    private bool CanGoBack() => !IsBusy && !_session.IsDismissed;
 
     [RelayCommand(CanExecute = nameof(CanGoBack))]
     private void Back()
     {
         IsErrorOpen = false;
         Step = Step == ImportWizardStep.Review ? ImportWizardStep.Choose : ImportWizardStep.Connect;
+        if (IsConnectStep) ClearSensitiveState();
     }
 
     [RelayCommand]
-    private void Cancel()
+    private async Task CancelAsync()
     {
         if (IsBusy)
         {
-            _cancellation?.Cancel();
+            if (!IsSaving) _session.CancelWork();
             return;
         }
-
+        await DismissAsync();
         CloseRequested?.Invoke(false);
     }
 
     [RelayCommand]
-    private void Finish()
+    private async Task FinishAsync()
     {
+        await DismissAsync();
         CloseRequested?.Invoke(true);
     }
 
@@ -389,13 +411,15 @@ public sealed partial class ImportWizardViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRemove))]
     private async Task RemoveImportedAsync()
     {
+        int generation = _session.Generation;
         if (_lastOutcome is null || RemoveConfirmationRequested is null
             || !await RemoveConfirmationRequested.Invoke(Format("Import_RemoveConfirmFormat",
                 _lastOutcome.NewTasks, _lastOutcome.NewLists, _lastOutcome.NewSteps)))
         {
             return;
         }
-        IsBusy = true;
+        if (!_session.IsCurrent(generation)) return;
+        BeginWork(ImportWizardStep.Done, _resources.GetString("Import_ProgressSaving"));
         try
         {
             int removed = await _store.RemoveImportRunAsync(_lastRunId!);
@@ -411,7 +435,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
         finally
         {
-            IsBusy = false;
+            EndWork();
         }
     }
 
@@ -515,25 +539,6 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         ProgressValue = value;
     }
 
-    private CancellationToken BeginWork(ImportWizardStep step, string progressText)
-    {
-        _cancellation?.Dispose();
-        _cancellation = new CancellationTokenSource();
-        IsErrorOpen = false;
-        IsBusy = true;
-        SetProgress(progressText, indeterminate: true);
-        Step = step;
-        return _cancellation.Token;
-    }
-
-    private void EndWork()
-    {
-        IsSaving = false;
-        IsBusy = false;
-        _cancellation?.Dispose();
-        _cancellation = null;
-    }
-
     private string DescribeReadFailure(Exception exception)
     {
         return exception switch
@@ -549,7 +554,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
 
     private void ShowError(string message, Exception exception)
     {
-        Trace.WriteLine($"WINTODO_IMPORT_EXCEPTION={exception}");
+        Trace.WriteLine($"WINTODO_IMPORT_EXCEPTION={DiagnosticException.Describe(exception, exception is GraphRequestException graph ? graph.StatusCode : null)}");
         ErrorMessage = message;
         _lastFailure = exception;
         ErrorActionText = _resources.GetString(exception switch
@@ -587,7 +592,7 @@ public sealed partial class ImportWizardViewModel : ObservableObject
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            Trace.WriteLine($"WINTODO_IMPORT_STAGING_CLEANUP_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_IMPORT_STAGING_CLEANUP_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 }

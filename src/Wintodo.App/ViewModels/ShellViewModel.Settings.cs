@@ -33,7 +33,7 @@ public sealed partial class ShellViewModel
 
     private void OnNotificationSettingsFailed(Exception exception)
     {
-        Trace.WriteLine($"WINTODO_NOTIFICATION_SETTINGS_ERROR={exception}");
+        Trace.WriteLine($"WINTODO_NOTIFICATION_SETTINGS_ERROR={DiagnosticException.Describe(exception)}");
         App.DispatcherQueue.TryEnqueue(() =>
         {
             NotificationSettingsErrorMessage = _resources.GetString("Settings_NotificationsSaveFailed");
@@ -58,7 +58,7 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_DATABASE_STATS_ERROR={exception}");
+            Trace.WriteLine($"WINTODO_DATABASE_STATS_ERROR={DiagnosticException.Describe(exception)}");
             DataSettingsErrorMessage = _resources.GetString("Settings_DatabaseStatsFailed");
             IsDataSettingsErrorOpen = true;
         }
@@ -78,7 +78,7 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_LICENCES_OPEN_ERROR={exception}");
+            Trace.WriteLine($"WINTODO_LICENCES_OPEN_ERROR={DiagnosticException.Describe(exception)}");
             DataSettingsErrorMessage = _resources.GetString("Settings_LicencesOpenFailed");
             IsDataSettingsErrorOpen = true;
         }
@@ -102,7 +102,7 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_DATABASE_EXPLORER_ERROR={exception}");
+            Trace.WriteLine($"WINTODO_DATABASE_EXPLORER_ERROR={DiagnosticException.Describe(exception)}");
             DataSettingsErrorMessage = _resources.GetString("Settings_DatabaseExplorerFailed");
             IsDataSettingsErrorOpen = true;
         }

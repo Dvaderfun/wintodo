@@ -2,7 +2,7 @@
 
 Prepared: 2026-11-08. Audit baseline: `d8c2ac3`.
 
-Status: **IN PROGRESS — DEP-01, DEP-03, DEP-05 and DEP-11 automated acceptance passed; remaining release work is pending.**
+Status: **IN PROGRESS — DEP-01, DEP-03, DEP-05, DEP-06, DEP-08, DEP-09 and DEP-11 automated acceptance passed. Remaining release work is pending.**
 
 This plan turns the deployment-readiness audit into work packages for a safe
 GitHub release and GitHub Actions CI/CD. It covers data integrity, API security,
@@ -100,10 +100,10 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
 | DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; data/ADR decision if needed | Unassigned | PENDING |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
-| DEP-06 | Enforce CalDAV redirect origin policy | Security | DEP-01 | Unassigned | PENDING |
+| DEP-06 | Enforce CalDAV redirect origin policy | Security | DEP-01 | Codex / dep06_caldav_redirects | COMPLETE; automated acceptance PASS |
 | DEP-07 | Bound network bodies and attachment downloads | Security | DEP-05, DEP-06 | Unassigned | PENDING |
-| DEP-08 | Sanitize all diagnostic paths | Privacy blocker | DEP-01 | Unassigned | PENDING |
-| DEP-09 | End sensitive import sessions correctly | Security | DEP-01 | Unassigned | PENDING |
+| DEP-08 | Sanitize all diagnostic paths | Privacy blocker | DEP-01 | Codex / dep08_diagnostics | COMPLETE; automated app/CI privacy acceptance PASS |
+| DEP-09 | End sensitive import sessions correctly | Security | DEP-01 | Codex / dep09_import_lifecycle | COMPLETE; automated acceptance PASS |
 | DEP-10 | Preserve untrusted attachment provenance | Security | DEP-07; API/policy review | Unassigned | PENDING |
 | DEP-11 | Reject unsupported database schemas | Data safety | DEP-01 | Codex / dep11_schema_guard | COMPLETE; automated acceptance PASS |
 | DEP-12 | Resolve production test/storage overrides | Policy | Owner decision | Unassigned | PENDING |
@@ -139,6 +139,14 @@ All three implementations and their automated acceptance are complete; the
 second batch's evidence below distinguishes these fixes from final-package gates.
 DEP-04 follows DEP-03; DEP-07 follows both origin-policy fixes. Final signing,
 deployment and publication remain sequential after their listed dependencies.
+
+The third batch splits DEP-06 (CalDAV transport and redirect regressions),
+DEP-08 (safe diagnostic output and synthetic privacy regressions), and DEP-09
+(import session lifetime and dismissal recovery). Codex owns shared tracking,
+integration, build outputs and guest gate execution. DEP-09 owns the wizard,
+connector and shell import lifecycle files; DEP-08 supplies changes for their
+diagnostic call sites through DEP-09 or integration rather than editing them
+concurrently. DEP-06 supplies its App composition change for integration.
 
 ## 5. Detailed work packages
 
@@ -246,11 +254,11 @@ all request paths. No test contacts a hostile host or uses a live access token.
 
 Targets: `src/Wintodo.App/App.xaml.cs`, `src/Wintodo.Sync/CalDavClient.cs`, tests.
 
-- [ ] Disable implicit authenticated-client redirects and explicitly reject or
+- [x] Disable implicit authenticated-client redirects and explicitly reject or
       process redirects through the same scheme/host/port/origin policy.
-- [ ] Use real handler behavior against isolated loopback test servers to cover
+- [x] Use real handler behavior against isolated loopback test servers to cover
       307/308 PUT body replay, foreign origin, HTTPS downgrade and redirect loops.
-- [ ] Preserve allowed loopback development servers and normal HTTPS discovery.
+- [x] Preserve allowed loopback development servers and normal HTTPS discovery.
       Any provider compatibility exception needs a documented decision.
 
 Acceptance: a redirect cannot disclose task bodies to an unapproved origin or
@@ -279,17 +287,17 @@ the whole response or leaving partial downloads; ordinary import/sync still pass
 Targets: App startup/share handlers, import view models, sign-in, sync,
 transfer/cleanup handlers, scripts and public CI/release diagnostics.
 
-- [ ] Inventory full exception/string logging, including Graph service errors,
+- [x] Inventory full exception/string logging, including Graph service errors,
       identity-provider descriptions, account names, URLs and filesystem paths.
-- [ ] Emit reviewed operation/category/type/status codes; remove unsafe values
+- [x] Emit reviewed operation/category/type/status codes; remove unsafe values
       from nested exceptions and every public diagnostic route.
-- [ ] Preserve localized actionable UI errors without publishing raw server
+- [x] Preserve localized actionable UI errors without publishing raw server
       messages or private identifiers. Use resource strings for any new UI text.
-- [ ] Add synthetic marker tests covering tokens, passwords, emails, task text,
+- [x] Add synthetic marker tests covering tokens, passwords, emails, task text,
       account names and paths; assert markers are absent from safe diagnostics.
-- [ ] Verify Debug trace files and Release tracing separately. Retain useful
+- [x] Verify Debug trace files and Release tracing separately. Retain useful
       debugging without claiming Release had a durable trace-file listener.
-- [ ] Close IMP-25 only after its complete regression gate passes.
+- [x] Close IMP-25 only after its complete regression gate passes.
 
 Acceptance: public diagnostics and reproducible synthetic captures contain no
 secrets or private content across startup, import, sync, share and failure paths.
@@ -298,13 +306,13 @@ secrets or private content across startup, import, sync, share and failure paths
 
 Targets: import wizard lifecycle, `ShellViewModel.Import.cs`, connector/reader.
 
-- [ ] Release reader/client/token references on success, final cancel,
+- [x] Release reader/client/token references on success, final cancel,
       navigation dismissal, reset and process shutdown as appropriate.
-- [ ] Cancel and finish in-flight operations before tearing down their session;
+- [x] Cancel and finish in-flight operations before tearing down their session;
       prevent callbacks from restoring dismissed sensitive state.
-- [ ] Preserve expired-sign-in resume choices without retaining the old token.
+- [x] Preserve expired-sign-in resume choices without retaining the old token.
       Keep account/task preview state only as long as the documented flow needs.
-- [ ] Test finish, idle/busy cancel, navigation away, expiration/reconnect and
+- [x] Test finish, idle/busy cancel, navigation away, expiration/reconnect and
       close-during-saving, including a clear outcome for committed data.
 
 Acceptance: final dismissal ends the sensitive session; stale tokens cannot be
@@ -585,13 +593,13 @@ substitute for final installed-MSIX clean-deployment evidence.
 
 | Gate | Required proof | Status |
 |---|---|---|
-| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | PASS (`6342f82`, GitHub run 42428523717, 455/455, zero skips) |
+| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | Previous batch PASS (`6342f82`, GitHub run 42428523717, 455/455); third-batch GitHub CI PENDING |
 | Pull concurrency | Newer edits/deletes survive or conflict; no false acknowledgment | PASS (`97e7107`, 33 Sync tests); final-package/live chooser proof remains DEP-19 |
 | Synced moves | Correct source/destination membership and retry/restart convergence | PENDING |
-| Graph origin/CalDAV redirects | Real request boundaries; no foreign token/body disclosure | Graph PASS (`0d5dc94`, 31 destination tests); CalDAV DEP-06 PENDING |
+| Graph origin/CalDAV redirects | Real request boundaries; no foreign token/body disclosure | Graph PASS (`0d5dc94`, 31 destination tests); CalDAV PASS (41 regressions, M13 VM 11/11) |
 | Network limits | Declared/unknown/decoded lengths; bounded reads and staging cleanup | PENDING |
-| Diagnostic privacy | Synthetic private markers absent from all safe output routes | PENDING |
-| Import session and attachment trust | Final dismissal, expiration/resume and provenance policy | PENDING |
+| Diagnostic privacy | Synthetic private markers absent from all safe output routes | Automated app/CI PASS (Debug import 25/25, Release formatter 9/9 and guest 6/6); final output gates DEP-14/15/19 PENDING |
+| Import session and attachment trust | Final dismissal, expiration/resume and provenance policy | Session PASS (11 new unit tests, import VM 25/25); attachment provenance DEP-10 PENDING |
 | Schema/update recovery | Supported upgrades/backups; newer-schema rejection | Schema/backup PASS (`015a6a8`, 9 new cases + VM 5/5); final installed-update DEP-19 PENDING |
 | Production override policy | Approved Release behavior and broker isolation | PENDING |
 | Dependency/AOT security | Fresh resolved graph; reviewed patched compiler/runtime | LOCAL x64/ARM64 AOT/NuGet PASS (`2e149ca`); runner/native review PENDING |
@@ -702,6 +710,58 @@ Second parallel batch evidence (2026-11-08):
   passed for `6342f82`; downloaded TRX counters confirm all four suites,
   455/455 passed, zero failed/skipped. Implementation source is committed and
   pushed. DEP-20 release publication remains pending.
+
+Third parallel batch evidence (2026-11-08):
+
+- **Source:** baseline `da94519`; DEP-06/08/09 are integrated in one local
+  M10 preparation commit. [Integrated redacted evidence](../../artifacts/dep-batch3/evidence.json)
+  records the final source identity and hashes. Raw logs/TRX/coverage remain
+  private. Fresh GitHub CI for this batch is pending; earlier CI is not proof
+  for the new workflow or source.
+- **DEP-06 — PASS:** the real-handler baseline executed 41 regressions:
+  37 security assertions failed and four direct/TLS/cancellation controls
+  passed. Default 307/308 handling replayed exact task bytes to a second origin;
+  Basic headers were dropped, so no password-leak claim is made. The production
+  factory disables redirects and every response path rejects 3xx before body
+  reads and disposes the response. All 41 cases now pass; loopback and HTTPS
+  controls pass. TLS fixtures use disposable keys without certificate trust
+  installation. M13 VM 11/11 and five individual captures pass review.
+  [Agent evidence](../../artifacts/dep06/evidence.json). Streamed-body limits
+  and deadlines remain DEP-07; redirected providers require canonical URLs.
+- **DEP-08 — PASS:** nine Core marker/status cases and two real sync
+  result/event cases pass; both sync regressions failed against the baseline.
+  Raw app exceptions, provider descriptions and native binding tracing are
+  replaced or disabled at their output boundaries. Localized retry guidance
+  remains. Debug import traces pass their private-marker check. Release
+  formatting passes 9/9, and Release JIT guest startup/error/no-file checks
+  pass 6/6, with both captures reviewed. CI exports fixed suite names and
+  validated counters; actual four-suite 518/518 reports and marker plus five
+  invalid-input regressions pass. Those exporter regressions now run in CI.
+  IMP-25 is closed after the complete import gate and capture review.
+  [Agent evidence](../../artifacts/dep08/evidence.json). External debugger,
+  dump/build/raw-test logs remain private; binary metadata and final public
+  output verification remain DEP-14/15/18/19, not a claim from these checks.
+- **DEP-09 — PASS:** the untouched-client lifetime regression failed at
+  runtime; 11 new tests now cover revocation, cancel/wait, late sign-in,
+  expiration/fresh transport, callback generations, reset, idempotent teardown,
+  owned fixture disposal and real SQLite commit-before-close. The wizard ends
+  authenticated connections on success/expiration and clears sensitive state
+  on final dismissal/reset/shutdown, awaiting already-started saving. Window
+  closing awaits cleanup and safely handles dialog failure. Import VM 25/25
+  passes, including idle close, busy cancellation and navigation; all 13 final
+  captures pass review. The first run was FAIL 24/25 because the harness omitted
+  WinApp's system-key opt-in for guest Alt+F4; after that script-only correction,
+  the full rerun passed. A pre-existing stale reconnect hint remains an
+  informational capture note. [Agent evidence](../../artifacts/dep09/evidence.json).
+- **Integrated validation — PASS:** final Debug/Release x64 builds have zero
+  warnings/errors; MTP is 518/518 with zero failures/skips (Core 221, Data 106,
+  Import 115, Sync 76). WintodoTest: M13 11/11, import 25/25, M8 17/17,
+  Release JIT diagnostics 6/6. All 49 final captures were reviewed individually
+  (M13 five, import 13, M8 29, Release two); capture limits remain in the local
+  review records. Vendored WinUI review has no issue above informational.
+  A staged source-only Gitleaks scan passes; identifying attribution and final
+  artifact checks remain their separate packages. No fresh AOT/MSIX, production
+  signing, live sign-in/server, final installed-package or M9 perf claim is made.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

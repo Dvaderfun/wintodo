@@ -38,19 +38,19 @@ public partial class App : Application
         _activation = activation;
         InitializeComponent();
         UnhandledException += (_, args) =>
-            Trace.WriteLine($"WINTODO_UNHANDLED_EXCEPTION={args.Exception}");
+            Trace.WriteLine($"WINTODO_UNHANDLED_EXCEPTION={DiagnosticException.Describe(args.Exception)}");
 #if DEBUG
-        // UI gates collect the app's trace lines (exceptions, binding
-        // failures) from a file; Debug builds only, like --import-fixture.
+        // UI gates collect safe app diagnostics from a file; Debug builds
+        // only, like --import-fixture.
         if (GetCommandLineOption("--trace-file") is { Length: > 0 } traceFile)
         {
             Trace.Listeners.Add(new TextWriterTraceListener(Path.GetFullPath(traceFile)));
             Trace.AutoFlush = true;
         }
 
-        DebugSettings.IsBindingTracingEnabled = true;
-        DebugSettings.BindingFailed += (_, args) =>
-            Trace.WriteLine($"WINTODO_BINDING_FAILED={args.Message}");
+        // The native binding tracer writes raw error details independently of
+        // BindingFailed handlers, which cannot sanitize its debug output.
+        DebugSettings.IsBindingTracingEnabled = false;
 #endif
     }
 
@@ -118,10 +118,7 @@ public partial class App : Application
                 }
             }
 
-            var syncHttpClient = new HttpClient
-            {
-                Timeout = TimeSpan.FromSeconds(30),
-            };
+            var syncHttpClient = CalDavClient.CreateHttpClient();
             var syncService = new CalDavSyncService(
                 store,
                 new PasswordVaultCredentialStore(),
@@ -191,7 +188,7 @@ public partial class App : Application
         catch (Exception exception)
         {
             _integrationReady.TrySetException(exception);
-            Trace.WriteLine($"WINTODO_STARTUP_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_STARTUP_EXCEPTION={DiagnosticException.Describe(exception)}");
             throw;
         }
     }
@@ -231,7 +228,7 @@ public partial class App : Application
         catch (Exception exception)
         {
             AppNotificationManager.Default.NotificationInvoked -= OnNotificationInvoked;
-            Trace.WriteLine($"WINTODO_NOTIFICATION_REGISTRATION_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_NOTIFICATION_REGISTRATION_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 
@@ -269,7 +266,7 @@ public partial class App : Application
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_NOTIFICATION_ACTIVATION_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_NOTIFICATION_ACTIVATION_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 

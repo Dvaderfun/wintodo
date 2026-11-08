@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml;
 using Wintodo.Core.Models;
 using Wintodo.Services;
 using Wintodo.ViewModels;
+using Wintodo.Core.Services;
 
 namespace Wintodo.Pages;
 
@@ -220,7 +221,7 @@ public sealed partial class ShellPage
         catch (COMException exception)
             when (exception.HResult == unchecked((int)0x80000019))
         {
-            Trace.WriteLine($"WINTODO_SHORTCUTS_DIALOG_BUSY={exception.Message}");
+            Trace.WriteLine($"WINTODO_SHORTCUTS_DIALOG_BUSY={DiagnosticException.Describe(exception)}");
         }
         finally
         {
@@ -274,7 +275,7 @@ public sealed partial class ShellPage
         catch (COMException exception)
             when (exception.HResult == unchecked((int)0x80000019))
         {
-            Trace.WriteLine($"WINTODO_SYNC_DIALOG_BUSY={exception.Message}");
+            Trace.WriteLine($"WINTODO_SYNC_DIALOG_BUSY={DiagnosticException.Describe(exception)}");
         }
         finally
         {

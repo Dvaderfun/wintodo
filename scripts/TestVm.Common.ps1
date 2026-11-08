@@ -25,7 +25,7 @@ function Wait-TestVmSession {
             return New-PSSession -VMName $VmName -Credential $Credential -ErrorAction Stop
         } catch {
             if ([DateTime]::UtcNow -ge $deadline) {
-                throw "PowerShell Direct to $VmName did not become available in $TimeoutSeconds s: $_"
+                throw "PowerShell Direct did not become available in $TimeoutSeconds s."
             }
             Start-Sleep -Seconds 5
         }

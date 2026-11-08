@@ -19,6 +19,7 @@ public sealed partial class ImportWizardViewModel
     [RelayCommand]
     private async Task ErrorActionAsync()
     {
+        if (_session.IsDismissed || IsBusy || !IsErrorOpen) return;
         if (_lastFailure is GraphAuthorizationException { IsSignInExpired: false } && _workTenantId is not null)
         {
             // VERIFY with the owner's work/school gate; no tenant claim is inferred from email.

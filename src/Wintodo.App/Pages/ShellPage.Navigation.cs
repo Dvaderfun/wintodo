@@ -10,6 +10,7 @@ using Wintodo.Controls;
 using Wintodo.Core.Models;
 using Wintodo.Services;
 using Wintodo.ViewModels;
+using Wintodo.Core.Services;
 
 namespace Wintodo.Pages;
 
@@ -37,7 +38,7 @@ public sealed partial class ShellPage
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_RECENT_LIST_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_RECENT_LIST_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 

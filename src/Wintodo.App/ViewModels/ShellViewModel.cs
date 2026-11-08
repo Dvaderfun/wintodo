@@ -131,7 +131,7 @@ public sealed partial class ShellViewModel : ObservableObject
 
     private void OnPreferencesSaveFailed(Exception exception)
     {
-        Trace.WriteLine($"WINTODO_TASK_PREFERENCES_ERROR={exception}");
+        Trace.WriteLine($"WINTODO_TASK_PREFERENCES_ERROR={DiagnosticException.Describe(exception)}");
         TaskPreferencesErrorMessage = _resources.GetString("Settings_TasksSaveFailed");
         IsTaskPreferencesErrorOpen = true;
     }

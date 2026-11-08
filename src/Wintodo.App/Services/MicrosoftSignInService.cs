@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using Microsoft.Security.Authentication.OAuth;
 using Wintodo.Import.MicrosoftTodo;
+using Wintodo.Core.Services;
 
 namespace Wintodo.Services;
 
@@ -67,8 +68,7 @@ internal static class MicrosoftSignInService
             throw new MicrosoftSignInException(
                 string.Equals(error, "access_denied", StringComparison.Ordinal)
                     ? MicrosoftSignInFailure.Cancelled
-                    : MicrosoftSignInFailure.Failed,
-                authResult.Failure?.ErrorDescription ?? error);
+                    : MicrosoftSignInFailure.Failed);
         }
 
         TokenRequestParams tokenParams = TokenRequestParams.CreateForAuthorizationCodeRequest(authResult.Response);
@@ -80,9 +80,7 @@ internal static class MicrosoftSignInService
         string? accessToken = tokenResult.Response?.AccessToken;
         if (string.IsNullOrWhiteSpace(accessToken))
         {
-            throw new MicrosoftSignInException(
-                MicrosoftSignInFailure.Failed,
-                tokenResult.Failure?.ErrorDescription ?? tokenResult.Failure?.Error);
+            throw new MicrosoftSignInException(MicrosoftSignInFailure.Failed);
         }
 
         return accessToken;
@@ -130,7 +128,7 @@ internal static class MicrosoftSignInService
             catch (Exception exception) when (!cancellationToken.IsCancellationRequested
                 && exception is IOException or SocketException or OperationCanceledException or UriFormatException)
             {
-                Trace.WriteLine($"WINTODO_SIGNIN_REDIRECT_IGNORED={exception.GetType().Name}");
+                Trace.WriteLine($"WINTODO_SIGNIN_REDIRECT_IGNORED={DiagnosticException.Describe(exception)}");
             }
         }
     }

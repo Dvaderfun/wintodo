@@ -194,7 +194,7 @@ public sealed partial class TaskListViewModel
         }
         catch (Exception exception)
         {
-            System.Diagnostics.Trace.WriteLine(exception);
+            System.Diagnostics.Trace.WriteLine($"WINTODO_UNDO_EXCEPTION={DiagnosticException.Describe(exception)}");
             UndoMessage = _resources.GetString("Undo_Failed");
             IsUndoVisible = true;
         }

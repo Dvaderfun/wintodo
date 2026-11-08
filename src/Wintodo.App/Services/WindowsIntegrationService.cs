@@ -212,7 +212,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_NOTIFICATION_SETTINGS_ERROR={exception}");
+            Trace.WriteLine($"WINTODO_NOTIFICATION_SETTINGS_ERROR={DiagnosticException.Describe(exception)}");
             NotificationSettingsFailed?.Invoke(exception);
         }
     }
@@ -245,7 +245,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_WINDOWS_REFRESH_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_WINDOWS_REFRESH_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 
@@ -258,7 +258,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_REMINDER_REFRESH_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_REMINDER_REFRESH_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 
@@ -473,7 +473,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_BADGE_REFRESH_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_BADGE_REFRESH_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 
@@ -530,7 +530,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_JUMP_LIST_REFRESH_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_JUMP_LIST_REFRESH_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 

@@ -7,6 +7,7 @@ using Wintodo.Core.Ical;
 using Wintodo.Core.Models;
 using Wintodo.Services;
 using Wintodo.ViewModels;
+using Wintodo.Core.Services;
 
 namespace Wintodo.Pages;
 
@@ -89,13 +90,13 @@ public sealed partial class ShellPage
             }
             catch (Exception exception)
             {
-                Trace.WriteLine($"WINTODO_ICAL_IMPORT_APPLY_EXCEPTION={exception}");
+                Trace.WriteLine($"WINTODO_ICAL_IMPORT_APPLY_EXCEPTION={DiagnosticException.Describe(exception)}");
                 await ShowImportErrorAsync(_resources.GetString("Import_ApplyFailed"));
             }
         }
         catch (IcalFormatException exception)
         {
-            Trace.WriteLine($"WINTODO_ICAL_IMPORT_FORMAT_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_ICAL_IMPORT_FORMAT_EXCEPTION={DiagnosticException.Describe(exception)}");
             string message = exception.LineNumber > 0
                 ? string.Format(
                     DisplayCulture.Current,
@@ -107,12 +108,12 @@ public sealed partial class ShellPage
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException or ArgumentException)
         {
-            Trace.WriteLine($"WINTODO_ICAL_IMPORT_READ_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_ICAL_IMPORT_READ_EXCEPTION={DiagnosticException.Describe(exception)}");
             await ShowImportErrorAsync(_resources.GetString("Import_ReadFailed"));
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_ICAL_IMPORT_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_ICAL_IMPORT_EXCEPTION={DiagnosticException.Describe(exception)}");
             await ShowImportErrorAsync(_resources.GetString("Import_ApplyFailed"));
         }
         finally
@@ -165,7 +166,7 @@ public sealed partial class ShellPage
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_ICAL_EXPORT_LIST_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_ICAL_EXPORT_LIST_EXCEPTION={DiagnosticException.Describe(exception)}");
             ShowTransferStatus(
                 _resources.GetString("Transfer_StatusTitleError"),
                 _resources.GetString("Export_Failed"),
@@ -247,7 +248,7 @@ public sealed partial class ShellPage
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_ICAL_EXPORT_ALL_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_ICAL_EXPORT_ALL_EXCEPTION={DiagnosticException.Describe(exception)}");
             ShowTransferStatus(
                 _resources.GetString("Transfer_StatusTitleError"),
                 _resources.GetString("Export_Failed"),
@@ -324,7 +325,7 @@ public sealed partial class ShellPage
         catch (Exception exception) when (
             exception is IOException or UnauthorizedAccessException)
         {
-            Trace.WriteLine($"WINTODO_ICAL_TEMP_CLEANUP_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_ICAL_TEMP_CLEANUP_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 

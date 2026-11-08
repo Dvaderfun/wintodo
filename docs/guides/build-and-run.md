@@ -59,9 +59,14 @@ Never launch the packaged `.exe` directly, never add
 
 Run attached (the default adds `--debug-output`). On a WinUI crash, WinApp CLI
 runs stowed-exception triage and prints the real XAML error behind an opaque
-`0x8000FFFF` / `E_FAIL`. Add `--symbols` for richer native frames. The app also
-traces `WINTODO_UNHANDLED_EXCEPTION=` and, in Debug, `WINTODO_BINDING_FAILED=`
-lines to the debug output.
+`0x8000FFFF` / `E_FAIL`. Add `--symbols` for richer native frames. Treat debugger
+output and crash dumps as private: external tools can include raw runtime data.
+The app's `WINTODO_UNHANDLED_EXCEPTION=` and other failure lines contain only
+reviewed type and HTTP status codes, without messages or stack traces. Debug
+`--trace-file` captures these app lines; Release has no app trace-file listener.
+Native binding tracing is disabled because it logs raw details independently
+of app handlers. Compiled `x:Bind`, analyzers and affected guest gates remain
+the binding checks. See [diagnostics.md](diagnostics.md) for privacy evidence.
 
 ## Native AOT
 

@@ -21,10 +21,10 @@ As of 2026-11-08:
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
 - **Build:** Debug and Release x64 passed with zero warnings/errors on
-  2026-11-08 after DEP-03/05/11. All four MTP suites passed 455/455, zero
-  failed/skipped (Core 212, Data 106, Import 104, Sync 33). The latest x64/ARM64
+  2026-11-08 after DEP-06/08/09. All four MTP suites passed 518/518, zero
+  failed/skipped (Core 221, Data 106, Import 115, Sync 76). The latest x64/ARM64
   AOT outputs remain the earlier `2e149ca` tree with compiler/runtime 10.0.14;
-  the second batch has not been republished or tested as final packages.
+  the second and third batches have not been republished or tested as final packages.
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
   tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
   455/455 and zero failures/skips verified from the four uploaded TRX files.
@@ -39,9 +39,14 @@ As of 2026-11-08:
   DEP-03 (`97e7107`), DEP-05 (`0d5dc94`) and DEP-11 (`015a6a8`) now pass their
   automated acceptance: guarded sync pull with step/chooser recovery, Graph
   origin/redirect checks and newer-schema rejection with localized startup
-  guidance. WintodoTest: schema 5/5, M13 11/11, import 20/20, M8 17/17; capture
-  review and vendored WinUI review pass. Current source Gitleaks scan: zero
-  findings in 410 files. Native/tool advisory coverage, attribution/archive
+  guidance. Second-batch WintodoTest: schema 5/5, M13 11/11, import 20/20,
+  M8 17/17. Third-batch DEP-06/08/09 automated acceptance now passes: redirect
+  rejection, safe diagnostics and awaited import-session teardown. WintodoTest:
+  M13 11/11, import 25/25, M8 17/17, Release JIT diagnostics 6/6; individual
+  capture review and vendored WinUI review pass. Release formatter 9/9 passes;
+  CI uploads safe suite counters and tests the exporter. IMP-25 is closed.
+  Current source-only Gitleaks scan: zero findings in 422 files. This batch is
+  committed locally; fresh GitHub CI remains pending. Native/tool advisory coverage, attribution/archive
   policy and final privacy/deployment gates remain pending. Details and local
   redacted evidence links are in [the deployment plan](plans/deployment-readiness.md).
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
@@ -3992,3 +3997,34 @@ UI automation. ARM64 not rebuilt.
   DEP-06 and the other pending work remain open. No schema migration, accepted
   ADR change, host UI automation, provisioning or certificate trust change;
   owner decisions and M9 performance deferral are preserved.
+
+## M10 — Deployment readiness, third parallel batch          2026-11-08
+
+- **Shipped:** DEP-06 rejects every CalDAV redirect before reading its body;
+  the production handler no longer replays requests. DEP-08 replaces app/provider
+  failure output with safe type/status codes, keeps localized recovery guidance,
+  disables native raw binding tracing and exports only validated CI counters.
+  DEP-09 releases authenticated import connections and awaits teardown on final
+  cancel, navigation, reset and shutdown. Committed saves finish before close;
+  old callbacks cannot restore dismissed state. IMP-25 is complete.
+- **Regression proof:** 41 redirect cases (37 baseline security failures),
+  nine Core privacy cases, two sync-output baseline failures and 11 import
+  lifetime cases. Final MTP 518/518, zero failed/skipped (221/106/115/76).
+  Debug/Release x64 builds: zero warnings/errors. Release formatter 9/9; safe
+  exporter markers/counters plus five invalid-report cases pass.
+- **Guest gates:** M13 11/11, import 25/25, M8 17/17 and Release JIT
+  diagnostics 6/6. The first import run failed 24/25 because WinApp refused the
+  harness's missing Alt+F4 system-key opt-in; the guest-only script fix passed a
+  full rerun. All 49 final captures were reviewed individually. Vendored WinUI
+  review: no finding above informational. Existing reconnect-hint and capture
+  coverage limits are retained in the review records.
+- **Evidence:** `artifacts/dep06/evidence.json`, `artifacts/dep08/evidence.json`,
+  `artifacts/dep09/evidence.json`, `artifacts/dep-batch3/evidence.json` and
+  its `visual-*.json` records. Source-only Gitleaks: zero findings in 422 files.
+  Raw logs/TRX/coverage remain ignored/private. Final source identity is in the
+  integrated record; the batch is committed locally and fresh GitHub CI is pending.
+- **Remaining:** DEP-07 streaming byte budgets/deadlines, DEP-04 durable move
+  design and the remaining toolchain/CI/privacy/identity/signing work. Release
+  checks here use JIT layouts; no new AOT/MSIX or final deployment is claimed.
+  No host UI automation, certificate trust, machine provisioning, schema
+  migration, accepted ADR change or release publication. M9 stays owner-deferred.

@@ -20,6 +20,16 @@ public sealed class CalDavClient
     private static readonly HttpMethod PropPatch = new("PROPPATCH");
     private readonly HttpClient _httpClient;
 
+    /// <summary>Creates the production CalDAV transport without implicit redirects.</summary>
+    public static HttpClient CreateHttpClient() => new(new HttpClientHandler { AllowAutoRedirect = false })
+    {
+        Timeout = TimeSpan.FromSeconds(30),
+    };
+
+    /// <summary>
+    /// Uses a transport with automatic redirects disabled. Use
+    /// <see cref="CreateHttpClient"/> for the production network handler.
+    /// </summary>
     public CalDavClient(HttpClient httpClient)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
@@ -229,10 +239,7 @@ public sealed class CalDavClient
     {
         using var request = CreateRequest(HttpMethod.Get, resourceUrl, account, secret);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/calendar"));
-        using HttpResponseMessage response = await _httpClient.SendAsync(
-            request,
-            HttpCompletionOption.ResponseHeadersRead,
-            cancellationToken);
+        using HttpResponseMessage response = await SendRequestAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
             string body = await ReadLimitedStringAsync(response, cancellationToken);
@@ -264,7 +271,7 @@ public sealed class CalDavClient
         request.Content = new ByteArrayContent(content);
         request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("text/calendar; charset=utf-8");
         AddConditionalHeader(request, expectedETag);
-        using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+        using HttpResponseMessage response = await SendRequestAsync(request, cancellationToken);
         return await ReadWriteResultAsync(
             response,
             resourceUrl,
@@ -286,7 +293,7 @@ public sealed class CalDavClient
             request.Headers.TryAddWithoutValidation("If-Match", expectedETag);
         }
 
-        using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+        using HttpResponseMessage response = await SendRequestAsync(request, cancellationToken);
         return new CalDavWriteResult
         {
             StatusCode = response.StatusCode,
@@ -378,7 +385,7 @@ public sealed class CalDavClient
         CancellationToken cancellationToken = default)
     {
         using var request = CreateRequest(HttpMethod.Delete, collectionUrl, account, secret);
-        using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken);
+        using HttpResponseMessage response = await SendRequestAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.NotFound)
         {
             string body = await ReadLimitedStringAsync(response, cancellationToken);
@@ -538,7 +545,25 @@ public sealed class CalDavClient
             body.ToString(SaveOptions.DisableFormatting),
             Encoding.UTF8,
             "application/xml");
-        return await _httpClient.SendAsync(request, cancellationToken);
+        return await SendRequestAsync(request, cancellationToken);
+    }
+
+    private async Task<HttpResponseMessage> SendRequestAsync(
+        HttpRequestMessage request,
+        CancellationToken cancellationToken)
+    {
+        HttpResponseMessage response = await _httpClient.SendAsync(
+            request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        if ((int)response.StatusCode is >= 300 and < 400)
+        {
+            HttpStatusCode statusCode = response.StatusCode;
+            response.Dispose();
+            // Reject even same-origin redirects before reading their body. The network
+            // handler must never replay authenticated requests underneath origin checks.
+            throw new CalDavProtocolException("The CalDAV server returned an unsupported redirect.", statusCode);
+        }
+
+        return response;
     }
 
     private static HttpRequestMessage CreateRequest(

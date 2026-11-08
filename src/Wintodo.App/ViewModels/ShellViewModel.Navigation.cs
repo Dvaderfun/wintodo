@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
 using Wintodo.Services;
+using Wintodo.Core.Services;
 
 namespace Wintodo.ViewModels;
 
@@ -389,7 +390,7 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_NAVIGATION_COUNT_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_NAVIGATION_COUNT_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
 
         if (refreshVersion != _navigationCountRefreshVersion)

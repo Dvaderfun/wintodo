@@ -474,7 +474,7 @@ here. IMP-18 needs a work account to verify the admin-consent path.
 | IMP-22 | Gate rows, M8 re-run, code review and docs for the polish | P3 | M | IMP-08…21 | `tests/ui/run-import-gate.ps1`, DESIGN §10.2/§12, PROGRESS | done (HEAD — IMP-22; import 20/20, M8 17/17, settings 9/9) |
 | IMP-23 | 🔒 Remove an earlier import from Settings | P4 | M | IMP-12, IMP-19 | ADR-016 amendment, SettingsView, Data import | awaiting owner |
 | IMP-24 | 🔒 Refresh the token in memory during long imports | P4 | S | IMP-10 | ADR-016 amendment, MicrosoftSignInService | awaiting owner |
-| IMP-25 | Sanitize existing import exception traces | follow-up | S | — | ImportWizardVM, shell import traces | open (found during polish; outside IMP-08…22) |
+| IMP-25 | Sanitize existing import exception traces | follow-up | S | — | ImportWizardVM, shell import traces | complete (DEP-08: safe formatter regressions, import VM 25/25 and capture review PASS) |
 | IMP-26 | SQLite initialization occasionally sees disposed pooled handles in tests | follow-up | S | — | StoreFixture, SqliteTaskStore initialization | open (found during polish; outside IMP-08…22) |
 
 Suggested order: the P1 fixes first (they are small and independent; IMP-10
@@ -722,6 +722,12 @@ include Graph response messages or file paths. Shell import exception traces
 have the same pattern. Replace these with type/category/count-only diagnostics
 and add regression coverage in a separate package; this finding is not folded
 into IMP-09 or the authorized polish packages.
+
+Completed by deployment package DEP-08 on 2026-11-08. Exception diagnostics
+now emit allowlisted type/status codes; provider descriptions and native binding
+tracing do not bypass that boundary. Marker regressions, the full expanded import
+VM gate (25/25) and individual screenshot review pass. Raw external debugger logs
+and final AOT/package privacy remain separate deployment gates.
 
 **IMP-26 — Intermittent SQLite initialization failure.** Full-suite runs sometimes
 fail existing Data tests with `ObjectDisposedException` in `ApplyPragmas`; complete

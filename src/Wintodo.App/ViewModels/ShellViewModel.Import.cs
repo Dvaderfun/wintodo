@@ -11,6 +11,7 @@ public sealed partial class ShellViewModel
     private Services.ImportEnvironment _importEnvironment = null!;
     private bool _importOpenedFromWelcome;
     private IClock _importClock = null!;
+    private Task _importDismissal = Task.CompletedTask;
 
     public ImportWizardViewModel ImportWizard { get; private set; } = null!;
 
@@ -91,14 +92,14 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception) when (exception is InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
         {
-            Trace.WriteLine($"WINTODO_ONBOARDING_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_ONBOARDING_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 
     [RelayCommand]
-    private void StartMicrosoftTodoImport()
+    private async Task StartMicrosoftTodoImportAsync()
     {
-
+        await _importDismissal;
         _importOpenedFromWelcome = IsWelcomeVisible;
         CloseDetail();
         ImportWizard.Reset();
@@ -137,10 +138,17 @@ public sealed partial class ShellViewModel
             _ = CompleteOnboardingAsync();
         }
 
-        if (IsImportVisible && !ImportWizard.IsBusy)
+        if (IsImportVisible)
         {
             IsImportVisible = false;
+            _importDismissal = ImportWizard.DismissAsync();
         }
+    }
+
+    internal async Task ShutdownImportAsync()
+    {
+        await _importDismissal;
+        await ImportWizard.DismissAsync();
     }
 
     private async Task CompleteOnboardingAsync()
@@ -152,7 +160,7 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception) when (exception is InvalidOperationException or Microsoft.Data.Sqlite.SqliteException)
         {
-            Trace.WriteLine($"WINTODO_ONBOARDING_SAVE_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_ONBOARDING_SAVE_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 
