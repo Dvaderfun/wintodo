@@ -55,7 +55,7 @@ public sealed class IcalImportExportTests
             }
         }
 
-        using var connection = new SqliteConnection($"Data Source={fixture.DatabasePath};Mode=ReadOnly");
+        using var connection = TestSqliteConnections.Create(fixture.DatabasePath, SqliteOpenMode.ReadOnly);
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         using SqliteCommand command = connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM tasks WHERE ical_unknown IS NOT NULL;";

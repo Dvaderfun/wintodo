@@ -15,7 +15,7 @@ public sealed class UndoStoreTests
         TodoList list = await f.Store.CreateListAsync("Version two", cancellationToken: ct);
         TodoTask task = await f.Store.CreateTaskAsync(new TodoTask { ListId = list.Id, Summary = "Preserved" }, ct);
         await f.Store.DisposeAsync();
-        await using (var connection = new SqliteConnection($"Data Source={f.DatabasePath}"))
+        await using (var connection = TestSqliteConnections.Create(f.DatabasePath))
         {
             await connection.OpenAsync(ct);
             await using SqliteCommand command = connection.CreateCommand();

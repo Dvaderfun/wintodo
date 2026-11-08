@@ -43,7 +43,7 @@ public sealed class PerformanceFixtureTests
             string sql = await File.ReadAllTextAsync(
                 Path.Combine(repositoryRoot, "tests", "fixtures", "perf", "seed.sql"),
                 TestContext.Current.CancellationToken);
-            await using (var connection = new SqliteConnection($"Data Source={databasePath}"))
+            await using (var connection = TestSqliteConnections.Create(databasePath))
             {
                 await connection.OpenAsync(TestContext.Current.CancellationToken);
                 await using (SqliteCommand command = connection.CreateCommand())
@@ -66,7 +66,7 @@ public sealed class PerformanceFixtureTests
         {
             if (!externalRequest)
             {
-                SqliteConnection.ClearAllPools();
+                TestSqliteConnections.ClearStorePools(databasePath);
                 DeleteDatabaseFiles(databasePath);
             }
         }

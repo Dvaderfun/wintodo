@@ -101,7 +101,7 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | ID | Work package | Priority | Depends on | Owner | Status |
 |---|---|---|---|---|---|
 | DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
-| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence + native_closure_followup + retained_code_export + native_closure_next + vendor_provenance_resolution | Archive signatures/hash preservation and exact WinApp published-asset ownership LOCAL PASS; vendor ONNX mapping ESTABLISHED; ML servicing evaluation IN PROGRESS; embedded/runtime/advisory/hosted acceptance PENDING |
+| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence + native_closure_followup + retained_code_export + native_closure_next + vendor_provenance_resolution | Exact WinApp published-asset ownership and vendor ONNX mapping ESTABLISHED; ML 2.5.96 servicing integrated with isolated package/current-helper AOT LOCAL PASS; embedded/runtime/advisory/hosted acceptance PENDING |
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
 | DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; ADR-017 accepted | Codex / dep04_data + dep04_sync + dep04_regressions | AUTOMATED ACCEPTANCE PASS; guest UI/live/final-package checks PENDING |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
@@ -114,8 +114,8 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-12 | Resolve production test/storage overrides | Policy | Policy A selected | Codex / dep12_overrides + production_override_policy | A SELECTED/DOCUMENTED; 26 host launch-policy tests PASS; actual guest/Release/AOT/default/broker/final-package acceptance PENDING |
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
-| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding | LOCKED RESTORE/LOCAL CHECKS PASS; exact audit/source/target graph bindings LOCAL PASS; remote CI/protection/native advisory disposition PENDING |
-| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export | Fresh clean `f1b9af5` x64/ARM64 bound packages, qualified SBOM/schema/privacy and positive PDB observations LOCAL PASS; hosted/approved-identity/payload/full closure/final-candidate acceptance PENDING |
+| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding + production_override_policy | Locked restores/bindings and corrected Data fixture pool isolation LOCAL PASS; final 707 unit/202 script tests PASS; actual hosted/protection/native advisory disposition PENDING |
+| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export + vendor_provenance_resolution | Historical `f1b9af5` bound pair/SBOM/PDB checks PASS; isolated ML2.5.96 package and current-helper AOT checks LOCAL PASS; refreshed final-source packages/SBOM/approved identity/payload/full closure PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Nine inherited texts INTEGRATED; fresh x64/ARM64 notice-package checks PASS; privacy/installation DRAFTS; final legal/owner/assets/live sign-in acceptance PENDING |
 | DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next + release_ref_policy | Unsigned/signed-continuity bounded checks PASS; new local ref/version gate and 31 regressions PASS, tag CI WIRED; release authorization false; actual hosted/protected/signing/release acceptance PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory + installed_package_smoke | Guest-only installed-smoke runner PREPARED; 12 mocked/static checks PASS; actual guest/API/runtime/visual, signed install/update/uninstall and final deployment acceptance PENDING |
@@ -1509,6 +1509,46 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
   dependency/lock/notice payloads are unchanged in this policy/ref commit. These
   results do not close hosted/protected execution, vendor/legal closure, actual
   guest/AOT runtime, production signing or final deployment. M9 remains deferred.
+
+### 2026-11-09 — Supported ML servicing and SQLite fixture isolation
+
+- **DEP-02/16 primary vendor evidence — ESTABLISHED:** the digest-matched
+  official WinApp 0.7.1 release ZIP contains the exact reviewed executable.
+  Microsoft explicitly associates ML 2.1.74 with ORT 1.24.6/source `800ac32`.
+  Its current-support policy identifies ML 2.5.96 as the supported servicing
+  choice within the existing SDK 2.5.1 dependency range. Exact embedded build/
+  backport/DirectML/runtime attestations remain pending. See
+  [the vendor/servicing record](dep02-vendor-provenance-resolution.md).
+- **ML 2.5.96 — INTEGRATED / LOCAL PASS:** the isolated `db6c448` overlay passes
+  Debug, 678 unit tests, both warnings-as-errors AOT/MSIX targets, exact structure/
+  privacy and bound zero-advisory app audits, and four locked restore shapes.
+  Integration after `703757b` changes only the intended central/direct reference,
+  four app locks and seven notice-origin labels. All 16 other locks and inherited
+  legal-text bodies remain exact. Current-helper Debug/Release builds and both
+  AOT publishes pass; these are integration outputs, not final production packages.
+  Their layout/summary privacy scan passes 649 files with zero findings. Locked
+  restores rewrote line endings; after complete graph comparisons, 16 unchanged
+  locks and the four reviewed app-lock byte records are restored exactly.
+- **DEP-15 initial unit failure — FAIL, diagnosis/fix/rerun PASS:** the first
+  updated-source unit run was 703/704 with a disposed SQLite handle in TaskBatch
+  Delete's helper query. The isolated class passed 17/17. Exact vendor source,
+  a public-API stress probe (8 pooled query failures; unpooled control 0) and a
+  failing actual-fixture isolation check establish a reachable global-cleanup
+  mechanism. Five fixture cleanup calls now target only owned pools; 14 helpers
+  are unpooled. Three deterministic regressions and Data 133/133 pass. The original
+  interleaving is unrecorded; production pooling/provider/timer behavior is not
+  changed or declared fixed. See [the isolation record](dep15-sqlite-test-pool-isolation.md).
+- **Integration — PASS:** final Debug/Release x64 builds have zero warnings/
+  errors; all 707 MTP tests pass, zero failed/skipped; all 202 script tests pass.
+  Review, Actionlint, links/whitespace and public-doc privacy checks pass. Ignored
+  evidence: `artifacts/dep-vendor-resolution/`, `artifacts/dep-ml-upgrade-evaluation/`,
+  `artifacts/dep-sqlite-pool-investigation/`, `artifacts/dep-production-next-integration/`.
+- **Limits:** prior clean bound candidates retain their historical status; a
+  final reviewed-source candidate/SBOM must be regenerated after approved identity/
+  version/signing inputs. Current hosted/protected execution, owner fields,
+  vendor/legal closure, actual guest/native runtime, final signing/deployment and
+  publication remain pending. No signing, trust or guest/UI action ran. M9 stays
+  owner-deferred; remote CI verification follows the reviewed integration commit.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

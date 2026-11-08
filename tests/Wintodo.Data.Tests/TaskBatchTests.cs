@@ -151,7 +151,7 @@ public sealed class TaskBatchTests
 
     private static int ChangeCount(string path)
     {
-        using var connection = new SqliteConnection($"Data Source={path};Mode=ReadOnly");
+        using var connection = TestSqliteConnections.Create(path, SqliteOpenMode.ReadOnly);
         connection.Open();
         using var command = connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM change_log;";

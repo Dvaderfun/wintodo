@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Wintodo.Core.Services;
 using Wintodo.Data;
 
@@ -38,7 +37,7 @@ internal sealed class StoreFixture : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await Store.DisposeAsync();
-        SqliteConnection.ClearAllPools();
+        TestSqliteConnections.ClearStorePools(DatabasePath);
         if (Directory.Exists(DirectoryPath))
         {
             Directory.Delete(DirectoryPath, recursive: true);

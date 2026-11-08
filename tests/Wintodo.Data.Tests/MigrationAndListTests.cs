@@ -21,7 +21,7 @@ public sealed class MigrationAndListTests
         Assert.Equal(0, stats.TaskCount);
         Assert.True(stats.DatabaseSizeBytes > 0);
 
-        await using var connection = new SqliteConnection($"Data Source={fixture.DatabasePath}");
+        await using var connection = TestSqliteConnections.Create(fixture.DatabasePath);
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         Assert.Equal("wal", await ScalarStringAsync(connection, "PRAGMA journal_mode;"));
         Assert.Equal(
@@ -218,7 +218,7 @@ public sealed class MigrationAndListTests
 
         try
         {
-            await using (var connection = new SqliteConnection($"Data Source={databasePath}"))
+            await using (var connection = TestSqliteConnections.Create(databasePath))
             {
                 await connection.OpenAsync(TestContext.Current.CancellationToken);
                 await using Stream stream = typeof(SqliteTaskStore).Assembly.GetManifestResourceStream(
@@ -261,7 +261,7 @@ public sealed class MigrationAndListTests
         }
         finally
         {
-            SqliteConnection.ClearAllPools();
+            TestSqliteConnections.ClearStorePools(databasePath);
             Directory.Delete(directory, recursive: true);
         }
     }
@@ -286,7 +286,7 @@ public sealed class MigrationAndListTests
         Assert.Equal(0, stats.TaskCount);
         Assert.Equal(4, stats.PendingChangeCount);
 
-        await using var connection = new SqliteConnection($"Data Source={fixture.DatabasePath}");
+        await using var connection = TestSqliteConnections.Create(fixture.DatabasePath);
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         Assert.Equal(
             1,

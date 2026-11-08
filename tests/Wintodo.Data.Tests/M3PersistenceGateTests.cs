@@ -15,8 +15,8 @@ public sealed class M3PersistenceGateTests
             return;
         }
 
-        await using var connection = new SqliteConnection(
-            $"Data Source={Path.GetFullPath(requestedPath)};Mode=ReadOnly");
+        await using var connection = TestSqliteConnections.Create(
+            Path.GetFullPath(requestedPath), SqliteOpenMode.ReadOnly);
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         await using (SqliteCommand listCommand = connection.CreateCommand())
         {
