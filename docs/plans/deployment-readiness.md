@@ -2,7 +2,7 @@
 
 Prepared: 2026-11-08. Audit baseline: `d8c2ac3`.
 
-Status: **IN PROGRESS — initial parallel batch has local evidence; release gates are pending.**
+Status: **IN PROGRESS — DEP-01, DEP-03, DEP-05 and DEP-11 automated acceptance passed; remaining release work is pending.**
 
 This plan turns the deployment-readiness audit into work packages for a safe
 GitHub release and GitHub Actions CI/CD. It covers data integrity, API security,
@@ -95,17 +95,17 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 
 | ID | Work package | Priority | Depends on | Owner | Status |
 |---|---|---|---|---|---|
-| DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | LOCAL PASS; GitHub CI PENDING |
+| DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
 | DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain | LOCAL AOT/NuGet PASS; runner/native review PENDING |
-| DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Unassigned | PENDING |
+| DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
 | DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; data/ADR decision if needed | Unassigned | PENDING |
-| DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Unassigned | PENDING |
+| DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
 | DEP-06 | Enforce CalDAV redirect origin policy | Security | DEP-01 | Unassigned | PENDING |
 | DEP-07 | Bound network bodies and attachment downloads | Security | DEP-05, DEP-06 | Unassigned | PENDING |
 | DEP-08 | Sanitize all diagnostic paths | Privacy blocker | DEP-01 | Unassigned | PENDING |
 | DEP-09 | End sensitive import sessions correctly | Security | DEP-01 | Unassigned | PENDING |
 | DEP-10 | Preserve untrusted attachment provenance | Security | DEP-07; API/policy review | Unassigned | PENDING |
-| DEP-11 | Reject unsupported database schemas | Data safety | DEP-01 | Unassigned | PENDING |
+| DEP-11 | Reject unsupported database schemas | Data safety | DEP-01 | Codex / dep11_schema_guard | COMPLETE; automated acceptance PASS |
 | DEP-12 | Resolve production test/storage overrides | Policy | Owner decision | Unassigned | PENDING |
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_privacy_audit | PRELIMINARY SCANS PASS; policy/final review PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Unassigned | PENDING |
@@ -132,9 +132,11 @@ privacy acceptance remain pending. Codex owns integration and shared progress
 records; agents use separate ignored scratch checkouts for build outputs and
 do not edit shared tracking documents.
 
-After DEP-01's acceptance is recorded, a subsequent batch can split DEP-03
+After DEP-01's acceptance was recorded, the second batch split DEP-03
 (sync pull and its store contracts), DEP-05 (Graph request validation), and
 DEP-11 (schema opening/migration validation), with explicit file ownership.
+All three implementations and their automated acceptance are complete; the
+second batch's evidence below distinguishes these fixes from final-package gates.
 DEP-04 follows DEP-03; DEP-07 follows both origin-policy fixes. Final signing,
 deployment and publication remain sequential after their listed dependencies.
 
@@ -152,10 +154,16 @@ Targets: `.gitattributes`,
       inside production download code to hide checkout changes.
 - [x] Reproduce the prior failure on a disposable fresh Windows checkout and
       prove repository and working-tree fixture bytes agree after the fix.
-- [ ] Run all four test projects through the existing MTP runner and a clean
+- [x] Run all four test projects through the existing MTP runner and a clean
       warnings-as-errors solution build; verify a new GitHub run succeeds.
 - [ ] Investigate IMP-26/intermittent SQLite initialization separately only if
       it reproduces; do not classify the known line-ending failure as a flake.
+
+The conditional IMP-26 investigation was not triggered: local and GitHub full
+runs passed without an initialization failure. DEP-01 acceptance passed in
+[GitHub CI run 42424857115](https://github.com/Dvaderfun/wintodo/actions/runs/42424857115)
+for `5604256`, which contains `2e149ca`'s configuration fixes and tracking docs.
+Downloaded TRX counters confirm all four suites passed 392/392 with zero skips.
 
 Acceptance: fresh-checkout CI passes, raw attachment bytes remain unchanged,
 and results identify the exact commit with no unexplained failures/skips.
@@ -185,13 +193,13 @@ security advisory remains, and both AOT outputs use the reviewed patched tools.
 Targets: `src/Wintodo.Sync/CalDavSyncService.cs`,
 `src/Wintodo.Data/SqliteTaskStore.Sync.cs`, Core sync contracts and Sync/Data tests.
 
-- [ ] Write deterministic regressions that pause after the clean-state read,
+- [x] Write deterministic regressions that pause after the clean-state read,
       commit a local edit, then resume remote update/deletion application.
-- [ ] Check current dirty/revision/change state inside the writer transaction;
+- [x] Check current dirty/revision/change state inside the writer transaction;
       preserve concurrent edits and avoid acknowledging changes not applied.
-- [ ] Return/propagate conflicts or deferred outcomes so counts, sync tokens,
+- [x] Return/propagate conflicts or deferred outcomes so counts, sync tokens,
       subsequent retries and UI feedback agree with the actual committed state.
-- [ ] Cover fields, owned collections, local deletes/restores and pending
+- [x] Cover fields, owned collections, local deletes/restores and pending
       change-log entries; preserve existing newer-edit push acknowledgment.
 
 Acceptance: no intervening local edit disappears, remote deletion cannot hide a
@@ -222,13 +230,13 @@ version is silently lost, and retries converge without unexplained duplicates.
 
 Targets: `src/Wintodo.Import/MicrosoftTodo/GraphTodoClient.cs` and its tests.
 
-- [ ] Resolve relative pagination/download URLs before validation; validate
+- [x] Resolve relative pagination/download URLs before validation; validate
       final scheme, normalized host, effective port, userinfo and fragment.
-- [ ] Enforce validation at the authenticated-send boundary and review handler
+- [x] Enforce validation at the authenticated-send boundary and review handler
       redirect behavior so destination checks cannot be bypassed later.
-- [ ] Test network-path links, foreign hosts, alternate ports, userinfo,
+- [x] Test network-path links, foreign hosts, alternate ports, userinfo,
       fragments and valid same-origin paging with synthetic responses.
-- [ ] Assert rejected requests never reach the handler carrying authorization.
+- [x] Assert rejected requests never reach the handler carrying authorization.
       Preserve GET-only Graph enforcement and existing retry/cancellation behavior.
 
 Acceptance: bearer tokens are sent only to the approved Graph origin through
@@ -322,11 +330,11 @@ and attachment import/open/delete functionality and path confinement still pass.
 
 Targets: `src/Wintodo.Data/SqliteTaskStore.cs` and migration tests.
 
-- [ ] Reject versions above the supported migration maximum before ordinary
+- [x] Reject versions above the supported migration maximum before ordinary
       writes; give a clear localized recovery/update message where appropriate.
-- [ ] Test newer-schema rejection with unchanged schema and user rows, fresh
+- [x] Test newer-schema rejection with unchanged schema and user rows, fresh
       initialization, every supported upgrade path and idempotent reopening.
-- [ ] Preserve pre-upgrade backups and prove backup restoration in a disposable
+- [x] Preserve pre-upgrade backups and prove backup restoration in a disposable
       environment; describe safe rollback when schema downgrade is unsupported.
 
 Acceptance: an older app cannot silently write a newer schema. Existing upgrades
@@ -577,14 +585,14 @@ substitute for final installed-MSIX clean-deployment evidence.
 
 | Gate | Required proof | Status |
 |---|---|---|
-| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | LOCAL PASS (`2e149ca`, 392/392); GitHub CI PENDING |
-| Pull concurrency | Newer edits/deletes survive or conflict; no false acknowledgment | PENDING |
+| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | PASS (`5604256`, GitHub run 42424857115, 392/392, zero skips) |
+| Pull concurrency | Newer edits/deletes survive or conflict; no false acknowledgment | PASS (`97e7107`, 33 Sync tests); final-package/live chooser proof remains DEP-19 |
 | Synced moves | Correct source/destination membership and retry/restart convergence | PENDING |
-| Graph origin/CalDAV redirects | Real request boundaries; no foreign token/body disclosure | PENDING |
+| Graph origin/CalDAV redirects | Real request boundaries; no foreign token/body disclosure | Graph PASS (`0d5dc94`, 31 destination tests); CalDAV DEP-06 PENDING |
 | Network limits | Declared/unknown/decoded lengths; bounded reads and staging cleanup | PENDING |
 | Diagnostic privacy | Synthetic private markers absent from all safe output routes | PENDING |
 | Import session and attachment trust | Final dismissal, expiration/resume and provenance policy | PENDING |
-| Schema/update recovery | Supported upgrades/backups; newer-schema rejection | PENDING |
+| Schema/update recovery | Supported upgrades/backups; newer-schema rejection | Schema/backup PASS (`015a6a8`, 9 new cases + VM 5/5); final installed-update DEP-19 PENDING |
 | Production override policy | Approved Release behavior and broker isolation | PENDING |
 | Dependency/AOT security | Fresh resolved graph; reviewed patched compiler/runtime | LOCAL x64/ARM64 AOT/NuGet PASS (`2e149ca`); runner/native review PENDING |
 | Repository/history/archive privacy | Redacted scanner findings and reviewed attribution | PRELIMINARY SCANS PASS (`2e149ca`); policy/final review PENDING |
@@ -644,6 +652,53 @@ Initial parallel batch evidence (2026-11-08):
   is local and ignored. Attribution/licence, archive policy, screenshot
   visual/OCR review and final-release scans remain pending. Private app data,
   PasswordVault, ignored user files and unreachable Git objects were not scanned.
+
+Second parallel batch evidence (2026-11-08):
+
+- **Source:** DEP-03 `97e7107`, DEP-05 `0d5dc94`, DEP-11 `015a6a8`.
+  Implementations were tested together before these separate commits; source
+  hashes match the committed code. Documentation/evidence updates are separate.
+- **DEP-03 — PASS:** all 12 initial paused clean-read races failed against the
+  baseline. The guarded writer transaction preserves intervening fields,
+  collections, deletes/restores, membership and acknowledged local revisions;
+  it returns actual applied counts and complete conflicts. Unresolved changes
+  retain the prior sync token for restart. Direct steps survive Keep mine/Keep
+  both; Keep theirs soft-deletes/logs the explicitly discarded steps. Chooser
+  options default false for ordinary callers. Final Sync suite: 33/33, zero
+  skips, including all three choices for clean post-ack and step-only conflicts
+  plus restart/second-client simulations. Integration exposed three existing
+  undo tests failing because the collection helper cleared automatic transaction
+  enlistment; conditional explicit-transaction assignment fixes them. Undo 6/6
+  and the full integrated Data suite pass. [Agent evidence](../../artifacts/dep03/evidence.json).
+- **DEP-05 — PASS:** seven baseline destination regressions failed; all 31
+  destination tests now pass, and Import passes 104/104. Final URI validation
+  checks normalized origin, effective port, userinfo and fragments before
+  authentication. The production factory disables automatic redirects; ten real
+  loopback cases cover same/foreign-origin 301/302/303/307/308 with zero requests
+  to a second origin. GET-only behavior, timeout, retries/cancellation and raw
+  attachment fallback are retained. [Agent evidence](../../artifacts/dep05/evidence.json).
+- **DEP-11 — PASS:** four baseline safety cases failed; all nine new schema
+  cases and ten existing migration/list cases pass. Future versions, including
+  integers above Int32.MaxValue, are rejected before journal changes. File bytes,
+  schema and user rows remain unchanged; failed handles are released. Supported
+  versions 1–4 preserve data, backups restore/re-upgrade, and reopening is
+  idempotent. Normal launch and ShareTarget map rejection to localized guidance;
+  the startup window closes without placement writes. Guest startup gate 5/5
+  and its warning capture passed visual review. [Agent evidence](../../artifacts/dep11-schema/evidence.json).
+- **Integrated validation — PASS:** Debug/Release x64 builds have zero warnings
+  and errors. MTP passes 455/455 with zero skips (Core 212, Data 106, Import 104,
+  Sync 33). WintodoTest passes schema 5/5, M13 11/11, import 20/20 and M8 17/17;
+  reviewed all generated captures, including four contrast palettes. Vendored
+  WinUI code review found nothing above informational. Gitleaks 8.30.1 scanned
+  all 410 current tracked/new source files with zero findings. Local redacted
+  [integration evidence](../../artifacts/deployment-batch02/evidence.json) links
+  the source, counters and private artifact locations.
+- **Limits:** the batch has not been republished as Native AOT/MSIX or tested
+  as final signed packages. Live Radicale/Nextcloud, the actual conflict chooser
+  UI and final deployment gates remain DEP-19 work. DEP-04 synced moves, DEP-06
+  CalDAV redirects and the other pending packages remain open. Native/tool
+  advisory coverage, owner policy decisions and M9 deferral are unchanged.
+  Fresh GitHub CI for this batch is pending until the implementation push runs.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

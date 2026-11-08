@@ -356,6 +356,9 @@ in-memory index competing for the working-set budget.
 
 - Numbered, embedded SQL resources: `001_init.sql`, `002_*.sql`, …
 - `schema_version` holds the highest applied version.
+- Versions above the highest embedded migration are rejected before journal
+  mode changes or ordinary writes. The older app preserves the database and
+  gives localized update guidance; schema downgrades remain unsupported.
 - Each migration runs inside one transaction. A failure rolls back and the app
   starts read-only with an error banner rather than half-migrated.
 - Before any migration above 001, copy the DB to `wintodo.db.bak-<version>`.
@@ -541,6 +544,15 @@ Every method is `async` and runs off the UI thread. All writes go through the
 single writer connection serialised by a `SemaphoreSlim(1,1)`, and every write
 also appends to `change_log` and raises a coalesced `StoreChanged` carrying the
 affected list ids and task uids.
+
+CalDAV pull uses `ISyncStore.ApplyRemotePullAsync` with the previously observed
+task states. Inside the writer transaction it checks pending changes, dirty and
+deleted state, list membership, remote version and the local `SEQUENCE` stamp.
+Concurrent local changes are returned as full conflict snapshots instead of
+being overwritten or acknowledged. Applied counts reflect committed changes;
+unresolved pull conflicts or deferrals retain the list's prior sync token for
+retry after restart. Explicit conflict choices use separate opt-in behavior
+to queue a clean local version or preserve/discard direct steps as selected.
 
 ```
 Lists:  GetListsAsync · GetIncompleteTaskCountsAsync · GetSmartListTaskCountsAsync

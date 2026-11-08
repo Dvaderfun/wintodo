@@ -183,6 +183,14 @@ and editor drafts. No storage override is accepted by broker shares in Release.
   log also drives CalDAV push.
 - Schema and the `VTODO` mapping: [docs/DATA-MODEL.md](docs/DATA-MODEL.md).
   Adding a migration: [docs/guides/migrations.md](docs/guides/migrations.md).
+- A newer-than-supported schema is rejected before journal-mode changes or
+  writes. Startup gives localized update guidance and closes without saving
+  placement; supported forward upgrades and backups retain their existing path.
+- Pull applies through a guarded writer transaction using the observed local
+  `SEQUENCE`, dirty/pending state, membership, tombstone and remote version.
+  Intervening edits become conflicts with committed counts, and unresolved
+  changes retain the prior list sync token so restart can retry them. Explicit
+  conflict choices retain their separate write path and handle direct steps.
 
 ### Time
 
@@ -203,6 +211,9 @@ Settings → Data.
   `OAuth2Manager` (authorization code + PKCE, system browser) with a loopback
   redirect the app listens on. Scopes are `Tasks.ReadWrite` (the list delta call requires it; ADR-016 amendment 1) and `User.Read`; the client sends GET requests only. The
   access token lives in memory for one import and is never stored.
+- **Graph transport.** The production client disables automatic redirects.
+  Paging and attachment paths validate the resolved scheme, normalized host,
+  effective port, userinfo and fragment before creating an authenticated request.
   `MicrosoftTodoRegistration.ClientId` holds the public client id of the Entra
   app; when it is empty the wizard says sign-in isn't set up.
 - **Reading and mapping.** `MicrosoftTodoReader` reads the account into a
