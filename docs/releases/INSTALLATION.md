@@ -1,7 +1,8 @@
 # Installation and recovery — review draft
 
 **DRAFT — no production release is available from this document.** Prepared
-2026-11-08 from source `4fa223d`. Final download/listing links, app name,
+2026-11-08 from source `4fa223d`; updated 2026-11-09 against `db6c448` for the
+selected direct-MSIX-first route and production override policy. Final download links, app name,
 publisher, signing instructions and supported update versions are pending.
 The steps below must be checked against the exact final signed packages.
 
@@ -21,7 +22,7 @@ after that check, rather than assumed from a development machine.
 
 ## Obtain and verify the package
 
-For direct MSIX distribution, use the approved release download and select your
+Direct MSIX is the selected first release route. Use the approved release download and select your
 architecture. Download the signed MSIX and its published SHA-256 checksum.
 Unsigned Actions artifacts and development test signatures are preparation
 outputs, not production installation choices.
@@ -42,9 +43,9 @@ instructions. The signing provider and any distribution-specific trust steps
 have not been selected; this draft does not instruct you to trust a development
 certificate.
 
-If Microsoft Store distribution is selected, use the approved Store listing and
-its installation/update path. Store submission requirements and the final listing
-are separate from producing a local MSIX file. The route remains owner-pending.
+Microsoft Store delivery is deferred to a separate approved release work package.
+If it is added later, use the approved Store listing and its installation/update
+path; Store submission acceptance is separate from direct MSIX package checks.
 
 ## Install and start
 
@@ -115,6 +116,34 @@ before ordinary writes. Installing an older binary does not downgrade the
 database safely. Verify a backup at a separate disposable location before
 replacing any current data; restoration and rollback instructions for the final
 release still require the recorded deployment checks.
+
+## Advanced local launch controls
+
+The selected production policy retains the existing database and clock overrides
+in Release, including Native AOT. Normal Start activation uses the package-local
+database and real time. An explicit `--database-path <file>` selects another
+SQLite file and takes precedence over the process environment variable
+`WINTODO_DATABASE_PATH`; otherwise the environment variable selects the file.
+These inputs apply to that launch, rather than saving a preferred location for
+future Start or notification activations.
+
+A custom database carries its database-backed preferences and onboarding state.
+Attachments and import staging still use the installed package's LocalState;
+credentials stay in PasswordVault. Back up both storage locations as described
+above. Windows Share always saves to the normal package database using real time,
+so shares can appear in a different database from an explicitly overridden shell.
+
+`--clock-file <file>` reads a locally controlled time value on each use. It can
+change task timestamps and reminder/date behavior; use it with synthetic data.
+It keeps Windows' local timezone. Only a command-line database override skips
+fresh-database onboarding by default; `--show-onboarding` allows the ordinary
+fresh-database checks. An environment-only database override does not skip them.
+
+Fixture imports and durable `--trace-file` output remain Debug-only and are
+ignored by production Release/AOT builds. Numeric scroll-output controls remain
+available for explicit diagnostics. The [supported option table](../guides/build-and-run.md#supported-local-launch-overrides-dep-12)
+documents parsing and the complete scope. These controls do not establish a
+portable profile or change the selected customer installation path.
 
 ## Remove the app
 

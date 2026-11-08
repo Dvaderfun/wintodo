@@ -1,8 +1,9 @@
 # Privacy policy — unpublished review draft
 
 **DRAFT — not approved for publication.** Prepared 2026-11-08 from source
-`4fa223d`. Wintodo is a placeholder name. The final publisher, privacy/security
-contact, effective date and distribution route must be supplied before release.
+`4fa223d`; updated 2026-11-09 against `db6c448` for selected production overrides
+and direct-MSIX-first delivery. Wintodo is a placeholder name. The final publisher,
+privacy/security contact and effective date must be supplied before release.
 Final-package network and uninstall checks remain pending.
 
 Wintodo stores tasks on your Windows device. You can use local lists without
@@ -37,11 +38,15 @@ and imported copies receive an Internet-zone marker where the filesystem
 supports it. The marker does not contain the source URL or account identity.
 
 By default, the database and attachments are in the installed package's
-LocalState folder. The current implementation accepts advanced local database
-overrides; a custom database location moves SQLite only, while attachments and
-credentials retain their existing locations. The production policy for these
-overrides is still under review. Windows Share saves received text or web links
-to the normal package-local database and uses the real clock.
+LocalState folder. The selected production policy supports advanced local
+database overrides in Release, including Native AOT. A custom database location
+changes SQLite and its database-backed preferences/history, while attachments,
+import staging and credentials retain their existing locations. Local clock-file
+inputs can affect task timestamps and date/reminder behavior without changing
+Windows' timezone. These launch inputs do not create a portable profile or a
+persisted preference for later launches. Windows Share saves received text or
+web links to the normal package-local database and uses the real clock, even
+when local launch overrides select another database/time for the main shell.
 
 ## Optional connections and disclosure
 

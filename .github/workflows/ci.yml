@@ -86,7 +86,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    # Default-branch maintenance and writable tags only; no signing authority.
+    # Default-branch maintenance and validated tags only; no signing authority.
     if: >
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
       (github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
@@ -109,6 +109,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
@@ -117,6 +118,33 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.13'
+
+      - name: Validate release tag, reviewed main ancestry and manifest version
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          RELEASE_REVIEWED_MAIN_SHA: ${{ vars.RELEASE_REVIEWED_MAIN_SHA }}
+          RELEASE_PREVIOUS_MSIX_VERSION: ${{ vars.RELEASE_PREVIOUS_MSIX_VERSION }}
+        run: |
+          if ($env:RELEASE_REVIEWED_MAIN_SHA -cnotmatch '^[0-9a-f]{40}$') {
+            throw 'A full reviewed-main commit pin is required for release tags.'
+          }
+          New-Item -ItemType Directory -Force SafeTestResults | Out-Null
+          $refPolicyArgs = @(
+            'scripts/Test-ReleaseRefPolicy.py', '--repository', '.',
+            '--event-name', $env:GITHUB_EVENT_NAME, '--ref', $env:GITHUB_REF,
+            '--source-commit', $env:GITHUB_SHA,
+            '--reviewed-main-commit', $env:RELEASE_REVIEWED_MAIN_SHA,
+            '--main-ref', 'refs/remotes/origin/main',
+            '--output', 'SafeTestResults/release-ref-policy.json'
+          )
+          if (-not [string]::IsNullOrWhiteSpace($env:RELEASE_PREVIOUS_MSIX_VERSION)) {
+            $refPolicyArgs += @('--previous-version', $env:RELEASE_PREVIOUS_MSIX_VERSION)
+          }
+          & python @refPolicyArgs
+          if ($LASTEXITCODE -ne 0) { throw 'Release ref/version eligibility failed.' }
+          python scripts/Test-ReleasePrivacy.py SafeTestResults/release-ref-policy.json `
+            --private-root "$PWD" --output SafeTestResults/release-ref-policy-privacy.json
+          if ($LASTEXITCODE -ne 0) { throw 'Release ref/version evidence privacy check failed.' }
 
       - name: Locked restore target AOT dependencies (all advisories, warnings as errors)
         run: >
@@ -201,5 +229,7 @@ jobs:
             SafeTestResults/release-package.json
             SafeTestResults/release-sbom.json
             SafeTestResults/release-sbom-privacy.json
+            SafeTestResults/release-ref-policy.json
+            SafeTestResults/release-ref-policy-privacy.json
           retention-days: 14
           if-no-files-found: error
