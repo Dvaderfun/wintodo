@@ -70,3 +70,9 @@ complete. Final customer documents must be reconciled against the exact release
 candidate, replace undecided fields, remove internal review wording, and receive
 owner review before publication. Required notices must describe the actual
 shipped dependency/runtime closure, not merely the current direct packages.
+
+The subsequent [shipped dependency notices review](dep17-third-party-notices-review.md)
+identifies exact inherited runtime/native legal texts missing from the current
+payload and prepares a deduplicated source/hash list. Those proposed additions
+remain separate from the owner's first-party licence and image-rights decisions;
+they must be integrated and rechecked in rebuilt final packages.

@@ -26,7 +26,10 @@ All new planning documents belong under `docs/plans/`.
 | [Native dependency/toolchain review](plans/dep02-toolchain-review.md) | DEP-02 exact native origins, upstream advisory dispositions and remaining runner/tool provenance gaps |
 | [Source archive and asset privacy review](plans/dep13-source-privacy-review.md) | DEP-13 archive exclusions, fixture byte preservation, asset metadata and pending attribution/licensing choices |
 | [Exact-package inspection preparation](plans/dep16-package-inspection.md) | DEP-16 reusable MSIX structural/privacy gate and pending final identity/payload/deployment evidence |
+| [Clean-source unsigned candidate validation](plans/dep16-local-candidate-validation.md) | DEP-16 exact x64/ARM64 package hashes, locked packaging correction and remaining signed/deployment gates |
+| [Exact native/toolchain evidence](plans/dep15-exact-toolchain-evidence.md) | DEP-02/15 numeric tool versions/hashes, evaluated SDK selections and pending actual invocation/hosted proof |
 | [Release documentation preparation](plans/dep17-release-docs.md) | DEP-17 source-backed privacy/installation drafts and remaining owner/publication decisions |
+| [Shipped dependency notices review](plans/dep17-third-party-notices-review.md) | DEP-17 exact inherited notice additions, runtime/tool distinctions and unresolved redistribution/ownership proof |
 
 Release review drafts: [privacy](releases/PRIVACY.md) and
 [installation, update and recovery](releases/INSTALLATION.md). These are

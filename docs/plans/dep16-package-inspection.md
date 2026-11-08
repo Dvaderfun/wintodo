@@ -115,3 +115,9 @@ Final identity/version choices, exact reviewed payload inventory,
 complete provenance/SBOM, final signed-byte inspection and guest/native
 ARM64 deployment gates remain open. Existing local test packages predate the
 current source and cannot close any final-release row.
+
+The subsequent [clean-source unsigned validation](dep16-local-candidate-validation.md)
+records fresh candidates from `965d86b` separately from those old test packages.
+It also documents the containing-solution AOT restore failure and the supported
+`--no-restore` packaging correction after explicit target locked restoration.
+Unsigned structural/privacy results retain the final production gates above.
