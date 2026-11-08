@@ -11,6 +11,7 @@ using Windows.Storage;
 using Windows.System;
 using Wintodo.ViewModels;
 using Wintodo.Services;
+using Wintodo.Core.Services;
 
 namespace Wintodo.Controls;
 
@@ -174,7 +175,7 @@ public sealed partial class TaskDetailView : UserControl
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_ATTACHMENT_PICKER_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_ATTACHMENT_PICKER_EXCEPTION={DiagnosticException.Describe(exception)}");
             ViewModel.ReportError(
                 StringResources.GetString("Detail_AttachmentPickerFailed"));
         }

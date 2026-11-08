@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
 using Wintodo.Core.Models;
 using Wintodo.Sync;
+using Wintodo.Core.Services;
 
 namespace Wintodo.ViewModels;
 
@@ -68,7 +69,7 @@ public sealed partial class ShellViewModel
         _syncService = syncService;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         _syncService.StatusChanged += OnSyncStatusChanged;
-        SetSyncStatus(SyncRunStatus.Idle, message: null);
+        SetSyncStatus(SyncRunStatus.Idle);
     }
 
     private async Task InitializeSyncAsync(CancellationToken cancellationToken)
@@ -78,9 +79,7 @@ public sealed partial class ShellViewModel
         IsSyncConnected = _syncAccount is not null;
         SyncAccountDisplayName = _syncAccount?.DisplayName ?? string.Empty;
         await RefreshSyncOptionsAsync(cancellationToken);
-        SetSyncStatus(
-            _syncAccount is null ? SyncRunStatus.Idle : SyncRunStatus.Success,
-            message: null);
+        SetSyncStatus(_syncAccount is null ? SyncRunStatus.Idle : SyncRunStatus.Success);
     }
 
     private async Task RefreshSyncOptionsAsync(CancellationToken cancellationToken)
@@ -115,8 +114,8 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            Trace.WriteLine($"WINTODO_SYNC_CONNECT_EXCEPTION={exception}");
-            SetSyncStatus(SyncRunStatus.Error, exception.Message);
+            Trace.WriteLine($"WINTODO_SYNC_CONNECT_EXCEPTION={DiagnosticException.Describe(exception)}");
+            SetSyncStatus(SyncRunStatus.Error);
         }
         finally
         {
@@ -152,8 +151,8 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            Trace.WriteLine($"WINTODO_SYNC_DISCONNECT_EXCEPTION={exception}");
-            SetSyncStatus(SyncRunStatus.Error, exception.Message);
+            Trace.WriteLine($"WINTODO_SYNC_DISCONNECT_EXCEPTION={DiagnosticException.Describe(exception)}");
+            SetSyncStatus(SyncRunStatus.Error);
         }
         finally
         {
@@ -216,8 +215,8 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            Trace.WriteLine($"WINTODO_SYNC_EXCEPTION={exception}");
-            SetSyncStatus(SyncRunStatus.Error, exception.Message);
+            Trace.WriteLine($"WINTODO_SYNC_EXCEPTION={DiagnosticException.Describe(exception)}");
+            SetSyncStatus(SyncRunStatus.Error);
         }
         finally
         {
@@ -250,9 +249,9 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            Trace.WriteLine($"WINTODO_SYNC_LIST_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_SYNC_LIST_EXCEPTION={DiagnosticException.Describe(exception)}");
             option.SetWithoutCallback(!isEnabled);
-            SetSyncStatus(SyncRunStatus.Error, exception.Message);
+            SetSyncStatus(SyncRunStatus.Error);
         }
         finally
         {
@@ -276,13 +275,13 @@ public sealed partial class ShellViewModel
     {
         if (!string.IsNullOrWhiteSpace(args.Message))
         {
-            Trace.WriteLine($"WINTODO_SYNC_STATUS_DETAIL={args.Message}");
+            Trace.WriteLine($"WINTODO_SYNC_STATUS={(int)args.Status}");
         }
 
-        _dispatcherQueue.TryEnqueue(() => SetSyncStatus(args.Status, args.Message));
+        _dispatcherQueue.TryEnqueue(() => SetSyncStatus(args.Status));
     }
 
-    private void SetSyncStatus(SyncRunStatus status, string? message)
+    private void SetSyncStatus(SyncRunStatus status)
     {
         string key = status switch
         {
@@ -306,9 +305,8 @@ public sealed partial class ShellViewModel
 
         if (status == SyncRunStatus.Error)
         {
-            SyncErrorMessage = string.IsNullOrWhiteSpace(message)
-                ? SyncStatusText
-                : message;
+            // Service/provider messages can include account URLs or task content.
+            SyncErrorMessage = _resources.GetString("Sync_ErrorRetry");
             IsSyncErrorOpen = true;
             return;
         }

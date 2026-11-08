@@ -235,6 +235,7 @@ public sealed partial class MainWindow : Window
         TitleSearch.SearchRequested -= OnSearchRequested;
         if (_shellPage is not null)
         {
+            await _shellPage.ViewModel.ShutdownImportAsync();
             _shellPage.SearchFocusRequested -= TitleSearch.FocusSearch;
             _shellPage.SearchClearRequested -= TitleSearch.TryClear;
             _shellPage.ThemeChanged -= OnShellThemeChanged;

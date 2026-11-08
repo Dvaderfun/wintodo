@@ -33,6 +33,7 @@ All new planning documents belong under `docs/plans/`.
 
 - [guides/build-and-run.md](guides/build-and-run.md) — prerequisites, build, run, debug a crash, AOT publish
 - [guides/testing.md](guides/testing.md) — unit tests, UI gate scripts, AutomationIds, writing a new gate
+- [guides/diagnostics.md](guides/diagnostics.md) — safe app traces, private diagnostic limits and sanitized CI test summaries
 - [guides/migrations.md](guides/migrations.md) — adding a SQLite schema migration
 - [guides/performance.md](guides/performance.md) — measuring, recording, and the budget rules
 - [guides/packaging.md](guides/packaging.md) — unsigned tag artifacts, placeholder identity, local test signatures and open release gates

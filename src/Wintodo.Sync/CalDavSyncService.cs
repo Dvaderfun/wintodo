@@ -333,7 +333,7 @@ public sealed class CalDavSyncService : IDisposable
             return new SyncRunResult
             {
                 Status = SyncRunStatus.Offline,
-                ErrorMessage = exception.Message,
+                ErrorMessage = DiagnosticException.Describe(exception),
             };
         }
         catch (CalDavProtocolException exception)
@@ -341,7 +341,7 @@ public sealed class CalDavSyncService : IDisposable
             return new SyncRunResult
             {
                 Status = SyncRunStatus.Error,
-                ErrorMessage = exception.Message,
+                ErrorMessage = DiagnosticException.Describe(exception, exception.StatusCode),
             };
         }
     }

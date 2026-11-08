@@ -63,7 +63,7 @@ public partial class App
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_SHARE_TARGET_EXCEPTION={exception};COMMITTED={committed}");
+            Trace.WriteLine($"WINTODO_SHARE_TARGET_EXCEPTION={DiagnosticException.Describe(exception)};COMMITTED={committed}");
             error = resources.GetString(committed ? "Share_CompletionFailed" : "Share_CreateFailed");
         }
         if (error is null)
@@ -73,7 +73,7 @@ public partial class App
         }
         // Report failures once and keep a closeable localized error surface; never retry a save.
         try { operation.ReportError(error); }
-        catch (Exception exception) { Trace.WriteLine($"WINTODO_SHARE_REPORT_EXCEPTION={exception}"); }
+        catch (Exception exception) { Trace.WriteLine($"WINTODO_SHARE_REPORT_EXCEPTION={DiagnosticException.Describe(exception)}"); }
         window.ShowError(error);
     }
 }

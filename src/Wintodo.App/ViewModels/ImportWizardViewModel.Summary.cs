@@ -10,7 +10,11 @@ public sealed partial class ImportWizardViewModel
     public bool DidChange => _lastOutcome?.HasChanges == true;
 
     [RelayCommand]
-    private void OpenMyDay() => MyDayRequested?.Invoke();
+    private async Task OpenMyDayAsync()
+    {
+        await DismissAsync();
+        MyDayRequested?.Invoke();
+    }
 
     [RelayCommand]
     private void CopyDetails()

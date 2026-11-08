@@ -119,6 +119,16 @@ function Assert-Checked {
     if ($isOn -ne $Expected) { throw "$AutomationId expected checked=$Expected; properties $json" }
 }
 
+function Assert-SessionEnded {
+    param([int]$AfterCount = 0)
+    for ($attempt = 0; $attempt -lt 25; $attempt++) {
+        if ((Test-Path -LiteralPath $tracePath) -and
+            (@(Select-String -LiteralPath $tracePath -SimpleMatch 'WINTODO_IMPORT_SESSION=ENDED').Count -gt $AfterCount)) { return }
+        Start-Sleep -Milliseconds 200
+    }
+    throw 'Final dismissal did not record completed import-session teardown.'
+}
+
 function Assert-AccessibilityClean {
     param([string]$Name)
     $inspection = Invoke-Ui @('inspect', '--interactive', '--json', '--depth', '18') | ConvertFrom-Json
@@ -243,6 +253,7 @@ try {
         Invoke-Ui @('invoke', 'Todo.Import.GoToTasks')
         Invoke-Ui @('wait-for', 'Water the plants', '-t', '8000')
         Assert-Absent 'Todo.Import.Title'
+        Assert-SessionEnded
         if ((Get-RowCount 'Water the plants') -ne 1) { throw 'Expected exactly one "Water the plants" row.' }
         if ((Get-RowCount 'Send the quarterly report') -ne 1) { throw 'Expected the HTML-note task.' }
         Assert-Text 'Groceries'
@@ -287,6 +298,7 @@ try {
     # Reopening the wizard in the same session re-creates both x:Load surfaces;
     # this once failed inside the button's command (stale wizard repeaters).
     Test-UI 'Cancel from Settings returns to Settings' {
+        $previousEnds = @(Select-String -LiteralPath $tracePath -SimpleMatch 'WINTODO_IMPORT_SESSION=ENDED').Count
         Invoke-Ui @('invoke', 'Todo.Nav.Settings')
         Invoke-Ui @('wait-for', 'Todo.Settings.ScrollViewer', '-t', '5000')
         Invoke-Ui @('scroll', 'Todo.Settings.ScrollViewer', '--to', 'bottom')
@@ -296,6 +308,29 @@ try {
         Invoke-Ui @('invoke', 'Todo.Import.Cancel')
         Invoke-Ui @('wait-for', 'Todo.Settings.Title', '-t', '5000')
         Assert-Absent 'Todo.Import.Title'
+        Assert-SessionEnded -AfterCount $previousEnds
+    }
+    Test-UI 'Navigating away from a signed-in preview ends the session and reopening starts fresh' {
+        $previousEnds = @(Select-String -LiteralPath $tracePath -SimpleMatch 'WINTODO_IMPORT_SESSION=ENDED').Count
+        Invoke-Ui @('scroll', 'Todo.Settings.ScrollViewer', '--to', 'bottom')
+        Invoke-Ui @('invoke', 'Todo.Settings.ImportMicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '15000')
+        Invoke-Ui @('invoke', 'Todo.Nav.DefaultList')
+        Invoke-Ui @('wait-for', 'Todo.List.AddTaskBox', '-t', '5000')
+        Assert-Absent 'Todo.Import.Title'
+        Assert-SessionEnded -AfterCount $previousEnds
+        Invoke-Ui @('invoke', 'Todo.Nav.Settings')
+        Invoke-Ui @('wait-for', 'Todo.Settings.ScrollViewer', '-t', '5000')
+        Invoke-Ui @('scroll', 'Todo.Settings.ScrollViewer', '--to', 'bottom')
+        Assert-Text 'fixture.person@example.com · 10/19/2026'
+        Invoke-Ui @('invoke', 'Todo.Settings.ImportMicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
+        Assert-NoText 'Signed in as fixture.person@example.com'
+        Assert-Absent 'Todo.Import.Start'
+        Invoke-Ui @('invoke', 'Todo.Import.Cancel')
+        Invoke-Ui @('wait-for', 'Todo.Settings.Title', '-t', '5000')
     }
     Stop-App
 
@@ -321,6 +356,7 @@ try {
         Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-t', '20000')
         Invoke-Ui @('invoke', 'Todo.Import.OpenMyDay')
         Invoke-Ui @('wait-for', 'Todo.List.AddTaskBox', '-t', '8000')
+        Assert-SessionEnded
         Invoke-Ui @('invoke', 'Todo.Nav.Settings')
         Invoke-Ui @('wait-for', 'Todo.Settings.ScrollViewer', '-t', '5000')
         Invoke-Ui @('scroll', 'Todo.Settings.ScrollViewer', '--to', 'bottom')
@@ -362,6 +398,55 @@ try {
         Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-t', '20000')
         Assert-Text 'Import complete'
         Save-Screenshot '10-after-sign-in-again.png'
+    }
+    Stop-App
+
+    $script:databasePath = Join-Path $artifactDirectory 'busy-cancel.db'
+    Start-App -ShowOnboarding -ThrottleOnce
+    Test-UI 'Busy Cancel finishes reading before final dismissal and late progress stays hidden' {
+        Invoke-Ui @('invoke', 'Todo.Welcome.MicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('wait-for', 'Todo.Import.ProgressText', '--value', 'Microsoft is busy.', '--contains', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.Cancel')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-p', 'IsEnabled', '--value', 'True', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.Cancel')
+        Invoke-Ui @('wait-for', 'Todo.Welcome.Title', '-t', '5000')
+        Assert-SessionEnded
+        Start-Sleep -Milliseconds 3500
+        Assert-Absent 'Todo.Import.Title'
+        Assert-NoText 'Signed in as fixture.person@example.com'
+    }
+    Stop-App
+
+    $script:databasePath = Join-Path $artifactDirectory 'busy-navigation.db'
+    Start-App -ShowOnboarding -ThrottleOnce
+    Test-UI 'Navigation during reading cancels the session and cannot restore its preview' {
+        Invoke-Ui @('invoke', 'Todo.Welcome.MicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('wait-for', 'Todo.Import.ProgressText', '--value', 'Microsoft is busy.', '--contains', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Nav.DefaultList')
+        Invoke-Ui @('wait-for', 'Todo.List.AddTaskBox', '-t', '5000')
+        Assert-SessionEnded
+        Start-Sleep -Milliseconds 3500
+        Assert-Absent 'Todo.Import.Title'
+        Assert-Absent 'Todo.Import.Continue'
+        Assert-NoText 'Signed in as fixture.person@example.com'
+    }
+    Stop-App
+
+    $script:databasePath = Join-Path $artifactDirectory 'idle-close.db'
+    Start-App -ShowOnboarding
+    Test-UI 'Closing an idle signed-in wizard completes teardown before process exit' {
+        Invoke-Ui @('invoke', 'Todo.Welcome.MicrosoftTodo')
+        Invoke-Ui @('wait-for', 'Todo.Import.SignIn', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.SignIn')
+        Invoke-Ui @('wait-for', 'Todo.Import.Continue', '-t', '15000')
+        Invoke-Ui @('send-keys', 'alt+f4', '--via', 'send-input', '--allow-system-keys')
+        Wait-Process -Id $appPid -Timeout 10
+        $script:appPid = 0
+        Assert-SessionEnded
     }
     Stop-App
 
@@ -421,6 +506,24 @@ try {
         Start-Sleep -Milliseconds 800
         Assert-Absent 'Todo.Welcome.Title'
         Assert-Present 'Todo.List.AddTaskBox'
+    }
+    Test-UI 'Import diagnostic captures exclude fixture identities, content and private paths' {
+        $logs = @(Get-ChildItem -LiteralPath $artifactDirectory -Filter '*.trace-*.log' -File)
+        if (-not $logs.Count) { throw 'No Debug import trace captures were produced.' }
+        $markers = @('fixture.person@example.com', 'second.fixture@example.com', 'fixture-token',
+            'Signed in as', 'Water the plants', 'Send the quarterly report', 'Groceries',
+            'Access token has expired', $artifactDirectory, $fixture)
+        foreach ($log in $logs) {
+            $capture = Get-Content -LiteralPath $log.FullName -Raw
+            foreach ($marker in $markers) {
+                if ($capture.Contains($marker, [StringComparison]::OrdinalIgnoreCase)) {
+                    throw 'A synthetic private marker was present in an import trace capture.'
+                }
+            }
+            if ($capture -match '(?m)^\s+at\s|Exception:\s|"error"\s*:|WINTODO_\w+EXCEPTION=.*\r?\n\s+at\s') {
+                throw 'An import trace included raw exception, stack or service-error output.'
+            }
+        }
     }
 } finally {
     Stop-App

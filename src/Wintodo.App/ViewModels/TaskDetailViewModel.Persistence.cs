@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Wintodo.Core.Models;
 using Wintodo.Core.Presentation;
 using Wintodo.Services;
+using Wintodo.Core.Services;
 
 namespace Wintodo.ViewModels;
 
@@ -111,7 +112,7 @@ public sealed partial class TaskDetailViewModel
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_TASK_SAVE_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_TASK_SAVE_EXCEPTION={DiagnosticException.Describe(exception)}");
             ShowError(_resources.GetString("Detail_SaveFailed"));
             return false;
         }

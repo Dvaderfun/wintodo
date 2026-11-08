@@ -202,7 +202,7 @@ public sealed partial class ShellPage
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            Trace.WriteLine($"WINTODO_BACKGROUND_SYNC_EXCEPTION={exception}");
+            Trace.WriteLine($"WINTODO_BACKGROUND_SYNC_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
     }
 

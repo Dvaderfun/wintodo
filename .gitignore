@@ -19,6 +19,7 @@ BundleArtifacts/
 
 # Test and coverage output
 [Tt]est[Rr]esult*/
+SafeTestResults/
 tests/ui/artifacts/
 *.trx
 *.coverage

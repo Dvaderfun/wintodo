@@ -191,6 +191,10 @@ and editor drafts. No storage override is accepted by broker shares in Release.
   Intervening edits become conflicts with committed counts, and unresolved
   changes retain the prior list sync token so restart can retry them. Explicit
   conflict choices retain their separate write path and handle direct steps.
+- CalDAV's production HTTP handler disables automatic redirects. All response
+  paths reject 3xx before reading a response body, including same-origin
+  redirects; discovery hrefs retain their existing origin checks. Streamed-body
+  byte budgets and deadlines remain deployment work package DEP-07.
 
 ### Time
 
@@ -211,6 +215,13 @@ Settings → Data.
   `OAuth2Manager` (authorization code + PKCE, system browser) with a loopback
   redirect the app listens on. Scopes are `Tasks.ReadWrite` (the list delta call requires it; ADR-016 amendment 1) and `User.Read`; the client sends GET requests only. The
   access token lives in memory for one import and is never stored.
+- **Session lifetime.** `MicrosoftTodoImportSession` owns the client, reader and
+  cancellation/completion boundary. Success and expired sign-in release the
+  authenticated connection; final cancel, navigation dismissal, reset and window
+  shutdown clear wizard state. Dismissal waits for in-flight work, including an
+  already-started atomic save, before disposing the client or the store. Delayed
+  progress callbacks cannot restore a dismissed session. Settings import history
+  is read independently from persisted import-source metadata.
 - **Graph transport.** The production client disables automatic redirects.
   Paging and attachment paths validate the resolved scheme, normalized host,
   effective port, userinfo and fragment before creating an authenticated request.

@@ -189,7 +189,7 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_STARTUP_TASK_READ_ERROR={exception}");
+            Trace.WriteLine($"WINTODO_STARTUP_TASK_READ_ERROR={DiagnosticException.Describe(exception)}");
             return new StartupTaskSettingState(false, false);
         }
     }
@@ -211,7 +211,7 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_STARTUP_TASK_WRITE_ERROR={exception}");
+            Trace.WriteLine($"WINTODO_STARTUP_TASK_WRITE_ERROR={DiagnosticException.Describe(exception)}");
             ApplyStartupTaskState(await LoadStartupTaskStateAsync());
         }
     }
@@ -255,7 +255,7 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_DETAIL_WIDTH_SETTING_ERROR={exception}");
+            Trace.WriteLine($"WINTODO_DETAIL_WIDTH_SETTING_ERROR={DiagnosticException.Describe(exception)}");
         }
     }
 
@@ -287,7 +287,7 @@ public sealed partial class ShellViewModel
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"WINTODO_APPEARANCE_SETTING_ERROR={exception}");
+            Trace.WriteLine($"WINTODO_APPEARANCE_SETTING_ERROR={DiagnosticException.Describe(exception)}");
         }
     }
 

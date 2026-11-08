@@ -67,7 +67,7 @@ try {
     if (Test-Path -LiteralPath $vhdPath) {
         Remove-Item -LiteralPath $vhdPath -Force -ErrorAction SilentlyContinue
         if (Test-Path -LiteralPath $vhdPath) {
-            Write-Warning "Could not delete $vhdPath; remove it manually."
+            Write-Warning 'Could not delete the new guest disk; remove it manually from the selected VM directory.'
         }
     }
     throw $failure

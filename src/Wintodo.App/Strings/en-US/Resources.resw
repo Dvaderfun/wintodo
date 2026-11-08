@@ -971,6 +971,7 @@
   <data name="Sync_StatusOffline" xml:space="preserve"><value>Offline; changes queued</value></data>
   <data name="Sync_StatusAttention" xml:space="preserve"><value>Conflict needs attention</value></data>
   <data name="Sync_StatusError" xml:space="preserve"><value>Sync failed</value></data>
+  <data name="Sync_ErrorRetry" xml:space="preserve"><value>Sync couldn’t finish. Check your connection and account settings, then try again.</value></data>
   <data name="SyncConflictDialog.Title" xml:space="preserve"><value>Choose which task to keep</value></data>
   <data name="SyncConflictDialog.PrimaryButtonText" xml:space="preserve"><value>Keep mine</value></data>
   <data name="SyncConflictDialog.SecondaryButtonText" xml:space="preserve"><value>Keep theirs</value></data>

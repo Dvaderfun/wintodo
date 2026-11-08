@@ -30,16 +30,23 @@ jobs:
       - name: Build (x64 Debug, warnings as errors, WinUI + AOT analyzers)
         run: dotnet build Wintodo.sln -p:Platform=x64 -warnaserror --no-restore
 
+      - name: Verify diagnostic-safe test export
+        run: ./tests/scripts/Test-SafeTestResults.ps1
+
       - name: Unit tests (Core, Data, Sync, Import — xunit v3 on Microsoft Testing Platform)
         run: >
           dotnet test --solution Wintodo.sln -p:Platform=x64 --no-build
           --report-trx --coverage --results-directory ${{ github.workspace }}/TestResults
 
+      - name: Export diagnostic-safe test summary
+        if: always()
+        run: ./scripts/Export-SafeTestResults.ps1
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-results
-          path: TestResults/
+          path: SafeTestResults/summary.json
 
   release:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')

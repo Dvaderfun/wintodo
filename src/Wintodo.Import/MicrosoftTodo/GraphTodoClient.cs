@@ -8,14 +8,16 @@ using Wintodo.Core.Services;
 namespace Wintodo.Import.MicrosoftTodo;
 
 /// <summary>Read-only Microsoft Graph client for the To Do API.</summary>
-public sealed class GraphTodoClient
+public sealed class GraphTodoClient : IDisposable
 {
     public static readonly Uri DefaultBaseUri = new("https://graph.microsoft.com/v1.0/");
     private const int MaxAttempts = 6;
     private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(60);
 
     private readonly HttpClient _httpClient;
-    private readonly string _accessToken;
+    private string? _accessToken;
+    private readonly bool _ownsHttpClient;
+    private bool _disposed;
     private readonly Uri _baseUri;
     private readonly Func<TimeSpan, CancellationToken, Task> _delay;
     private readonly IClock _clock;
@@ -26,7 +28,7 @@ public sealed class GraphTodoClient
     public Action<TimeSpan>? Retrying { get; set; }
 
     /// <summary>Only a tenant claim from this sign-in can enable administrator consent.</summary>
-    public string? WorkTenantId { get; }
+    public string? WorkTenantId { get; private set; }
 
     /// <summary>Creates the production Graph transport without implicit redirects.</summary>
     public static HttpClient CreateHttpClient() => new(new HttpClientHandler { AllowAutoRedirect = false })
@@ -43,11 +45,13 @@ public sealed class GraphTodoClient
         string accessToken,
         Uri? baseUri = null,
         Func<TimeSpan, CancellationToken, Task>? delay = null,
-        IClock? clock = null)
+        IClock? clock = null,
+        bool ownsHttpClient = false)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentException.ThrowIfNullOrWhiteSpace(accessToken);
         _httpClient = httpClient;
+        _ownsHttpClient = ownsHttpClient;
         _accessToken = accessToken;
         _baseUri = baseUri ?? DefaultBaseUri;
         if (!_baseUri.IsAbsoluteUri
@@ -298,12 +302,14 @@ public sealed class GraphTodoClient
 
     private async Task<HttpResponseMessage> SendAsync(Uri uri, CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         ValidateRequestUri(uri);
         for (int attempt = 1; ; attempt++)
         {
             Task throttle;
             lock (_throttleLock) throttle = _throttleWait;
             await throttle.WaitAsync(cancellationToken).ConfigureAwait(false);
+            ObjectDisposedException.ThrowIf(_disposed, this);
             using var request = new HttpRequestMessage(HttpMethod.Get, uri);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -340,6 +346,21 @@ public sealed class GraphTodoClient
                 throw await CreateExceptionAsync(response, cancellationToken).ConfigureAwait(false);
             }
         }
+    }
+
+    /// <summary>
+    /// Ends this authenticated session. The owner finishes in-flight work first;
+    /// a shared transport stays available for a subsequent fresh sign-in.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _accessToken = null;
+        WorkTenantId = null;
+        Retrying = null;
+        lock (_throttleLock) _throttleWait = Task.CompletedTask;
+        if (_ownsHttpClient) _httpClient.Dispose();
     }
 
     private TimeSpan GetRetryDelay(HttpResponseMessage response, int attempt)
