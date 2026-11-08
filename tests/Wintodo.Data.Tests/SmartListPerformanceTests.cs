@@ -89,7 +89,7 @@ public sealed class SmartListPerformanceTests
 
     private static async Task SeedTasksAsync(StoreFixture fixture, long listId, int count)
     {
-        await using var connection = new SqliteConnection($"Data Source={fixture.DatabasePath}");
+        await using var connection = TestSqliteConnections.Create(fixture.DatabasePath);
         await connection.OpenAsync();
         await using SqliteTransaction transaction = connection.BeginTransaction();
         await using SqliteCommand command = connection.CreateCommand();

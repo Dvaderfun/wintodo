@@ -97,7 +97,7 @@ public sealed class M4PersistenceGateTests
                     advanced.Status);
             }
 
-            await using var connection = new SqliteConnection($"Data Source={databasePath}");
+            await using var connection = TestSqliteConnections.Create(databasePath);
             await connection.OpenAsync(TestContext.Current.CancellationToken);
             await using SqliteCommand command = connection.CreateCommand();
             command.CommandText =
@@ -107,7 +107,7 @@ public sealed class M4PersistenceGateTests
         }
         finally
         {
-            SqliteConnection.ClearAllPools();
+            TestSqliteConnections.ClearStorePools(databasePath);
             if (Directory.Exists(directory))
             {
                 Directory.Delete(directory, recursive: true);

@@ -100,6 +100,12 @@ UI types     ──X──► below Wintodo.App
 
 Core, Data, Sync and Import set `IsAotCompatible`. A new library project must too.
 
+The App directly selects `Microsoft.Windows.AI.MachineLearning 2.5.96` within
+Windows App SDK 2.5.1's declared ML range. This services the SDK's existing ML
+payload to the vendor's current supported release. The four app locks and notice
+origin labels are reviewed together; inherited supplier texts remain exact.
+See [the servicing evidence](docs/plans/dep02-vendor-provenance-resolution.md).
+
 ## Shell composition
 
 One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.

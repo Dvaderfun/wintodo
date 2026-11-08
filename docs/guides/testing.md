@@ -36,6 +36,12 @@ Rules:
 - Anything date-dependent takes `IClock`. Never call `DateTimeOffset.Now` outside
   the clock implementation.
 - Data tests use a fresh temp database per test; never a shared file.
+- Data test helper connections use `TestSqliteConnections.Create` with pooling
+  disabled. Fixture cleanup clears only its own production writer/read-only
+  pool keys through `ClearStorePools`; do not clear process-wide pools while
+  other tests run. Keep the exact key format aligned with the production store.
+  [The isolation record](../plans/dep15-sqlite-test-pool-isolation.md) contains
+  the reproduced failure and deterministic cleanup regressions.
 - New iCalendar behaviour gets a fixture in `tests/fixtures/ical/` and a
   round-trip assertion. Unknown properties must survive byte-for-byte.
 - Import behaviour (ADR-016) is tested in `tests/Wintodo.Import.Tests`: the

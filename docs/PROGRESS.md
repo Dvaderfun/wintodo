@@ -26,18 +26,28 @@ licensing/assets and source visibility/protection values remain pending.
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
 - **Build:** Debug and Release x64 passed with zero warnings/errors on
-  2026-11-09. All four MTP suites passed 704/704, zero failed/skipped
-  (Core 257, Data 130, Import 155, Sync 162). The launch-policy/ref-gate
-  integration passes all 202 script regressions. Current-source AOT/runtime
-  and isolated ML servicing evaluation results are tracked separately below.
-  Fresh DEP-04 x64/ARM64 AOT outputs include the integrated current code with compiler/
+  2026-11-09. All four MTP suites passed 707/707, zero failed/skipped
+  (Core 257, Data 133, Import 155, Sync 162). The launch-policy/ref-gate
+  integration passes all 202 script regressions. Current-helper x64/ARM64 AOT
+  publishes pass with ML 2.5.96; runtime and final candidate checks remain pending.
+  Earlier DEP-04 x64/ARM64 AOT outputs used compiler/
   runtime 10.0.14; both layouts and their relative summary pass the privacy scan
   (649 files, zero findings). Final signed packages/install gates remain pending.
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
   tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
   455/455 and zero failures/skips verified from the four uploaded TRX files.
 - **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
+  Windows ML 2.5.96 explicitly selected within the SDK's range;
   win-dev-skills v0.7.1 vendored (ADR-010).
+- **ML servicing and SQLite test isolation (2026-11-09):** the declared-compatible
+  ML 2.5.96 update passes both isolated AOT/MSIX structure/privacy/audit targets,
+  then current-helper Debug/Release builds and x64/ARM64 AOT publishing. Four app
+  locks and seven notice-origin labels change; the other 16 locks and supplier
+  bodies remain exact. A reproduced cross-test SQLite pool-clear race is corrected
+  with unpooled helpers and owned-database cleanup; three regressions and final
+  707/707 unit tests pass. The initial 703/704 failure is retained. Current-source
+  final packages/SBOM, vendor build attestation, actual runtime/deployment,
+  owner metadata, signing and publication remain pending.
 - **Production policy and release refs (2026-11-09):** direct MSIX first and
   DEP-12 A are selected; the existing launch decisions now have 26 executable
   host tests. The strict stable-tag/source/main/version checker has 31 real-Git
@@ -4527,3 +4537,35 @@ Actionlint, links/whitespace and independent review pass. Evidence:
 are unchanged in this commit; separate ML servicing evaluation remains active.
 Owner fields, hosted/protection, vendor/legal closure, guest/runtime, signing,
 final deployment and publication remain pending. M9 remains owner-deferred.
+
+### 2026-11-09 — M10 DEP-02/15/16: supported ML and fixture pool isolation
+
+ML 2.5.96 is selected directly within SDK 2.5.1's declared range. The isolated
+`db6c448` overlay passes 678 unit tests, both AOT/MSIX structure/privacy/audit
+checks and four locked restores. Root integration after `703757b` passes current
+helper Debug/Release builds and both AOT publishes. Four app locks and seven
+notice-origin labels change; all 16 other locks and inherited supplier bytes
+remain exact. Final identity/version/source packages/SBOM/runtime remain pending.
+
+The first updated-source unit run failed one TaskBatch Delete helper query with
+a disposed SQLite handle (703/704). Class-only 17/17 passed. A source-supported
+public-API stress probe reproduced eight pooled query failures and zero in the
+unpooled control; actual fixture A cleanup deterministically closed unrelated
+B's idle handle. Five global clears now target owned pools and 14 helpers use
+unpooled escaped connections. Three regressions, Data 133/133 and the final
+707/707 unit run pass, zero failed/skipped. Original failure/probe logs remain
+private; original interleaving and production timer applicability are unproven.
+Production pooling/provider and whole-suite parallelism are preserved.
+
+All 202 script tests, review, Actionlint and public-doc/link/whitespace checks
+pass. Evidence: artifacts/dep-vendor-resolution/, artifacts/dep-ml-upgrade-evaluation/,
+artifacts/dep-sqlite-pool-investigation/, artifacts/dep-production-next-integration/.
+Vendor attestations/legal closure, owner metadata, hosted/protection, actual
+guest/native runtime, signing/final deployment/publication remain pending. M9
+stays owner-deferred. No host UI, guest, installation, trust or signing ran.
+
+Current-helper AOT/layout privacy passes 649 files, zero findings. Final unit
+confirmation passes 707/707, zero failed/skipped. Lock-line-ending regeneration
+was detected after locked restores; complete JSON equality was checked before
+restoring the 16 unchanged locks and exact reviewed app-lock bytes. No graph
+change was hidden. Final reviewed-source MSIX/SBOM and runtime remain pending.

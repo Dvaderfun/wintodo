@@ -153,8 +153,8 @@ public sealed class M7GateDatabaseTests
             return;
         }
 
-        await using var connection = new SqliteConnection(
-            $"Data Source={Path.GetFullPath(databasePath)};Mode=ReadOnly");
+        await using var connection = TestSqliteConnections.Create(
+            Path.GetFullPath(databasePath), SqliteOpenMode.ReadOnly);
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         await using (SqliteCommand reminder = connection.CreateCommand())
         {
@@ -198,8 +198,8 @@ public sealed class M7GateDatabaseTests
             return;
         }
 
-        await using var connection = new SqliteConnection(
-            $"Data Source={Path.GetFullPath(databasePath)};Mode=ReadOnly");
+        await using var connection = TestSqliteConnections.Create(
+            Path.GetFullPath(databasePath), SqliteOpenMode.ReadOnly);
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText = """
@@ -224,8 +224,8 @@ public sealed class M7GateDatabaseTests
             return;
         }
 
-        await using var connection = new SqliteConnection(
-            $"Data Source={Path.GetFullPath(databasePath)};Mode=ReadOnly");
+        await using var connection = TestSqliteConnections.Create(
+            Path.GetFullPath(databasePath), SqliteOpenMode.ReadOnly);
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText = """

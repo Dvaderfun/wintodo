@@ -567,7 +567,7 @@ Component associations for the licence texts retained above and below:
   Widgets 2.0.5 and WinUI 2.3.9: existing Windows App SDK licence terms
   retained above; shared Runtime NOTICE retained below, including WinUI's
   complete root NOTICE. This association includes RestartAgent.exe.
-- Microsoft.Windows.AI.MachineLearning 2.1.74: distinct Windows ML licence
+- Microsoft.Windows.AI.MachineLearning 2.5.96: distinct Windows ML licence
   and supplied third-party notices retained below for the Windows ML,
   ONNX Runtime and DirectML payload delivered by Windows App SDK.
 - Microsoft.Web.WebView2 1.0.3719.77 loader and interop: distinct supplier
@@ -8420,9 +8420,9 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-===== Windows ML Runtime Microsoft.Windows.AI.MachineLearning/2.1.74 =====
-Source: Microsoft.Windows.AI.MachineLearning/2.1.74, package file license.txt
-Package: https://www.nuget.org/packages/Microsoft.Windows.AI.MachineLearning/2.1.74
+===== Windows ML Runtime Microsoft.Windows.AI.MachineLearning/2.5.96 =====
+Source: Microsoft.Windows.AI.MachineLearning/2.5.96, package file license.txt
+Package: https://www.nuget.org/packages/Microsoft.Windows.AI.MachineLearning/2.5.96
 
 MICROSOFT SOFTWARE LICENSE TERMS
 Microsoft Windows ML Runtime
@@ -8477,9 +8477,9 @@ This limitation applies to (a) anything related to the software, services, conte
 It also applies even if Microsoft knew or should have known about the possibility of the damages. The above limitation or exclusion may not apply to you because your state, province, or country may not allow the exclusion or limitation of incidental, consequential, or other damages.
 
 
-===== Windows ML Runtime Microsoft.Windows.AI.MachineLearning/2.1.74 =====
-Source: Microsoft.Windows.AI.MachineLearning/2.1.74, package file ThirdPartyNotices.txt
-Package: https://www.nuget.org/packages/Microsoft.Windows.AI.MachineLearning/2.1.74
+===== Windows ML Runtime Microsoft.Windows.AI.MachineLearning/2.5.96 =====
+Source: Microsoft.Windows.AI.MachineLearning/2.5.96, package file ThirdPartyNotices.txt
+Package: https://www.nuget.org/packages/Microsoft.Windows.AI.MachineLearning/2.5.96
 
 THIRD PARTY SOFTWARE NOTICES AND INFORMATION
 

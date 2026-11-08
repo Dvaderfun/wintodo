@@ -278,7 +278,10 @@ public sealed class SchemaCompatibilityTests
 
     private static void DeleteDirectory(string directory)
     {
-        SqliteConnection.ClearAllPools();
+        foreach (string path in Directory.EnumerateFiles(directory, "*.db"))
+        {
+            TestSqliteConnections.ClearStorePools(path);
+        }
         Directory.Delete(directory, recursive: true);
     }
 }

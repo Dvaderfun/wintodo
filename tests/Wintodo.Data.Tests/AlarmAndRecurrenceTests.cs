@@ -115,7 +115,7 @@ public sealed class AlarmAndRecurrenceTests
         Assert.Equal(100, exhausted.PercentComplete);
         Assert.Equal(fixture.Clock.UtcNow, exhausted.CompletedAt);
 
-        await using var connection = new SqliteConnection($"Data Source={fixture.DatabasePath}");
+        await using var connection = TestSqliteConnections.Create(fixture.DatabasePath);
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         await using SqliteCommand command = connection.CreateCommand();
         command.CommandText = "SELECT COUNT(*) FROM completion_history WHERE task_uid = @uid;";
