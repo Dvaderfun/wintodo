@@ -149,7 +149,10 @@ public sealed partial class SyncPersistenceTests
             RemoteHref = "https://dav.example/cal/tasks/conflict.ics",
             RemoteETag = "\"v2\"",
         };
-        using var httpClient = new HttpClient(new ThrowingHandler());
+        using var handler = new ConflictSnapshotHandler(
+            new IcalWriter(fixture.Clock.LocalTimeZone).WriteCalendar(list, [conflict.RemoteTask!], fixture.Clock.UtcNow),
+            conflict.RemoteETag!);
+        using var httpClient = new HttpClient(handler);
         using var service = new CalDavSyncService(
             fixture.Store,
             new FakeCredentialStore("secret"),
@@ -157,6 +160,8 @@ public sealed partial class SyncPersistenceTests
             httpClient);
 
         await service.ResolveConflictAsync(conflict, SyncConflictChoice.KeepBoth, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, handler.GetCount);
 
         IReadOnlyList<TodoTask> tasks = await fixture.Store.GetTasksAsync(new ListQuery
         {
@@ -169,6 +174,38 @@ public sealed partial class SyncPersistenceTests
         TodoTask copy = Assert.Single(tasks, task => task.Uid != remote.Uid);
         Assert.Equal("Local value", copy.Summary);
         Assert.True(copy.IsDirty);
+    }
+
+    [Fact]
+    public async Task KeepBoth_WhenRemoteCannotBeRevalidated_PreservesLocalAndQueuesNoCopy()
+    {
+        await using SyncFixture fixture = await SyncFixture.CreateAsync();
+        var ct = TestContext.Current.CancellationToken;
+        (Account account, TodoList list) = await fixture.CreateMappedListAsync();
+        TodoTask local = await fixture.Store.CreateTaskAsync(new TodoTask
+            { ListId = list.Id, Summary = "Synthetic local version" }, ct);
+        var conflict = new SyncConflict
+        {
+            AccountId = account.Id, ListId = list.Id, LocalTask = local,
+            LocalFamily = [local], RemoteTask = new TodoTask { Uid = local.Uid, Summary = "Synthetic remote version" },
+            RemoteHref = "https://dav.example/cal/tasks/conflict.ics", RemoteETag = "\"v2\"",
+        };
+        using var httpClient = new HttpClient(new ThrowingHandler());
+        using var service = new CalDavSyncService(fixture.Store, new FakeCredentialStore("secret"),
+            fixture.Clock, httpClient);
+        SyncRunStatus? status = null;
+        service.StatusChanged += (_, args) => status = args.Status;
+
+        await service.ResolveConflictAsync(conflict, SyncConflictChoice.KeepBoth, ct);
+
+        Assert.Equal(SyncRunStatus.Offline, status);
+        TodoTask retained = Assert.Single(await fixture.Store.GetTasksAsync(new ListQuery
+            { Kind = ListQueryKind.UserList, ListId = list.Id, IncludeCompleted = true }, ct));
+        Assert.Equal(local.Uid, retained.Uid);
+        Assert.Equal(local.Summary, retained.Summary);
+        Assert.Equal(local.Sequence, retained.Sequence);
+        Assert.True(retained.IsDirty);
+        Assert.Equal(local.Uid, Assert.Single(await fixture.Store.GetPendingSyncChangesAsync(account.Id, ct)).EntityUid);
     }
 
     [Fact]
@@ -309,6 +346,22 @@ public sealed partial class SyncPersistenceTests
             CancellationToken cancellationToken)
         {
             throw new HttpRequestException("offline", null, HttpStatusCode.ServiceUnavailable);
+        }
+    }
+
+    private sealed class ConflictSnapshotHandler(byte[] payload, string etag) : HttpMessageHandler
+    {
+        public int GetCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            Assert.Equal(HttpMethod.Get, request.Method);
+            Assert.Equal("https://dav.example/cal/tasks/conflict.ics", request.RequestUri!.AbsoluteUri);
+            GetCount++;
+            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(payload) };
+            response.Headers.ETag = new System.Net.Http.Headers.EntityTagHeaderValue(etag);
+            return Task.FromResult(response);
         }
     }
 }

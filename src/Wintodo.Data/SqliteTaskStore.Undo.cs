@@ -39,10 +39,27 @@ public sealed partial class SqliteTaskStore
                     ?? throw new KeyNotFoundException($"Task '{before.Uid}' was not found.");
                 LoadTaskCollections(connection, task);
                 long source = task.ListId;
+                TodoTask membershipBefore = CloneMoveTask(task);
+                string moveGroup = Guid.NewGuid().ToString("N");
                 TaskUndoFields fields = state.Fields;
                 if ((fields & TaskUndoFields.List) != 0 && task.ListId != before.ListId)
                 {
                     GetListUid(connection, transaction, before.ListId);
+                    if (task.ParentUid is null)
+                    {
+                        var children = new List<string>();
+                        using (SqliteCommand select = connection.CreateCommand())
+                        {
+                            select.Transaction = transaction;
+                            select.CommandText = "SELECT uid FROM tasks WHERE parent_uid = @parent AND is_deleted = 0;";
+                            select.Parameters.AddWithValue("@parent", task.Uid);
+                            using SqliteDataReader reader = select.ExecuteReader();
+                            while (reader.Read()) children.Add(reader.GetString(0));
+                        }
+                        if (children.Count > 0)
+                            MoveTaskGroup(connection, transaction, context, children, before.ListId,
+                                restoredParentUid: before.Uid, groupId: moveGroup, cancellationToken: cancellationToken);
+                    }
                     task.ListId = before.ListId;
                     task.ParentUid = before.ParentUid;
                     task.SortOrder = before.SortOrder;
@@ -96,6 +113,10 @@ public sealed partial class SqliteTaskStore
                 UpdateTaskRow(connection, transaction, task);
                 LogChange(connection, transaction, TaskEntityType, task.Uid,
                     task.IsDeleted ? ChangeOperation.Delete : ChangeOperation.Update);
+                if (membershipBefore.ListId != task.ListId)
+                    RecordMove(connection, transaction, task, membershipBefore, moveGroup);
+                if (membershipBefore.IsDeleted && !task.IsDeleted)
+                    QueueRestoredSteps(connection, transaction, context, task.Uid);
                 context.AddTask(source, task.Uid);
                 context.AddTask(task.ListId, task.Uid);
             }
@@ -133,7 +154,7 @@ public sealed partial class SqliteTaskStore
                 UPDATE lists SET is_deleted = 0, modified_utc = @now,
                     remote_ctag = CASE WHEN @recreate THEN NULL ELSE remote_ctag END,
                     sync_token = CASE WHEN @recreate THEN NULL ELSE sync_token END WHERE id = @id;
-                UPDATE tasks SET is_deleted = 0, is_dirty = 1, modified_utc = @now, sequence = sequence + 1,
+                UPDATE tasks SET is_deleted = 0, is_dirty = 1, remote_delete_state = 0, modified_utc = @now, sequence = sequence + 1,
                     remote_href = CASE WHEN @recreate THEN NULL ELSE remote_href END,
                     remote_etag = CASE WHEN @recreate THEN NULL ELSE remote_etag END
                 WHERE uid IN (SELECT task_uid FROM list_deleted_tasks WHERE list_id = @id);

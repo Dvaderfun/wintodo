@@ -20,7 +20,7 @@ All new planning documents belong under `docs/plans/`.
 | Plan | Scope |
 |---|---|
 | [Deployment readiness and GitHub release](plans/deployment-readiness.md) | Audit remediation, data/API security, privacy, CI/CD, signing and final deployment gates (`DEP-01`–`DEP-20`) |
-| [Recoverable synced moves proposal](plans/dep04-synced-moves.md) | DEP-04 baseline reproduction and proposed durable recovery; ADR-017 acknowledgement pending |
+| [Recoverable synced moves implementation plan](plans/dep04-synced-moves.md) | DEP-04 baseline reproduction and accepted durable recovery under ADR-017 |
 | [Downloaded attachment provenance](plans/dep10-attachment-provenance.md) | DEP-10 Internet-zone metadata, Windows opening policy and verification limits |
 | [Production override policy proposal](plans/dep12-production-overrides.md) | DEP-12 launch/storage/clock inventory, affected AOT gates and concrete owner policy choices |
 | [Native dependency/toolchain review](plans/dep02-toolchain-review.md) | DEP-02 exact native origins, upstream advisory dispositions and remaining runner/tool provenance gaps |

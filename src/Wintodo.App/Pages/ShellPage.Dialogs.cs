@@ -255,9 +255,13 @@ public sealed partial class ShellPage
                 SyncConflictMessage.Text = string.Format(
                     DisplayCulture.Current,
                     _resources.GetString(
-                        conflict.RemoteDeleted
-                            ? "Sync_ConflictDeletedMessage"
-                            : "Sync_ConflictMessage"),
+                        conflict.TaskMoveId is not null
+                            ? conflict.IsMoveDestinationConflict
+                                ? "Sync_MoveDestinationConflictMessage"
+                                : "Sync_MoveSourceConflictMessage"
+                            : conflict.RemoteDeleted
+                                ? "Sync_ConflictDeletedMessage"
+                                : "Sync_ConflictMessage"),
                     conflict.LocalTask.Summary,
                     conflict.ListName);
                 ContentDialogResult result = await SyncConflictDialog.ShowAsync();

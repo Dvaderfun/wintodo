@@ -79,7 +79,16 @@ public sealed partial class ShellViewModel
         IsSyncConnected = _syncAccount is not null;
         SyncAccountDisplayName = _syncAccount?.DisplayName ?? string.Empty;
         await RefreshSyncOptionsAsync(cancellationToken);
-        SetSyncStatus(_syncAccount is null ? SyncRunStatus.Idle : SyncRunStatus.Success);
+        bool hasPendingMoves = (await _taskStore.GetPendingTaskMovesAsync(cancellationToken: cancellationToken)).Count > 0;
+        if (hasPendingMoves && _syncAccount is null)
+        {
+            ShowPendingTaskMoveGuidance();
+        }
+        else
+        {
+            SetSyncStatus(hasPendingMoves ? SyncRunStatus.AttentionRequired
+                : _syncAccount is null ? SyncRunStatus.Idle : SyncRunStatus.Success);
+        }
     }
 
     private async Task RefreshSyncOptionsAsync(CancellationToken cancellationToken)
@@ -148,6 +157,10 @@ public sealed partial class ShellViewModel
             IsSyncConnected = false;
             SyncAccountDisplayName = string.Empty;
             await RefreshNavigationAsync();
+        }
+        catch (PendingTaskMoveException)
+        {
+            ShowPendingTaskMoveGuidance();
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -247,6 +260,11 @@ public sealed partial class ShellViewModel
                 await ExecuteSyncAndRefreshAsync(promptConflicts: true, CancellationToken.None);
             }
         }
+        catch (PendingTaskMoveException)
+        {
+            option.SetWithoutCallback(!isEnabled);
+            ShowPendingTaskMoveGuidance();
+        }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             Trace.WriteLine($"WINTODO_SYNC_LIST_EXCEPTION={DiagnosticException.Describe(exception)}");
@@ -279,6 +297,13 @@ public sealed partial class ShellViewModel
         }
 
         _dispatcherQueue.TryEnqueue(() => SetSyncStatus(args.Status));
+    }
+
+    private void ShowPendingTaskMoveGuidance()
+    {
+        SetSyncStatus(SyncRunStatus.AttentionRequired);
+        SyncErrorMessage = _resources.GetString("Sync_PendingMovesMessage");
+        IsSyncErrorOpen = true;
     }
 
     private void SetSyncStatus(SyncRunStatus status)

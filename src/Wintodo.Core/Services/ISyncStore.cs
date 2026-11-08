@@ -4,6 +4,50 @@ namespace Wintodo.Core.Services;
 
 public interface ISyncStore
 {
+    Task<IReadOnlyList<TaskMoveIntent>> GetPendingTaskMovesAsync(
+        long? accountId = null, CancellationToken cancellationToken = default);
+
+    Task<TaskMoveIntent?> GetTaskMoveAsync(long id, CancellationToken cancellationToken = default);
+
+    Task<TaskMoveIntent?> PrepareTaskMoveAttemptAsync(long id, int expectedSequence,
+        string destinationHref, byte[] payload, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TaskMoveIntent>?> PrepareTaskMoveAttemptsAsync(
+        IReadOnlyList<TaskMoveAttempt> attempts, CancellationToken cancellationToken = default);
+
+    Task<bool> UpdateTaskMoveAsync(TaskMoveIntent intent, int expectedVersion,
+        CancellationToken cancellationToken = default, int? expectedTaskSequence = null);
+
+    Task<bool> UpdateTaskMoveGroupAsync(IReadOnlyList<TaskMoveUpdate> updates,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ReauthorizeTaskMoveResolutionAsync(IReadOnlyList<TaskMoveUpdate> updates,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ConfirmTaskMoveDestinationRestorationAsync(long id, int expectedVersion,
+        string destinationETag, CancellationToken cancellationToken = default);
+
+    Task<bool> ConfirmTaskMoveSourceRestorationAsync(long id, int expectedVersion,
+        string sourceETag, CancellationToken cancellationToken = default);
+
+    Task<bool> CompleteTaskMoveAsync(long id, int expectedVersion,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> CompleteTaskMoveGroupAsync(IReadOnlyList<TaskMoveUpdate> updates,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> RestoreTaskMoveSourceAsync(long id, int expectedVersion, TodoTask sourceTask,
+        string sourceHref, string sourceETag, int expectedSequence,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> RestoreTaskMoveSourcesAsync(IReadOnlyList<TaskMoveSourceRestore> restores,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Adopts a verified remote move only if its source binding and local revision still match.</summary>
+    Task<RemotePullApplyResult> ApplyRemoteTaskMoveAsync(long destinationListId,
+        RemoteTaskUpdate target, RemoteTaskState expectedLocal,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Account>> GetAccountsAsync(
         CancellationToken cancellationToken = default);
 
@@ -63,6 +107,12 @@ public interface ISyncStore
 
     Task<TodoTask?> GetTaskForSyncAsync(
         string uid,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<TodoTask>> GetTaskFamilyForSyncAsync(string uid,
+        CancellationToken cancellationToken = default);
+
+    Task<bool> ResolveRemoteConflictAsync(SyncConflict conflict, SyncConflictChoice choice,
         CancellationToken cancellationToken = default);
 
     Task ApplyRemoteChangesAsync(

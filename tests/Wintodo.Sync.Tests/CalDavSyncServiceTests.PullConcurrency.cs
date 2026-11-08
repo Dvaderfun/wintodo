@@ -112,9 +112,26 @@ public sealed partial class CalDavSyncServiceTests
         SyncRunResult result = await pulling;
         TodoTask committed = (await second.Store.GetTaskForSyncAsync(task.Uid, ct))!;
         Assert.Equal(SyncRunStatus.AttentionRequired, result.Status);
-        SyncConflict conflict = Assert.Single(result.Conflicts);
-        Assert.Equal(task.Uid, conflict.LocalTask.Uid);
-        Assert.Equal(remoteDeleted, conflict.RemoteDeleted);
+        SyncConflict? conflict = null;
+        if (edit == PullEdit.Move)
+        {
+            Assert.Empty(result.Conflicts);
+            TaskMoveIntent move = Assert.Single(await second.Store.GetPendingTaskMovesAsync(cancellationToken: ct));
+            Assert.Equal(task.Uid, move.TaskUid);
+            Assert.Equal(secondAccount.Id, move.SourceAccountId);
+            Assert.Equal(secondList.Id, move.SourceListId);
+            Assert.Equal(local.RemoteHref, move.SourceHref);
+            Assert.Equal(local.RemoteETag, move.SourceETag);
+            Assert.Equal(committed.ListId, move.DestinationListId);
+            Assert.Equal(committed.Sequence, move.LocalSequence);
+            Assert.Equal(TaskMovePhase.Planned, move.Phase);
+        }
+        else
+        {
+            conflict = Assert.Single(result.Conflicts);
+            Assert.Equal(task.Uid, conflict.LocalTask.Uid);
+            Assert.Equal(remoteDeleted, conflict.RemoteDeleted);
+        }
         Assert.Equal(1, result.PulledCount);
         Assert.Equal(0, result.PushedCount);
         Assert.Empty(server.Writes);
@@ -123,10 +140,14 @@ public sealed partial class CalDavSyncServiceTests
         Assert.Equal(local.ListId, committed.ListId);
         Assert.Equal(edit == PullEdit.Delete, committed.IsDeleted);
         Assert.Equal(edit != PullEdit.EditAndAcknowledge && edit != PullEdit.Step, committed.IsDirty);
-        Assert.Equal(committed.Sequence, conflict.LocalTask.Sequence);
-        Assert.Equal(committed.IsDeleted, conflict.LocalTask.IsDeleted);
+        if (conflict is not null)
+        {
+            Assert.Equal(committed.Sequence, conflict.LocalTask.Sequence);
+            Assert.Equal(committed.IsDeleted, conflict.LocalTask.IsDeleted);
+        }
         if (edit == PullEdit.Collections)
         {
+            Assert.NotNull(conflict);
             Assert.Equal("Local category", Assert.Single(committed.Categories));
             Assert.Equal("Local reminder", Assert.Single(committed.Alarms).Description);
             Assert.Equal("local.txt", Assert.Single(committed.Attachments).FileName);
@@ -166,6 +187,7 @@ public sealed partial class CalDavSyncServiceTests
 
         if (edit == PullEdit.Step || edit == PullEdit.EditAndAcknowledge)
         {
+            Assert.NotNull(conflict);
             server.BeforeGetAsync = null;
             TodoTask? stepBefore = edit == PullEdit.Step
                 ? Assert.Single(await second.Store.GetChildrenAsync(task.Uid, ct))

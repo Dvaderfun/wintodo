@@ -972,12 +972,15 @@
   <data name="Sync_StatusAttention" xml:space="preserve"><value>Conflict needs attention</value></data>
   <data name="Sync_StatusError" xml:space="preserve"><value>Sync failed</value></data>
   <data name="Sync_ErrorRetry" xml:space="preserve"><value>Sync couldn’t finish. Check your connection and account settings, then try again.</value></data>
+  <data name="Sync_PendingMovesMessage" xml:space="preserve"><value>Some task moves are still pending. Sync and resolve any conflicts before disconnecting, turning off sync, or deleting these lists.</value></data>
   <data name="SyncConflictDialog.Title" xml:space="preserve"><value>Choose which task to keep</value></data>
   <data name="SyncConflictDialog.PrimaryButtonText" xml:space="preserve"><value>Keep mine</value></data>
   <data name="SyncConflictDialog.SecondaryButtonText" xml:space="preserve"><value>Keep theirs</value></data>
   <data name="SyncConflictDialog.CloseButtonText" xml:space="preserve"><value>Keep both</value></data>
   <data name="Sync_ConflictMessage" xml:space="preserve"><value>“{0}” in “{1}” changed both here and on the server.</value></data>
   <data name="Sync_ConflictDeletedMessage" xml:space="preserve"><value>“{0}” in “{1}” changed here but was deleted on the server.</value></data>
+  <data name="Sync_MoveSourceConflictMessage" xml:space="preserve"><value>“{0}” was moved, but its original copy in “{1}” also changed. Choose which version to keep.</value></data>
+  <data name="Sync_MoveDestinationConflictMessage" xml:space="preserve"><value>The move of “{0}” could not finish because the destination in “{1}” has a different version. Choose which version to keep.</value></data>
   <data name="ListIconPickerButton.AutomationProperties.Name" xml:space="preserve"><value>Choose list icon</value></data>
   <data name="ListIconPickerButton.ToolTipService.ToolTip" xml:space="preserve"><value>Choose list icon</value></data>
   <data name="ListIconPickerClear.Content" xml:space="preserve"><value>Clear icon</value></data>

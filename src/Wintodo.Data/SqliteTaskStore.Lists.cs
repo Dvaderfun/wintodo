@@ -417,6 +417,7 @@ public sealed partial class SqliteTaskStore
         return ExecuteWriteAsync(
             (connection, transaction, context) =>
             {
+                GuardMoveObligations(connection, transaction, listId: listId);
                 string listUid = GetListUid(connection, transaction, listId);
                 using (SqliteCommand guard = connection.CreateCommand())
                 {
@@ -460,7 +461,7 @@ public sealed partial class SqliteTaskStore
                         SELECT @listId, uid FROM tasks WHERE list_id = @listId AND is_deleted = 0;
 
                         UPDATE tasks
-                        SET is_deleted = 1, is_dirty = 1,
+                        SET is_deleted = 1, is_dirty = 1, remote_delete_state = 0,
                             modified_utc = @modifiedUtc, sequence = sequence + 1
                         WHERE list_id = @listId AND is_deleted = 0;
                         """;

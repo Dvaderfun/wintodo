@@ -200,7 +200,7 @@ public sealed partial class SqliteTaskStore
                 command.Transaction = transaction;
                 command.CommandText = """
                     UPDATE tasks
-                    SET is_deleted = 1, is_dirty = 1, modified_utc = @modifiedUtc,
+                    SET is_deleted = 1, is_dirty = 1, remote_delete_state = 0, modified_utc = @modifiedUtc,
                         sequence = sequence + 1
                     WHERE id = @id;
                     """;
@@ -221,11 +221,12 @@ public sealed partial class SqliteTaskStore
             {
                 TaskIdentity identity = GetTaskIdentity(connection, transaction, uid, includeDeleted: true);
                 GetListUid(connection, transaction, identity.ListId);
+                bool wasDeleted = ReadTaskByUid(connection, transaction, uid, includeDeleted: true)?.IsDeleted == true;
                 using SqliteCommand command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = """
                     UPDATE tasks
-                    SET is_deleted = 0, is_dirty = 1, modified_utc = @modifiedUtc,
+                    SET is_deleted = 0, is_dirty = 1, remote_delete_state = 0, modified_utc = @modifiedUtc,
                         sequence = sequence + 1
                     WHERE id = @id;
                     """;
@@ -233,6 +234,7 @@ public sealed partial class SqliteTaskStore
                 command.Parameters.AddWithValue("@id", identity.Id);
                 command.ExecuteNonQuery();
                 LogChange(connection, transaction, TaskEntityType, uid, ChangeOperation.Update);
+                if (wasDeleted) QueueRestoredSteps(connection, transaction, context, uid);
                 context.AddTask(identity.ListId, uid);
             },
             cancellationToken);
@@ -266,32 +268,9 @@ public sealed partial class SqliteTaskStore
         return ExecuteWriteAsync(
             (connection, transaction, context) =>
             {
-                TaskIdentity identity = GetTaskIdentity(connection, transaction, uid);
-                GetListUid(connection, transaction, destinationListId);
-                double destinationSortOrder = sortOrder ?? GetNextSortOrder(
-                    connection,
-                    transaction,
-                    "tasks",
-                    "list_id = @listId AND parent_uid IS NULL",
-                    "@listId",
-                    destinationListId);
-
-                using SqliteCommand command = connection.CreateCommand();
-                command.Transaction = transaction;
-                command.CommandText = """
-                    UPDATE tasks
-                    SET list_id = @listId, parent_uid = NULL, sort_order = @sortOrder,
-                        modified_utc = @modifiedUtc, sequence = sequence + 1, is_dirty = 1
-                    WHERE id = @id;
-                    """;
-                command.Parameters.AddWithValue("@listId", destinationListId);
-                command.Parameters.AddWithValue("@sortOrder", destinationSortOrder);
-                command.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(_clock.UtcNow));
-                command.Parameters.AddWithValue("@id", identity.Id);
-                command.ExecuteNonQuery();
-                LogChange(connection, transaction, TaskEntityType, uid, ChangeOperation.Update);
-                context.AddTask(identity.ListId, uid);
-                context.AddTask(destinationListId, uid);
+                _ = GetTaskIdentity(connection, transaction, uid);
+                MoveTaskGroup(connection, transaction, context, [uid], destinationListId, sortOrder,
+                    cancellationToken: cancellationToken);
             },
             cancellationToken);
     }
@@ -637,7 +616,7 @@ public sealed partial class SqliteTaskStore
                 location = @location, url = @url, classification = @classification,
                 ical_unknown = @icalUnknown, remote_href = @remoteHref,
                 remote_etag = @remoteEtag, is_dirty = @isDirty,
-                is_deleted = @isDeleted
+                is_deleted = @isDeleted, remote_delete_state = 0
             WHERE id = @id;
             """;
         AddTaskParameters(command, task);
@@ -952,7 +931,7 @@ public sealed partial class SqliteTaskStore
                     UPDATE tasks
                     SET status = @status, percent_complete = @percentComplete,
                         completed_utc = @completedUtc, modified_utc = @modifiedUtc,
-                        sequence = sequence + 1, is_dirty = 1
+                        sequence = sequence + 1, is_dirty = 1, remote_delete_state = 0
                     WHERE id = @id;
                     """;
                 command.Parameters.AddWithValue("@status", (int)status);
@@ -982,7 +961,7 @@ public sealed partial class SqliteTaskStore
                 command.CommandText = """
                     UPDATE tasks
                     SET sort_order = @sortOrder, modified_utc = @modifiedUtc,
-                        sequence = sequence + 1, is_dirty = 1
+                        sequence = sequence + 1, is_dirty = 1, remote_delete_state = 0
                     WHERE id = @id;
                     """;
                 command.Parameters.AddWithValue("@sortOrder", sortOrder);

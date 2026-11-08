@@ -2,7 +2,7 @@
 
 Prepared: 2026-11-08. Audit baseline: `d8c2ac3`.
 
-Status: **IN PROGRESS — DEP-01, DEP-03, DEP-05, DEP-06, DEP-07, DEP-08, DEP-09 and DEP-11 automated acceptance passed. DEP-14 pre-signing checks passed; final signed-package acceptance and remaining release work are pending.**
+Status: **IN PROGRESS — DEP-01, DEP-03, DEP-04, DEP-05, DEP-06, DEP-07, DEP-08, DEP-09 and DEP-11 automated acceptance passed. DEP-04 guest UI/live checks and DEP-14 final signed-package acceptance remain pending with the remaining release work.**
 
 This plan turns the deployment-readiness audit into work packages for a safe
 GitHub release and GitHub Actions CI/CD. It covers data integrity, API security,
@@ -98,7 +98,7 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
 | DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review | REVIEWED WITH LIMITS; native-tool advisory/provenance disposition and hosted acceptance PENDING |
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
-| DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; data/ADR decision if needed | Codex / dep04_move_design | BASELINE FAIL 7/7; ADR-017 proposed; implementation PENDING acknowledgement/next batch |
+| DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; ADR-017 accepted | Codex / dep04_data + dep04_sync + dep04_regressions | AUTOMATED ACCEPTANCE PASS; guest UI/live/final-package checks PENDING |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
 | DEP-06 | Enforce CalDAV redirect origin policy | Security | DEP-01 | Codex / dep06_caldav_redirects | COMPLETE; automated acceptance PASS |
 | DEP-07 | Bound network bodies and attachment downloads | Security | DEP-05, DEP-06 | Codex / dep07_network_limits | COMPLETE; automated acceptance PASS |
@@ -174,6 +174,14 @@ shared tracking, integrated verification and commits. No identity, attribution,
 ADR, machine setup, remote protection, signing or publication decision is changed.
 
 ## 5. Detailed work packages
+
+After the owner acknowledged ADR-017, DEP-04 implementation starts in three
+streams: durable Core/Data contracts and move transactions, Sync execution and
+conflict recovery, and independent SQLite/transport regression coverage. Codex
+owns integration, schema-compatibility fixtures, existing chooser messaging,
+shared tracking and validation. Other owner decisions remain pending. Agents
+own disjoint files and preserve others' edits; no host UI or machine setup is
+authorized by the ADR acknowledgement.
 
 ### DEP-01 — Preserve fixture bytes and repair CI
 
@@ -255,16 +263,16 @@ Targets: `SqliteTaskStore.Tasks.cs`, `SqliteTaskStore.Batch.cs`,
 `CalDavSyncService.cs`, sync contracts/change log and Sync/Data tests.
 
 - [x] Reproduce a synced A-to-B move retaining the source remote URL/ETag.
-- [ ] Define recoverable source removal and destination creation, including
+- [x] Define recoverable source removal and destination creation, including
       ETags, UID preservation, offline retries and restart recovery. Do not
       simply clear the source URL and leave an orphan remote copy.
-- [ ] Handle single/bulk moves, children, same-account collection moves,
+- [x] Handle single/bulk moves, children, same-account collection moves,
       cross-account moves, local-to-synced and synced-to-local moves.
-- [ ] Protect against a source pull moving the task back and against premature
+- [x] Protect against a source pull moving the task back and against premature
       acknowledgment or loss when either remote operation fails/conflicts.
-- [ ] Use an acknowledged ADR and forward migration if durable move intent
+- [x] Use an acknowledged ADR and forward migration if durable move intent
       requires a schema/protocol decision.
-- [ ] Test two sync cycles and second-client convergence, including failure
+- [x] Test two sync cycles and second-client convergence, including failure
       between remote operations and resume after process restart.
 
 Acceptance: destination and source membership match the intended move, no task
@@ -272,8 +280,12 @@ version is silently lost, and retries converge without unexplained duplicates.
 
 The fourth batch reproduced seven deterministic baseline failures against
 `79ce9b1`; no production fix is claimed. [ADR-017](../adr/ADR-017-recoverable-synced-task-moves.md)
-and [the detailed proposal](dep04-synced-moves.md) define durable recovery for
-the next batch. Owner acknowledgement remains pending.
+and [the detailed implementation plan](dep04-synced-moves.md) define durable
+recovery. The owner acknowledged ADR-017 on 2026-11-08. Migration 005 and the
+durable move implementation now pass automated acceptance: the independent
+71-case SQLite/CalDAV matrix and full 678-test solution pass without skips.
+Guest UI/live-provider and final installed-package checks remain pending.
+Baseline failures remain historical proof.
 
 ### DEP-05 — Validate Graph request destinations
 
@@ -676,7 +688,7 @@ substitute for final installed-MSIX clean-deployment evidence.
 |---|---|---|
 | Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | Previous batch PASS (`6342f82`, GitHub run 42428523717, 455/455); third/fourth-batch GitHub CI PENDING |
 | Pull concurrency | Newer edits/deletes survive or conflict; no false acknowledgment | PASS (`97e7107`, 33 Sync tests); final-package/live chooser proof remains DEP-19 |
-| Synced moves | Correct source/destination membership and retry/restart convergence | BASELINE FAIL 7/7; ADR-017 proposed; implementation/acceptance PENDING |
+| Synced moves | Correct source/destination membership and retry/restart convergence | AUTOMATED PASS: 71/71; guest UI/live/final packages PENDING |
 | Graph origin/CalDAV redirects | Real request boundaries; no foreign token/body disclosure | Graph PASS (`0d5dc94`, 31 destination tests); CalDAV PASS (41 regressions, M13 VM 11/11) |
 | Network limits | Declared/unknown/decoded lengths; bounded reads and staging cleanup | PASS (49 new cases; import VM 25/25, Debug/AOT M13 11/11 each); final installed-package gates DEP-19 PENDING |
 | Diagnostic privacy | Synthetic private markers absent from all safe output routes | Automated app/CI PASS (Debug import 25/25, Release formatter 9/9 and guest 6/6); final output gates DEP-14/15/19 PENDING |
@@ -992,6 +1004,45 @@ Sixth parallel batch evidence (2026-11-08):
   enforcement, ADR-017 acknowledgement, DEP-12 policy, guest SDK setup,
   identity/signing/licensing choices and final deployment remain pending.
   No remote setting, machine setup, certificate trust or publication changed.
+
+DEP-04 implementation batch evidence (2026-11-08):
+
+- **Decision/source:** owner acknowledgement of ADR-017 is recorded. Baseline
+  `3615b31` plus reviewed Core/Data/Sync/App/test overlays; final local commit,
+  source hashes, architecture hashes and redacted counters are in
+  [integration evidence](../../artifacts/dep04-integration/evidence.json).
+- **Data/Sync — AUTOMATED PASS:** migration 005 records durable grouped moves;
+  atomic attempt/phase/restore/completion transactions retain source identity,
+  payloads, ETags and acknowledgement boundaries. Source credentials require
+  approved binding proof. Conditional target creation/recovery precedes source
+  cleanup; later edits, deletes, restores, moves and undo remain guarded.
+  Source tombstones and held known versions have internal provenance metadata.
+  All three conflict choices preserve the intended versions and subtree scope.
+- **Regression proof — PASS:** independent 71-case SQLite/CalDAV matrix passes
+  without skips, including lost responses, restart, both account/collection
+  orders, foreign/altered same-UID resources, parent/step choice handling,
+  prospective collections and restoration during cleanup. Source baseline was
+  3/19 passed and 16 failed; intermediate 38/51, 50/51 and 57/62 results remain
+  preserved. Focused Data is 23/23 and Core serialization is 4/4. A newly authored
+  missing-note/due/importance case failed before the move-only writer fix.
+- **Integration — PASS:** Debug/Release x64 builds have zero warnings/errors.
+  Full MTP passes 678/678, zero failed/skipped (Core 231, Data 130, Import 155,
+  Sync 162). Initial integrated 673/677 is retained: ordinary deleted-parent
+  KeepBoth now retains the original step UID, and move races assert durable
+  deferral instead of a stale generic chooser while retaining data/token checks.
+  Generic cached choices require fresh remote verification; a new offline
+  regression proves no copy/overwrite on verification failure. All 27 script
+  regressions pass. Final nine-project NuGet audit has zero advisories.
+- **Native AOT/privacy — PASS:** fresh x64/ARM64 publishes use runtime/compiler
+  10.0.14; both layouts and relative summary pass across 649 files, zero findings.
+  These are local unsigned layouts, not final signed installation candidates.
+- **Review/limits:** changed UI paths use existing commands, dialogs, AutomationIds
+  and localized guidance; focused WinUI review has no issue above informational.
+  Schema-6 seed generation preserves the earlier seed, and both gate scripts
+  parse cleanly. WintodoTest UI/visual gates remain pending on its SDK 10.0.401;
+  no guest setup or host UI automation occurred. Live providers, final installed
+  packages, native advisory/provenance dispositions, other owner decisions and
+  publication remain pending. No remote settings or publication changed.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

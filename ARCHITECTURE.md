@@ -191,6 +191,15 @@ and editor drafts. No storage override is accepted by broker shares in Release.
   Intervening edits become conflicts with committed counts, and unresolved
   changes retain the prior list sync token so restart can retry them. Explicit
   conflict choices retain their separate write path and handle direct steps.
+- Task moves use the credential-free `task_move_outbox` added by migration 005
+  under [ADR-017](docs/adr/ADR-017-recoverable-synced-task-moves.md). Single,
+  bulk and undo membership changes record source/destination obligations in the
+  same writer transaction; a parent and its steps form one recovery group.
+  `CalDavSyncService.Moves`, `.MoveContent` and `.MoveResolution` persist exact
+  attempts before conditional creation, confirm destinations before source
+  removal, and retain source snapshots for group compensation. Newer edits and
+  ordered successor moves remain queued. Account/list changes that could discard
+  pending obligations are blocked, with guidance through the existing sync UI.
 - CalDAV's production HTTP handler disables automatic redirects. All response
   paths reject 3xx before reading a response body, including same-origin
   redirects; discovery hrefs retain their existing origin checks. Headers-first

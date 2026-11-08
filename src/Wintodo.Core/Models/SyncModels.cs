@@ -79,6 +79,15 @@ public sealed class RemoteTaskUpdate
 
 public sealed class SyncConflict
 {
+    public IReadOnlyList<TodoTask> LocalFamily { get; set; } = [];
+
+    /// <summary>Durable move context; ordinary edit conflicts leave this unset.</summary>
+    public long? TaskMoveId { get; set; }
+
+    public bool IsMoveDestinationConflict { get; set; }
+
+    public List<TaskMoveConflictSnapshot> MoveGroupSnapshots { get; } = [];
+
     public long AccountId { get; set; }
 
     public long ListId { get; set; }
@@ -94,6 +103,16 @@ public sealed class SyncConflict
     public string? RemoteETag { get; set; }
 
     public bool RemoteDeleted { get; set; }
+}
+
+public sealed class TaskMoveConflictSnapshot
+{
+    public long MoveId { get; set; }
+    public int LocalSequence { get; set; }
+    public long LocalListId { get; set; }
+    public byte[]? RemotePayload { get; set; }
+    public string? RemoteETag { get; set; }
+    public bool RemoteMissing { get; set; }
 }
 
 public sealed class SyncRunResult

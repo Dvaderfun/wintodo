@@ -16,7 +16,7 @@ public sealed class MigrationAndListTests
         await fixture.Store.InitializeAsync(TestContext.Current.CancellationToken);
         StoreStats stats = await fixture.Store.GetStatsAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(4, stats.SchemaVersion);
+        Assert.Equal(5, stats.SchemaVersion);
         Assert.Equal(0, stats.ListCount);
         Assert.Equal(0, stats.TaskCount);
         Assert.True(stats.DatabaseSizeBytes > 0);
@@ -25,7 +25,7 @@ public sealed class MigrationAndListTests
         await connection.OpenAsync(TestContext.Current.CancellationToken);
         Assert.Equal("wal", await ScalarStringAsync(connection, "PRAGMA journal_mode;"));
         Assert.Equal(
-            13,
+            14,
             await ScalarLongAsync(
                 connection,
                 """
@@ -35,11 +35,12 @@ public sealed class MigrationAndListTests
                   AND name IN (
                     'schema_version', 'settings', 'list_groups', 'lists', 'tasks',
                     'tags', 'task_tags', 'alarms', 'attachments',
-                    'completion_history', 'change_log', 'saved_views', 'accounts'
+                    'completion_history', 'change_log', 'saved_views', 'accounts',
+                    'task_move_outbox'
                   );
                 """));
         Assert.Equal(
-            14,
+            17,
             await ScalarLongAsync(
                 connection,
                 "SELECT COUNT(*) FROM sqlite_master WHERE type = 'index' AND name LIKE 'ix_%';"));
@@ -56,7 +57,7 @@ public sealed class MigrationAndListTests
         await reopened.InitializeAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(list.Uid, Assert.Single(await reopened.GetListsAsync(TestContext.Current.CancellationToken)).Uid);
-        Assert.Equal(4, (await reopened.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
+        Assert.Equal(5, (await reopened.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
     }
 
     [Fact]
@@ -248,7 +249,7 @@ public sealed class MigrationAndListTests
                 StoreStats stats = await store.GetStatsAsync(TestContext.Current.CancellationToken);
                 TodoList list = Assert.Single(await store.GetListsAsync(TestContext.Current.CancellationToken));
 
-                Assert.Equal(4, stats.SchemaVersion);
+                Assert.Equal(5, stats.SchemaVersion);
                 Assert.Equal("Legacy", list.DisplayName);
                 Assert.Null(list.IconEmoji);
             }
@@ -256,6 +257,7 @@ public sealed class MigrationAndListTests
             Assert.True(File.Exists(databasePath + ".bak-2"));
             Assert.True(File.Exists(databasePath + ".bak-3"));
             Assert.True(File.Exists(databasePath + ".bak-4"));
+            Assert.True(File.Exists(databasePath + ".bak-5"));
         }
         finally
         {

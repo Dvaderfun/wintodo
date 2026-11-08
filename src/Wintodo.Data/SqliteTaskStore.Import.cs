@@ -79,7 +79,7 @@ public sealed partial class SqliteTaskStore
                     delete.Transaction = transaction;
                     delete.CommandText = """
                         UPDATE tasks
-                        SET is_deleted = 1, is_dirty = 1, modified_utc = @now, sequence = sequence + 1
+                        SET is_deleted = 1, is_dirty = 1, remote_delete_state = 0, modified_utc = @now, sequence = sequence + 1
                         WHERE uid = @uid AND is_deleted = 0
                         RETURNING list_id;
                         """;

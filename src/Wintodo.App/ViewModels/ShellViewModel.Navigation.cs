@@ -121,7 +121,15 @@ public sealed partial class ShellViewModel
         }
 
         IReadOnlyList<TodoTask> tasks = await _taskStore.GetTasksForExportAsync(list.Id, cancellationToken);
-        await TaskList.DeleteListAsync(list, cancellationToken);
+        try
+        {
+            await TaskList.DeleteListAsync(list, cancellationToken);
+        }
+        catch (PendingTaskMoveException)
+        {
+            ShowPendingTaskMoveGuidance();
+            return;
+        }
         Undo.Record(string.Format(DisplayCulture.Current, _resources.GetString("Undo_ListDeleted"), list.DisplayName),
             tasks.Select(task => task.Uid), token => _taskStore.RestoreListAsync(list.Id, token));
         ShellListItemViewModel? current = UserLists.FirstOrDefault(candidate => candidate.Id == list.Id);

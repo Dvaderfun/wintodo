@@ -25,7 +25,15 @@ public sealed partial class SqliteTaskStore
         return ExecuteWriteAsync((connection, transaction, context) =>
         {
             if (action == TaskBatchAction.Move)
+            {
+                foreach (string uid in selection) _ = GetTaskIdentity(connection, transaction, uid);
                 GetListUid(connection, transaction, destinationListId!.Value);
+                string[] moving = selection.Where(uid => ReadTaskByUid(connection, transaction, uid,
+                    includeDeleted: false)!.ListId != destinationListId.Value).ToArray();
+                MoveTaskGroup(connection, transaction, context, moving, destinationListId.Value,
+                    cancellationToken: cancellationToken);
+                return;
+            }
             foreach (string uid in selection)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -33,6 +41,7 @@ public sealed partial class SqliteTaskStore
                     includeDeleted: action == TaskBatchAction.Restore)
                     ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
                 long sourceListId = task.ListId;
+                bool wasDeleted = task.IsDeleted;
                 bool changed = true;
                 switch (action)
                 {
@@ -77,13 +86,6 @@ public sealed partial class SqliteTaskStore
                         task.DueIsDateOnly = true;
                         task.DueTzid = null;
                         break;
-                    case TaskBatchAction.Move:
-                        if (task.ListId == destinationListId) { changed = false; break; }
-                        task.ListId = destinationListId!.Value;
-                        task.ParentUid = null;
-                        task.SortOrder = GetNextSortOrder(connection, transaction, "tasks",
-                            "list_id = @listId AND parent_uid IS NULL", "@listId", task.ListId);
-                        break;
                     case TaskBatchAction.Delete:
                         task.IsDeleted = true;
                         break;
@@ -100,6 +102,8 @@ public sealed partial class SqliteTaskStore
                 UpdateTaskRow(connection, transaction, task);
                 LogChange(connection, transaction, TaskEntityType, uid,
                     action == TaskBatchAction.Delete ? ChangeOperation.Delete : ChangeOperation.Update);
+                if (action == TaskBatchAction.Restore && wasDeleted)
+                    QueueRestoredSteps(connection, transaction, context, uid);
                 context.AddTask(sourceListId, uid);
                 context.AddTask(task.ListId, uid);
             }

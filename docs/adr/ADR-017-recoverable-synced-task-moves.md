@@ -1,9 +1,9 @@
 # ADR-017 — Recoverable synced task moves
 
-- **Status:** proposed; implementation requires owner acknowledgement
+- **Status:** accepted
 - **Date:** 2026-11-08
 - **Supersedes:** nothing; extends ADR-002 and ADR-012
-- **Owner acknowledgement:** pending
+- **Owner acknowledgement:** acknowledged by the owner in this session on 2026-11-08
 
 ## Context
 

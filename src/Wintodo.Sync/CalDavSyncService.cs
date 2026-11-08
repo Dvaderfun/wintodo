@@ -5,7 +5,7 @@ using Wintodo.Core.Services;
 
 namespace Wintodo.Sync;
 
-public sealed class CalDavSyncService : IDisposable
+public sealed partial class CalDavSyncService : IDisposable
 {
     private readonly ISyncStore _store;
     private readonly ICredentialStore _credentialStore;
@@ -106,11 +106,17 @@ public sealed class CalDavSyncService : IDisposable
         await _syncGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if ((await _store.GetPendingTaskMovesAsync(account.Id, cancellationToken)
+                    .ConfigureAwait(false)).Count > 0)
+            {
+                throw new PendingTaskMoveException();
+            }
+
+            await _store.DeleteAccountAsync(account.Id, cancellationToken).ConfigureAwait(false);
             await _credentialStore.DeleteAsync(
                 account.CredentialKey,
                 account.Username,
                 cancellationToken).ConfigureAwait(false);
-            await _store.DeleteAccountAsync(account.Id, cancellationToken).ConfigureAwait(false);
             RaiseStatus(SyncRunStatus.Idle, null);
         }
         finally
@@ -189,7 +195,12 @@ public sealed class CalDavSyncService : IDisposable
                 }
             }
 
-            if (accounts.Count == 0)
+            if ((await _store.GetPendingTaskMovesAsync(cancellationToken: cancellationToken)
+                    .ConfigureAwait(false)).Count > 0 && aggregate.Status is SyncRunStatus.Success or SyncRunStatus.Idle)
+            {
+                aggregate.Status = SyncRunStatus.AttentionRequired;
+            }
+            else if (accounts.Count == 0)
             {
                 aggregate.Status = SyncRunStatus.Idle;
             }
@@ -234,31 +245,68 @@ public sealed class CalDavSyncService : IDisposable
         await _syncGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            switch (choice)
+            if (conflict.TaskMoveId is not null)
             {
-                case SyncConflictChoice.KeepMine:
-                    await _store.SetTaskRemoteVersionAsync(
-                        conflict.LocalTask.Uid,
-                        conflict.RemoteDeleted ? null : conflict.RemoteHref,
-                        conflict.RemoteDeleted ? null : conflict.RemoteETag,
-                        cancellationToken,
-                        ensureLocalChange: true).ConfigureAwait(false);
-                    break;
-                case SyncConflictChoice.KeepTheirs:
-                    await ApplyConflictRemoteAsync(conflict, cancellationToken).ConfigureAwait(false);
-                    break;
-                case SyncConflictChoice.KeepBoth:
-                    await _store.CreateConflictCopyAsync(conflict.LocalTask, cancellationToken,
-                        preserveSteps: conflict.RemoteDeleted)
-                        .ConfigureAwait(false);
-                    await ApplyConflictRemoteAsync(conflict, cancellationToken).ConfigureAwait(false);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(choice),
-                        choice,
-                        "Unknown conflict choice.");
+                try
+                {
+                    await ResolveTaskMoveConflictAsync(conflict, choice, cancellationToken).ConfigureAwait(false);
+                }
+                catch (HttpRequestException exception)
+                {
+                    RaiseStatus(SyncRunStatus.Offline, DiagnosticException.Describe(exception));
+                }
+                catch (CalDavProtocolException exception)
+                {
+                    RaiseStatus(SyncRunStatus.AttentionRequired,
+                        DiagnosticException.Describe(exception, exception.StatusCode));
+                }
+                catch (IcalFormatException)
+                {
+                    RaiseStatus(SyncRunStatus.AttentionRequired, null);
+                }
+                return;
             }
+
+            if ((await _store.GetPendingTaskMovesAsync(cancellationToken: cancellationToken)
+                    .ConfigureAwait(false)).Any(move => move.TaskUid == conflict.LocalTask.Uid))
+            {
+                // A move can commit after an ordinary pull conflict was read.
+                // That older chooser cannot authorize its remote obligations.
+                RaiseStatus(SyncRunStatus.AttentionRequired, null);
+                return;
+            }
+
+            Account? conflictAccount = (await _store.GetAccountsAsync(cancellationToken).ConfigureAwait(false))
+                .FirstOrDefault(account => account.Id == conflict.AccountId);
+            TodoList? conflictList = conflictAccount is null ? null
+                : (await _store.GetSyncListsAsync(conflictAccount.Id, cancellationToken: cancellationToken)
+                    .ConfigureAwait(false)).FirstOrDefault(list => list.Id == conflict.ListId);
+            string? conflictSecret = conflictAccount is null ? null
+                : await _credentialStore.GetSecretAsync(conflictAccount.CredentialKey, conflictAccount.Username,
+                    cancellationToken).ConfigureAwait(false);
+            if (conflictAccount is null || conflictList is null || conflictSecret is null)
+            { RaiseStatus(SyncRunStatus.AttentionRequired, null); return; }
+            var conflictEndpoint = new MoveEndpoint(conflictAccount, conflictList, conflictSecret);
+            CalDavContent? currentRemote = await ReadMoveResourceAsync(conflictEndpoint,
+                new Uri(conflict.RemoteHref, UriKind.Absolute), cancellationToken).ConfigureAwait(false);
+            if (conflict.RemoteDeleted ? currentRemote is not null
+                : currentRemote is null || currentRemote.ETag != conflict.RemoteETag || conflict.RemoteTask is null
+                    || !MovePayloadMatches(_writer.WriteCalendar(conflictList, [conflict.RemoteTask], _clock.UtcNow),
+                        currentRemote.Content))
+            { RaiseStatus(SyncRunStatus.AttentionRequired, null); return; }
+            bool resolved = await _store.ResolveRemoteConflictAsync(conflict, choice, cancellationToken)
+                .ConfigureAwait(false);
+            RaiseStatus(resolved ? SyncRunStatus.Success : SyncRunStatus.AttentionRequired, null);
+            return;
+        }
+        catch (HttpRequestException exception)
+        {
+            RaiseStatus(SyncRunStatus.Offline, DiagnosticException.Describe(exception));
+        }
+        catch (CalDavProtocolException exception)
+        {
+            RaiseStatus(SyncRunStatus.AttentionRequired,
+                DiagnosticException.Describe(exception, exception.StatusCode));
         }
         finally
         {
@@ -282,8 +330,12 @@ public sealed class CalDavSyncService : IDisposable
     {
         try
         {
-            string secret = await GetRequiredSecretAsync(account, cancellationToken)
-                .ConfigureAwait(false);
+            string? secret = await _credentialStore.GetSecretAsync(account.CredentialKey,
+                account.Username, cancellationToken).ConfigureAwait(false);
+            if (secret is null)
+            {
+                return new SyncRunResult { Status = SyncRunStatus.AttentionRequired };
+            }
             await DiscoverAndRefreshCollectionsAsync(account, secret, cancellationToken)
                 .ConfigureAwait(false);
             IReadOnlyList<TodoList> lists = await _store.GetSyncListsAsync(
@@ -292,6 +344,8 @@ public sealed class CalDavSyncService : IDisposable
                 cancellationToken).ConfigureAwait(false);
             var result = new SyncRunResult { Status = SyncRunStatus.Success };
             var conflictedUids = new HashSet<string>(StringComparer.Ordinal);
+            await ExecuteTaskMovesAsync(account.Id, result, conflictedUids, cancellationToken)
+                .ConfigureAwait(false);
             foreach (TodoList list in lists.Where(value => !value.IsDeleted && value.RemoteUrl is not null))
             {
                 await PullListAsync(
@@ -310,6 +364,14 @@ public sealed class CalDavSyncService : IDisposable
                 result,
                 conflictedUids,
                 cancellationToken).ConfigureAwait(false);
+            foreach (SyncConflict conflict in result.Conflicts.Where(value => value.TaskMoveId is null))
+            {
+                IReadOnlyList<TodoTask> family = await _store.GetTaskFamilyForSyncAsync(conflict.LocalTask.Uid,
+                    cancellationToken).ConfigureAwait(false);
+                conflict.LocalFamily = family;
+                TodoTask? current = family.FirstOrDefault(task => task.Uid == conflict.LocalTask.Uid);
+                if (current is not null) conflict.LocalTask = current;
+            }
             await _store.SetAccountLastSyncAsync(account.Id, _clock.UtcNow, cancellationToken)
                 .ConfigureAwait(false);
             account.LastSync = _clock.UtcNow;
@@ -414,6 +476,9 @@ public sealed class CalDavSyncService : IDisposable
         var presentHrefs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var updates = new List<RemoteTaskUpdate>();
         var deletions = new List<string>();
+        var activeMoveUids = (await _store.GetPendingTaskMovesAsync(cancellationToken: cancellationToken)
+                .ConfigureAwait(false)).Select(move => move.TaskUid).ToHashSet(StringComparer.Ordinal);
+        bool moveDeferred = false;
 
         foreach (CalDavResource resource in delta.Resources)
         {
@@ -426,6 +491,12 @@ public sealed class CalDavSyncService : IDisposable
             statesByHref.TryGetValue(href, out RemoteTaskState? state);
             if (resource.IsDeleted)
             {
+                if (state is not null && activeMoveUids.Contains(state.Uid))
+                {
+                    moveDeferred = true;
+                    continue;
+                }
+
                 if (state?.IsDirty == true)
                 {
                     TodoTask local = await GetRequiredTaskAsync(state.Uid, cancellationToken)
@@ -470,6 +541,26 @@ public sealed class CalDavSyncService : IDisposable
                     .ConfigureAwait(false)
                 : await _store.GetTaskForSyncAsync(state.Uid, cancellationToken)
                     .ConfigureAwait(false);
+            if (activeMoveUids.Contains(remoteTask.Uid))
+            {
+                moveDeferred = true;
+                continue;
+            }
+
+            if (localTask is not null && localTask.ListId != list.Id && !localTask.IsDirty)
+            {
+                bool adopted = await TryAdoptRemoteMoveAsync(localTask, list,
+                    new RemoteTaskUpdate { Task = remoteTask, Href = href, ETag = content.ETag ?? resource.ETag },
+                    result, cancellationToken).ConfigureAwait(false);
+                if (!adopted)
+                {
+                    moveDeferred = true;
+                    AddConflict(result, conflictedUids, account, list, localTask, remoteTask,
+                        href, content.ETag ?? resource.ETag, remoteDeleted: false);
+                }
+                continue;
+            }
+
             if (localTask?.IsDirty == true)
             {
                 AddConflict(
@@ -500,6 +591,12 @@ public sealed class CalDavSyncService : IDisposable
                 string href = NormalizeHref(state.RemoteHref);
                 if (presentHrefs.Contains(href) || state.IsDeleted)
                 {
+                    continue;
+                }
+
+                if (activeMoveUids.Contains(state.Uid))
+                {
+                    moveDeferred = true;
                     continue;
                 }
 
@@ -545,6 +642,12 @@ public sealed class CalDavSyncService : IDisposable
                 result.Status = SyncRunStatus.AttentionRequired;
                 return;
             }
+        }
+
+        if (moveDeferred)
+        {
+            result.Status = SyncRunStatus.AttentionRequired;
+            return;
         }
 
         if (result.Conflicts.Any(conflict => conflict.ListId == list.Id))
@@ -671,6 +774,11 @@ public sealed class CalDavSyncService : IDisposable
                 EnsureTrailingSlash(new Uri(list.RemoteUrl!, UriKind.Absolute)),
                 Uri.EscapeDataString(task.Uid) + ".ics")
             : new Uri(task.RemoteHref, UriKind.Absolute);
+        if (!IsTaskResourceInCollection(resourceUrl, new Uri(list.RemoteUrl!, UriKind.Absolute)))
+        {
+            result.Status = SyncRunStatus.AttentionRequired;
+            return;
+        }
         if (change.Operation == ChangeOperation.Delete || task.IsDeleted)
         {
             if (string.IsNullOrWhiteSpace(task.RemoteHref))
@@ -855,7 +963,10 @@ public sealed class CalDavSyncService : IDisposable
     {
         if (!conflictedUids.Add(localTask.Uid))
         {
-            return;
+            SyncConflict? deletion = result.Conflicts.FirstOrDefault(conflict => conflict.LocalTask.Uid == localTask.Uid
+                && conflict.RemoteDeleted && conflict.ListId != list.Id);
+            if (deletion is null || remoteDeleted || remoteTask?.Uid != localTask.Uid) return;
+            result.Conflicts.Remove(deletion);
         }
 
         result.Conflicts.Add(new SyncConflict
@@ -900,6 +1011,14 @@ public sealed class CalDavSyncService : IDisposable
     {
         return new Uri(value, UriKind.Absolute).AbsoluteUri;
     }
+
+    private static bool IsTaskResourceInCollection(Uri resource, Uri collection)
+        => resource.Scheme.Equals(collection.Scheme, StringComparison.OrdinalIgnoreCase)
+            && resource.IdnHost.Equals(collection.IdnHost, StringComparison.OrdinalIgnoreCase)
+            && resource.Port == collection.Port && resource.UserInfo.Length == 0
+            && resource.Fragment.Length == 0 && resource.Query == collection.Query
+            && new Uri(resource, ".").AbsolutePath.Equals(
+                EnsureTrailingSlash(collection).AbsolutePath, StringComparison.Ordinal);
 
     private static void ValidateServerUrl(string value)
     {
