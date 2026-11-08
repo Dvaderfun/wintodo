@@ -31,6 +31,16 @@ As of 2026-11-09:
   455/455 and zero failures/skips verified from the four uploaded TRX files.
 - **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
+- **Archive signatures and signing continuity (2026-11-09):** all 45 original
+  archives in both fresh candidate BOM inventories pass NuGet signature/hash
+  preservation checks under existing host trust/settings. Signed-payload
+  continuity tooling passes 19 synthetic regressions and one historical ARM64
+  pair; full signature/trust/provenance/deployment acceptance stays pending.
+  The [owner decision packet](plans/deployment-owner-decisions.md) is ready;
+  recommendations remain unapproved. Debug build is clean; all 678 unit and
+  171 script tests pass. Vendor/advisory closure, current hosted/protected CI,
+  production decisions/signing and final deployment remain pending. See
+  [the deployment plan](plans/deployment-readiness.md).
 - **Bound candidates and installed-smoke preparation (2026-11-09):** fresh
   clean `f1b9af5` x64/ARM64 AOT MSIX, exact audit/source/target graph bindings,
   qualified SBOM/schema/privacy, source/layout/notice preservation and the
@@ -4454,3 +4464,27 @@ Details: [bound packages](plans/dep16-bound-candidate-validation.md),
 [installed smoke](plans/dep19-installed-package-smoke.md). Private evidence:
 `artifacts/dep-bound-candidates/`, `artifacts/dep-retained-code-export/`,
 `artifacts/dep-installed-smoke/` and `artifacts/dep-next-integration/`.
+
+### 2026-11-09 — M10 deployment preparation: signatures, continuity and owner packet
+
+- DEP-02/16: 45/45 original NuGet archives verify with repository signatures,
+  no diagnostic codes, exact candidate-inventory SHA-256 binding and preserved
+  archives/BOMs. Host trust/settings qualify this result; embedded vendor builds,
+  advisory disposition and complete native/licence closure remain pending.
+- DEP-18: new signed-payload continuity checker and 19 regressions pass. The
+  historical ARM64 signing pair preserves 316 original entries; the misleading
+  x64 filename pair is rejected without modification. Actual production signing,
+  trust/timestamp, source provenance and runtime/deployment gates stay pending.
+- Seven grouped owner decisions are ready in
+  [deployment-owner-decisions.md](plans/deployment-owner-decisions.md). Options
+  remain unapproved. Packaging guidance and deployment tracking are updated.
+- Integration from `0b7272f` plus the reviewed tooling/doc overlay: Debug x64
+  warnings-as-errors build clean; 678/678 unit tests, zero failed/skipped;
+  171/171 script tests. Tooling review and public-doc privacy/link/whitespace
+  checks pass. No app UI/C# or dependency selection changed.
+- Evidence: ignored `artifacts/dep-native-next-actions/`,
+  `artifacts/dep-signed-continuity/`, `artifacts/dep-next-release-integration/`.
+  Hosted CI remains at `da945199`; owner choices, vendor evidence, protected
+  signing and exact signed install/update/uninstall/native ARM64 remain pending.
+  No guest, host UI, installation, trust, signing, remote write or publication
+  occurred. M9 remains owner-deferred.

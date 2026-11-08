@@ -60,6 +60,11 @@ not a certification of release safety.
 
 Record decisions before dependent work. Keep unresolved choices visible.
 
+[The owner decision packet](deployment-owner-decisions.md) groups the seven
+remaining production choices, proposed options and the execution order. Its
+recommendations remain unapproved; operational approvals follow concrete
+preparation of their respective sessions and release stages.
+
 | Decision | Required record | Blocks |
 |---|---|---|
 | App name and branding | Final display name, asset ownership and branding direction | DEP-16, DEP-17 |
@@ -96,7 +101,7 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | ID | Work package | Priority | Depends on | Owner | Status |
 |---|---|---|---|---|---|
 | DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
-| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence + native_closure_followup + retained_code_export | Reproducible historical/fresh x64/ARM64 retained-code/PDB observations LOCAL PASS; exact-tool metadata LOCAL PASS; vendor/runtime provenance, advisory disposition and hosted acceptance PENDING |
+| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence + native_closure_followup + retained_code_export + native_closure_next | Original NuGet archive signatures/hash preservation 45/45 LOCAL PASS; historical/fresh retained-code/PDB and exact-tool metadata LOCAL PASS; vendor/runtime provenance, advisory disposition and hosted acceptance PENDING |
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
 | DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; ADR-017 accepted | Codex / dep04_data + dep04_sync + dep04_regressions | AUTOMATED ACCEPTANCE PASS; guest UI/live/final-package checks PENDING |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
@@ -112,7 +117,7 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding | LOCKED RESTORE/LOCAL CHECKS PASS; exact audit/source/target graph bindings LOCAL PASS; remote CI/protection/native advisory disposition PENDING |
 | DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export | Fresh clean `f1b9af5` x64/ARM64 bound packages, qualified SBOM/schema/privacy and positive PDB observations LOCAL PASS; hosted/approved-identity/payload/full closure/final-candidate acceptance PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Nine inherited texts INTEGRATED; fresh x64/ARM64 notice-package checks PASS; privacy/installation DRAFTS; final legal/owner/assets/live sign-in acceptance PENDING |
-| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair | Current-contract fresh bound unsigned pair LOCAL PASS; release authorization false; protected signing/release stages and production/provenance acceptance PENDING |
+| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next | Bound unsigned pair LOCAL PASS; signed-payload continuity preparation/19 regressions and historical ARM64 pair PASS; release authorization false; protected signing/release stages and production/provenance acceptance PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory + installed_package_smoke | Guest-only installed-smoke runner PREPARED; 12 mocked/static checks PASS; actual guest/API/runtime/visual, signed install/update/uninstall and final deployment acceptance PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
 
@@ -272,6 +277,23 @@ pending. Its early mocked tests used process-only host UI opt-in contrary to
 policy; both assignments were removed and the corrected tests run without it.
 No actual host UI command ran. Full closure, owner decisions, hosted/protected
 execution, signing, installed update/uninstall and publication remain pending.
+
+The owner requested the next parallel batch on 2026-11-09. Three bounded streams
+verify original NuGet archive signatures (DEP-02/16), assess the next deployment
+gap and prepare a signed-payload continuity checker (DEP-18/19), and assemble
+the owner decision packet (DEP-12/13/16/17/18). Agents own separate new
+scripts/tests/documents and ignored evidence; Codex owns integration and shared
+tracking. No production decision, machine/guest action, signing, remote write or
+publication is part of this batch.
+
+This batch is integrated locally: all 45 original archives verify with exact
+hash preservation, the continuity check passes 19 synthetic regressions and
+one historical ARM64 pair, Debug build is clean, and all 678 unit/171 script
+tests pass. The misleading historical x64 filenames are rejected as a signing
+pair without changing files. The seven-choice owner packet is ready; choices
+remain pending. The next critical path is recording those choices, obtaining
+vendor/advisory disposition and current hosted/protected execution, then
+producing/signing approved candidates for exact-package deployment tests.
 
 ## 5. Detailed work packages
 
@@ -1409,6 +1431,41 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
   publication occurred. Production decisions, vendor/advisory/full closure,
   hosted/protected execution, final signed/deployment/native ARM64 runtime
   acceptance remain pending; M9 remains owner-deferred.
+
+### 2026-11-09 — Original archive signatures, signing continuity and owner decisions
+
+- **DEP-02/16 original archives — LOCAL PASS:** all 45 unique original NuGet
+  archives in the two fresh `f1b9af5` BOM inventories pass signature verification,
+  have repository signatures and no NuGet diagnostic codes, and preserve exact
+  raw SHA-256 values matching those inventories. Both BOM inputs remain unchanged.
+  Verification uses existing host NuGet trust/settings; it does not attest
+  embedded vendor builds or complete retention/patch/licence closure. See
+  [the native closure next-actions record](dep02-native-closure-next-actions.md).
+- **DEP-18 signed payload continuity — PREPARED / LOCAL PASS:** the new read-only
+  checker and 19 synthetic regressions preserve every original entry except
+  semantic content-type updates, allowing only the exact signature/optional CI
+  catalog additions. A historical test-signed ARM64 pair passes (316 original
+  entries byte-identical); the historical x64 filenames fail because the alleged
+  unsigned input already contains a signature. No files are replaced. This is
+  historical tool qualification, not current production/signature/runtime
+  acceptance. See [the continuity record](dep18-signed-package-continuity.md).
+- **Owner decisions — PROPOSAL / PENDING:**
+  [the seven-choice packet](deployment-owner-decisions.md) provides reviewable
+  route/visibility, branding/rights, identity/data continuity, version, signing,
+  legal attribution/contact and production-override options. No recommendation
+  is adopted. Vendor evidence requests are prepared; no external contact occurs.
+- **Integration — PASS:** against `0b7272f` with the reviewed new tooling/doc
+  overlay, Debug x64 build has zero warnings/errors, all four MTP suites pass
+  678/678 with zero failed/skipped, and full Python discovery passes 171/171.
+  Tooling review, public-document/privacy, links and whitespace checks pass.
+  No app XAML/C# or dependency selection changes.
+- **Evidence and remaining gates:** ignored `artifacts/dep-native-next-actions/`,
+  `artifacts/dep-signed-continuity/` and `artifacts/dep-next-release-integration/`.
+  Read-only GitHub checks still show latest hosted CI at `da945199`, not local
+  HEAD. Owner choices, native/vendor/advisory closure, hosted/protected execution,
+  signing, actual installed update/uninstall/native ARM64 and publication remain
+  pending. No guest start/provisioning, host UI, installation, certificate trust,
+  signing or remote write occurred. M9 remains owner-deferred.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and
