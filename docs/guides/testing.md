@@ -283,6 +283,12 @@ Every interactive element has `AutomationProperties.AutomationId` named
 `Todo.Settings.Sync.Connect`). The UI scripts select by these ids. Renaming one
 breaks a gate — search `tests/ui/` before you change an id.
 
+The import-removal dialog assigns `Todo.Import.RemoveConfirm.Primary` and
+`Todo.Import.RemoveConfirm.Close` when its template is applied, so default-button
+style changes cannot replace those IDs. The import gate acquires a main HWND
+belonging to the launched PID before readiness checks and cleans up failed
+launches before starting another process; failure evidence must not use an old HWND.
+
 ## Writing a new UI suite
 
 1. Load `/winui-ui-testing`. Generate **one** batch script covering assertions,

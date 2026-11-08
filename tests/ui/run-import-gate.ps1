@@ -31,10 +31,15 @@ function Invoke-WinAppChecked {
 }
 function Invoke-Ui {
     param([string[]]$Arguments)
-    Invoke-WinAppChecked (@('ui') + $Arguments + @('--on', $Target, '-a', "$appPid"))
+    $selector = if ($mainHwnd -and $Arguments[0] -eq 'wait-for') {
+        @('-w', $mainHwnd)
+    } else { @('-a', "$appPid") }
+    Invoke-WinAppChecked (@('ui') + $Arguments + @('--on', $Target) + $selector)
 }
 function Start-App {
     param([switch]$ShowOnboarding, [switch]$ExpireFirstSignIn, [switch]$ThrottleOnce, [string]$FixturePath = $fixture)
+    if ($appPid -ne 0) { Stop-App }
+    $script:mainHwnd = ''
     $script:tracePath = [IO.Path]::ChangeExtension($databasePath, ('trace-' + [DateTime]::UtcNow.ToString('HHmmss') + '.log'))
     $arguments = @('run', $appDirectory, '--detach', '--json', '--',
         '--database-path', $databasePath, '--clock-file', $clockPath, '--import-fixture', $FixturePath,
@@ -42,21 +47,39 @@ function Start-App {
     if ($ShowOnboarding) { $arguments += '--show-onboarding' }
     if ($ExpireFirstSignIn) { $arguments += '--import-fixture-expire-once' }
     if ($ThrottleOnce) { $arguments += '--import-fixture-throttle-once' }
-    $launch = Invoke-WinAppChecked $arguments | ConvertFrom-Json
-    if (-not $launch.ProcessId) { throw 'Import gate launch did not return a PID.' }
-    $script:appPid = [int]$launch.ProcessId
-    Invoke-Ui @('wait-for', 'Todo.Nav.Settings', '-t', '30000') | Out-Null
-    $script:mainHwnd = [string]((Invoke-Ui @('list-windows', '--json') | ConvertFrom-Json |
-        Where-Object title -eq 'Wintodo' | Select-Object -First 1).hwnd)
-    if (-not $mainHwnd) { throw 'No app window.' }
+    try {
+        $launch = Invoke-WinAppChecked $arguments | ConvertFrom-Json
+        if (-not $launch.ProcessId -or [int]$launch.ProcessId -le 0) { throw 'Import gate launch did not return a PID.' }
+        $script:appPid = [int]$launch.ProcessId
+        $ready = [Diagnostics.Stopwatch]::StartNew()
+        while (-not $mainHwnd -and $ready.ElapsedMilliseconds -lt 30000) {
+            if (-not (Get-Process -Id $appPid -ErrorAction SilentlyContinue)) {
+                throw 'Import gate launch exited before its main window was available.'
+            }
+            $window = Invoke-Ui @('list-windows', '--json') | ConvertFrom-Json |
+                Where-Object { $_.title -eq 'Wintodo' -and $_.hwnd -and [int]$_.processId -eq $appPid } |
+                Select-Object -First 1
+            if ($window) { $script:mainHwnd = [string]$window.hwnd }
+            else { Start-Sleep -Milliseconds 250 }
+        }
+        if (-not $mainHwnd) { throw 'No main window belonging to the launched import process.' }
+        $remaining = 30000 - [int]$ready.ElapsedMilliseconds
+        if ($remaining -le 0) { throw 'Import gate startup exceeded its readiness deadline.' }
+        Invoke-Ui @('wait-for', 'Todo.Nav.Settings', '-t', "$remaining") | Out-Null
+    } catch {
+        Stop-App
+        throw
+    }
 }
 function Stop-App {
     if ($appPid -ne 0) {
         Start-Sleep -Milliseconds 500
         Stop-Process -Id $appPid -ErrorAction SilentlyContinue
         Wait-Process -Id $appPid -Timeout 10 -ErrorAction SilentlyContinue
+        if (Get-Process -Id $appPid -ErrorAction SilentlyContinue) { throw 'Import gate process did not exit during cleanup.' }
         $script:appPid = 0
     }
+    $script:mainHwnd = ''
 }
 
 function Test-UI {
@@ -245,7 +268,8 @@ try {
         Assert-Present 'Todo.Import.RemoveConfirm'
         Assert-Text "Remove 5 tasks, 2 lists and 2 steps imported just now? Tasks you already had aren’t affected. Updates made to existing tasks stay. This can’t be undone."
         Save-Screenshot '05-remove-confirm.png'
-        Invoke-Ui @('invoke', 'CloseButton')
+        Invoke-Ui @('wait-for', 'Todo.Import.RemoveConfirm.Close', '-t', '5000')
+        Invoke-Ui @('invoke', 'Todo.Import.RemoveConfirm.Close')
         Invoke-Ui @('wait-for', 'Todo.Import.GoToTasks', '-t', '5000')
         Assert-Present 'Todo.Import.RemoveImported'
     }

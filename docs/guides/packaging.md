@@ -37,6 +37,45 @@ defaults alone selected the trimmed managed path and produced CsWinRT IL2081
 errors; the explicit AOT path packaged cleanly. Do not suppress trim warnings.
 No development package registration or launch is needed to package.
 
+## Release artifact privacy (DEP-14)
+
+Release builds map first-party source documents to `/_/` and pass MSVC
+`/PDBALTPATH:Wintodo.pdb` through ILCompiler's `LinkerArg`. The latter fixes the
+native executable's CodeView record; managed `PathMap` alone cannot do that.
+`CopyOutputSymbolsToPublishDirectory=false` and a Release payload filter for
+project-reference PDBs keep native/managed PDBs in the private build outputs under
+`src/**/bin` and `src/**/obj`, while AOT layouts and MSIX omit them. Keep those
+symbols with the exact executable hash when debugging;
+do not upload raw symbols, build recipes or build/test logs as release assets.
+
+`Publish-Aot.ps1` emits publish locations relative to `summary.json`. The size
+summary can be shared after its artifact scan; native tool output remains private
+because tools can print the checkout path. Avoid publishing old summaries.
+
+After publishing both architectures, scan their actual bytes with Python's
+standard-library gate:
+
+```powershell
+python -B scripts/Test-ReleasePrivacy.py publish/aot/win-x64 publish/aot/win-arm64 `
+  publish/aot/summary.json --output artifacts/release-layout-privacy.json `
+  --private-root $PWD --require-architecture x64 --require-architecture ARM64
+python -B -m unittest discover -s tests/scripts -p test_release_privacy.py
+```
+
+Repeat the scan on **the final signed MSIX files and public metadata** before
+delivery, substituting package paths for layout paths. The scanner streams all
+package entries without extracting, parses PE debug directories, rejects loose
+symbols/build recipes and embedded first-party PDBs, and checks profile paths and
+explicit private roots/markers in UTF-8/UTF-16 and JSON-escaped forms. Supply a
+private JSON string array through `--marker-file` for synthetic private markers;
+matches and filenames are never printed. Review its sanitized JSON counters and
+hashes. Nonidentifying vendor CodeView paths are counted separately; this gate
+does not claim to remove Microsoft's own build paths or replace the source secret
+scan and final attribution review. Bundles require scanning each contained MSIX.
+
+Any package content change requires rebuilding/repackaging/re-signing and a fresh
+scan. Intermediate/unsigned PASS cannot close final signed-package acceptance.
+
 Pushes to `v*` tags run the separate `release` matrix in `ci.yml`, after the
 build/test job succeeds. It checks the native toolchain, runs `Publish-Aot.ps1`,
 then packages with the WinApp CLI restored from the centrally pinned NuGet

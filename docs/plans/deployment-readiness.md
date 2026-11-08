@@ -2,7 +2,7 @@
 
 Prepared: 2026-11-08. Audit baseline: `d8c2ac3`.
 
-Status: **IN PROGRESS — DEP-01, DEP-03, DEP-05, DEP-06, DEP-08, DEP-09 and DEP-11 automated acceptance passed. Remaining release work is pending.**
+Status: **IN PROGRESS — DEP-01, DEP-03, DEP-05, DEP-06, DEP-07, DEP-08, DEP-09 and DEP-11 automated acceptance passed. DEP-14 pre-signing checks passed; final signed-package acceptance and remaining release work are pending.**
 
 This plan turns the deployment-readiness audit into work packages for a safe
 GitHub release and GitHub Actions CI/CD. It covers data integrity, API security,
@@ -98,17 +98,17 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
 | DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain | LOCAL AOT/NuGet PASS; runner/native review PENDING |
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
-| DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; data/ADR decision if needed | Unassigned | PENDING |
+| DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; data/ADR decision if needed | Codex / dep04_move_design | BASELINE FAIL 7/7; ADR-017 proposed; implementation PENDING acknowledgement/next batch |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
 | DEP-06 | Enforce CalDAV redirect origin policy | Security | DEP-01 | Codex / dep06_caldav_redirects | COMPLETE; automated acceptance PASS |
-| DEP-07 | Bound network bodies and attachment downloads | Security | DEP-05, DEP-06 | Unassigned | PENDING |
+| DEP-07 | Bound network bodies and attachment downloads | Security | DEP-05, DEP-06 | Codex / dep07_network_limits | COMPLETE; automated acceptance PASS |
 | DEP-08 | Sanitize all diagnostic paths | Privacy blocker | DEP-01 | Codex / dep08_diagnostics | COMPLETE; automated app/CI privacy acceptance PASS |
 | DEP-09 | End sensitive import sessions correctly | Security | DEP-01 | Codex / dep09_import_lifecycle | COMPLETE; automated acceptance PASS |
 | DEP-10 | Preserve untrusted attachment provenance | Security | DEP-07; API/policy review | Unassigned | PENDING |
 | DEP-11 | Reject unsupported database schemas | Data safety | DEP-01 | Codex / dep11_schema_guard | COMPLETE; automated acceptance PASS |
 | DEP-12 | Resolve production test/storage overrides | Policy | Owner decision | Unassigned | PENDING |
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_privacy_audit | PRELIMINARY SCANS PASS; policy/final review PENDING |
-| DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Unassigned | PENDING |
+| DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
 | DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Unassigned | PENDING |
 | DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Unassigned | PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Unassigned | PENDING |
@@ -147,6 +147,14 @@ integration, build outputs and guest gate execution. DEP-09 owns the wizard,
 connector and shell import lifecycle files; DEP-08 supplies changes for their
 diagnostic call sites through DEP-09 or integration rather than editing them
 concurrently. DEP-06 supplies its App composition change for integration.
+
+The fourth batch splits DEP-07 (bounded CalDAV/Graph responses and import
+attachment staging), DEP-14 (native build paths and publish metadata), and
+DEP-04 (deterministic move reproduction and a concrete recovery design).
+DEP-04 must obtain owner acknowledgement before implementing any required
+schema/protocol ADR. Agents own disjoint files and use ignored isolated
+checkouts for validation. Codex owns shared tracking, integration builds,
+guest gates and commits; final signed-package checks remain pending.
 
 ## 5. Detailed work packages
 
@@ -218,7 +226,7 @@ newly edited task silently, and queued changes survive or become explicit confli
 Targets: `SqliteTaskStore.Tasks.cs`, `SqliteTaskStore.Batch.cs`,
 `CalDavSyncService.cs`, sync contracts/change log and Sync/Data tests.
 
-- [ ] Reproduce a synced A-to-B move retaining the source remote URL/ETag.
+- [x] Reproduce a synced A-to-B move retaining the source remote URL/ETag.
 - [ ] Define recoverable source removal and destination creation, including
       ETags, UID preservation, offline retries and restart recovery. Do not
       simply clear the source URL and leave an orphan remote copy.
@@ -233,6 +241,11 @@ Targets: `SqliteTaskStore.Tasks.cs`, `SqliteTaskStore.Batch.cs`,
 
 Acceptance: destination and source membership match the intended move, no task
 version is silently lost, and retries converge without unexplained duplicates.
+
+The fourth batch reproduced seven deterministic baseline failures against
+`79ce9b1`; no production fix is claimed. [ADR-017](../adr/ADR-017-recoverable-synced-task-moves.md)
+and [the detailed proposal](dep04-synced-moves.md) define durable recovery for
+the next batch. Owner acknowledgement remains pending.
 
 ### DEP-05 — Validate Graph request destinations
 
@@ -269,18 +282,22 @@ silently accept foreign content. Do not report the audit as proving a password l
 Targets: `CalDavClient.cs`, `GraphTodoClient.cs`, `MicrosoftTodoReader.cs`,
 `AttachmentContentDecoder.cs` and relevant tests.
 
-- [ ] Use headers-first HTTP completion and bounded streaming before allocating
+- [x] Use headers-first HTTP completion and bounded streaming before allocating
       XML/calendar/JSON bodies. Keep or explicitly document existing limit changes.
-- [ ] Enforce actual byte limits for declared, unknown and misleading lengths;
+- [x] Enforce actual byte limits for declared, unknown and misleading lengths;
       account for decoded attachment output and any enabled decompression.
-- [ ] Define per-attachment and per-import byte budgets, cancellation and
+- [x] Define per-attachment and per-import byte budgets, cancellation and
       disk-full behavior. Reject over-budget data before unbounded writes.
-- [ ] Remove partial staging files on failure/cancel and preserve committed
+- [x] Remove partial staging files on failure/cancel and preserve committed
       imports and existing files; test malformed, oversized and truncated bodies.
-- [ ] Retain XML DTD prohibition, disabled external resolution and parser limits.
+- [x] Retain XML DTD prohibition, disabled external resolution and parser limits.
 
 Acceptance: hostile/oversized streams stop at reviewed limits without buffering
 the whole response or leaving partial downloads; ordinary import/sync still passes.
+
+Exact byte/deadline policies and cleanup limitations are documented in
+[network-limits.md](../guides/network-limits.md). Final installed-package and
+live-provider verification remains DEP-19.
 
 ### DEP-08 — Sanitize all diagnostic paths
 
@@ -392,12 +409,12 @@ results, fixtures remain synthetic, and every finding has a recorded disposition
 Targets: app/native build configuration, `scripts/Publish-Aot.ps1`, final MSIX,
 release summaries, symbols and provenance generators.
 
-- [ ] Configure source-path mapping and a supported native linker alternate PDB
+- [x] Configure source-path mapping and a supported native linker alternate PDB
       reference policy. Verify actual APIs/properties rather than assuming
       managed `PathMap` alone removes the PE CodeView path.
-- [ ] Emit relative/sanitized publish locations and reviewed metadata fields.
+- [x] Emit relative/sanitized publish locations and reviewed metadata fields.
       Keep private symbols and machine-specific diagnostic data separate.
-- [ ] Scan both architectures' executables, CodeView records, packaged resources
+- [x] Scan both architectures' executables, CodeView records, packaged resources
       and summaries for identifying build paths and synthetic private markers.
 - [ ] Inspect final signed package bytes as well as intermediate layouts;
       rebuild/repackage/re-sign after any content change.
@@ -593,18 +610,18 @@ substitute for final installed-MSIX clean-deployment evidence.
 
 | Gate | Required proof | Status |
 |---|---|---|
-| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | Previous batch PASS (`6342f82`, GitHub run 42428523717, 455/455); third-batch GitHub CI PENDING |
+| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | Previous batch PASS (`6342f82`, GitHub run 42428523717, 455/455); third/fourth-batch GitHub CI PENDING |
 | Pull concurrency | Newer edits/deletes survive or conflict; no false acknowledgment | PASS (`97e7107`, 33 Sync tests); final-package/live chooser proof remains DEP-19 |
-| Synced moves | Correct source/destination membership and retry/restart convergence | PENDING |
+| Synced moves | Correct source/destination membership and retry/restart convergence | BASELINE FAIL 7/7; ADR-017 proposed; implementation/acceptance PENDING |
 | Graph origin/CalDAV redirects | Real request boundaries; no foreign token/body disclosure | Graph PASS (`0d5dc94`, 31 destination tests); CalDAV PASS (41 regressions, M13 VM 11/11) |
-| Network limits | Declared/unknown/decoded lengths; bounded reads and staging cleanup | PENDING |
+| Network limits | Declared/unknown/decoded lengths; bounded reads and staging cleanup | PASS (49 new cases; import VM 25/25, Debug/AOT M13 11/11 each); final installed-package gates DEP-19 PENDING |
 | Diagnostic privacy | Synthetic private markers absent from all safe output routes | Automated app/CI PASS (Debug import 25/25, Release formatter 9/9 and guest 6/6); final output gates DEP-14/15/19 PENDING |
 | Import session and attachment trust | Final dismissal, expiration/resume and provenance policy | Session PASS (11 new unit tests, import VM 25/25); attachment provenance DEP-10 PENDING |
 | Schema/update recovery | Supported upgrades/backups; newer-schema rejection | Schema/backup PASS (`015a6a8`, 9 new cases + VM 5/5); final installed-update DEP-19 PENDING |
 | Production override policy | Approved Release behavior and broker isolation | PENDING |
 | Dependency/AOT security | Fresh resolved graph; reviewed patched compiler/runtime | LOCAL x64/ARM64 AOT/NuGet PASS (`2e149ca`); runner/native review PENDING |
 | Repository/history/archive privacy | Redacted scanner findings and reviewed attribution | PRELIMINARY SCANS PASS (`2e149ca`); policy/final review PENDING |
-| Binary/public metadata privacy | Both final signed architectures; no identifying build paths | PENDING |
+| Binary/public metadata privacy | Both final signed architectures; no identifying build paths | PRE-SIGNING PASS (649 integrated x64/ARM64 AOT files; isolated unsigned x64 MSIX 322 files); final signed x64/ARM64 PENDING |
 | Package identity/version/content | Tag mapping, native/runtime/assets/capabilities and SBOM | PENDING |
 | Signing and pipeline protection | Final chain/timestamp; trusted inputs; negative permission tests | PENDING |
 | Licence/privacy/assets/support docs | Complete approved customer-facing material | PENDING |
@@ -762,6 +779,60 @@ Third parallel batch evidence (2026-11-08):
   A staged source-only Gitleaks scan passes; identifying attribution and final
   artifact checks remain their separate packages. No fresh AOT/MSIX, production
   signing, live sign-in/server, final installed-package or M9 perf claim is made.
+
+Fourth parallel batch evidence (2026-11-08):
+
+- **Source:** baseline `79ce9b1` plus reviewed working-file overlays. The final
+  local M10 commit, overlay hashes and candidate hashes are recorded in
+  [integrated redacted evidence](../../artifacts/dep-batch4/evidence.json).
+  Fresh-checkout GitHub CI remains pending; these builds are not a claim of
+  reproducible final packages from a clean release commit.
+- **DEP-07 — PASS:** untouched Graph/staging regressions failed 14/16 and
+  untouched CalDAV regressions failed 7/10. Final suites include 49 new cases:
+  Core six, Import 29 and Sync 14. Headers-first bounded streams enforce
+  actual/declared/decoded byte budgets and deadlines through retries, bodies,
+  XML parsing and background base64 decoding. Staging protects existing files
+  and removes newly created partial files; filesystem-denied removal remains
+  an explicit limit. Real production-handler loopback tests cover slow, chunked,
+  unknown-length and truncated bodies. [Agent evidence](../../artifacts/dep07/evidence.json).
+- **DEP-14 — PRE-SIGNING PASS; FINAL SIGNED-PACKAGE PENDING:** Release source
+  mapping and the verified native `/PDBALTPATH:Wintodo.pdb` policy fix the
+  actual PE CodeView path. Private native/reference symbols remain in build
+  outputs; the published payload excludes them. Summaries use relative locations.
+  The first symbol-copy attempt exposed four reference PDBs and was repaired
+  at the payload seam. Eighteen scanner regressions pass. Both final integrated
+  AOT layouts and summary pass across 649 files, zero findings; an isolated
+  native-overlay unsigned x64 MSIX and summary pass across 322 files. Vendor
+  nonidentifying CodeView paths are counted separately. Final signed x64/ARM64
+  bytes must be rescanned after DEP-16/18. [Agent evidence](../../artifacts/dep14/evidence.json).
+- **DEP-04 — BASELINE FAIL; DESIGN PROPOSED:** seven deterministic SQLite/
+  synthetic-transport regressions fail against unchanged `79ce9b1`, including
+  single/bulk, steps, local/cross-account cleanup and restart. No production
+  move fix or migration changed. [ADR-017](../adr/ADR-017-recoverable-synced-task-moves.md)
+  and [the proposal](dep04-synced-moves.md) await acknowledgement for the next
+  batch. Failing regressions stay in ignored scratch. [Agent evidence](../../artifacts/dep04/evidence.json).
+- **Integration — PASS:** final Debug/Release x64 builds have zero warnings/
+  errors; MTP is 567/567, zero failed/skipped (Core 227, Data 106, Import 144,
+  Sync 90). Fresh x64/ARM64 AOT publishes pass. WintodoTest passes import 25/25,
+  Debug M13 11/11 and published x64 AOT M13 11/11. All 23 final captures were
+  viewed individually (13 import, five each M13 mode), with no new visual
+  regression. WinUI review finds nothing above informational in changed code.
+  The existing stale reconnect hint and AOT title-bar placeholder remain noted;
+  the latter matches the October AOT baseline and final branding is DEP-17.
+- **Initial import run — FAIL 23/25:** the rendered removal dialog lacked its
+  expected button IDs; a template-application override now sets local IDs without
+  replacing styles. A separate launch-readiness failure occurred before sign-in;
+  its trace reached interactive and its capture used an old HWND. The harness
+  now validates current window/PID ownership and cleans failed launches; four
+  mocked lifecycle checks pass. Initial artifact copying failed on an open
+  scratch DB; recovery yielded an unreadable structured result, so the original
+  console failure is retained. The original window-acquisition trigger remains
+  unproven. The complete clean rerun, valid results and all captures pass.
+- **Limits:** no production signing, final installed-MSIX, native ARM64 runtime,
+  live server/sign-in, source-attribution approval, publication or M9 performance
+  claim. DEP-10 attachment provenance and DEP-15 CI hardening are ready next;
+  DEP-04 implementation still requires its recorded decision. Raw logs, symbols,
+  coverage, scratch data and screenshots remain private/ignored.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

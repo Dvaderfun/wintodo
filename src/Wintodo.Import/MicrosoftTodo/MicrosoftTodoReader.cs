@@ -35,6 +35,7 @@ public sealed class MicrosoftTodoListData
 
 public sealed class MicrosoftTodoReader(GraphTodoClient client, int listConcurrency = 4)
 {
+    private const long MaximumImportAttachmentBytes = 256L * 1024 * 1024;
     private readonly GraphTodoClient _client = client ?? throw new ArgumentNullException(nameof(client));
 
     /// <summary>Verifies identity before reusing an export after a fresh sign-in.</summary>
@@ -99,7 +100,15 @@ public sealed class MicrosoftTodoReader(GraphTodoClient client, int listConcurre
             .SelectMany(task => task.Attachments)
             .Where(attachment => attachment.SourcePath is not null && pendingAttachmentIds.Contains(attachment.ExternalId))
             .ToList();
-        long totalBytes = attachments.Sum(attachment => Math.Max(0, attachment.SizeBytes));
+        long totalBytes = 0;
+        foreach (ImportAttachment attachment in attachments)
+        {
+            long declaredBytes = Math.Max(0, attachment.SizeBytes);
+            if (declaredBytes > GraphTodoClient.MaximumAttachmentBytes
+                || declaredBytes > MaximumImportAttachmentBytes - totalBytes)
+                throw new InvalidDataException("The import attachments exceed the byte budget.");
+            totalBytes += declaredBytes;
+        }
         long completedBytes = 0;
         Directory.CreateDirectory(stagingDirectory);
         for (int index = 0; index < attachments.Count; index++)
@@ -107,13 +116,32 @@ public sealed class MicrosoftTodoReader(GraphTodoClient client, int listConcurre
             progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Attachments, index, attachments.Count));
             ImportAttachment attachment = attachments[index];
             string[] parts = attachment.SourcePath!.Split('\n');
+            if (parts.Length != 3 || parts.Any(string.IsNullOrWhiteSpace))
+                throw new InvalidDataException("The attachment reference is malformed.");
             string path = Path.Combine(stagingDirectory, index.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            await using var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None,
-                64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
-            long size = await _client.CopyAttachmentContentAsync(parts[0], parts[1], parts[2], file,
-                bytes => progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Attachments,
-                    index, attachments.Count, CompletedBytes: completedBytes + bytes, TotalBytes: totalBytes)),
-                cancellationToken).ConfigureAwait(false);
+            bool created = false;
+            long size;
+            try
+            {
+                await using (var file = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+                    64 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan))
+                {
+                    created = true;
+                    size = await _client.CopyAttachmentContentAsync(parts[0], parts[1], parts[2], file,
+                        bytes => progress?.Report(new MicrosoftTodoProgress(MicrosoftTodoReadPhase.Attachments,
+                            index, attachments.Count, CompletedBytes: completedBytes + bytes, TotalBytes: totalBytes)),
+                        cancellationToken, MaximumImportAttachmentBytes - completedBytes).ConfigureAwait(false);
+                    await file.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+            }
+            catch
+            {
+                // Only this attempt's newly created file is removable. Existing
+                // numbered files and earlier complete downloads are preserved.
+                if (created) File.Delete(path);
+                throw;
+            }
             attachment.StagedPath = path;
             attachment.SizeBytes = size;
             completedBytes += size;

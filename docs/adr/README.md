@@ -25,6 +25,7 @@ owner's acknowledgement first (`AGENTS.md`, Working style).
 | [014](ADR-014-default-sort-indicator.md) | Show the sort indicator only for non-default ordering | accepted |
 | [015](ADR-015-share-target.md) | Complete the Windows text and URL share target | accepted |
 | [016](ADR-016-microsoft-todo-import.md) | One-way Microsoft To Do import through Microsoft Graph | accepted |
+| [017](ADR-017-recoverable-synced-task-moves.md) | Durable recovery for synced task moves, steps and undo | proposed; owner acknowledgement pending |
 
 ADR-001…007 were written inline in `PLAN.md` §2 and moved here verbatim by ADR-010.
 

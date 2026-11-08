@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using Wintodo.Core.IO;
 using Wintodo.Core.Services;
 
 namespace Wintodo.Import.MicrosoftTodo;
@@ -10,6 +11,10 @@ namespace Wintodo.Import.MicrosoftTodo;
 /// <summary>Read-only Microsoft Graph client for the To Do API.</summary>
 public sealed class GraphTodoClient : IDisposable
 {
+    internal const long MaximumAttachmentBytes = 25L * 1024 * 1024;
+    private const long MaximumJsonBytes = 16L * 1024 * 1024;
+    private const long MaximumAttachmentEnvelopeBytes = 40L * 1024 * 1024;
+    private const long MaximumErrorBytes = 64L * 1024;
     public static readonly Uri DefaultBaseUri = new("https://graph.microsoft.com/v1.0/");
     private const int MaxAttempts = 6;
     private static readonly TimeSpan MaxRetryDelay = TimeSpan.FromSeconds(60);
@@ -190,9 +195,15 @@ public sealed class GraphTodoClient : IDisposable
         string attachmentId,
         Stream destination,
         Action<long>? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        long maximumBytes = MaximumAttachmentBytes)
     {
         string path = AttachmentsPath(listId, taskId) + "/" + Escape(attachmentId);
+        ArgumentNullException.ThrowIfNull(destination);
+        ArgumentOutOfRangeException.ThrowIfNegative(maximumBytes);
+        maximumBytes = Math.Min(maximumBytes, MaximumAttachmentBytes);
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         HttpResponseMessage raw;
         try
         {
@@ -205,15 +216,18 @@ public sealed class GraphTodoClient : IDisposable
         {
             Trace.WriteLine($"WINTODO_IMPORT_READ attachment=fallback status={(int)exception.StatusCode}");
             using HttpResponseMessage response = await SendAsync(new Uri(_baseUri, path), cancellationToken).ConfigureAwait(false);
-            await using Stream json = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            long count = await AttachmentContentDecoder.CopyAsync(json, destination, progress, cancellationToken).ConfigureAwait(false);
+            await using Stream json = await OpenBoundedBodyAsync(response, MaximumAttachmentEnvelopeBytes, cancellationToken).ConfigureAwait(false);
+            // The BCL streaming base64 reader performs synchronous parsing/reads.
+            // Keep that narrow adapter off the UI thread even for warm headers.
+            long count = await Task.Run(() => AttachmentContentDecoder.CopyAsync(
+                json, destination, progress, cancellationToken, maximumBytes), cancellationToken).ConfigureAwait(false);
             Trace.WriteLine($"WINTODO_IMPORT_READ attachment=contentBytes bytes={count}");
             return count;
         }
 
         using (raw)
         {
-            await using Stream source = await raw.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            await using Stream source = await OpenBoundedBodyAsync(raw, maximumBytes, cancellationToken).ConfigureAwait(false);
             byte[] buffer = new byte[64 * 1024];
             long count = 0;
             int read;
@@ -287,8 +301,10 @@ public sealed class GraphTodoClient : IDisposable
         JsonTypeInfo<T> typeInfo,
         CancellationToken cancellationToken)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         using HttpResponseMessage response = await SendAsync(uri, cancellationToken).ConfigureAwait(false);
-        await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        await using Stream stream = await OpenBoundedBodyAsync(response, MaximumJsonBytes, cancellationToken).ConfigureAwait(false);
         try
         {
             return await JsonSerializer.DeserializeAsync(stream, typeInfo, cancellationToken).ConfigureAwait(false)
@@ -298,6 +314,26 @@ public sealed class GraphTodoClient : IDisposable
         {
             throw new GraphRequestException(response.StatusCode, "invalidJson", exception.Message);
         }
+    }
+
+    private CancellationTokenSource CreateDeadline(CancellationToken cancellationToken)
+    {
+        var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        TimeSpan maximum = TimeSpan.FromSeconds(100);
+        deadline.CancelAfter(_httpClient.Timeout != Timeout.InfiniteTimeSpan && _httpClient.Timeout < maximum
+            ? _httpClient.Timeout : maximum);
+        return deadline;
+    }
+
+    private static async Task<Stream> OpenBoundedBodyAsync(HttpResponseMessage response, long maximumBytes,
+        CancellationToken cancellationToken)
+    {
+        if (response.Content.Headers.ContentLength > maximumBytes)
+            throw new InvalidDataException("The response exceeds the byte limit.");
+        if (response.Content.Headers.ContentEncoding.Count != 0)
+            throw new InvalidDataException("The response uses an unsupported content encoding.");
+        Stream source = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        return new BoundedReadStream(source, maximumBytes, cancellationToken, response.Content.Headers.ContentLength);
     }
 
     private async Task<HttpResponseMessage> SendAsync(Uri uri, CancellationToken cancellationToken)
@@ -385,7 +421,7 @@ public sealed class GraphTodoClient : IDisposable
         string? message = null;
         try
         {
-            await using Stream stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            await using Stream stream = await OpenBoundedBodyAsync(response, MaximumErrorBytes, cancellationToken).ConfigureAwait(false);
             GraphErrorResponse? error = await JsonSerializer.DeserializeAsync(
                 stream,
                 GraphJsonContext.Default.GraphErrorResponse,
@@ -393,7 +429,7 @@ public sealed class GraphTodoClient : IDisposable
             code = error?.Error?.Code;
             message = error?.Error?.Message;
         }
-        catch (JsonException)
+        catch (Exception exception) when (exception is JsonException or InvalidDataException)
         {
         }
 

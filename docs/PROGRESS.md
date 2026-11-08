@@ -21,10 +21,11 @@ As of 2026-11-08:
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
 - **Build:** Debug and Release x64 passed with zero warnings/errors on
-  2026-11-08 after DEP-06/08/09. All four MTP suites passed 518/518, zero
-  failed/skipped (Core 221, Data 106, Import 115, Sync 76). The latest x64/ARM64
-  AOT outputs remain the earlier `2e149ca` tree with compiler/runtime 10.0.14;
-  the second and third batches have not been republished or tested as final packages.
+  2026-11-08 after DEP-07/14 and the import gate fixes. All four MTP suites
+  passed 567/567, zero failed/skipped (Core 227, Data 106, Import 144, Sync 90).
+  Fresh x64/ARM64 AOT outputs include the integrated current code with compiler/
+  runtime 10.0.14; both layouts and their relative summary pass the privacy scan
+  (649 files, zero findings). Final signed packages/install gates remain pending.
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
   tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
   455/455 and zero failures/skips verified from the four uploaded TRX files.
@@ -45,8 +46,14 @@ As of 2026-11-08:
   M13 11/11, import 25/25, M8 17/17, Release JIT diagnostics 6/6; individual
   capture review and vendored WinUI review pass. Release formatter 9/9 passes;
   CI uploads safe suite counters and tests the exporter. IMP-25 is closed.
-  Current source-only Gitleaks scan: zero findings in 422 files. This batch is
-  committed locally; fresh GitHub CI remains pending. Native/tool advisory coverage, attribution/archive
+  Fourth-batch DEP-07 automated acceptance passes with 49 new streaming/budget/
+  cleanup regressions. DEP-14 pre-signing paths/symbols/metadata checks pass;
+  its final signed-package acceptance remains pending. WintodoTest import 25/25,
+  Debug/AOT M13 11/11 each and all 23 final captures pass after fixing dialog IDs
+  and launch-window ownership/cleanup; the initial 23/25 failure remains recorded.
+  DEP-04 has seven baseline failures and proposed ADR-017; implementation awaits
+  acknowledgement for the next batch. Current source-only Gitleaks scan: zero
+  findings in 433 files. Fresh GitHub CI remains pending. Native/tool advisory coverage, attribution/archive
   policy and final privacy/deployment gates remain pending. Details and local
   redacted evidence links are in [the deployment plan](plans/deployment-readiness.md).
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
@@ -4028,3 +4035,48 @@ UI automation. ARM64 not rebuilt.
   checks here use JIT layouts; no new AOT/MSIX or final deployment is claimed.
   No host UI automation, certificate trust, machine provisioning, schema
   migration, accepted ADR change or release publication. M9 stays owner-deferred.
+
+### 2026-11-08 — M10 / DEP-07, DEP-14 and DEP-04 proposal parallel batch
+
+- **Status:** DEP-07 automated acceptance PASS. DEP-14 pre-signing checks PASS;
+  final signed-package acceptance PENDING. DEP-04 baseline FAIL 7/7 and ADR-017
+  PROPOSED; owner acknowledgement/implementation PENDING for the next batch.
+- **Shipped:** bounded headers-first Graph/CalDAV reads, actual/declared/decoded
+  byte budgets, request/body/parser deadlines and partial staging cleanup. Limits
+  are in `docs/guides/network-limits.md`; no dependency, SQL or schema changed.
+  Release source mapping, native basename-only CodeView, private symbols and
+  relative summaries fix identifying build paths. The privacy scanner uses only
+  Python's standard library and has 18 passing regressions.
+- **Validation:** final Debug/Release x64 warnings-as-errors builds PASS with
+  zero warnings/errors. MTP PASS 567/567, zero failed/skipped (Core 227, Data 106,
+  Import 144, Sync 90), including 49 new cases. Fresh x64/ARM64 AOT publishes PASS;
+  integrated layout/summary privacy PASS, 649 files and zero findings. Isolated
+  native-overlay unsigned x64 MSIX/summary privacy PASS, 322 files. That package
+  is payload-seam evidence, not the final integrated signed release candidate.
+  WintodoTest import 25/25, Debug M13 11/11 and x64 AOT M13 11/11 PASS. All 23
+  final captures were viewed individually. Changed-code WinUI review has nothing
+  above informational. Source-only Gitleaks PASS with zero findings in 433 files.
+- **Initial gate failure:** import FAIL 23/25. The rendered removal dialog's
+  one-shot popup search missed button IDs; a partial ContentDialog override now
+  assigns local IDs in OnApplyTemplate, preserving styles/default Cancel. Another
+  launch failed readiness before any Graph operation; the trace reached interactive,
+  and failure capture used a stale HWND. The harness now validates current HWND/PID
+  ownership and prevents failed-launch overwrite; four mocked lifecycle cases PASS.
+  Copying initial artifacts failed on an open scratch DB; recovered results JSON
+  was unreadable, so console FAIL is retained. The original acquisition trigger
+  is unproven. The full clean rerun, structured results and captures PASS.
+- **Notes:** existing reconnect completion hint remains informational. The AOT
+  title-bar placeholder matches the October baseline; final icons/branding remain
+  DEP-17. Final import/removal through live sign-in and installed-MSIX behavior
+  remain DEP-19; native ARM64 runtime was not tested. No new M8 or performance
+  claim is made. M9 remains owner-deferred.
+- **Decision/evidence:** `docs/adr/ADR-017-recoverable-synced-task-moves.md` and
+  `docs/plans/dep04-synced-moves.md` contain the reviewed durable move proposal;
+  failing baseline tests stay in ignored scratch. Final local source identity,
+  overlay/candidate hashes, safe counters and capture review records are linked
+  from `artifacts/dep-batch4/evidence.json` and the deployment plan. Raw logs,
+  symbols, coverage, test data and captures remain private/ignored.
+- **Next:** DEP-04 after acknowledgement; DEP-10 provenance and DEP-15 CI
+  hardening can proceed independently. Fresh GitHub CI, native/tool advisory
+  coverage, attribution/archive decisions, final identity/signing/deployment and
+  publication remain pending.
