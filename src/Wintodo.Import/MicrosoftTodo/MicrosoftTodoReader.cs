@@ -134,6 +134,7 @@ public sealed class MicrosoftTodoReader(GraphTodoClient client, int listConcurre
                     await file.FlushAsync(cancellationToken).ConfigureAwait(false);
                     cancellationToken.ThrowIfCancellationRequested();
                 }
+                DownloadedAttachmentProvenance.MarkInternet(path);
             }
             catch
             {

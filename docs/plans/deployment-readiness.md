@@ -104,12 +104,12 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-07 | Bound network bodies and attachment downloads | Security | DEP-05, DEP-06 | Codex / dep07_network_limits | COMPLETE; automated acceptance PASS |
 | DEP-08 | Sanitize all diagnostic paths | Privacy blocker | DEP-01 | Codex / dep08_diagnostics | COMPLETE; automated app/CI privacy acceptance PASS |
 | DEP-09 | End sensitive import sessions correctly | Security | DEP-01 | Codex / dep09_import_lifecycle | COMPLETE; automated acceptance PASS |
-| DEP-10 | Preserve untrusted attachment provenance | Security | DEP-07; API/policy review | Unassigned | PENDING |
+| DEP-10 | Preserve untrusted attachment provenance | Security | DEP-07; API/policy review | Codex / dep10_provenance | IMPLEMENTED; host/AOT PASS; guest preflight FAIL, UI acceptance PENDING |
 | DEP-11 | Reject unsupported database schemas | Data safety | DEP-01 | Codex / dep11_schema_guard | COMPLETE; automated acceptance PASS |
-| DEP-12 | Resolve production test/storage overrides | Policy | Owner decision | Unassigned | PENDING |
+| DEP-12 | Resolve production test/storage overrides | Policy | Owner decision | Codex / dep12_overrides | INVENTORY COMPLETE; production policy/acceptance PENDING |
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_privacy_audit | PRELIMINARY SCANS PASS; policy/final review PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
-| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Unassigned | PENDING |
+| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_ci | IMPLEMENTED; local checks PASS; remote CI/protection/lockfile/native review PENDING |
 | DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Unassigned | PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Unassigned | PENDING |
 | DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Unassigned | PENDING |
@@ -155,6 +155,16 @@ DEP-04 must obtain owner acknowledgement before implementing any required
 schema/protocol ADR. Agents own disjoint files and use ignored isolated
 checkouts for validation. Codex owns shared tracking, integration builds,
 guest gates and commits; final signed-package checks remain pending.
+
+The fifth batch splits DEP-10 (downloaded attachment provenance and opening),
+DEP-15 (secret-free CI, pinned Actions, audit gates and trusted AOT cadence),
+and DEP-12 (read-only override inventory and a concrete production-policy
+proposal). Agents own disjoint files; Codex owns shared tracking, integration
+builds, guest gates and commits. DEP-12 behavior changes and DEP-04's proposed
+ADR-017 remain owner-pending. Remote settings, signing and publication are
+outside this batch. GitHub's protection and ruleset APIs currently return
+HTTP 403 for the private repository, requiring an eligible plan or visibility
+decision before those enforcement gates can be verified.
 
 ## 5. Detailed work packages
 
@@ -339,17 +349,25 @@ used by subsequent operations. Do not promise secure erasure of immutable string
 
 Targets: Graph staging/copying and `TaskDetailViewModel.Attachments.cs`.
 
-- [ ] Verify supported Windows provenance/attachment APIs against restored
+- [x] Verify supported Windows provenance/attachment APIs against restored
       project references and Native AOT; select and document the opening policy.
-- [ ] Preserve or apply appropriate Internet-origin metadata for downloaded
+- [x] Preserve or apply appropriate Internet-origin metadata for downloaded
       attachments through staging, copying and final storage where supported.
-- [ ] Keep filename/path confinement and Windows Launcher restrictions; do not
+- [x] Keep filename/path confinement and Windows Launcher restrictions; do not
       introduce shell execution or claim a demonstrated executable exploit.
 - [ ] Test provenance and benign document opening in the guest, including
       failed imports and supported file types, using synthetic attachments.
 
 Acceptance: downloaded files retain the reviewed trust policy through opening,
 and attachment import/open/delete functionality and path confinement still pass.
+
+[The DEP-10 record](dep10-attachment-provenance.md) documents the reviewed
+Internet-zone marker and `LauncherOptions.TreatAsUntrusted` policy. Host
+regressions pass 11/11, and both fresh AOT publishes pass. The focused guest
+gate stopped before executing tests: the clean checkpoint has SDK 10.0.401,
+while `global.json` requires 10.0.403. Guest setup is owner-invoked; no SDK
+installation, weakened pin or host UI fallback was performed. Guest opening,
+removal/restart and failed-wizard-import acceptance remain pending.
 
 ### DEP-11 — Reject unsupported database schemas
 
@@ -369,7 +387,7 @@ preserve user data and their documented backup behavior.
 
 Targets: App command-line/environment parsing, clock/database hooks, UI gates.
 
-- [ ] Inventory `--database-path`, `WINTODO_DATABASE_PATH`, `--clock-file`,
+- [x] Inventory `--database-path`, `WINTODO_DATABASE_PATH`, `--clock-file`,
       onboarding and fixture/trace switches, plus Release share activation.
 - [ ] Obtain the production policy decision; document intended supported
       overrides or gate test-only behavior without silently changing AOT gates.
@@ -378,6 +396,13 @@ Targets: App command-line/environment parsing, clock/database hooks, UI gates.
 
 Acceptance: production and test behavior are explicit, documented and tested.
 These locally controlled switches are not classified as remote vulnerabilities.
+
+[The DEP-12 proposal](dep12-production-overrides.md) records the observed
+Debug/Release/AOT/share matrix and affected gates. The recommended choice
+retains and documents existing advanced local overrides; an alternative gates them
+to separate test builds. A database override moves only SQLite, and broker
+shares use package LocalState and real time in both configurations. No behavior
+changed; owner policy selection and runtime acceptance remain pending.
 
 ### DEP-13 — Verify repository/history and source privacy
 
@@ -427,24 +452,32 @@ gate. Omitting PDB files alone is not accepted as remediation.
 Targets: `.github/workflows/`, dependency update/scanner configuration,
 `global.json`, lockfiles/source configuration and CI documentation.
 
-- [ ] Keep PR builds secret-free with read-only permissions; avoid executing
+- [x] Keep PR builds secret-free with read-only permissions; avoid executing
       untrusted PR code through privileged events or privileged artifacts.
       Disable persisted checkout credentials where unnecessary.
 - [ ] Pin reviewed Actions revisions and automate reviewed updates. Choose a
       Windows runner policy and verify native toolchain components explicitly.
 - [ ] Define SDK roll-forward and lockfile/locked-restore policy for the
       compatible transitive graph; document package sources and cache boundaries.
-- [ ] Add dependency updates, redacted secret scanning and direct/transitive
+- [x] Add dependency updates, redacted secret scanning and direct/transitive
       vulnerability gates with a documented review process for exceptions.
-- [ ] Require clean warnings-as-errors builds, all four MTP test projects and
+- [x] Require clean warnings-as-errors builds, all four MTP test projects and
       trusted-source x64/ARM64 Release AOT validation on an appropriate cadence.
-- [ ] Record compiler/SDK/CLI/package versions and source commit. Sanitize TRX,
+- [x] Record compiler/SDK/CLI/package versions and source commit. Sanitize TRX,
       coverage/log artifacts; set deliberate retention and upload paths.
 - [ ] Verify actual GitHub protection/plan support, required checks and protected
       release refs; record settings evidence without exposing account identities.
 
 Acceptance: a fresh checkout reproduces successful CI with reviewed dependency
 resolution, no unresolved scanner findings and no PR access to signing authority.
+
+[The CI guide](../guides/ci.md) records pinned upstream Action revisions,
+checksum-verified Gitleaks, safe summaries, native/toolchain evidence and the
+weekly/manual trusted-main unsigned AOT matrix. Local script/parser/scanner/
+audit checks pass. Actual `windows-2025` execution, locked-restore policy,
+native/tool advisory review and required-ref/check enforcement remain open.
+The private repository's protection/ruleset APIs return the recorded HTTP 403
+plan limitation; no remote settings or visibility changed.
 
 ### DEP-16 — Finalize identity, version and package contents
 
@@ -833,6 +866,52 @@ Fourth parallel batch evidence (2026-11-08):
   claim. DEP-10 attachment provenance and DEP-15 CI hardening are ready next;
   DEP-04 implementation still requires its recorded decision. Raw logs, symbols,
   coverage, scratch data and screenshots remain private/ignored.
+
+Fifth parallel batch evidence (2026-11-08):
+
+- **Source:** baseline `812dd73` plus reviewed working-file overlays. Final
+  local commit, source/candidate hashes and safe counters are recorded in
+  [integrated redacted evidence](../../artifacts/dep-batch5/evidence.json).
+  No push, fresh remote CI or publication is claimed for this batch.
+- **DEP-10 — IMPLEMENTED; GUEST ACCEPTANCE PENDING:** six baseline provenance
+  assertions failed; the two existing cleanup controls passed. All 11 focused
+  regressions now pass, covering stage/final markers and byte fidelity,
+  hostile filenames, marking IO/permission failures, owned-file rollback and
+  preservation of existing files. The BCL-only helper writes ZoneId 3 without
+  source/account metadata. Final copies reapply it; attachment opens retain
+  Windows Launcher and request its untrusted warning. No dependency/schema/
+  accepted-ADR change. NTFS is exercised; unsupported filesystems are not.
+- **Guest preflight — FAIL; UI TESTS NOT RUN:** the focused WintodoTest gate
+  stopped while building its test prerequisite. A separate read-only diagnostic
+  confirms SDK 10.0.401 is installed, but the requested minimum is 10.0.403.
+  The guest remains unchanged and powered off. Opening, delete/restart,
+  failed-wizard-import, screenshots and the existing import gate remain
+  pending after owner-invoked setup; no previous PASS is reused for this source.
+- **DEP-15 — LOCAL PASS; FULL ACCEPTANCE PENDING:** independent review verified
+  four Action commit pins and the Gitleaks 8.30.1 ZIP digest against upstream.
+  Actionlint/PowerShell syntax and 27 scanner/privacy regressions pass. Local
+  reachable-history/source-archive scans have zero findings. Solution/app
+  direct/transitive audits pass with zero advisories; sanitized SDK/native/CLI
+  and target-specific AOT/compiler/runtime evidence passes. Workflow audits
+  the final restored graph after packaging, checks exact unsigned bytes before
+  explicit 14-day uploads, and gives PR code no signing authority. Initial
+  concurrent audit output contention was fixed with per-run private folders.
+  Fresh remote CI, lockfiles, native/tool advisory review and the HTTP 403
+  protection-plan decision remain pending.
+- **DEP-12 — INVENTORY COMPLETE; POLICY PENDING:** the concrete proposal lists
+  ordinary Debug/Release/AOT and ShareTarget behavior, source evidence and gate
+  dependencies. Recommended policy retains/documents established overrides;
+  the alternative uses separate test builds. Database overrides move SQLite
+  only; shares use LocalState and real time in both configurations. All 26
+  proposal links resolve. No production behavior or policy changed.
+- **Host integration — PASS:** Debug/Release x64 builds have zero warnings/
+  errors. All four MTP suites pass 578/578, zero failed/skipped (Core 227,
+  Data 106, Import 155, Sync 90). Fresh x64/ARM64 AOT publishes pass; both
+  layouts and relative summary pass the privacy scan across 649 files, zero
+  findings. Existing safe-TRX marker/invalid-input regressions pass. Changed
+  attachment code has no WinUI review issue above informational. AOT runtime
+  UI, final signed/installed packages, ARM64 runtime, live services, M9 perf,
+  owner policy decisions and publication remain pending.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

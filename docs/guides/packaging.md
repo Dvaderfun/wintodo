@@ -76,13 +76,17 @@ scan and final attribution review. Bundles require scanning each contained MSIX.
 Any package content change requires rebuilding/repackaging/re-signing and a fresh
 scan. Intermediate/unsigned PASS cannot close final signed-package acceptance.
 
-Pushes to `v*` tags run the separate `release` matrix in `ci.yml`, after the
-build/test job succeeds. It checks the native toolchain, runs `Publish-Aot.ps1`,
+Pushes to `v*` tags and weekly/manual main runs execute the separate `release`
+matrix in `ci.yml`, after the build/test job succeeds. It checks the native toolchain, runs `Publish-Aot.ps1`,
 then packages with the WinApp CLI restored from the centrally pinned NuGet
 reference. Artifacts `M10-unsigned-x64` and `M10-unsigned-arm64` contain the MSIX
-and AOT size summary. There is no signing material, certificate installation,
-GitHub Release creation or Store publishing in CI. Main pushes and PRs run
-build/test only. Tag names do not change the placeholder manifest version.
+and AOT size summary, plus safe dependency/toolchain/privacy evidence. Actions
+are pinned to reviewed commits; checkout credentials are not persisted, and
+exact unsigned package bytes pass the privacy gate before upload. There is no
+signing material, certificate installation, GitHub Release creation or Store
+publishing in CI. Ordinary main pushes and PRs run build/test and security
+checks. Tag names do not change the placeholder manifest version. See
+[CI policy and remaining enforcement gates](ci.md).
 
 ## Local test signature
 

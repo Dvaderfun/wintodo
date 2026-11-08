@@ -87,7 +87,9 @@ public sealed partial class TaskDetailViewModel
         try
         {
             StorageFile file = await StorageFile.GetFileFromPathAsync(path);
-            if (!await Launcher.LaunchFileAsync(file))
+            // Imported and locally picked files are external content. Retain the
+            // Windows file-type restrictions and ask Windows to show its warning.
+            if (!await Launcher.LaunchFileAsync(file, new LauncherOptions { TreatAsUntrusted = true }))
             {
                 ShowError(_resources.GetString("Detail_AttachmentOpenFailed"));
             }
