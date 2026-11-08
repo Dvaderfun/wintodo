@@ -96,7 +96,7 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | ID | Work package | Priority | Depends on | Owner | Status |
 |---|---|---|---|---|---|
 | DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
-| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review | REVIEWED WITH LIMITS; native-tool advisory/provenance disposition and hosted acceptance PENDING |
+| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup | FOLLOW-UP REVIEWED; advisory disposition, embedded-runtime/native provenance and hosted acceptance PENDING |
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
 | DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; ADR-017 accepted | Codex / dep04_data + dep04_sync + dep04_regressions | AUTOMATED ACCEPTANCE PASS; guest UI/live/final-package checks PENDING |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
@@ -110,8 +110,8 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
 | DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore | LOCKED RESTORE/LOCAL CHECKS PASS; remote CI/protection/native advisory disposition PENDING |
-| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Unassigned | PENDING |
-| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Unassigned | PENDING |
+| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection | Structural inspector IMPLEMENTED; 24/24 synthetic PASS; CI wired, hosted/final-candidate acceptance PENDING |
+| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation | Evidence-backed privacy/installation DRAFTS PREPARED; owner decisions/assets/live sign-in acceptance PENDING |
 | DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Unassigned | PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Unassigned | PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
@@ -172,6 +172,27 @@ and DEP-13 source-archive/fixture/image privacy review. Agents own disjoint
 files and keep raw evidence in separate ignored scratch directories. Codex owns
 shared tracking, integrated verification and commits. No identity, attribution,
 ADR, machine setup, remote protection, signing or publication decision is changed.
+
+The next parallel preparation batch (2026-11-08), authorized by the owner's
+request to use subagents, splits three decision-independent streams: DEP-02
+advisory reachability/tool provenance follow-up, DEP-16 exact-package structural
+inspection, and DEP-17 evidence-backed privacy/installation drafts. Agents own
+separate review documents and new scripts/docs; Codex owns shared tracking,
+integration and verification. Existing accepted identity, signing, override and
+distribution decisions are not changed by preparing these materials. No machine
+setup, host UI, remote settings, signing or publication is part of this batch.
+
+This preparation batch is now integrated: the structural gate and 24 new
+regressions pass locally, unsigned-candidate CI invokes it, privacy/installation
+drafts are ready for review, and the native/tool follow-up identifies WinApp
+0.8.0 as an upgrade candidate without changing the pinned CLI. These results
+complete the bounded streams, not DEP-02/16/17's final acceptance.
+
+The immediate subsequent gates still require the DEP-12 production policy,
+guest SDK setup by the owner, native advisory disposition, final identity/version
+and signing choices, attribution/image rights, and actual hosted CI for the
+current reviewed source. Final signed-package testing and publication remain
+ordered after those prerequisites.
 
 ## 5. Detailed work packages
 
@@ -239,6 +260,11 @@ runtime provenance and native vendor-build mappings also remain open. Hosted
 inventory maps Visual Studio to patched `17.14.44`; actual runner execution is
 still required. The local `18.8.0` installation has a servicing/coverage gap,
 without proof of an affected compiler. No machine/tool dependency was changed.
+
+The follow-up traces the unsigned native-SDK command path and proposes a
+bounded HarfBuzz non-applicability disposition for owner review. Stable WinApp
+0.8.0 includes signing fixes but retains the same graphics dependencies; it is
+an upgrade candidate, not a demonstrated HarfBuzz or embedded-runtime fix.
 
 ### DEP-03 — Protect local edits during sync pull
 
@@ -547,6 +573,12 @@ packaging scripts, inspection scripts and package tests.
 Acceptance: both candidates share the approved commit/version/identity policy
 and pass structural, dependency, capability and privacy inspection.
 
+[The package inspection preparation](dep16-package-inspection.md) supplies a
+reusable exact-MSIX structural/privacy gate, 24 passing synthetic regressions
+and unsigned-candidate CI integration. Source-manifest equality is checked;
+production identity/payload approval, SBOM closure, hosted acceptance and final
+signed/deployment evidence remain pending.
+
 ### DEP-17 — Complete release documentation, assets and sign-in setup
 
 Targets: README, packaging/testing/release guides, legal/privacy documents,
@@ -575,6 +607,12 @@ app assets/resources and Microsoft To Do deployment documentation.
 
 Acceptance: release documentation/assets are complete, privacy-reviewed and
 consistent with the delivered behavior and selected distribution route.
+
+[The documentation preparation record](dep17-release-docs.md) links unpublished
+[privacy](../releases/PRIVACY.md) and
+[installation/update/recovery](../releases/INSTALLATION.md) drafts. Their claims
+are tied to current source and explicitly retain unresolved owner fields,
+asset/licensing, telemetry-network, sign-in and final-package cleanup evidence.
 
 ### DEP-18 — Add protected signing and GitHub release stages
 
@@ -686,7 +724,7 @@ substitute for final installed-MSIX clean-deployment evidence.
 
 | Gate | Required proof | Status |
 |---|---|---|
-| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | Previous batch PASS (`6342f82`, GitHub run 42428523717, 455/455); third/fourth-batch GitHub CI PENDING |
+| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | Latest remote PASS (`da94519`, GitHub run 42429107588); current source and newer-batch hosted acceptance PENDING |
 | Pull concurrency | Newer edits/deletes survive or conflict; no false acknowledgment | PASS (`97e7107`, 33 Sync tests); final-package/live chooser proof remains DEP-19 |
 | Synced moves | Correct source/destination membership and retry/restart convergence | AUTOMATED PASS: 71/71; guest UI/live/final packages PENDING |
 | Graph origin/CalDAV redirects | Real request boundaries; no foreign token/body disclosure | Graph PASS (`0d5dc94`, 31 destination tests); CalDAV PASS (41 regressions, M13 VM 11/11) |
@@ -698,9 +736,9 @@ substitute for final installed-MSIX clean-deployment evidence.
 | Dependency/AOT security | Fresh resolved graph; reviewed patched compiler/runtime | LOCAL x64/ARM64 AOT/NuGet PASS (`2e149ca`); runner/native review PENDING |
 | Repository/history/archive privacy | Redacted scanner findings and reviewed attribution | PRELIMINARY SCANS PASS (`2e149ca`); policy/final review PENDING |
 | Binary/public metadata privacy | Both final signed architectures; no identifying build paths | PRE-SIGNING PASS (649 integrated x64/ARM64 AOT files; isolated unsigned x64 MSIX 322 files); final signed x64/ARM64 PENDING |
-| Package identity/version/content | Tag mapping, native/runtime/assets/capabilities and SBOM | PENDING |
+| Package identity/version/content | Tag mapping, native/runtime/assets/capabilities and SBOM | Structural inspector synthetic PASS (24/24), unsigned CI wired; hosted/final identity/payload/SBOM/deployment PENDING |
 | Signing and pipeline protection | Final chain/timestamp; trusted inputs; negative permission tests | PENDING |
-| Licence/privacy/assets/support docs | Complete approved customer-facing material | PENDING |
+| Licence/privacy/assets/support docs | Complete approved customer-facing material | Privacy/installation DRAFTS PREPARED; approval/licence/assets/support/final-package evidence PENDING |
 | Work/school import/admin consent | Authorized live verification, sanitized evidence | PENDING |
 | x64 clean install/update/uninstall | Exact final hash and clean environment baseline | PENDING |
 | ARM64 clean install/update/uninstall | Native ARM64 runtime evidence and exact final hash | PENDING |
@@ -1043,6 +1081,42 @@ DEP-04 implementation batch evidence (2026-11-08):
   no guest setup or host UI automation occurred. Live providers, final installed
   packages, native advisory/provenance dispositions, other owner decisions and
   publication remain pending. No remote settings or publication changed.
+
+Parallel release-preparation follow-up evidence (2026-11-08):
+
+- **Source:** clean baseline `4fa223d` plus reviewed tooling/documentation
+  overlays. The local integration commit, changed-file hashes and safe counters
+  are recorded in [integration evidence](../../artifacts/dep-next/evidence.json).
+  No product code, package references, lockfiles or accepted policy changed.
+- **DEP-02 — FOLLOW-UP REVIEWED; ACCEPTANCE PENDING:** pinned WinApp native-SDK
+  unsigned packaging delegates to `dotnet publish` without font-generation or
+  SVG-rendering calls in the reviewed path. Matching Svg.Skia/HarfBuzz binding
+  source maps shaping/variation calls; the recommended bounded advisory
+  disposition remains owner-pending. Stable WinApp 0.8.0 includes signing/PKCS
+  fixes but retains the same graphics versions. Embedded runtime/compiler
+  provenance and native mappings remain unverified; no CLI upgrade was applied.
+- **DEP-16 — STRUCTURAL PREPARATION PASS:** 24 synthetic regressions verify
+  required native/runtime/assets, source-manifest expectations, declarations,
+  malformed ZIP/XML, sensitive payload rejection, hashes and report integrity.
+  Independent review found and verified fixes for candidate-output aliases,
+  four malformed-manifest false passes and stale PASS reports after failure.
+  A legacy x64 package passes structural checks and correctly fails its two
+  known binary-privacy findings; it is unchanged and predates current source.
+  The current CI invocation passes with a synthetic MSIX. Actual hosted CI,
+  approved identity/payload, full schema/signature/runtime and final packages
+  remain pending; vendor resource architectures are counted separately.
+- **DEP-17 — DRAFTS PREPARED:** source-backed privacy/installation/recovery
+  drafts retain their unpublished status and outstanding decision fields.
+  All 40 local links across the four new preparation documents resolve; draft
+  paths are tracked rather than hidden by the generic Release-output ignore.
+- **Integration — PASS:** Debug and Release x64 warnings-as-errors builds have
+  zero warnings/errors; MTP passes 678/678 with zero failed/skipped. All 51
+  script regressions pass (24 package, 27 existing scanner/privacy checks).
+  Actionlint passes. Raw logs and synthetic packages remain private/ignored.
+- **Limits:** latest remote CI still covers `da94519`, before the newer local
+  fixes. No push, remote settings, machine setup, UI/AOT publish, certificate
+  trust, signing, install/update/uninstall, live sign-in/server or publication
+  was performed. DEP-12 and distribution choices remain pending; M9 stays deferred.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

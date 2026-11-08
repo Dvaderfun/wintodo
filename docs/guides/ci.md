@@ -34,8 +34,14 @@ PR and non-main manual runs do not run this matrix. It verifies target linker,
 Windows SDK tools, restored WinApp CLI, patched target AOT/compiler/runtime
 packages and the final dependency graph. It scans the actual layout, unsigned
 MSIX and public metadata for private paths, including the current checkout
-root, before upload. This does not establish production signing or installation
-acceptance. Tags still use the placeholder manifest identity/version; DEP-16/18
+root, before upload. A separate structural gate checks those exact MSIX bytes
+against the source manifest identity/version and requested native architecture,
+runtime/assets, capabilities and activation declarations. Its sanitized
+`release-package.json` report accompanies the candidate. The independently
+approved complete payload inventory remains pending; source-manifest consistency
+does not approve the placeholder production identity. These checks do not
+establish production signing or installation acceptance. Tags still use the
+placeholder manifest identity/version; DEP-16/18
 will define the approved production mapping and protected signing stage.
 
 Uploads use explicit allowlisted filenames and 14-day retention. Raw TRX,
