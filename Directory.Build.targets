@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <!-- RID/AOT properties are set by the project after Directory.Build.props.
+         Separate graphs keep ordinary builds and AOT restores from rewriting
+         each other's reviewed transitive dependencies. -->
+    <_PackageLockSuffix Condition="'$(PublishAot)' == 'true'">.aot</_PackageLockSuffix>
+    <!-- dotnet restore -r sets RuntimeIdentifiers on referenced libraries. -->
+    <_PackageLockRuntime>$(RuntimeIdentifier)</_PackageLockRuntime>
+    <_PackageLockRuntime Condition="'$(_PackageLockRuntime)' == ''">$(RuntimeIdentifiers)</_PackageLockRuntime>
+    <_PackageLockSuffix Condition="'$(_PackageLockRuntime)' != ''">$(_PackageLockSuffix).$(_PackageLockRuntime)</_PackageLockSuffix>
+    <NuGetLockFilePath>$(MSBuildProjectDirectory)\packages$(_PackageLockSuffix).lock.json</NuGetLockFilePath>
+  </PropertyGroup>
+  <Target Name="RequireReviewedPackageLock" BeforeTargets="_GenerateRestoreGraphProjectEntry;Restore"
+          Condition="'$(RestoreLockedMode)' == 'true'">
+    <!-- NuGet creates a missing lock even in locked mode; fail before it can. -->
+    <Error Code="WTDLOCK001" Condition="!Exists('$(NuGetLockFilePath)')"
+           Text="A reviewed package lockfile is required for this restore graph. Regenerate supported locks with RestoreLockedMode=false and review the dependency changes." />
+    <Error Code="WTDLOCK002" Condition="'$(RestoreForceEvaluate)' == 'true'"
+           Text="Force-evaluate updates package locks. Set RestoreLockedMode=false explicitly for an intentional dependency update." />
+  </Target>
+</Project>

@@ -313,10 +313,13 @@ launches before starting another process; failure evidence must not use an old H
 ## CI
 
 `.github/workflows/ci.yml` builds x64 Debug with warnings as errors and runs the
-four test projects (TRX + coverage uploaded as artifacts) on `windows-latest`. UI gates are not in CI: they need an
-interactive desktop session and Developer Mode, which the test VM provides.
+four Microsoft Testing Platform projects on `windows-2025`. CI exports reviewed
+suite counters and redacted scanner/dependency/toolchain evidence; raw TRX,
+coverage and logs stay private. UI gates need the test VM's interactive desktop
+and Developer Mode. See [ci.md](ci.md) for dependency and runner policy.
 
-On `v*` tag pushes, a separate release job publishes Native AOT and packages
-unsigned x64 and ARM64 MSIX artifacts after build/test succeeds. Main pushes
-and PRs do not run that job. Production signing and install/uninstall gates
-remain open; see [packaging.md](packaging.md).
+On `v*` tag pushes and scheduled/manual main runs, a separate release matrix
+publishes Native AOT and packages unsigned x64 and ARM64 MSIX artifacts after
+build/test succeeds. Ordinary main pushes and PRs run build/test and security
+checks. Production signing and install/uninstall gates remain open; see
+[packaging.md](packaging.md).

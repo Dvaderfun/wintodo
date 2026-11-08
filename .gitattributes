@@ -1,2 +1,5 @@
 # Raw Microsoft To Do attachment fixtures must survive checkout byte-for-byte.
 /tests/fixtures/mstodo/**/*.bin -text
+
+# Local indexing scaffolding is unnecessary in distributable source archives.
+/.codegraph export-ignore

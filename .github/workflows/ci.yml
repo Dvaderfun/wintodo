@@ -48,8 +48,8 @@ jobs:
       - name: Scan reachable history and source archive (redacted, pinned scanner)
         run: ./scripts/Invoke-CiSecretScan.ps1
 
-      - name: Restore (all transitive advisories, warnings as errors)
-        run: dotnet restore Wintodo.sln -p:Platform=x64 -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low -warnaserror
+      - name: Locked restore (all transitive advisories, warnings as errors)
+        run: dotnet restore Wintodo.sln --locked-mode -p:Platform=x64 -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low -warnaserror
 
       - name: Audit direct and transitive dependencies
         run: ./scripts/Invoke-CiDependencyAudit.ps1
@@ -118,10 +118,12 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Restore target AOT dependencies (all advisories, warnings as errors)
+      - name: Locked restore target AOT dependencies (all advisories, warnings as errors)
         run: >
           dotnet restore src/Wintodo.App/Wintodo.csproj -r win-${{ matrix.arch }}
-          -p:Platform=${{ matrix.platform }} -p:PublishAot=true
+          --locked-mode -p:Configuration=Release
+          -p:Platform=${{ matrix.platform }} -p:PublishAot=true -p:SelfContained=true
+          -p:WindowsAppSDKSelfContained=true -p:PublishTrimmed=true -p:PublishReadyToRun=false
           -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low -warnaserror
 
       - name: Verify target native toolchain before publishing
@@ -141,7 +143,8 @@ jobs:
           New-Item -ItemType Directory -Force -Path (Split-Path -Parent $output) | Out-Null
           & $cli package src/Wintodo.App/Wintodo.csproj --arch ${{ matrix.arch }} --no-sign --self-contained `
             -p Platform=${{ matrix.platform }} -p PublishAot=true -p SelfContained=true `
-            -p PublishTrimmed=true -p PublishReadyToRun=false -p TreatWarningsAsErrors=true --output $output
+            -p PublishTrimmed=true -p PublishReadyToRun=false -p TreatWarningsAsErrors=true `
+            -p RestoreLockedMode=true --output $output
           if ($LASTEXITCODE -ne 0) { throw 'Unsigned MSIX packaging failed.' }
           if (-not (Test-Path -LiteralPath $output)) { throw 'MSIX artifact was not produced.' }
 

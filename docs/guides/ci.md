@@ -48,14 +48,59 @@ package; the hosted image is serviced, not an immutable VM image. The reviewed
 Visual Studio 2022 17.14 and both x64/ARM64 tools. Each run verifies availability
 again; actual run evidence takes precedence over that inventory.
 
-The current SDK policy remains `global.json` minimum 10.0.403,
-`latestFeature`, stable releases only. NuGet.org was the only effective source
-in the local reviewed audit. There is no custom Actions cache and no signing
-authority shared with PR jobs; ordinary hosted-runner NuGet package caches
-are scoped to the ephemeral job. Central package versions are pinned, but
-transitive lockfiles and locked restore are still pending a reviewed policy;
-this batch does not claim byte-identical dependency reproduction. Record
-restored versions and rerun advisories for each candidate. For a finding, review
+The SDK policy remains `global.json` minimum 10.0.403, `latestFeature`, stable
+releases only. `NuGet.Config` clears inherited package sources and uses only
+the HTTPS NuGet.org v3 feed. There is no custom Actions cache and no signing
+authority shared with PR jobs; ordinary hosted-runner NuGet package caches are
+scoped to the ephemeral job. Package-source changes require review with the
+dependency graph; do not put credentials in this config.
+
+NuGet restores use checked-in lockfiles and default to `RestoreLockedMode=true`
+through `Directory.Build.props`. CI explicitly uses `--locked-mode` and passes
+locked mode through WinApp packaging; the ordinary publish helper also inherits
+the default. Missing locks, requested dependency drift and package content-hash
+mismatches must fail rather than silently resolve a new graph.
+NuGet itself creates missing locks even with locked mode, so a per-project
+pre-restore check in `Directory.Build.targets` rejects an absent reviewed lock
+(`WTDLOCK001`) and a force-evaluate request while locked (`WTDLOCK002`). The
+check includes referenced projects and permits explicit update mode.
+The same file selects the lock after project RID/AOT properties are
+known: `packages.lock.json` for an ordinary library/test restore,
+`packages.<rid>.lock.json` for a non-AOT app, and
+`packages.aot.<rid>.lock.json` for the AOT app and its libraries. The four
+libraries each have ordinary/x64-AOT/ARM64-AOT locks, the four test projects
+have ordinary locks, and the app has two ordinary and two AOT locks: 20 files.
+NuGet's `dotnet restore -r` supplies plural `RuntimeIdentifiers` to referenced
+libraries, so selection handles that property as well as `RuntimeIdentifier`.
+This keeps x64 and ARM64 jobs from rewriting the same transitive graph.
+The supported proofs cover Debug/Release solution restores on both platforms
+and Release AOT app restores for both RIDs, including the property form used by
+implicit publishing. Other restore combinations need their own reviewed lock.
+
+For an intentional SDK/package update, regenerate the supported graphs in an
+isolated checkout with `-p:RestoreLockedMode=false --force-evaluate`, review
+the requested/resolved versions and hashes, and commit the changed locks with
+the dependency change. **Do not pass `--force-evaluate` to verification:** NuGet
+normally uses it to override locked mode and update a lock; the repository's
+guard requires explicit `RestoreLockedMode=false` for that request. For example:
+
+```powershell
+# Repeat the solution command for ARM64 and each target command for win-arm64.
+dotnet restore Wintodo.sln -p:Platform=x64 -p:RestoreLockedMode=false --force-evaluate
+dotnet restore src/Wintodo.App/Wintodo.csproj -r win-x64 `
+  -p:Platform=x64 -p:Configuration=Release -p:PublishAot=true -p:SelfContained=true `
+  -p:RestoreLockedMode=false --force-evaluate
+# Review/commit locks, then verify with --locked-mode and no update override.
+dotnet restore Wintodo.sln -p:Platform=x64 --locked-mode -warnaserror
+```
+
+Lockfiles cover the NuGet dependency graph and content hashes; SDK implicit
+download dependencies/runtime packs can be outside that graph. SDK roll-forward
+and the serviced runner image remain deliberate sources of change, so lockfiles
+do not establish identical native binaries or complete toolchain reproducibility.
+Record SDK, target compiler/runtime/download versions and rerun advisories for
+each candidate. A rolled-forward SDK that changes locked analyzer/compiler
+dependencies requires the same reviewed update. For a finding, review
 the private report, update the narrow affected dependency/tool and rerun the
 full gate. A dependency/scanner exception requires an explicit documented owner
 disposition; do not suppress advisory warnings or silently skip scans.
@@ -66,11 +111,21 @@ HTTP 403: “Upgrade to GitHub Pro or make this repository public to enable this
 feature.” No settings were changed. Required checks and protected release refs
 cannot be claimed as enforced until the owner resolves plan/visibility support
 and the exact protection settings are verified. Fresh remote CI and native
-advisory review remain pending after this local implementation.
+advisory dispositions remain pending; see the
+[native/tool review](../plans/dep02-toolchain-review.md) for current evidence.
 
 Local verification (no app launch or desktop automation):
 
+DEP-15 locked-restore checks pass on SDK 10.0.403: eight supported restore
+shapes, unchanged hashes for all 20 lockfiles, requested-version/content-hash
+drift rejection, missing direct/reference lock rejection, force-evaluate rejection
+while locked, explicit update-mode regeneration, unreviewed-RID rejection and
+valid restore after injected failures. Local redacted evidence is
+`artifacts/dep15-locks/evidence.json`; raw logs remain ignored/private. This proof
+does not close the pending fresh hosted CI or final native-tool/package gates.
+
 ```powershell
+dotnet restore Wintodo.sln -p:Platform=x64 --locked-mode -warnaserror
 python -m unittest discover -s tests/scripts -p 'test_*.py'
 .\scripts\Invoke-CiSecretScan.ps1
 .\scripts\Invoke-CiDependencyAudit.ps1
