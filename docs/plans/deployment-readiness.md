@@ -585,7 +585,7 @@ substitute for final installed-MSIX clean-deployment evidence.
 
 | Gate | Required proof | Status |
 |---|---|---|
-| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | PASS (`5604256`, GitHub run 42424857115, 392/392, zero skips) |
+| Fresh-checkout CI | Exact commit; all four test suites; no unexplained skips | PASS (`6342f82`, GitHub run 42428523717, 455/455, zero skips) |
 | Pull concurrency | Newer edits/deletes survive or conflict; no false acknowledgment | PASS (`97e7107`, 33 Sync tests); final-package/live chooser proof remains DEP-19 |
 | Synced moves | Correct source/destination membership and retry/restart convergence | PENDING |
 | Graph origin/CalDAV redirects | Real request boundaries; no foreign token/body disclosure | Graph PASS (`0d5dc94`, 31 destination tests); CalDAV DEP-06 PENDING |
@@ -698,7 +698,10 @@ Second parallel batch evidence (2026-11-08):
   UI and final deployment gates remain DEP-19 work. DEP-04 synced moves, DEP-06
   CalDAV redirects and the other pending packages remain open. Native/tool
   advisory coverage, owner policy decisions and M9 deferral are unchanged.
-  Fresh GitHub CI for this batch is pending until the implementation push runs.
+  Fresh [GitHub CI run 42428523717](https://github.com/Dvaderfun/wintodo/actions/runs/42428523717)
+  passed for `6342f82`; downloaded TRX counters confirm all four suites,
+  455/455 passed, zero failed/skipped. Implementation source is committed and
+  pushed. DEP-20 release publication remains pending.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and
