@@ -276,3 +276,10 @@ To close DEP-02, resolve the HarfBuzz/WinApp embedded-runtime and native vendor
 mapping dispositions, then produce exact reviewed-tool evidence in a fresh
 hosted-runner x64/ARM64 candidate run. Preserve local machine setup as a separate
 owner-invoked action. Final signed-package inspection remains DEP-16/18/19.
+
+The subsequent [exact-tool evidence improvement](dep15-exact-toolchain-evidence.md)
+adds numeric compiler/linker/librarian, restored CLI and SDK-tool versions/hashes
+to the CI exporter. It distinguishes available installed tools from MSBuild's
+evaluated Release packaging tools; actual invocation remains a separate proof.
+These local observations narrow the provenance gap without resolving the
+advisory dispositions or replacing fresh hosted candidate evidence.

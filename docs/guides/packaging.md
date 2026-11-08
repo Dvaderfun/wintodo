@@ -21,12 +21,13 @@ On a provisioned Windows machine with WinApp CLI 0.7+, the pinned .NET SDK,
 and MSVC tools for the target architecture:
 
 ```powershell
-./scripts/Publish-Aot.ps1
-winapp package src/Wintodo.App/Wintodo.csproj --arch x64 --no-sign --self-contained `
+./scripts/Publish-Aot.ps1 -Platforms x64
+winapp package src/Wintodo.App/Wintodo.csproj --arch x64 --no-sign --self-contained --no-restore `
   -p Platform=x64 -p PublishAot=true -p SelfContained=true `
   -p PublishTrimmed=true -p PublishReadyToRun=false -p TreatWarningsAsErrors=true `
   --output publish/msix/Wintodo-x64.msix
-winapp package src/Wintodo.App/Wintodo.csproj --arch arm64 --no-sign --self-contained `
+./scripts/Publish-Aot.ps1 -Platforms ARM64
+winapp package src/Wintodo.App/Wintodo.csproj --arch arm64 --no-sign --self-contained --no-restore `
   -p Platform=ARM64 -p PublishAot=true -p SelfContained=true `
   -p PublishTrimmed=true -p PublishReadyToRun=false -p TreatWarningsAsErrors=true `
   --output publish/msix/Wintodo-arm64.msix
@@ -36,6 +37,16 @@ Use the explicit project and AOT properties. With CLI 0.7.1, relying on Release
 defaults alone selected the trimmed managed path and produced CsWinRT IL2081
 errors; the explicit AOT path packaged cleanly. Do not suppress trim warnings.
 No development package registration or launch is needed to package.
+
+Run `Publish-Aot.ps1` for each requested architecture immediately before its
+package command; the shared assets graph changes on the next target restore. Its
+target-specific restore uses the approved AOT locks. Keep `--no-restore` on
+the package command: WinApp 0.7.1 otherwise restores the containing solution
+with AOT properties, including test projects that have no supported AOT graph.
+The flag skips that extra restore while preserving the native build/package
+step. Do not add AOT test locks or weaken locked restore to bypass this failure.
+`summary.json` describes the last publish invocation; retain each target's
+summary separately when keeping both size records.
 
 ## Release artifact privacy (DEP-14)
 
@@ -157,8 +168,9 @@ describe the preceding `1.0.0.0` build.
 To reproduce a signed local update at this filename:
 
 ```powershell
+.\scripts\Publish-Aot.ps1 -Platforms x64
 winapp package src/Wintodo.App/Wintodo.csproj --arch x64 `
-  --cert publish/msix/m10-test.pfx --self-contained `
+  --cert publish/msix/m10-test.pfx --self-contained --no-restore `
   -p Platform=x64 -p PublishAot=true -p SelfContained=true `
   -p PublishTrimmed=true -p PublishReadyToRun=false -p TreatWarningsAsErrors=true `
   --output publish/msix/Wintodo-x64.msix

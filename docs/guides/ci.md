@@ -44,6 +44,23 @@ establish production signing or installation acceptance. Tags still use the
 placeholder manifest identity/version; DEP-16/18
 will define the approved production mapping and protected signing stage.
 
+Packaging uses `--no-restore` after the explicit target-specific locked AOT
+restore and publish. WinApp 0.7.1's default containing-solution restore would
+also request unsupported AOT test-project locks (`WTDLOCK001`). Skipping that
+extra restore preserves the reviewed app graph and the native packaging step.
+
+Toolchain reports retain SDK-family/MSVC-directory fields and add exact numeric
+file/product versions and SHA-256 for available compiler/linker/librarian,
+installed SDK tools and the restored WinApp executable. MSBuild-evaluated
+Release MakeAppx/MakePri/RC tools are recorded separately, including whether
+they come from the restored BuildTools package or an external override. These
+records describe availability/configuration; actual invocation and candidate
+byte provenance require separate evidence. Missing/invalid tools or query
+failures reject export without printing machine paths. See
+[the exact-tool evidence review](../plans/dep15-exact-toolchain-evidence.md).
+Seven synthetic tool-metadata/selection/privacy regressions run through the
+existing Python test discovery.
+
 Uploads use explicit allowlisted filenames and 14-day retention. Raw TRX,
 coverage, scanner reports, symbols, binlogs and diagnostic logs stay private.
 Public evidence records the source commit, SDK/CLI/native tool versions, runner

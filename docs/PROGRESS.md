@@ -40,6 +40,15 @@ As of 2026-11-08:
   adopted or credited with resolving HarfBuzz/runtime provenance. Owner policy,
   identity/licence/signing, guest setup and final hosted/package acceptance stay
   pending. See [the deployment plan](plans/deployment-readiness.md).
+- **Clean-source release evidence (2026-11-08):** unsigned x64/ARM64 MSIX from
+  clean `965d86b` pass exact structure/privacy and 311/307 shared-file layout
+  equivalence. A reproduced containing-solution AOT restore failure is corrected
+  by supported `--no-restore` packaging after each matching locked target
+  restore/publish. Exact native/tool binary metadata and seven new regressions
+  pass; all 58 script tests and the 678 unit tests pass. Shipped-notice omissions
+  are confirmed against both packages, with nine inherited texts prepared for
+  review/integration. Final hosted/owner/licensing/SBOM/signing/deployment gates
+  remain pending; guest SDK and M9 dispositions are unchanged.
 - **Deployment preparation (2026-11-08):** Three agents split DEP-01 fixture
   repair, DEP-02 patched-toolchain proof and preliminary DEP-13 privacy scans.
   Commit `2e149ca` preserves raw attachment checkout bytes and pins the patched
@@ -4238,3 +4247,36 @@ UI automation. ARM64 not rebuilt.
   certificate trust, signing, installation or publication occurred.
 - **Evidence:** artifacts/dep-next/evidence.json records baseline, local commit,
   changed-file hashes and safe counters; raw build/test logs remain ignored.
+
+### 2026-11-08 — M10 clean-source candidates, exact tools and shipped notices
+
+- **Gate:** Debug x64 warnings-as-errors build PASS; all four MTP suites
+  678/678 PASS, zero failed/skipped. All 58 script tests, Actionlint, exporter
+  parsing and local document-link checks PASS. Seven new regressions verify
+  exact tool versions/hashes, selection and sanitized failure output.
+- **Candidates:** clean `965d86b` x64/ARM64 AOT publishes and unsigned SDK-native
+  MSIX PASS; exact structure/privacy and final app NuGet audits PASS. All
+  495 archived source files/20 locks remain unchanged. All 311/307 common
+  layout/package files match. Candidate hashes and limits are recorded in
+  [the clean-source validation](plans/dep16-local-candidate-validation.md).
+- **Fixed:** WinApp's default packaging restore reproduced `WTDLOCK001` by
+  requesting unsupported AOT graphs for solution test projects. Supported
+  `--no-restore` succeeds after the matching target locked restore/publish;
+  CI and the guide retain that order and preserve lock guards. Original
+  failure evidence remains private.
+- **Tool/notices preparation:** CI exporter adds exact available binary versions
+  and SHA-256, distinguishing installed tools from evaluated project selections
+  and actual invocation. The notice review maps 103 DLLs/two vendor helpers and
+  prepares nine exact deduplicated inherited legal texts missing from the
+  unchanged packaged notice. Their 856,256-byte proposal passes privacy checks.
+  Retained-code scope, notice integration and legal approval remain pending.
+- **Limits:** remote CI predates current source; DEP-12/distribution/identity/
+  first-party licence/signing and image-rights choices remain pending. Guest
+  SDK setup, native advisory/invocation provenance, full SBOM, final signed
+  package/live/native-ARM64 deployment gates remain open; M9 stays deferred.
+  No push, remote settings, machine setup, UI automation, certificate trust,
+  signing, installation or publication occurred.
+- **Evidence:** artifacts/dep-next-integration/evidence.json and the separate
+  candidate/tool/notices directories record sanitized counters/source hashes.
+  Shared deployment tracking and document index are updated. This batch is
+  committed locally as an M10 preparation unit.
