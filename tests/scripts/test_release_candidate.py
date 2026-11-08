@@ -21,6 +21,13 @@ spec.loader.exec_module(candidate)
 COMMIT = "1" * 40
 
 
+def dependencies(architecture="x64"):
+    return {"scanner": "NuGet", "projects": 1, "vulnerable_packages": 0, "advisories": 0, "status": "PASS",
+            "binding": {"source_commit": COMMIT, "architecture": architecture.lower(),
+                        "assets_sha256": ("a" if architecture.lower() == "x64" else "b") * 64,
+                        "project_set": "app", "scope": "app_assets_observed_before_and_after_audit"}}
+
+
 class ReleaseCandidateTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -38,13 +45,13 @@ class ReleaseCandidateTests(unittest.TestCase):
             self.make_package(record, payload(architecture))
             self.write_input(record, "toolchain", {
                 "SourceCommit": COMMIT, "Architecture": architecture.lower(), "DotnetSdk": "10.0.403",
+                "AssetsSha256": dependencies(architecture)["binding"]["assets_sha256"],
                 "WinAppCli": "0.7.1", "TargetRuntime": "10.0.14", "Msvc": "14.51.36231",
                 "VisualStudio": "18.8.12009.203", "WindowsSdkAvailable": "10.0.26100.0", "AotGraphVerified": True,
                 "Packages": {"Microsoft.DotNet.ILCompiler": "10.0.14",
                              "runtime.win-" + architecture.lower() + ".Microsoft.DotNet.ILCompiler": "10.0.14",
                              "Microsoft.Windows.SDK.BuildTools.WinApp": "0.7.1", "Microsoft.WindowsAppSDK": "2.5.1"}})
-            self.write_input(record, "dependencies", {"scanner": "NuGet", "projects": 1, "vulnerable_packages": 0,
-                                                       "advisories": 0, "status": "PASS"})
+            self.write_input(record, "dependencies", dependencies(architecture))
         self.save_descriptor()
 
     def make_package(self, record, files):
@@ -102,7 +109,9 @@ class ReleaseCandidateTests(unittest.TestCase):
         self.assertEqual(list(candidate.ARCHITECTURES), [r["architecture"] for r in report["packages"]])
         self.assertTrue(all(r["unsigned"] for r in report["packages"]))
         self.assertIn("source_to_package_execution_provenance", report["pending_gates"])
-        self.assertIn("audit_to_resolved_graph_binding", report["pending_gates"])
+        self.assertNotIn("audit_to_resolved_graph_binding", report["pending_gates"])
+        self.assertTrue(all(r["audit_to_resolved_graph_binding"] == "MATCH; locally_observed_reports_only"
+                            for r in report["packages"]))
         self.assertNotIn(str(self.root), stdout + json.dumps(report))
         self.assertNotIn("Synthetic Publisher", stdout + json.dumps(report))
 
@@ -233,9 +242,38 @@ class ReleaseCandidateTests(unittest.TestCase):
                         {"vulnerable_packages": False}, {"scanner": "other"}):
             self.change_report("dependencies", lambda r: r.update(changes))
             self.assert_rejected("dependency_gate_not_passed_or_malformed")
-            self.write_input(self.document["packages"][0], "dependencies", {"scanner": "NuGet", "projects": 1,
-                "advisories": 0, "vulnerable_packages": 0, "status": "PASS"})
+            self.write_input(self.document["packages"][0], "dependencies", dependencies())
             self.save_descriptor()
+
+    def test_missing_or_malformed_dependency_binding_rejected_without_echo(self):
+        for value in (None, {}, {"source_commit": "private-owner"}, [], "private-owner"):
+            self.change_report("dependencies", lambda r: r.update(binding=value))
+            report, stdout = self.assert_rejected("dependency_binding_missing_or_malformed")
+            self.assertNotIn("private-owner", stdout + json.dumps(report))
+        self.change_report("dependencies", lambda r: r.pop("binding"))
+        self.assert_rejected("dependency_binding_missing_or_malformed")
+
+    def test_dependency_binding_source_target_and_hash_must_match_toolchain(self):
+        for field, value, category in (("source_commit", "2" * 40, "source_commit_mismatch"),
+                                       ("architecture", "arm64", "evidence_architecture_mismatch"),
+                                       ("assets_sha256", "f" * 64, "dependency_assets_hash_mismatch")):
+            self.write_input(self.document["packages"][0], "dependencies", dependencies())
+            self.change_report("dependencies", lambda r: r["binding"].update({field: value}))
+            self.assert_rejected(category)
+
+    def test_dependency_binding_requires_app_scope_exact_shape_and_valid_hash(self):
+        for changes in ({"project_set": "solution"}, {"scope": "other"}, {"assets_sha256": True},
+                        {"assets_sha256": "C:/Users/private-owner/graph"}, {"extra": "private-owner"}):
+            self.write_input(self.document["packages"][0], "dependencies", dependencies())
+            self.change_report("dependencies", lambda r: r["binding"].update(changes))
+            report, stdout = self.assert_rejected("dependency_binding_missing_or_malformed")
+            self.assertNotIn("private-owner", stdout + json.dumps(report))
+
+    def test_toolchain_assets_hash_is_required_and_bound(self):
+        self.change_report("toolchain", lambda r: r.pop("AssetsSha256"))
+        self.assert_rejected("invalid_toolchain_evidence")
+        self.change_report("toolchain", lambda r: r.update(AssetsSha256="f" * 64))
+        self.assert_rejected("dependency_assets_hash_mismatch")
 
     def test_unsigned_handoff_rejects_signature_presence(self):
         files = payload()

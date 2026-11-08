@@ -30,7 +30,8 @@ $tokens = $null
 $parseErrors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile({quote(EXPORTER)}, [ref]$tokens, [ref]$parseErrors)
 if ($parseErrors.Count) {{ throw 'Exporter parse failed.' }}
-$names = @('ConvertTo-CiToolBinaryRecord', 'Get-CiToolBinaryRecord', 'Get-CiConfiguredSdkTools')
+$names = @('ConvertTo-CiToolBinaryRecord', 'Get-CiToolBinaryRecord', 'Get-CiConfiguredSdkTools',
+           'Get-CiAssetsSnapshot', 'Assert-CiAssetsUnchanged')
 $functions = $ast.FindAll({{ param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] }}, $true)
 foreach ($name in $names) {{
     $function = @($functions | Where-Object Name -eq $name)
@@ -149,6 +150,44 @@ try {{
                     expected = ("WINTODO_TOOL_BINARY_EVIDENCE_INVALID" if mutation == "absent-file"
                                 else "WINTODO_SDK_TOOL_SELECTION_INVALID")
                     self.assertEqual({"error": expected}, self.configured(directory, paths))
+
+    def test_assets_hash_covers_exact_bom_and_whitespace_bytes(self):
+        with tempfile.TemporaryDirectory(prefix=MARKER, dir=self.scratch) as directory:
+            path = Path(directory) / "project.assets.json"
+            path.write_bytes(b'\xef\xbb\xbf{ "libraries": {}, "targets": {} }\r\n')
+            result = self.run_script(f"""
+$snapshot = Get-CiAssetsSnapshot -Path {quote(path)}
+Assert-CiAssetsUnchanged -Path {quote(path)} -Sha256 $snapshot.Sha256
+@{{ sha256 = $snapshot.Sha256; libraries = $snapshot.Graph.libraries.Count }} | ConvertTo-Json -Compress
+""")
+            self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), result["sha256"])
+            self.assertEqual(0, result["libraries"])
+
+    def test_assets_mutation_or_removal_is_rejected_without_path(self):
+        with tempfile.TemporaryDirectory(prefix=MARKER, dir=self.scratch) as directory:
+            path = Path(directory) / "project.assets.json"
+            for change in (f"[IO.File]::AppendAllText({quote(path)}, ' ')",
+                           f"Remove-Item -LiteralPath {quote(path)}"):
+                path.write_text('{"libraries":{},"targets":{}}', encoding="utf-8")
+                result = self.run_script(f"""
+$snapshot = Get-CiAssetsSnapshot -Path {quote(path)}
+{change}
+try {{ Assert-CiAssetsUnchanged -Path {quote(path)} -Sha256 $snapshot.Sha256; throw 'Unexpected success.' }}
+catch {{ @{{ error = $_.Exception.Message }} | ConvertTo-Json -Compress }}
+""")
+                self.assertEqual({"error": "WINTODO_ASSETS_EVIDENCE_INVALID"}, result)
+
+    def test_invalid_assets_fail_without_private_content_or_path(self):
+        with tempfile.TemporaryDirectory(prefix=MARKER, dir=self.scratch) as directory:
+            path = Path(directory) / "project.assets.json"
+            for value in (MARKER.encode(), b'\xff', b'null', b'[]',
+                          b'{"libraries":[],"targets":{}}', b'{"libraries":{}}'):
+                path.write_bytes(value)
+                result = self.run_script(f"""
+try {{ Get-CiAssetsSnapshot -Path {quote(path)} | Out-Null; throw 'Unexpected success.' }}
+catch {{ @{{ error = $_.Exception.Message }} | ConvertTo-Json -Compress }}
+""")
+                self.assertEqual({"error": "WINTODO_ASSETS_EVIDENCE_INVALID"}, result)
 
 
 if __name__ == "__main__":

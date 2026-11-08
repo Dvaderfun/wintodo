@@ -151,7 +151,7 @@ jobs:
           if (-not (Test-Path -LiteralPath $output)) { throw 'MSIX artifact was not produced.' }
 
       - name: Audit final resolved dependency graph after packaging
-        run: ./scripts/Invoke-CiDependencyAudit.ps1 -AppOnly
+        run: ./scripts/Invoke-CiDependencyAudit.ps1 -AppOnly -Architecture ${{ matrix.arch }}
 
       - name: Record final resolved AOT and toolchain versions after packaging
         run: ./scripts/Export-CiToolchain.ps1 -Architecture ${{ matrix.arch }} -RequireAot
@@ -160,7 +160,8 @@ jobs:
         run: >
           python scripts/Test-ReleasePrivacy.py publish/aot/win-${{ matrix.arch }}
           publish/msix/Wintodo-${{ matrix.arch }}.msix publish/aot/summary.json
-          SafeTestResults/toolchain.json --require-architecture ${{ matrix.platform }}
+          SafeTestResults/toolchain.json SafeTestResults/dependencies.json
+          --require-architecture ${{ matrix.platform }}
           --private-root "$PWD"
           --output SafeTestResults/release-privacy.json
 

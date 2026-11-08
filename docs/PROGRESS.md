@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-11-08:
+As of 2026-11-09:
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -20,8 +20,8 @@ As of 2026-11-08:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
-- **Build:** Debug and Release x64 passed with zero warnings/errors on
-  2026-11-08 after DEP-04 and the release-preparation follow-up. All four MTP suites
+- **Build:** Debug x64 passed with zero warnings/errors on 2026-11-09;
+  Release x64 last passed on 2026-11-08. All four MTP suites
   passed 678/678, zero failed/skipped (Core 231, Data 130, Import 155, Sync 162).
   Fresh DEP-04 x64/ARM64 AOT outputs include the integrated current code with compiler/
   runtime 10.0.14; both layouts and their relative summary pass the privacy scan
@@ -31,6 +31,17 @@ As of 2026-11-08:
   455/455 and zero failures/skips verified from the four uploaded TRX files.
 - **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
+- **Release evidence follow-up (2026-11-09):** audit/source/target graph
+  bindings pass for actual x64/ARM64 locked AOT restores and the unsigned
+  handoff now rejects unbound/mismatched reports. Final script discovery
+  passes 124/124. Initial unit run had one disposed SQLite-handle failure;
+  isolated test and full rerun pass (678/678), cause unproven. Private PDBs
+  matched to earlier unsigned package executables add positive retained-code
+  evidence; ONNX/DirectML vendor and WinApp runtime provenance stay pending.
+  The final-deployment gate matrix identifies the missing signed install/update/
+  uninstall path, separate customer baseline and native ARM64 target. Owner
+  decisions, hosted/protected source, guest SDK setup, signing and final runtime
+  acceptance remain pending. See [the deployment plan](plans/deployment-readiness.md).
 - **Release preparation follow-up (2026-11-08):** three independent streams
   extend DEP-02 source/advisory evidence, add DEP-16 exact-MSIX structural
   inspection and prepare DEP-17 unpublished privacy/installation drafts.
@@ -4360,3 +4371,44 @@ Details: [notice packages](plans/dep17-notice-package-validation.md),
 [deployment plan](plans/deployment-readiness.md). Private evidence is under
 `artifacts/dep-notice-candidates/`, `artifacts/dep-sbom/` and
 `artifacts/dep18-handoff/`; raw logs/assets/cache metadata are not release assets.
+
+### 2026-11-09 — M10 DEP-02/15/16/18/19: audit binding and final gate preparation
+
+Three owner-authorized parallel streams implemented exact dependency-audit
+graph binding, investigated native/retained-code provenance and mapped final
+deployment requirements to existing assertions and missing installed-package
+coverage. Codex integrated the toolchain/workflow changes and shared evidence.
+
+- Bound app audits and tool exports agree on observed source, architecture and
+  exact parsed assets SHA-256 for both actual locked AOT target restores. Both
+  NuGet app audits have zero vulnerable packages/advisories. Handoff rejects
+  legacy unbound and mismatched reports; unsigned matrix supplies the target
+  and privacy-checks audit evidence. No candidate was rebuilt; these observations
+  use HEAD `8d54cc1` plus reviewed script changes, not build attestation.
+- Debug x64 warnings-as-errors build PASS, zero warnings/errors. Final Python
+  discovery PASS 124/124; Actionlint, local links/whitespace and target-evidence
+  privacy checks PASS. Initial MTP run FAIL 677/678: disposed SQLite handle
+  during DefaultList fixture initialization. Affected test PASS alone and full
+  rerun PASS 678/678, zero failed/skipped. Initial logs remain private; cause is
+  unproven and no runtime fix or weakened test was introduced.
+- Matched private PDBs to exact earlier `9106040` x64/ARM64 packaged EXEs and
+  observed retained SQLite/Toolkit/WinRT/projection/runtime symbols. Primary
+  advisory refresh and ONNX/DirectML hash/version comparisons are recorded.
+  Full closure stays INCOMPLETE; vendor/native/WinApp runtime evidence and
+  owner HarfBuzz disposition remain pending.
+- DEP-19 requirement inventory PASS; all final signed runtime gates PENDING.
+  Existing development VM runners register layouts and cannot prove signed
+  install/update/uninstall. A separate customer baseline and native ARM64 target
+  are required. Read-only VM metadata was inspected; guest SDK preflight,
+  manual/live checks and owner-deferred M9 retain their prior status.
+- Read-only GitHub latest CI still targets `da945199`. Hosted/protected source,
+  owner policy/identity/version/licensing/signing, fresh bound candidate pair,
+  final deployment and publication remain pending. No remote write, guest start/
+  setup, host UI, installation, trust change, signing or publication occurred.
+
+Details: [audit binding](plans/dep18-audit-graph-binding.md),
+[native follow-up](plans/dep02-native-closure-followup.md),
+[deployment gate matrix](plans/dep19-deployment-gate-matrix.md) and
+[deployment plan](plans/deployment-readiness.md). Private evidence is in
+`artifacts/dep-audit-binding-integration/`, `artifacts/dep-audit-binding/`,
+`artifacts/dep-native-closure-followup/` and `artifacts/dep19-gate-inventory/`.
