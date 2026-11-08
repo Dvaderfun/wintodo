@@ -64,9 +64,21 @@ As of 2026-11-08:
   its clean checkpoint has SDK 10.0.401, below the required 10.0.403. Guest setup
   is owner-invoked; affected import/open/delete UI acceptance remains pending.
   GitHub protection/ruleset APIs return HTTP 403 for the current private-repo
-  plan; remote enforcement and fresh CI remain pending. Native/tool advisory coverage, attribution/archive
-  policy and final privacy/deployment gates remain pending. Details and local
+  plan; remote enforcement and fresh CI remain pending. Native/tool advisory
+  dispositions, attribution and final privacy/deployment gates remain pending. Details and local
   redacted evidence links are in [the deployment plan](plans/deployment-readiness.md).
+- **Sixth deployment batch (2026-11-08):** DEP-15 now has 20 graph-specific
+  dependency locks and fail-closed restore guards; 17 focused checks pass across
+  ordinary/AOT x64/ARM64 restore forms. Final Debug/Release x64 builds are clean,
+  all four MTP suites pass 578/578, and 27 scanner/privacy regressions pass.
+  DEP-13 archive/ignore checks preserve all 19 fixtures/notices; all 17 raster
+  assets pass bounded privacy review. Attribution and background-image rights
+  remain pending. DEP-02 maps 103 payload DLLs to their origin and records a
+  bundled WinApp HarfBuzz advisory plus native/CLI provenance gaps; applicability
+  and disposition remain pending. NuGet audit is clean across nine projects.
+  Latest passing remote CI predates recent fixes; protection/rulesets still
+  return HTTP 403. No new AOT/UI/final-package or publication claim. See the
+  [deployment plan](plans/deployment-readiness.md) for evidence and next decisions.
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
   strengthened list stability passes 3/3 twice, with 10 px drift on immediate
   and settled completion/uncompletion against the unchanged 54 px limit.
@@ -4126,3 +4138,29 @@ UI automation. ARM64 not rebuilt.
   [the deployment plan](plans/deployment-readiness.md). Raw logs/test/scanner
   reports, scratch data and symbols remain private/ignored. Work is committed
   locally as an M10 preparation unit; no push or release publication.
+
+### 2026-11-08 — M10 sixth deployment batch: locked dependencies and native/source review
+
+- **Gate:** final Debug/Release x64 builds PASS, zero warnings/errors; MTP
+  578/578, zero failed/skipped (Core 227, Data 106, Import 155, Sync 90).
+  Scanner/privacy regressions 27/27 and nine-project NuGet audit PASS.
+- **Shipped groundwork:** 20 reviewed NuGet lockfiles, target-specific restore
+  selection, explicit HTTPS package source, default locked restore and guards
+  against missing locks/forced updates. Seventeen focused checks PASS; ordinary
+  and AOT x64/ARM64 graphs retain their lock hashes. CI and testing docs agree.
+- **Privacy:** 23 ignore checks PASS; reviewed baseline archive preserves all
+  19 fixture files and required notices exactly. All 17 raster assets pass
+  bounded visual/metadata review; OCR unavailable and future screenshots pending.
+  Source archive excludes only the local CodeGraph scaffold. Attribution and
+  background-image redistribution proof remain pending.
+- **Native/tool review:** 103/103 payload DLLs match restored package content;
+  SQLite 3.53.4 matches upstream identity/patch records. WinApp HarfBuzz advisory
+  applicability, CLI embedded-runtime provenance and exact native vendor mappings
+  remain pending. Bounded packaging-source review found no direct subsetter call;
+  no release advisory-free claim or machine update is made.
+- **Limits:** latest remote PASS predates recent changes; protection/ruleset
+  APIs still return HTTP 403. ADR-017, production override policy, guest SDK
+  setup, identity/signing/licensing and final deployment remain owner-pending.
+  No fresh AOT publish, UI gate, signed package, remote write or publication.
+- **Evidence:** docs/plans/deployment-readiness.md and linked native/source
+  reports; redacted integration record artifacts/dep-batch6/evidence.json.

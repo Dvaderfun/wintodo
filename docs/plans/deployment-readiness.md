@@ -96,7 +96,7 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | ID | Work package | Priority | Depends on | Owner | Status |
 |---|---|---|---|---|---|
 | DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
-| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain | LOCAL AOT/NuGet PASS; runner/native review PENDING |
+| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review | REVIEWED WITH LIMITS; native-tool advisory/provenance disposition and hosted acceptance PENDING |
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
 | DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; data/ADR decision if needed | Codex / dep04_move_design | BASELINE FAIL 7/7; ADR-017 proposed; implementation PENDING acknowledgement/next batch |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
@@ -107,9 +107,9 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-10 | Preserve untrusted attachment provenance | Security | DEP-07; API/policy review | Codex / dep10_provenance | IMPLEMENTED; host/AOT PASS; guest preflight FAIL, UI acceptance PENDING |
 | DEP-11 | Reject unsupported database schemas | Data safety | DEP-01 | Codex / dep11_schema_guard | COMPLETE; automated acceptance PASS |
 | DEP-12 | Resolve production test/storage overrides | Policy | Owner decision | Codex / dep12_overrides | INVENTORY COMPLETE; production policy/acceptance PENDING |
-| DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_privacy_audit | PRELIMINARY SCANS PASS; policy/final review PENDING |
+| DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
-| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_ci | IMPLEMENTED; local checks PASS; remote CI/protection/lockfile/native review PENDING |
+| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore | LOCKED RESTORE/LOCAL CHECKS PASS; remote CI/protection/native advisory disposition PENDING |
 | DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Unassigned | PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Unassigned | PENDING |
 | DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Unassigned | PENDING |
@@ -166,6 +166,13 @@ outside this batch. GitHub's protection and ruleset APIs currently return
 HTTP 403 for the private repository, requiring an eligible plan or visibility
 decision before those enforcement gates can be verified.
 
+The sixth parallel batch closes independent remaining work: DEP-02 native/tool
+advisory review, DEP-15 locked dependency resolution and CI reproducibility,
+and DEP-13 source-archive/fixture/image privacy review. Agents own disjoint
+files and keep raw evidence in separate ignored scratch directories. Codex owns
+shared tracking, integrated verification and commits. No identity, attribution,
+ADR, machine setup, remote protection, signing or publication decision is changed.
+
 ## 5. Detailed work packages
 
 ### DEP-01 — Preserve fixture bytes and repair CI
@@ -213,6 +220,17 @@ Targets: `global.json`, `Directory.Packages.props`, publish profiles and CI.
 
 Acceptance: the supported dependency graph is audited, no unresolved release
 security advisory remains, and both AOT outputs use the reviewed patched tools.
+
+[The native/tool review](dep02-toolchain-review.md) maps all 103 root payload
+DLLs to restored packages and verifies the actual SQLite engine and upstream
+patch records. It identifies WinApp's bundled HarfBuzz `14.2.0` in
+`GHSA-r62p-jr5f-3mjm`'s range; the current native-SDK packaging branch has no
+direct subsetting calls, but transitive applicability and an owner disposition
+remain pending. No stable patched release was identified. WinApp's embedded
+runtime provenance and native vendor-build mappings also remain open. Hosted
+inventory maps Visual Studio to patched `17.14.44`; actual runner execution is
+still required. The local `18.8.0` installation has a servicing/coverage gap,
+without proof of an affected compiler. No machine/tool dependency was changed.
 
 ### DEP-03 — Protect local edits during sync pull
 
@@ -411,7 +429,7 @@ Targets: tracked source/config/docs/fixtures, Git history, `.gitignore`,
 
 - [x] Run a pinned dedicated secret scanner with redacted output against the
       release tree and reachable history; inspect findings structurally.
-- [ ] Check tokens, private keys, credential URLs, real account endpoints,
+- [x] Check tokens, private keys, credential URLs, real account endpoints,
       identifying names/emails/paths, fixture provenance and image metadata.
       Distinguish public client IDs and synthetic examples from credentials.
 - [ ] Review screenshots visually/OCR before publication; use disposable
@@ -421,13 +439,21 @@ Targets: tracked source/config/docs/fixtures, Git history, `.gitignore`,
       identity policy. Preserve required legal attribution; never silently
       rewrite history or force-push. Any discovered exposed credential requires
       rotation/revocation before removal can be considered sufficient.
-- [ ] Add appropriate ignore rules for local secret/export files outside known
+- [x] Add appropriate ignore rules for local secret/export files outside known
       output directories without hiding intentional test fixtures or notices.
-- [ ] Verify the source archive separately from `.gitignore`; define export
+- [x] Verify the source archive separately from `.gitignore`; define export
       exclusions for local/tooling artifacts where appropriate.
 
 Acceptance: the release tree/history/source archive have reviewed redacted scan
 results, fixtures remain synthetic, and every finding has a recorded disposition.
+
+[The source/archive review](dep13-source-privacy-review.md) records 23 passing
+ignore checks, exact preservation of all 19 fixtures and legal notices, and
+visual/metadata review of all 17 current raster assets. Its reviewed baseline
+archive has 444 files and zero Gitleaks findings; only the local `.codegraph`
+scaffold is excluded. Owner attribution policy, future screenshot review and
+redistribution proof for eight photographic backgrounds remain pending. Final
+release-source/archive scans must use the exact eventual release commit.
 
 ### DEP-14 — Remove identifying binary and metadata paths
 
@@ -457,7 +483,7 @@ Targets: `.github/workflows/`, dependency update/scanner configuration,
       Disable persisted checkout credentials where unnecessary.
 - [ ] Pin reviewed Actions revisions and automate reviewed updates. Choose a
       Windows runner policy and verify native toolchain components explicitly.
-- [ ] Define SDK roll-forward and lockfile/locked-restore policy for the
+- [x] Define SDK roll-forward and lockfile/locked-restore policy for the
       compatible transitive graph; document package sources and cache boundaries.
 - [x] Add dependency updates, redacted secret scanning and direct/transitive
       vulnerability gates with a documented review process for exceptions.
@@ -474,8 +500,13 @@ resolution, no unresolved scanner findings and no PR access to signing authority
 [The CI guide](../guides/ci.md) records pinned upstream Action revisions,
 checksum-verified Gitleaks, safe summaries, native/toolchain evidence and the
 weekly/manual trusted-main unsigned AOT matrix. Local script/parser/scanner/
-audit checks pass. Actual `windows-2025` execution, locked-restore policy,
-native/tool advisory review and required-ref/check enforcement remain open.
+audit checks pass. Twenty checked-in lockfiles cover ordinary and AOT target
+graphs; 17 focused checks verify all eight supported restore forms and reject
+dependency/hash drift, missing direct/reference locks and locked force-evaluate.
+Explicit update mode remains available. SDK runtime downloads and serviced
+native tools still need exact candidate evidence. Actual `windows-2025`
+execution, native/tool advisory dispositions and required-ref/check enforcement
+remain open.
 The private repository's protection/ruleset APIs return the recorded HTTP 403
 plan limitation; no remote settings or visibility changed.
 
@@ -912,6 +943,55 @@ Fifth parallel batch evidence (2026-11-08):
   attachment code has no WinUI review issue above informational. AOT runtime
   UI, final signed/installed packages, ARM64 runtime, live services, M9 perf,
   owner policy decisions and publication remain pending.
+
+Sixth parallel batch evidence (2026-11-08):
+
+- **Source:** baseline `7d2fa21` plus reviewed sixth-batch overlays. The final
+  local source commit, reviewed tree and changed-file hashes are recorded in
+  [integrated redacted evidence](../../artifacts/dep-batch6/evidence.json).
+- **DEP-15 — LOCKED RESTORE/LOCAL PASS:** twenty graph-specific NuGet locks
+  preserve ordinary and AOT dependencies across x64/ARM64. Seventeen focused
+  checks pass, including eight supported restore forms, unchanged lock hashes,
+  rejected requested-version/content-hash drift, missing direct/reference locks,
+  locked force-evaluate, explicit update mode and unreviewed RID rejection.
+  The initial shared-RID lock failed `NU1004`; separate target graphs fix it.
+  NuGet initially created a missing lock despite locked mode; `WTDLOCK001`
+  now rejects it before generation, and `WTDLOCK002` requires explicit update
+  mode for force-evaluate. Actionlint/XML review passes. SDK download/runtime
+  dependencies and serviced native tools remain outside full lock guarantees.
+- **DEP-13 — INDEPENDENT CHECKS PASS:** 23 ignore expectations pass; reviewed
+  baseline archive preserves all 19 fixtures and required notices exactly.
+  The raw attachment blob/archive/checkout hashes agree. All 17 raster assets
+  pass bounded visual/metadata privacy review; automated OCR was unavailable,
+  and no screenshot is currently tracked. Attribution and eight photographic
+  backgrounds' redistribution rights remain pending. Exact final-release source,
+  future screenshots and signed packages require their own checks.
+- **DEP-02 — REVIEWED WITH LIMITS:** all 103 root AOT payload DLLs match restored
+  package/runtime-MSIX content. Actual SQLite `3.53.4` matches its upstream
+  source identity and vendor patch records. WinApp's HarfBuzz `14.2.0` is in
+  the upstream advisory range; native-SDK project packaging has no direct
+  subsetting calls in the bounded review, but complete applicability remains
+  unproven. No stable patched release was identified. CLI embedded-runtime
+  provenance and exact native vendor mappings remain pending. Hosted Visual
+  Studio inventory maps to patched `17.14.44`; actual runner evidence remains
+  required. Local `18.8.0` has a servicing/coverage gap, without a proven
+  compiler vulnerability. Native/licensing findings are in the linked review.
+- **Host integration — PASS:** final Debug/Release x64 warnings-as-errors builds
+  have zero warnings/errors. All four MTP suites pass 578/578, zero failed/skipped
+  (Core 227, Data 106, Import 155, Sync 90). All 27 scanner/privacy regressions
+  pass, and the final solution NuGet audit covers nine projects with zero
+  advisories. Changed build/CI/export rules pass focused review; no product
+  XAML/C# changed. Integrated source/archive scan results are recorded in the
+  local evidence: the canonical staged archive has 468 files, all 19 fixtures
+  and notices match Git bytes, and Gitleaks finds zero secrets. Archive proof
+  explicitly disables checkout line-ending conversion without changing global
+  Git settings. No new AOT publish, UI gate or final signed package is claimed.
+- **Remote/owner limits:** latest passing GitHub run `42429107588` is for
+  `da94519`, before the recent fixes and this batch. Both protection/ruleset
+  reads still return HTTP 403 with the plan-support requirement. Fresh CI,
+  enforcement, ADR-017 acknowledgement, DEP-12 policy, guest SDK setup,
+  identity/signing/licensing choices and final deployment remain pending.
+  No remote setting, machine setup, certificate trust or publication changed.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and
