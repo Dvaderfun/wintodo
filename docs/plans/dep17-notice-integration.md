@@ -1,7 +1,7 @@
 # DEP-17 inherited notice integration
 
 Integrated 2026-11-08. Status: **SOURCE NOTICE INTEGRITY AND PRIVACY PASS;
-fresh package and final legal-distribution acceptance remain pending.**
+fresh x64/ARM64 package inclusion PASS; final legal-distribution acceptance remains pending.**
 
 [The shipped-notice review](dep17-third-party-notices-review.md) established
 missing supplier legal texts in both unsigned packages from clean `965d86b`.
@@ -65,6 +65,11 @@ added; direct source/body hashes establish the required preservation property.
 Builds and package validation belong to the integrating release batch. No app
 launch, host UI automation, installation, signing or publication was performed
 by this stream.
+
+[Fresh clean-source `9106040` packages](dep17-notice-package-validation.md)
+now pass actual notice-byte inclusion, structural/privacy and layout-equivalence
+checks for both architectures. Final production candidates retain their own
+signed-byte and legal/distribution gates.
 
 New x64 and ARM64 candidates must include these actual notice bytes and pass
 the exact-package/privacy gates again. The older `965d86b` packages still

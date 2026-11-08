@@ -44,6 +44,18 @@ establish production signing or installation acceptance. Tags still use the
 placeholder manifest identity/version; DEP-16/18
 will define the approved production mapping and protected signing stage.
 
+Each unsigned matrix artifact also includes `release-sbom.json` and its
+separate `release-sbom-privacy.json` check. The CycloneDX exporter binds actual
+MSIX and original NuGet archive hashes to the supplied source and target graph;
+unverified restored-code inputs remain separate evidence. Complete dependency
+closure and independent source/execution provenance remain pending. Export or
+metadata-privacy failures stop artifact upload; a qualified export does not
+replace final legal/SBOM acceptance. See [the SBOM evidence record](../plans/dep16-sbom-evidence.md).
+The [unsigned handoff checker](../plans/dep18-candidate-handoff.md) can compare
+downloaded hash-pinned matrix inputs locally, including the normal combined
+layout/MSIX privacy reports, while retaining signing/production authorization
+and provenance gates as pending.
+
 Packaging uses `--no-restore` after the explicit target-specific locked AOT
 restore and publish. WinApp 0.7.1's default containing-solution restore would
 also request unsupported AOT test-project locks (`WTDLOCK001`). Skipping that

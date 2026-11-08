@@ -5,6 +5,12 @@ Status: **BOUNDED EXACT-PACKAGE REVIEW PASS; NOTICE ADDITIONS PREPARED; final
 licensing and publication acceptance remain pending.** This is a review and proposed source
 list, not an approved first-party licence or a change to the app payload.
 
+Subsequent preparation integrated the nine inherited texts with their original
+bytes intact; [fresh `9106040` x64/ARM64 packages](dep17-notice-package-validation.md)
+verify the actual new notice payload. The inventory and package hashes below
+remain the reviewed `965d86b` baseline. First-party/image rights and complete
+legal-distribution/retained-code acceptance remain pending.
+
 ## Finding and evidence scope
 
 The packaged [ThirdPartyNotices.txt](../../src/Wintodo.App/Assets/ThirdPartyNotices.txt)

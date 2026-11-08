@@ -110,9 +110,9 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
 | DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence | LOCKED RESTORE/LOCAL CHECKS PASS; exact-tool metadata LOCAL PASS; remote CI/protection/native advisory disposition PENDING |
-| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom | SBOM exporter IN PROGRESS; clean-source unsigned x64/ARM64 structure/privacy/equivalence PASS; hosted/approved-identity/payload/SBOM/final-candidate acceptance PENDING |
-| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Inherited notice source integrity/privacy PASS; fresh notice packages PENDING; privacy/installation DRAFTS and exact shipped-notice ADDITIONS PREPARED; notice integration/owner decisions/assets/live sign-in acceptance PENDING |
-| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff | Decision-independent candidate handoff checks IN PROGRESS; signing/release stages PENDING |
+| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom | Clean-source notice-containing x64/ARM64 packages and qualified SBOM/schema/privacy PASS; hosted/approved-identity/payload/full linked-code closure/final-candidate acceptance PENDING |
+| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Nine inherited texts INTEGRATED; fresh x64/ARM64 notice-package checks PASS; privacy/installation DRAFTS; final legal/owner/assets/live sign-in acceptance PENDING |
+| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff | Unsigned fresh-pair consistency and 24 regressions PASS; protected signing/release stages PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Unassigned | PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
 
@@ -224,6 +224,16 @@ verification and commits. This batch does not select first-party licensing,
 identity/version policy, signing, distribution or production overrides, provision
 the guest, alter remote settings, sign packages or publish assets. Final
 release acceptance remains dependent on the listed owner and hosted gates.
+
+This batch is integrated locally. Nine inherited texts are in source and
+both freshly rebuilt unsigned `9106040` packages. Both packages pass structure,
+privacy, source notice inclusion and layout equivalence. Qualified CycloneDX
+exports pass official schema/privacy checks and hash-match all 105 vendor
+binary files, while full retained-code/vendor/projection closure remains
+INCOMPLETE. The fresh-pair handoff and 24 regressions pass with release
+authorization false; all 104 script tests and 678 MTP tests pass. Unsigned CI
+now exports and privacy-checks the qualified BOM. Hosted CI, owner decisions,
+signing and final deployment acceptance remain pending.
 
 ## 5. Detailed work packages
 
@@ -610,6 +620,14 @@ and unsigned-candidate CI integration. Source-manifest equality is checked;
 production identity/payload approval, SBOM closure, hosted acceptance and final
 signed/deployment evidence remain pending.
 
+[The exact-package SBOM exporter](dep16-sbom-evidence.md) now records both
+fresh notice-containing packages' file hashes and original NuGet ownership,
+with official CycloneDX 1.6 schema and metadata privacy PASS. All 105 vendor
+binary files match source-package bytes. Unverified restored/SDK/build inputs
+remain separate metadata evidence; complete linked-code/vendor/projection
+closure, independent source authentication and execution attestation remain
+pending. Unsigned CI exports this qualified record and checks its privacy.
+
 ### DEP-17 — Complete release documentation, assets and sign-in setup
 
 Targets: README, packaging/testing/release guides, legal/privacy documents,
@@ -644,6 +662,13 @@ consistent with the delivered behavior and selected distribution route.
 [installation/update/recovery](../releases/INSTALLATION.md) drafts. Their claims
 are tied to current source and explicitly retain unresolved owner fields,
 asset/licensing, telemetry-network, sign-in and final-package cleanup evidence.
+
+[Nine whole supplier legal texts are integrated](dep17-notice-integration.md)
+with original bytes/attribution intact. [Fresh clean-source x64/ARM64 packages](dep17-notice-package-validation.md)
+from `9106040` contain the exact new notices and pass structure, privacy and
+layout equivalence. This closes bounded supplier-text inclusion, while selected
+first-party licensing, image rights and vendor distribution/end-user conditions
+remain pending; it does not mark DEP-17 complete.
 
 ### DEP-18 — Add protected signing and GitHub release stages
 
@@ -680,6 +705,15 @@ The intended stages are:
 Acceptance: a complete authorized dry run produces a verified draft and correct
 assets, and negative tests demonstrate that PRs, malformed tags, missing gates
 and mismatched artifacts cannot sign or publish.
+
+[The unsigned candidate handoff checker](dep18-candidate-handoff.md) now
+validates exactly one x64/ARM64 pair and ten hash-pinned inputs, including
+actual package-entry privacy evidence and consistent source/tool/graph reports.
+The fresh `9106040` pair and 24 negative/positive regressions pass; its sanitized
+report also passes privacy. Every result keeps `release_authorized: false` and
+ten production/provenance gates pending. This bounded helper does not close
+protected-event/ref checks, signer authority, final signed bytes or draft/public
+release stages.
 
 ### DEP-19 — Verify final deployment and functional gates
 
@@ -1188,6 +1222,51 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
   signed-package/live/native-ARM64 gates remain open. No push, remote settings,
   machine setup, certificate trust, UI automation, signing, install or
   publication occurred. M9 stays owner-deferred.
+
+### 2026-11-08 — Notice integration, package SBOM and unsigned handoff batch
+
+- **DEP-17 bounded notice inclusion — PASS:** nine original supplier legal
+  bodies and the prior Windows notice prefix remain intact. New clean-source
+  `9106040bc1eb460c1cd74fa7122d95460aa38a80` x64/ARM64 packages contain the exact
+  898,198-byte notice file, SHA-256
+  `ba042235866020798b50fcc24483abaea5a61c827340ca8db943a6819cac98fa`.
+  [The package record](dep17-notice-package-validation.md) confirms all 500
+  archived files/20 locks unchanged, warnings-as-errors AOT/package success,
+  actual structure/privacy PASS and 311/307 common-layout matches.
+- **Exact unsigned package hashes:** x64
+  `4a5d345feb0b4a2e2bac454809436c9bacecf754f67dee5afad683bc2c247d5f`;
+  ARM64 `3c0b688ec46288c5bedcc1c182a3dc0815535c1baf32fca18fa58e3e1be8405c`.
+  Whole-package/summary privacy covers 322/318 files, zero findings;
+  app-only NuGet audits have zero vulnerable packages/advisories.
+- **DEP-16 bounded SBOM — PASS, full closure INCOMPLETE:**
+  [the exporter](dep16-sbom-evidence.md) hash-matches all 105 vendor binary
+  files to original package bytes. Both BOMs pass official CycloneDX 1.6
+  schema/privacy checks. Unverified restored/SDK/build inputs are metadata
+  evidence, not declared runtime dependencies. Signed NuGet raw/normalized
+  hashes bind through qualified local metadata; upstream signatures and full
+  retained-code/vendor/projection closure are not established. Twenty-two
+  regressions pass. CI exports this qualified evidence without signing authority.
+- **DEP-18 bounded unsigned handoff — PASS:**
+  [the checker](dep18-candidate-handoff.md) pins both MSIX and eight reports,
+  recomputes actual entry hashes and compares source/report/identity consistency.
+  Fresh-pair and 24 regressions pass; report privacy is clear. It always leaves
+  `release_authorized: false` and ten production/provenance gates pending.
+- **Integration — PASS:** Debug x64 solution build zero warnings/errors;
+  four MTP suites 678/678, zero failed/skipped; full Python discovery 104/104;
+  Actionlint, whitespace and local link checks pass. Vendored WinUI review is
+  scoped to unchanged UI/runtime code and the inherited static legal asset;
+  no issue above informational. No affected UI behavior was introduced.
+- **Private evidence:** `artifacts/dep-notice-integration/`,
+  `artifacts/dep-notice-candidates/`, `artifacts/dep-sbom/`,
+  `artifacts/dep18-handoff/` and integrated review records. Raw native/restore
+  output, private assets graphs and cache inputs remain outside release uploads.
+- **Still pending:** DEP-12 policy, distribution/identity/version/signing,
+  first-party/image rights and public attribution/contact, vendor legal terms,
+  complete SBOM/provenance/native advisory disposition, current hosted CI and
+  protection, owner-invoked guest SDK setup, final signed/deployment/live/ARM64
+  runtime gates and explicit publication. M9 stays owner-deferred. No remote
+  setting, machine setup, host UI, certificate trust, signing, installation,
+  draft release or publication occurred.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and
