@@ -1,7 +1,7 @@
 # DEP-16/18 local release-ref and version eligibility
 
 Prepared 2026-11-09 against `db6c448` with the new checker/test overlay.
-**Implementation and 31/31 focused real-Git regressions PASS.
+**Implementation and 33/33 focused real-Git regressions PASS.
 Production identity, first version, protected hosted execution and signing remain
 PENDING.** The stable-tag mapping is a preparation contract; this work changes no
 manifest version, production publisher, repository protection or release tag.
@@ -123,3 +123,39 @@ either fail-closed path without claiming Git status was clean. No checker rule
 was weakened. Four local document links resolve, whitespace checks pass, and
 the public-document privacy scan has one file and zero findings. These local
 results do not close hosted/protected execution or production acceptance.
+
+## 2026-11-09 hosted path-spelling correction
+
+Hosted run `42536237534` at `8e562d8` failed the successful-report assertion;
+201 other script regressions passed. That assertion originally reported only
+the unexpected exit code. It now includes the checker's fixed sanitized finding
+categories so another failure supplies a useful diagnosis without input paths.
+
+A local Python 3.13.14 reproduction imported that exact committed checker and
+used `GetShortPathNameW` to obtain another spelling of the same disposable Git
+repository. File identity agreed, while lexical containment disagreed between
+the short output path and canonical repository path. The original checker
+rejected `unsafe_report_output`; the corrected checker and CLI pass on those
+same inputs with `release_authorized: false`. This establishes the local failure
+mechanism consistent with the hosted symptom; hosted acceptance requires a new
+run of the corrected source.
+
+Report validation checks the original route for traversal and reparse points
+before using directory identity to find the repository boundary. It then resolves
+the destination under the canonical root and applies ignored/tracked and hard-link
+checks to that actual path. Git's reported root is also compared by directory
+identity. Benign 8.3 and extended-length spellings are accepted; symlink/junction
+routes below the root remain rejected before canonicalization.
+
+All 33 focused regressions pass on Python 3.13.14 with zero skips, including real
+Windows path aliases and a directory symlink pointing back to the repository.
+Extended-length spelling supplies a deterministic alias test when a volume does
+not generate short names. Existing malformed refs, dirty/index/history states,
+outside/traversal/tracked/hard-link destinations and stale-report failure checks
+remain passing. The earlier 31-test result above remains historical.
+
+Exact reproduction and focused logs are private under
+`artifacts/dep-release-ref-policy/alias-reproduction.json` and
+`alias-final-313.log`. No package identity, first version, app/dependency code,
+machine settings, remote refs, signing or publication changed. Parent integration
+owns full-suite and subsequent hosted validation.

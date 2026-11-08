@@ -1,6 +1,7 @@
 """Exercise release eligibility against disposable real Git histories, without network or signing."""
 
 import contextlib
+import ctypes
 import hashlib
 import importlib.util
 import io
@@ -272,7 +273,7 @@ class ReleaseRefPolicyTests(unittest.TestCase):
         output = self.repo / "SafeTestResults/policy.json"
         output.parent.mkdir()
         code, report = self.cli(self.args(output))
-        self.assertEqual(0, code)
+        self.assertEqual(0, code, report["findings"])
         self.assertEqual("PASS", report["status"])
         self.assertEqual("PASS", json.loads(output.read_text())["status"])
         args = self.args(output)
@@ -291,6 +292,47 @@ class ReleaseRefPolicyTests(unittest.TestCase):
                 code, _ = self.cli(self.args(output))
                 self.assertEqual(1, code)
                 self.assertEqual(before, self.manifest.read_bytes())
+
+    @unittest.skipUnless(os.name == "nt", "Windows path spellings")
+    def test_report_accepts_existing_windows_repository_aliases(self):
+        output = self.repo / "SafeTestResults/policy.json"
+        output.parent.mkdir()
+        # Extended-length spelling provides a real alias even when a volume
+        # does not generate 8.3 names. Neither alias uses a reparse point.
+        aliases = [Path("\\\\?\\" + str(self.repo.resolve()))]
+        api = ctypes.WinDLL("kernel32", use_last_error=True).GetShortPathNameW
+        api.argtypes = (ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint)
+        api.restype = ctypes.c_uint
+        size = api(str(self.repo), None, 0)
+        if size:
+            buffer = ctypes.create_unicode_buffer(size)
+            count = api(str(self.repo), buffer, size)
+            if 0 < count < size:
+                aliases.append(Path(buffer.value))
+        for alias in aliases:
+            with self.subTest(alias_kind="existing Windows spelling"):
+                self.assertTrue(alias.samefile(self.repo))
+                alias_output = alias / "SafeTestResults/policy.json"
+                code, report = self.cli(self.args(alias_output))
+                self.assertEqual(0, code, report["findings"])
+                self.assertEqual("PASS", json.loads(output.read_text())["status"])
+                # Also cover a short/extended repository argument, as TMP can
+                # supply an already-short spelling to the test fixture.
+                args = self.args(alias_output)
+                args[args.index("--repository") + 1] = str(alias)
+                code, report = self.cli(args)
+                self.assertEqual(0, code, report["findings"])
+
+    def test_reparse_directory_below_root_cannot_alias_repository(self):
+        (self.repo / "SafeTestResults").mkdir()
+        folder = self.repo / "artifacts"
+        folder.mkdir()
+        link = folder / "repository-alias"
+        try: link.symlink_to(self.repo, target_is_directory=True)
+        except OSError: self.skipTest("Directory symlink creation unavailable.")
+        code, _ = self.cli(self.args(link / "SafeTestResults/policy.json"))
+        self.assertEqual(1, code)
+        self.assertFalse((self.repo / "SafeTestResults/policy.json").exists())
 
     def test_ignored_but_force_tracked_report_cannot_be_overwritten(self):
         folder = self.repo / "artifacts"

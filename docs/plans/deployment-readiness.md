@@ -114,10 +114,10 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-12 | Resolve production test/storage overrides | Policy | Policy A selected | Codex / dep12_overrides + production_override_policy | A SELECTED/DOCUMENTED; 26 host launch-policy tests PASS; actual guest/Release/AOT/default/broker/final-package acceptance PENDING |
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
-| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding + production_override_policy | Locked restores/bindings and corrected Data fixture pool isolation LOCAL PASS; final 707 unit/202 script tests PASS; actual hosted/protection/native advisory disposition PENDING |
+| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding + production_override_policy | Locked restores/bindings and corrected Data fixture pool isolation LOCAL PASS; final 707 unit/204 script tests PASS; corrected hosted/protection/native advisory acceptance PENDING |
 | DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export + vendor_provenance_resolution | Historical `f1b9af5` bound pair/SBOM/PDB checks PASS; isolated ML2.5.96 package and current-helper AOT checks LOCAL PASS; refreshed final-source packages/SBOM/approved identity/payload/full closure PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Nine inherited texts INTEGRATED; fresh x64/ARM64 notice-package checks PASS; privacy/installation DRAFTS; final legal/owner/assets/live sign-in acceptance PENDING |
-| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next + release_ref_policy | Unsigned/signed-continuity bounded checks PASS; new local ref/version gate and 31 regressions PASS, tag CI WIRED; release authorization false; actual hosted/protected/signing/release acceptance PENDING |
+| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next + release_ref_policy | Unsigned/signed-continuity bounded checks PASS; ref/version gate and 33 regressions PASS with Windows path correction, tag CI WIRED; release authorization false; actual hosted/protected/signing/release acceptance PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory + installed_package_smoke | Guest-only installed-smoke runner PREPARED; 12 mocked/static checks PASS; actual guest/API/runtime/visual, signed install/update/uninstall and final deployment acceptance PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
 
@@ -1549,6 +1549,27 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
   vendor/legal closure, actual guest/native runtime, final signing/deployment and
   publication remain pending. No signing, trust or guest/UI action ran. M9 stays
   owner-deferred; remote CI verification follows the reviewed integration commit.
+
+### 2026-11-09 — First hosted run and Windows path-spelling correction
+
+- **Hosted push CI — FAIL:** run `42536237534` at `8e562d8` failed exactly one
+  of 202 script tests, the safe report/stale-PASS case. Build, restore/audit and
+  unit stages were skipped; test export/upload also failed because unit evidence
+  was absent. None of those skipped stages is reclassified as passing.
+- **Cause and correction — LOCAL PASS:** a real Windows short-name alias of
+  the same disposable Git directory reproduced the output path's lexical mismatch
+  with the canonical repository. Directory identity now establishes the root;
+  raw traversal/link/junction checks precede canonical containment and ignored/
+  tracked/hard-link validation. Existing-leaf and extended-length aliases are
+  covered. Root/app/SDK/identity/signing behavior does not change.
+- **Verification — PASS:** 33 focused and 204 full script tests pass on Python
+  3.13.14 with zero skips; privacy/review/link checks pass. The corrected source
+  will run full hosted main maintenance, including unsigned x64/ARM64 AOT targets.
+  Actual hosted/protected acceptance remains pending until its results exist.
+- **Evidence:** ignored `artifacts/dep-release-ref-policy/alias-reproduction.json`,
+  `alias-final-313.log`, and `artifacts/dep-production-next-integration/` contain
+  the original hosted failure and successful local rerun. Local Debug/Release,
+  707 unit tests and both AOT/privacy checks remain valid; no app source changed.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and
