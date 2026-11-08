@@ -1,5 +1,8 @@
 # Raw Microsoft To Do attachment fixtures must survive checkout byte-for-byte.
 /tests/fixtures/mstodo/**/*.bin -text
 
+# Preserve supplier legal bytes, including original line endings and whitespace.
+/src/Wintodo.App/Assets/ThirdPartyNotices.txt -text -whitespace
+
 # Local indexing scaffolding is unnecessary in distributable source archives.
 /.codegraph export-ignore
