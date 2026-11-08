@@ -28,7 +28,7 @@ licensing/assets and source visibility/protection values remain pending.
 - **Build:** Debug and Release x64 passed with zero warnings/errors on
   2026-11-09. All four MTP suites passed 707/707, zero failed/skipped
   (Core 257, Data 133, Import 155, Sync 162). The launch-policy/ref-gate
-  integration passes all 202 script regressions. Current-helper x64/ARM64 AOT
+  integration passes all 204 script regressions on Python 3.13. Current-helper x64/ARM64 AOT
   publishes pass with ML 2.5.96; runtime and final candidate checks remain pending.
   Earlier DEP-04 x64/ARM64 AOT outputs used compiler/
   runtime 10.0.14; both layouts and their relative summary pass the privacy scan
@@ -48,6 +48,12 @@ licensing/assets and source visibility/protection values remain pending.
   707/707 unit tests pass. The initial 703/704 failure is retained. Current-source
   final packages/SBOM, vendor build attestation, actual runtime/deployment,
   owner metadata, signing and publication remain pending.
+- **Hosted report-path correction (2026-11-09):** first push CI at `8e562d8`
+  failed one script test before build/unit stages. A real Windows short-path
+  alias reproduced the lexical/canonical containment mismatch. The checker now
+  uses directory identity while preserving raw-route link/traversal rejection.
+  All 33 focused and 204 full Python 3.13 tests pass. Corrected hosted build/AOT
+  verification follows; the failed run and skipped stages remain recorded.
 - **Production policy and release refs (2026-11-09):** direct MSIX first and
   DEP-12 A are selected; the existing launch decisions now have 26 executable
   host tests. The strict stable-tag/source/main/version checker has 31 real-Git
@@ -4569,3 +4575,21 @@ confirmation passes 707/707, zero failed/skipped. Lock-line-ending regeneration
 was detected after locked restores; complete JSON equality was checked before
 restoring the 16 unchanged locks and exact reviewed app-lock bytes. No graph
 change was hidden. Final reviewed-source MSIX/SBOM and runtime remain pending.
+
+### 2026-11-09 — M10 DEP-18: Windows report-path spelling and hosted retry
+
+Push CI 42536237534 at `8e562d8` failed 1/202 script tests in safe report writing;
+restore/build/unit stages were skipped and evidence export/upload had no unit
+reports. The failed run is preserved as FAIL. A real Windows 8.3 short/long alias
+of the same directory reproduced the lexical containment mismatch. The checker
+now establishes the root by directory identity and canonicalizes only after
+raw-path traversal/link/junction checks; tracked/hardlink/ignore restrictions
+remain. No app/dependency/identity/signing code changed.
+
+All 33 focused and 204 full script tests pass on Python 3.13.14, zero skips. Local
+707 unit, Debug/Release and both AOT/privacy proofs remain valid. Corrected hosted
+main maintenance (build/tests plus both unsigned AOT targets) follows this commit;
+actual hosted/protection/runtime/signing acceptance stays pending. Evidence:
+artifacts/dep-release-ref-policy/alias-reproduction.json and alias-final-313.log;
+artifacts/dep-production-next-integration/hosted-failure-42536237534.log and
+alias-final-script-tests.log. No guest/UI/trust/signing/publication ran.

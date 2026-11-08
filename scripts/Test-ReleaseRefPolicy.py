@@ -90,7 +90,7 @@ class Git:
 
 def assert_repository(git):
     require(git.text("rev-parse", "--is-inside-work-tree") == "true"
-            and git.path("--show-toplevel") == git.repository, "invalid_repository")
+            and git.path("--show-toplevel").samefile(git.repository), "invalid_repository")
     require(git.text("rev-parse", "--is-shallow-repository") == "false", "incomplete_or_substituted_history")
     require(not git.text("for-each-ref", "--format=%(refname)", "refs/replace")
             and not git.path("--git-path", "info/grafts").exists(), "incomplete_or_substituted_history")
@@ -160,16 +160,24 @@ def inspect_policy(repository, event_name, ref, source_commit, reviewed_main_com
 def safe_output(output, repository):
     output = Path(output).absolute()
     git = Git(repository)
-    require(output.suffix.lower() == ".json" and output.parent.is_dir(), "unsafe_report_output")
+    require(output.suffix.lower() == ".json" and output.parent.is_dir()
+            and ".." not in output.parts, "unsafe_report_output")
+    for path in (output, *output.parents):
+        require(not path.is_symlink() and not path.is_junction(), "unsafe_report_output")
+        if path.is_dir() and path.samefile(git.repository):
+            # Windows short names can spell the same existing root differently.
+            # Check the original route for links before resolving its suffix.
+            relative = output.relative_to(path)
+            break
+    else:
+        raise InvalidPolicy("unsafe_report_output")
+    output = (git.repository / relative.parent).resolve(strict=True) / relative.name
+    if output.exists():
+        output = output.resolve(strict=True)
     try:
         relative = output.relative_to(git.repository)
     except ValueError:
         raise InvalidPolicy("unsafe_report_output") from None
-    require(relative.parts and ".." not in relative.parts, "unsafe_report_output")
-    for path in (output, *output.parents):
-        require(not path.is_symlink() and not path.is_junction(), "unsafe_report_output")
-        if path == git.repository:
-            break
     require(not output.exists() or (output.is_file() and output.stat().st_nlink == 1), "unsafe_report_output")
     require(git.run("check-ignore", "--quiet", "--", relative.as_posix(), allowed=(0, 1))[0] == 0, "unsafe_report_output")
     return output
