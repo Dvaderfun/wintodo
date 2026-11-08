@@ -48,6 +48,13 @@ associate code with reviewed inputs but do not attest versions, prove absent
 code was removed, or resolve vendor-embedded contents. This separate evidence
 does not change the exporter's qualified INCOMPLETE closure status.
 
+[The reproducible retained-code exporter](dep16-retained-code-evidence.md)
+now supplies separately hash-pinned MSIX/PDB observations with matching
+CodeView, DBI machine and final-section mapping fields. It records supported
+public-symbol families and unmapped/unsupported records without inferring
+component removal or versions. This bounded evidence does not provide the
+complete ownership input needed to change the BOM's closure status.
+
 ## NuGet hash binding
 
 Signed NuGet archives have two different hashes. The assets `sha512` value is

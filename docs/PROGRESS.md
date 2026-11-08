@@ -31,6 +31,18 @@ As of 2026-11-09:
   455/455 and zero failures/skips verified from the four uploaded TRX files.
 - **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
+- **Bound candidates and installed-smoke preparation (2026-11-09):** fresh
+  clean `f1b9af5` x64/ARM64 AOT MSIX, exact audit/source/target graph bindings,
+  qualified SBOM/schema/privacy, source/layout/notice preservation and the
+  current unsigned handoff pass locally. Reproducible historical/fresh PDB
+  observations pass with full closure INCOMPLETE. Debug build is clean;
+  678/678 unit tests and 152/152 script regressions pass. Guest-only
+  installed-smoke tooling is prepared with 12 mocked/static checks; actual
+  guest/API/UI/visual and signed install/update/uninstall acceptance remain
+  pending. Early mocked tests used process-only host opt-in contrary to policy;
+  both assignments were removed and no actual UI command ran. Owner decisions,
+  vendor/advisory closure, current hosted/protected execution, signing and final
+  deployment remain pending. See [the deployment plan](plans/deployment-readiness.md).
 - **Release evidence follow-up (2026-11-09):** audit/source/target graph
   bindings pass for actual x64/ARM64 locked AOT restores and the unsigned
   handoff now rejects unbound/mismatched reports. Final script discovery
@@ -4412,3 +4424,33 @@ Details: [audit binding](plans/dep18-audit-graph-binding.md),
 [deployment plan](plans/deployment-readiness.md). Private evidence is in
 `artifacts/dep-audit-binding-integration/`, `artifacts/dep-audit-binding/`,
 `artifacts/dep-native-closure-followup/` and `artifacts/dep19-gate-inventory/`.
+
+### 2026-11-09 — M10 DEP-02/16/18/19: bound candidates and installed smoke preparation
+
+- Fresh x64/ARM64 unsigned AOT MSIX from clean `f1b9af5` pass exact structure,
+  privacy, bound audit/tool graph, qualified SBOM/schema and current handoff
+  checks; release authorization remains false. All 511 archived files and 20
+  locks are preserved; layout and source notice bytes match both packages.
+- New reproducible MSIX/private-PDB exporter passes 16 focused regressions and
+  both historical/fresh architecture pairs. Positive observations do not attest
+  input versions, removal, complete vendor closure or compiler execution.
+- New guest-only installed-package smoke runner passes 12 mocked/static checks.
+  Actual guest/API/automation/visual, install/update/uninstall and native ARM64
+  runtime gates remain pending. Two early test-only process-scoped host opt-in
+  assignments violated policy; removed before final integration. No actual UI
+  command ran, and corrected tests never set that opt-in.
+- Integration PASS: Debug x64 zero warnings/errors; all four MTP suites 678/678,
+  zero failed/skipped; script discovery 152/152. Added tooling reviewed with no
+  remaining issue above informational; no app XAML/C# changed. Public evidence
+  privacy, documentation links and whitespace checks are in the evidence record.
+- Read-only GitHub still shows CI/main at `da945199` and private-plan protection
+  unavailable. Owner policy/identity/version/licensing/signing, vendor/advisory/
+  full closure, hosted/protected source and final signed deployment remain
+  pending. M9 remains owner-deferred. No guest setup/start, actual host UI,
+  installation, trust, signing, remote write or publication occurred.
+
+Details: [bound packages](plans/dep16-bound-candidate-validation.md),
+[retained-code evidence](plans/dep16-retained-code-evidence.md),
+[installed smoke](plans/dep19-installed-package-smoke.md). Private evidence:
+`artifacts/dep-bound-candidates/`, `artifacts/dep-retained-code-export/`,
+`artifacts/dep-installed-smoke/` and `artifacts/dep-next-integration/`.

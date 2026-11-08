@@ -28,6 +28,9 @@ All new planning documents belong under `docs/plans/`.
 | [Exact-package inspection preparation](plans/dep16-package-inspection.md) | DEP-16 reusable MSIX structural/privacy gate and pending final identity/payload/deployment evidence |
 | [Clean-source unsigned candidate validation](plans/dep16-local-candidate-validation.md) | DEP-16 exact x64/ARM64 package hashes, locked packaging correction and remaining signed/deployment gates |
 | [Exact native/toolchain evidence](plans/dep15-exact-toolchain-evidence.md) | DEP-02/15 numeric tool versions/hashes, evaluated SDK selections and pending actual invocation/hosted proof |
+| [Bound unsigned candidate pair](plans/dep16-bound-candidate-validation.md) | DEP-16/18 fresh clean-source packages with exact audit/source/target graph bindings |
+| [Reproducible retained-code evidence](plans/dep16-retained-code-evidence.md) | DEP-02/16 exact-MSIX/private-PDB positive symbol observations, with full closure still incomplete |
+| [Installed-package smoke preparation](plans/dep19-installed-package-smoke.md) | DEP-19 guest-only preflight and smoke assertions for an already installed signed package |
 | [Release documentation preparation](plans/dep17-release-docs.md) | DEP-17 source-backed privacy/installation drafts and remaining owner/publication decisions |
 | [Shipped dependency notices review](plans/dep17-third-party-notices-review.md) | DEP-17 exact inherited notice additions, runtime/tool distinctions and unresolved redistribution/ownership proof |
 

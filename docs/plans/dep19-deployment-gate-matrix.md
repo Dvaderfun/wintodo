@@ -15,6 +15,14 @@ is to prepare that approved session and reuse the assertions against its install
 PID, while preserving the development gate baseline. Producing another unsigned
 package or passing a development-layout gate cannot close this gap.
 
+[Installed-package smoke preparation](dep19-installed-package-smoke.md) now
+provides a guest-only runner for an already installed signed MSIX and its PID.
+Default preflight checks guest, signature and registration/executable
+association; explicit automation adds four bounded smoke assertions. Mocked
+acceptance passes, but actual guest/API/automation/visual checks are pending.
+Installation, activation history, update, persistence and uninstall still need
+their separate approved execution path and evidence.
+
 [Invoke-VmGate.ps1](../../scripts/Invoke-VmGate.ps1) restores `clean`, copies
 Debug x64 output (and optionally the published x64 AOT layout), uses `winapp run`
 for development registration, and normally warms the app before resetting its

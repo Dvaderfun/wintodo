@@ -96,7 +96,7 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | ID | Work package | Priority | Depends on | Owner | Status |
 |---|---|---|---|---|---|
 | DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
-| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence + native_closure_followup | Retained-code/PDB evidence and advisory refresh REVIEWED; exact-tool metadata LOCAL PASS; vendor/runtime provenance, advisory disposition and hosted acceptance PENDING |
+| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence + native_closure_followup + retained_code_export | Reproducible historical/fresh x64/ARM64 retained-code/PDB observations LOCAL PASS; exact-tool metadata LOCAL PASS; vendor/runtime provenance, advisory disposition and hosted acceptance PENDING |
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
 | DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; ADR-017 accepted | Codex / dep04_data + dep04_sync + dep04_regressions | AUTOMATED ACCEPTANCE PASS; guest UI/live/final-package checks PENDING |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
@@ -110,10 +110,10 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
 | DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding | LOCKED RESTORE/LOCAL CHECKS PASS; exact audit/source/target graph bindings LOCAL PASS; remote CI/protection/native advisory disposition PENDING |
-| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom | Clean-source notice-containing x64/ARM64 packages and qualified SBOM/schema/privacy PASS; hosted/approved-identity/payload/full linked-code closure/final-candidate acceptance PENDING |
+| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export | Fresh clean `f1b9af5` x64/ARM64 bound packages, qualified SBOM/schema/privacy and positive PDB observations LOCAL PASS; hosted/approved-identity/payload/full closure/final-candidate acceptance PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Nine inherited texts INTEGRATED; fresh x64/ARM64 notice-package checks PASS; privacy/installation DRAFTS; final legal/owner/assets/live sign-in acceptance PENDING |
-| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding | Exact audit/source/target graph binding and 28 handoff regressions LOCAL PASS; historical unsigned fresh-pair PASS; fresh bound pair/protected signing/release stages PENDING |
-| DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory | Gate/prerequisite inventory PASS; clean signed install/update/uninstall path and final deployment acceptance PENDING |
+| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair | Current-contract fresh bound unsigned pair LOCAL PASS; release authorization false; protected signing/release stages and production/provenance acceptance PENDING |
+| DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory + installed_package_smoke | Guest-only installed-smoke runner PREPARED; 12 mocked/static checks PASS; actual guest/API/runtime/visual, signed install/update/uninstall and final deployment acceptance PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
 
 Execution sequence:
@@ -251,6 +251,27 @@ initial SQLite fixture failure is retained in the evidence register. Native
 retained-code observations and the signed-deployment gate matrix are linked
 below. Fresh bound candidates, hosted/protected execution, vendor dispositions,
 owner production decisions and signed deployment remain pending.
+
+The owner requested parallel work again on 2026-11-09. The bounded batch
+split three independent streams: `bound_candidate_pair` rebuilds and verifies
+clean-source unsigned x64/ARM64 packages with current audit bindings (DEP-16/18);
+`retained_code_export` prepares reproducible positive retained-code evidence
+without claiming complete native closure (DEP-02/16); `installed_package_smoke`
+prepares a guest-only installed-package smoke runner using existing assertions
+(DEP-19). Each agent owns separate files and ignored evidence directories.
+Codex owns shared tracking, integration, review and commits. No installation,
+guest provisioning/start, host UI, certificate trust, remote write, signing,
+publication or unresolved production-policy decision is authorized by this batch.
+
+This batch is integrated locally: both fresh bound candidates and the current
+unsigned handoff pass, all 511 source files/20 locks are preserved, historical
+and fresh native observations pass, Debug build is clean, and 678 unit tests
+plus 152 script regressions pass. The installed-smoke runner is prepared with
+12 mocked/static checks; actual guest/API/runtime/visual acceptance remains
+pending. Its early mocked tests used process-only host UI opt-in contrary to
+policy; both assignments were removed and the corrected tests run without it.
+No actual host UI command ran. Full closure, owner decisions, hosted/protected
+execution, signing, installed update/uninstall and publication remain pending.
 
 ## 5. Detailed work packages
 
@@ -1346,6 +1367,48 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
   signing, fresh bound candidate pair and final deployment remain pending.
   No guest start/provisioning, host UI, trust, installation, remote write,
   signing or publication occurred; M9 remains owner-deferred.
+
+### 2026-11-09 — Fresh bound candidates, retained-code exporter and installed smoke
+
+- **DEP-16/18 fresh unsigned pair — LOCAL PASS:** clean source
+  `f1b9af570882ba67ef7ccecf18d7c47321a9e366` produces both warnings-as-errors
+  AOT/MSIX targets. Exact structure/source manifest, layout/package/public
+  privacy, notices, bound app audits/tool graphs and qualified SBOM/schema
+  checks pass. All 511 archived files and 20 locks remain byte-identical;
+  common layout/package files match 311/311 x64 and 307/307 ARM64. The current
+  hash-pinned handoff passes with release authorization false and nine pending
+  production/provenance gates. Exact hashes are in
+  [the bound candidate record](dep16-bound-candidate-validation.md).
+- **DEP-02/16 reproducible observations — LOCAL PASS:** the
+  [retained-code exporter](dep16-retained-code-evidence.md) passes 16 focused
+  regressions and both historical/fresh architecture pairs. MSIX/EXE/PDB hashes,
+  CodeView GUID/age, DBI machine and final-section mapping fields agree. Fixed
+  family observations, unknown/unmapped record counts and sampled code hashes
+  remain qualified; absent symbols never prove removal. Full dependency
+  closure stays INCOMPLETE and vendor/version/advisory/attestation gates stay
+  pending. Four reports plus the review document pass privacy, zero findings.
+- **DEP-19 runner — PREPARED, runtime PENDING:** the
+  [installed-smoke runner](dep19-installed-package-smoke.md) defaults to
+  guest-only preflight and checks signature, registration and exact executable/
+  process association before explicit automation. Twelve mocked/static checks
+  pass; actual guest metadata, Windows APIs, UI and visual results are pending.
+  It does not install, activate, update or uninstall. Early mocked tests ran
+  two process-only host UI opt-in assignments contrary to policy. Both were
+  removed; corrected tests never set the opt-in and no actual UI command ran.
+- **Integration — PASS:** Debug x64 build has zero warnings/errors; all four
+  MTP suites pass 678/678, zero failed/skipped; Python script discovery passes
+  152/152. Review found no remaining issue above informational in the added
+  tooling; no app XAML/C# changed. Public-document/privacy/link/whitespace
+  checks are recorded in the integration evidence.
+- **Limits and evidence:** private evidence is in
+  `artifacts/dep-bound-candidates/`, `artifacts/dep-retained-code-export/`,
+  `artifacts/dep-installed-smoke/` and `artifacts/dep-next-integration/`.
+  Read-only GitHub checks still show latest CI/main at `da945199`; protection
+  is unavailable under the current private-repository plan. No guest start/
+  provisioning, actual host UI, installation, trust, signing, remote write or
+  publication occurred. Production decisions, vendor/advisory/full closure,
+  hosted/protected execution, final signed/deployment/native ARM64 runtime
+  acceptance remain pending; M9 remains owner-deferred.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and
