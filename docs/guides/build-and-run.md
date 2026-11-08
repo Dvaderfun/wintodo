@@ -48,12 +48,50 @@ Never launch the packaged `.exe` directly, never add
 `<WindowsPackageType>None</WindowsPackageType>`, never delete
 `Package.appxmanifest`.
 
-### App command-line options (for tests and debugging)
+### Supported local launch overrides (DEP-12)
 
-| Option | Effect |
-|---|---|
-| `--database-path <file>` | Use this SQLite file instead of `LocalState\wintodo.db`. Use a scratch file for anything destructive. |
-| `--clock-file <file>` | Read "now" from the file (`FileBackedClock`) so time-dependent behaviour is testable. |
+Policy A, selected on 2026-11-09, supports these advanced local controls in
+Debug, Release JIT and Release Native AOT. They are process launch inputs;
+Start, startup-task and toast activations resolve their own inputs. The default
+is the package's `LocalState\wintodo.db` and the real system clock.
+
+| Input | Effect | Configuration |
+|---|---|---|
+| `--database-path <file>` | Resolve an absolute SQLite path; it wins over `WINTODO_DATABASE_PATH`. Use a scratch database for destructive tests. | Debug and Release/AOT |
+| `WINTODO_DATABASE_PATH` | Select SQLite when the command-line path is absent/blank; an eligible Debug notification scratch path takes precedence over this environment value. | Debug and Release/AOT |
+| `--clock-file <file>` | Read invariant date/time text from the file on each `UtcNow` access, assuming/normalizing UTC; the local timezone remains Windows' timezone. | Debug and Release/AOT |
+| `--show-onboarding` | Allow normal fresh-database onboarding with a command-line database override. It does not force Welcome on a populated/onboarded database. | Debug and Release/AOT |
+| `--perf-scroll-result <file>` | Opt into numeric scroll evidence: create `<file>.ready`, then write numeric JSON at the requested path. | Debug and Release/AOT |
+| `--perf-scroll-items <count>` | Item threshold for that probe; absent or unparseable values use 10,000. Without a result path no probe starts. | Debug and Release/AOT |
+| `--import-fixture <directory>` | Use the recorded Graph fixture connector. | Debug only; ignored in Release/AOT |
+| `--import-fixture-expire-once`, `--import-fixture-throttle-once` | Enable the corresponding fixture simulation; alone they have no effect. | Debug only; ignored in Release/AOT |
+| `--trace-file <file>` | Install the app's safe persistent trace listener. | Debug only; ignored in Release/AOT |
+
+Value options use exact case-sensitive names and a separate following argument;
+the first matching option wins. A recognized value option with no following
+argument throws. There is no `--name=value` form or general unknown-option
+rejection. Quote paths with spaces. A clock-file example is
+`2026-11-09T12:00:00Z`; missing/unreadable files or invalid contents fail when
+the app reads the clock. A synthetic clock affects timestamps and time-dependent
+behavior, so use synthetic data and remove it for real-time reminder checks.
+
+A database override changes SQLite and the settings persisted in that database.
+Attachments, import staging and other package files remain under LocalState;
+credentials stay in PasswordVault. It does not create an isolated or portable
+profile. Only a **command-line** database override suppresses onboarding by
+default; an environment-only override keeps normal fresh-database checks.
+
+Broker ShareTarget activation always uses package LocalState and real time,
+ignoring database/environment/clock overrides, in Debug and Release/AOT. It
+creates no shell/import graph or scroll probe. A Debug constructor can still
+install `--trace-file` before share routing; Release cannot. Debug M7 toasts can
+carry an existing `m7-gate.db` scratch path; Release never propagates that field,
+so later notifications do not restore a prior command-line scratch path.
+
+These controls do not authorize host UI automation. Whole-profile/UI isolation
+still uses the approved test VM. The [full policy matrix](../plans/dep12-production-overrides.md)
+retains pending default/precedence/clock/share runtime acceptance. M9 performance
+remains owner-deferred; a scroll-output switch is not a performance gate result.
 
 ## Diagnose a crash
 

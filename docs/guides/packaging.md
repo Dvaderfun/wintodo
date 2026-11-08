@@ -99,6 +99,12 @@ publishing in CI. Ordinary main pushes and PRs run build/test and security
 checks. Tag names do not change the placeholder manifest version. See
 [CI policy and remaining enforcement gates](ci.md).
 
+Tag candidates also require the exact source/tag/main and version checks in
+[the release-ref policy](../plans/dep18-release-ref-policy.md). Configure the
+reviewed-main commit pin only after the source is reviewed; the proposed stable
+tag mapping must already match the committed manifest. The gate prepares local
+eligibility evidence and does not grant signing or publication authority.
+
 ## Exact-package dependency evidence and unsigned handoff
 
 Unsigned candidate CI exports a qualified CycloneDX 1.6 record from the actual

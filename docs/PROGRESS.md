@@ -7,6 +7,11 @@ under "History" is append-only._
 
 As of 2026-11-09:
 
+Direct MSIX is selected for the first release under
+[ADR-018](adr/ADR-018-direct-msix-first-release.md), and DEP-12 policy A retains
+documented production launch controls. Exact identity/version, signing,
+licensing/assets and source visibility/protection values remain pending.
+
 | Milestone | Status | Open gate rows |
 |---|---|---|
 | M0–M5 | PASS | — (M3 passed with an owner-approved perf tolerance) |
@@ -20,9 +25,11 @@ As of 2026-11-09:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
-- **Build:** Debug x64 passed with zero warnings/errors on 2026-11-09;
-  Release x64 last passed on 2026-11-08. All four MTP suites
-  passed 678/678, zero failed/skipped (Core 231, Data 130, Import 155, Sync 162).
+- **Build:** Debug and Release x64 passed with zero warnings/errors on
+  2026-11-09. All four MTP suites passed 704/704, zero failed/skipped
+  (Core 257, Data 130, Import 155, Sync 162). The launch-policy/ref-gate
+  integration passes all 202 script regressions. Current-source AOT/runtime
+  and isolated ML servicing evaluation results are tracked separately below.
   Fresh DEP-04 x64/ARM64 AOT outputs include the integrated current code with compiler/
   runtime 10.0.14; both layouts and their relative summary pass the privacy scan
   (649 files, zero findings). Final signed packages/install gates remain pending.
@@ -31,6 +38,15 @@ As of 2026-11-09:
   455/455 and zero failures/skips verified from the four uploaded TRX files.
 - **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
+- **Production policy and release refs (2026-11-09):** direct MSIX first and
+  DEP-12 A are selected; the existing launch decisions now have 26 executable
+  host tests. The strict stable-tag/source/main/version checker has 31 real-Git
+  regressions and is wired before tag CI restore with an explicit reviewed-main
+  pin. Debug/Release builds, 704 unit tests, 202 script tests and independent
+  review pass. No publisher, first version, signing, licence/assets, protection,
+  guest/runtime or publication gate is selected or closed by this preparation.
+  A declared-compatible current Windows ML servicing update is being evaluated
+  separately; root dependencies remain unchanged in this commit.
 - **Archive signatures and signing continuity (2026-11-09):** all 45 original
   archives in both fresh candidate BOM inventories pass NuGet signature/hash
   preservation checks under existing host trust/settings. Signed-payload
@@ -4488,3 +4504,26 @@ Details: [bound packages](plans/dep16-bound-candidate-validation.md),
   signing and exact signed install/update/uninstall/native ARM64 remain pending.
   No guest, host UI, installation, trust, signing, remote write or publication
   occurred. M9 remains owner-deferred.
+
+### 2026-11-09 — M10 DEP-12/16/18: selected launch policy and strict release refs
+
+Direct MSIX first and retain/document DEP-12 A are recorded in ADR-018. The
+production launch helper preserves parsing, lazy storage precedence, onboarding
+and clock decisions; 26 host tests compile the same production source. Platform
+activation/Debug guards and broker share behavior are preserved. Remaining
+Windows/guest/Release/AOT/final-package acceptance stays pending.
+
+The source/ref/version checker passes 31 real-Git regressions. Tag CI now requires
+the explicit reviewed-main pin, full source history and exact LF manifest bytes
+before target restore. Stable tags must match the committed four-part manifest;
+tags do not rewrite it. Reports keep release authorization false. No remote
+variable/protection, publisher/first-version/signer selection or release occurs.
+
+Integration from `db6c448` plus the reviewed policy/ref changes: Debug/Release
+x64 builds clean; 704/704 unit tests, zero failed/skipped; 202/202 script tests;
+Actionlint, links/whitespace and independent review pass. Evidence:
+`artifacts/dep12-policy/`, `artifacts/dep-release-ref-policy/`,
+`artifacts/dep-production-next-integration/`. Root dependency/lock/notice payloads
+are unchanged in this commit; separate ML servicing evaluation remains active.
+Owner fields, hosted/protection, vendor/legal closure, guest/runtime, signing,
+final deployment and publication remain pending. M9 remains owner-deferred.

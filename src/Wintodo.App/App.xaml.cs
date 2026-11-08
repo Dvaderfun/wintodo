@@ -306,11 +306,14 @@ public partial class App : Application
         AppActivationArguments activation,
         string? commandLinePath)
     {
-        if (!string.IsNullOrWhiteSpace(commandLinePath))
-        {
-            return Path.GetFullPath(commandLinePath);
-        }
+        return LaunchOptions.ResolveDatabasePath(
+            commandLinePath,
+            () => ResolveLowerPriorityDatabasePath(activation),
+            () => Path.Combine(ApplicationData.Current.LocalFolder.Path, "wintodo.db"));
+    }
 
+    private static string? ResolveLowerPriorityDatabasePath(AppActivationArguments activation)
+    {
 #if DEBUG
         if (activation.Kind == ExtendedActivationKind.AppNotification
             && activation.Data is AppNotificationActivatedEventArgs notificationArgs
@@ -319,15 +322,11 @@ public partial class App : Application
                 out string? notificationDatabasePath)
             && IsM7GateDatabasePath(notificationDatabasePath))
         {
-            return Path.GetFullPath(notificationDatabasePath);
+            return notificationDatabasePath;
         }
 #endif
 
-        string? overridePath =
-            Environment.GetEnvironmentVariable("WINTODO_DATABASE_PATH");
-        return string.IsNullOrWhiteSpace(overridePath)
-            ? Path.Combine(ApplicationData.Current.LocalFolder.Path, "wintodo.db")
-            : Path.GetFullPath(overridePath);
+        return Environment.GetEnvironmentVariable("WINTODO_DATABASE_PATH");
     }
 
 #if DEBUG
@@ -345,8 +344,9 @@ public partial class App : Application
     private static ImportEnvironment CreateImportEnvironment(string? commandLineDatabasePath, IClock clock)
     {
         // Scratch databases used by UI gates skip onboarding unless they opt in.
-        bool onboardingAllowed = string.IsNullOrWhiteSpace(commandLineDatabasePath)
-            || HasCommandLineFlag("--show-onboarding");
+        bool onboardingAllowed = LaunchOptions.AllowsOnboarding(
+            commandLineDatabasePath,
+            () => HasCommandLineFlag("--show-onboarding"));
         string attachmentRoot = Windows.Storage.ApplicationData.Current.LocalFolder.Path;
         IMicrosoftTodoConnector connector = new MicrosoftGraphConnector(
             GraphTodoClient.CreateHttpClient(),
@@ -370,42 +370,16 @@ public partial class App : Application
 
     private static bool HasCommandLineFlag(string flag)
     {
-        return Environment.GetCommandLineArgs()
-            .Skip(1)
-            .Contains(flag, StringComparer.Ordinal);
+        return LaunchOptions.HasFlag(Environment.GetCommandLineArgs(), flag);
     }
 
     private static IClock ResolveClock()
     {
-        string? clockFile = GetCommandLineOption("--clock-file");
-        return string.IsNullOrWhiteSpace(clockFile)
-            ? new SystemClock()
-            : new FileBackedClock(clockFile);
+        return LaunchOptions.CreateClock(GetCommandLineOption("--clock-file"));
     }
 
     internal static string? GetCommandLineOption(string option)
     {
-        string[] commandLineArguments = Environment.GetCommandLineArgs();
-        for (int index = 1; index < commandLineArguments.Length; index++)
-        {
-            if (!string.Equals(
-                    commandLineArguments[index],
-                    option,
-                    StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            if (index + 1 >= commandLineArguments.Length)
-            {
-                throw new ArgumentException(
-                    $"{option} requires a value.",
-                    nameof(option));
-            }
-
-            return commandLineArguments[index + 1];
-        }
-
-        return null;
+        return LaunchOptions.GetValue(Environment.GetCommandLineArgs(), option);
     }
 }

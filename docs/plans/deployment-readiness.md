@@ -68,12 +68,12 @@ preparation of their respective sessions and release stages.
 | Decision | Required record | Blocks |
 |---|---|---|
 | App name and branding | Final display name, asset ownership and branding direction | DEP-16, DEP-17 |
-| Distribution | Direct MSIX, Microsoft Store, or both; source repository visibility | DEP-16, DEP-18, DEP-20 |
+| Distribution | Direct MSIX first selected (ADR-018); source visibility/protection remains pending | DEP-16, DEP-18, DEP-20 |
 | Package identity and publisher | Exact final identity, signing subject and preservation strategy for existing installations | DEP-16, DEP-18, DEP-19 |
 | Versioning | Valid tag syntax, four-part MSIX mapping, monotonic updates and Store requirements if applicable | DEP-16, DEP-18 |
 | Signing | Production provider, timestamp service, credential custody and renewal policy | DEP-18 |
 | Public attribution and licence | Approved publisher/repository attribution, first-party licence and organizational support contact | DEP-13, DEP-17 |
-| Production overrides | Keep/document or gate database/environment/clock overrides without breaking AOT test coverage | DEP-12 |
+| Production overrides | DEP-12 A selected: retain/document established controls; runtime acceptance pending | DEP-12 |
 | Deferred gates | Explicit M9 disposition and any other release limitations; no failed/skipped gate becomes PASS | DEP-19, DEP-20 |
 
 - Changes to accepted decisions require an ADR and owner acknowledgement.
@@ -101,7 +101,7 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | ID | Work package | Priority | Depends on | Owner | Status |
 |---|---|---|---|---|---|
 | DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
-| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence + native_closure_followup + retained_code_export + native_closure_next | Original NuGet archive signatures/hash preservation 45/45 LOCAL PASS; historical/fresh retained-code/PDB and exact-tool metadata LOCAL PASS; vendor/runtime provenance, advisory disposition and hosted acceptance PENDING |
+| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence + native_closure_followup + retained_code_export + native_closure_next + vendor_provenance_resolution | Archive signatures/hash preservation and exact WinApp published-asset ownership LOCAL PASS; vendor ONNX mapping ESTABLISHED; ML servicing evaluation IN PROGRESS; embedded/runtime/advisory/hosted acceptance PENDING |
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
 | DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; ADR-017 accepted | Codex / dep04_data + dep04_sync + dep04_regressions | AUTOMATED ACCEPTANCE PASS; guest UI/live/final-package checks PENDING |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
@@ -111,13 +111,13 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-09 | End sensitive import sessions correctly | Security | DEP-01 | Codex / dep09_import_lifecycle | COMPLETE; automated acceptance PASS |
 | DEP-10 | Preserve untrusted attachment provenance | Security | DEP-07; API/policy review | Codex / dep10_provenance | IMPLEMENTED; host/AOT PASS; guest preflight FAIL, UI acceptance PENDING |
 | DEP-11 | Reject unsupported database schemas | Data safety | DEP-01 | Codex / dep11_schema_guard | COMPLETE; automated acceptance PASS |
-| DEP-12 | Resolve production test/storage overrides | Policy | Owner decision | Codex / dep12_overrides | INVENTORY COMPLETE; production policy/acceptance PENDING |
+| DEP-12 | Resolve production test/storage overrides | Policy | Policy A selected | Codex / dep12_overrides + production_override_policy | A SELECTED/DOCUMENTED; 26 host launch-policy tests PASS; actual guest/Release/AOT/default/broker/final-package acceptance PENDING |
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
 | DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding | LOCKED RESTORE/LOCAL CHECKS PASS; exact audit/source/target graph bindings LOCAL PASS; remote CI/protection/native advisory disposition PENDING |
 | DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export | Fresh clean `f1b9af5` x64/ARM64 bound packages, qualified SBOM/schema/privacy and positive PDB observations LOCAL PASS; hosted/approved-identity/payload/full closure/final-candidate acceptance PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Nine inherited texts INTEGRATED; fresh x64/ARM64 notice-package checks PASS; privacy/installation DRAFTS; final legal/owner/assets/live sign-in acceptance PENDING |
-| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next | Bound unsigned pair LOCAL PASS; signed-payload continuity preparation/19 regressions and historical ARM64 pair PASS; release authorization false; protected signing/release stages and production/provenance acceptance PENDING |
+| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next + release_ref_policy | Unsigned/signed-continuity bounded checks PASS; new local ref/version gate and 31 regressions PASS, tag CI WIRED; release authorization false; actual hosted/protected/signing/release acceptance PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory + installed_package_smoke | Guest-only installed-smoke runner PREPARED; 12 mocked/static checks PASS; actual guest/API/runtime/visual, signed install/update/uninstall and final deployment acceptance PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
 
@@ -294,6 +294,20 @@ pair without changing files. The seven-choice owner packet is ready; choices
 remain pending. The next critical path is recording those choices, obtaining
 vendor/advisory disposition and current hosted/protected execution, then
 producing/signing approved candidates for exact-package deployment tests.
+
+The owner's 2026-11-09 “Lets do it” response starts the production-preparation
+batch. Direct MSIX first and DEP-12 A are recorded in ADR-018. Parallel streams
+document/test the preserved launch policy, implement local release-ref/version
+eligibility and obtain new primary vendor evidence. Codex owns shared tracking,
+CI wiring, review and integration; agent files and build outputs are isolated.
+
+The policy/ref phase is integrated: 26 new launch tests, 31 real-Git ref tests,
+704 full unit tests and 202 full script tests pass; Debug/Release builds and
+independent review pass. Tag CI fetches full history and requires a reviewed
+main pin before restore; exact manifest LF checkout is declared. Remote settings,
+signing, guest installation and publication remain pending. The separate Windows
+ML servicing evaluation retains root dependencies until both target proofs and
+the source/lock/notice changes are reviewed.
 
 ## 5. Detailed work packages
 
@@ -1466,6 +1480,35 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
   signing, actual installed update/uninstall/native ARM64 and publication remain
   pending. No guest start/provisioning, host UI, installation, certificate trust,
   signing or remote write occurred. M9 remains owner-deferred.
+
+### 2026-11-09 — Selected launch policy and strict release-ref preparation
+
+- **Decisions — SELECTED:** ADR-018 records direct MSIX first; DEP-12 A retains
+  established local controls. Exact identity/publisher, first version, signer,
+  legal/contact/asset rights and visibility/protection values remain pending.
+- **DEP-12 host policy — PASS / runtime PENDING:** the platform-free helper
+  preserves argument parsing, lazy database precedence, onboarding short circuit
+  and real/file clock selection. Twenty-six linked-production-source tests pass.
+  App retains Debug notification and fixture/trace boundaries; broker shares
+  are untouched. Default Windows/guest/Release/AOT/final-package rows stay pending.
+- **DEP-16/18 ref gate — LOCAL PASS / WIRED:** 31 real-Git tests pass for exact
+  source/main/tag/HEAD/ancestry and manifest/version bindings, ordinary clean
+  index, line-ending preservation, negative events/refs/history and safe reports.
+  Tag CI requires caller-supplied `RELEASE_REVIEWED_MAIN_SHA`; optional prior
+  version checking does not close unsupported-update decisions. Full history,
+  manifest LF and explicit policy/privacy uploads are wired. No repository
+  variable, protection, tag, signing or release is created.
+- **Integration — PASS:** `db6c448` plus this reviewed phase builds Debug and
+  Release x64 with zero warnings/errors. All 704 MTP tests pass, zero failed/
+  skipped; all 202 Python script tests pass. Actionlint, document links/whitespace
+  and independent review pass. Evidence is ignored under
+  `artifacts/dep12-policy/`, `artifacts/dep-release-ref-policy/` and
+  `artifacts/dep-production-next-integration/`.
+- **Separate evaluation — IN PROGRESS:** new vendor evidence and a compatible
+  current ML package are being checked in an isolated `db6c448` source. Root
+  dependency/lock/notice payloads are unchanged in this policy/ref commit. These
+  results do not close hosted/protected execution, vendor/legal closure, actual
+  guest/AOT runtime, production signing or final deployment. M9 remains deferred.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

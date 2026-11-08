@@ -40,9 +40,28 @@ runtime/assets, capabilities and activation declarations. Its sanitized
 `release-package.json` report accompanies the candidate. The independently
 approved complete payload inventory remains pending; source-manifest consistency
 does not approve the placeholder production identity. These checks do not
-establish production signing or installation acceptance. Tags still use the
-placeholder manifest identity/version; DEP-16/18
-will define the approved production mapping and protected signing stage.
+establish production signing or installation acceptance. The placeholder
+identity and first production version still require owner values; tags do not
+rewrite the manifest. DEP-18's protected signing stage remains pending.
+
+Tag pushes must pass [the release-ref checker](../plans/dep18-release-ref-policy.md)
+before the target restore. It verifies canonical `vMAJOR.MINOR.PATCH` syntax,
+the matching committed `MAJOR.MINOR.PATCH.0` manifest version, exact source/tag/
+HEAD bindings and ancestry under the explicitly pinned reviewed main commit.
+The release checkout fetches full history; the manifest's LF attribute preserves
+its exact committed bytes on Windows. Event/ref values are passed as arguments
+through environment variables, without interpolating untrusted text into shell
+code. Synthetic real-Git regressions run in the existing script-test discovery.
+
+`RELEASE_REVIEWED_MAIN_SHA` is a required repository variable containing the
+full lowercase reviewed `refs/remotes/origin/main` commit. A missing, malformed
+or stale pin rejects tag candidates. Optional `RELEASE_PREVIOUS_MSIX_VERSION`
+enables a strictly increasing four-part version check; omitting it leaves prior-
+version acceptance pending. Neither variable is configured by this local change.
+These caller-supplied pins do not authenticate owner approval or replace actual
+remote protection. Both policy and privacy reports join the explicit artifact
+allowlist on tag runs, with `release_authorized: false`. Scheduled/manual main
+builds remain unsigned maintenance checks and omit the tag-only reports.
 
 Each unsigned matrix artifact also includes `release-sbom.json` and its
 separate `release-sbom-privacy.json` check. The CycloneDX exporter binds actual

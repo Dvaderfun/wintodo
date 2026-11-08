@@ -1,9 +1,15 @@
 # Deployment owner decision packet
 
 Prepared: 2026-11-09 against source `0b7272f`.
-Status: **PROPOSAL — every answer below remains UNDECIDED.** This packet
-records choices needed to advance DEP-12/13/16/17/18; it changes no policy,
-accepted ADR, package identity, remote setting or release authorization.
+Status: **PARTIALLY DECIDED — direct MSIX first and DEP-12 policy A selected
+on 2026-11-09 by the owner's “Lets do it” response to the proposed next steps.**
+Exact branding, publisher/identity, first version, signing, legal/contact and
+repository protection/visibility values remain pending. No remote setting,
+package identity, accepted ADR or release authorization changes here.
+
+[ADR-018](../adr/ADR-018-direct-msix-first-release.md) records the selected
+first distribution route and preserved launch-control policy without
+superseding an existing ADR.
 
 The next useful step is to settle production policy and release identity while
 native provenance and deployment tooling progress independently. Another build
@@ -16,15 +22,15 @@ and final installed-package acceptance remain pending.
 
 | ID | Required answer | Concrete proposal and constraints | Unblocks |
 |---|---|---|---|
-| D1 — Release route | Direct MSIX, Store, or both; source repository public or private | **Proposed first route: direct MSIX**, with Store delivery deferred to a separate approved work package. This uses the existing paired-MSIX preparation path; a Store release additionally requires reserved Partner Center identity and submission artifacts. Visibility is a separate choice from distribution. Current private-repository protection reads returned a plan-related 403; retain enforced protection through an eligible private plan or approve public visibility after final privacy/attribution review. Verify actual plan/features before selecting either route. | DEP-15/16/18/20 |
+| D1 — Release route | Direct MSIX first selected; source visibility/protection pending | **Selected first route: direct MSIX.** Store delivery needs a separate approved work package and reserved Partner Center identity/submission artifacts. Visibility is a separate choice from distribution; the repository remains private. Current private-repository protection reads returned a plan-related 403; establish enforced protection through an eligible private plan or an approved visibility change after privacy/attribution review. No remote setting has changed. | DEP-15/16/18/20 |
 | D2 — Name and assets | Final display name; approve a brand direction and provide ownership/redistribution evidence for icons and eight backgrounds, or authorize replacement | The current name is **Wintodo, a placeholder**. Final branding may retain that name only by explicit choice. [Asset review](dep13-source-privacy-review.md) found no identifying content but did not establish redistribution rights. Existing placeholder icons also need ownership/final-brand review. Do not infer rights from their presence in Git. | DEP-13/16/17 |
 | D3 — Identity and installed-data continuity | Exact production `Identity.Name`, publisher subject/display attribution; which previous installations must update or migrate | Current [manifest](../../src/Wintodo.App/Package.appxmanifest) uses a GUID identity, `CN=AppPublisher` and `1.0.0.5`. For direct delivery the signer must match the approved manifest publisher; for Store use the exact reserved identity/publisher. Specify whether existing test-install data must transfer. A new identity changes the package data location; a publisher change may also change package-family/update compatibility. Preserve the owner's installation and prove any approved transition on disposable data. An SQLite-only transfer does not include attachments or credentials. | DEP-16/18/19 |
 | D4 — Version policy | Strict release-tag format, first production version, supported prior update versions | **Proposed stable tags: `vMAJOR.MINOR.PATCH`, mapped to `MAJOR.MINOR.PATCH.0`**, with validated MSIX component limits and monotonic versions. If the current identity/update line is retained, `v1.0.1` → `1.0.1.0` is an example above the recorded `1.0.0.5`; `v1.0.0` → `1.0.0.0` would be lower. Confirm the greatest installed supported version before choosing the first release. Tags currently do not modify the manifest. Prerelease mapping requires a separate explicit policy if wanted. | DEP-16/18/19 |
 | D5 — Signing ownership | Production signing provider, approved timestamp service/trust route, credential custodian and renewal owner | Prefer a supported provider with short-lived signing authority if available. A protected PFX workflow is an alternative only with explicit credential custody, ephemeral handling and cleanup. The existing development certificate is not a production selection. The signing subject must be compatible with D3; direct delivery needs the approved timestamp/trust policy. Provider feasibility and protection must be established before wiring a credential-bearing job. | DEP-18/19 |
 | D6 — Public legal identity | First-party licence; permitted public author/publisher attribution; project support, security and privacy contact | Choose the licence explicitly; inherited supplier notices do not license first-party code or images. For a permissive open-source release, MIT is a candidate for review, subject to rights over the first-party work. Provide the exact public attribution/contact text and decide whether current Git attribution is publishable. Preserve legally required supplier attribution. Any history rewrite requires a separate concrete review and authorization. | DEP-13/17/20 |
-| D7 — Production local overrides | Select A or B from [DEP-12](dep12-production-overrides.md) | **Recommend A: retain and document established Release/AOT local overrides.** A custom database path moves SQLite only; fixtures and durable trace output remain Debug-only; broker shares use package LocalState and real time. B restricts overrides to separate test builds and requires gate changes plus acknowledgement of any affected ADR-016 contract. Neither choice introduces portable profiles. | DEP-12/17/19 |
+| D7 — Production local overrides | [DEP-12](dep12-production-overrides.md) policy A selected | **Selected A: retain and document established Release/AOT local overrides.** A custom database path moves SQLite only; fixtures and durable trace output remain Debug-only; broker shares use package LocalState and real time. Executable startup-policy tests and documented runtime gates accompany the supported behavior. Whole-profile isolation still requires the disposable package/guest. | DEP-12/17/19 |
 
-Recommended options are review proposals, not defaults or approvals. Exact
+Unselected recommended options remain review proposals. Exact
 publisher, licence and support-contact values must be supplied rather than
 derived from local account information. Record accepted answers in the owning
 plan/guide and, where an accepted decision changes, an ADR with acknowledgement
@@ -33,13 +39,13 @@ before dependent implementation.
 An owner can answer the whole packet in one response:
 
 ```text
-D1 route / source visibility / protection plan:
+D1 source visibility / protection plan (direct MSIX first selected):
 D2 final name / brand direction / asset rights or replacement:
 D3 identity / publisher / existing installations to preserve:
 D4 tag mapping / first version / supported update versions:
 D5 signing provider / timestamp / custody and renewal owner:
 D6 licence / public attribution / support-security-privacy contact:
-D7 A (keep/document) or B (separate test builds):
+D7 selected A (keep/document); runtime acceptance remains pending:
 ```
 
 Unknown answers stay pending. D3 can be finalized after the selected signer or

@@ -1,6 +1,9 @@
 # Raw Microsoft To Do attachment fixtures must survive checkout byte-for-byte.
 /tests/fixtures/mstodo/**/*.bin -text
 
+# Release-ref checks bind the worktree manifest to its committed bytes on Windows.
+/src/Wintodo.App/Package.appxmanifest text eol=lf
+
 # Preserve supplier legal bytes, including original line endings and whitespace.
 /src/Wintodo.App/Assets/ThirdPartyNotices.txt -text -whitespace
 

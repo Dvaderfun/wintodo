@@ -11,8 +11,9 @@ M9 performance remains owner-deferred.
 |---|---|---|
 | App display name | Wintodo (placeholder) | Final icons, screenshots and listing copy |
 | Package identity / publisher | GUID identity, `CN=AppPublisher` | Production signing and final install gates |
-| Distribution | Undecided: Store, direct MSIX, or both | Signing and release CI |
+| Distribution | Direct MSIX first (selected 2026-11-09); source visibility/protection pending | Signing and release CI |
 | Release version | `1.0.0.5` in the manifest (local header-descender test update) | Release tag; tags do not change this value |
+| Production overrides | DEP-12 A selected: retain/document established local database/clock controls | Default-storage/time, precedence and final installed-package gates |
 
 For Store distribution, use the exact reserved Partner Center identity and
 publisher. For direct distribution, the signing certificate subject must match
@@ -20,6 +21,13 @@ the manifest publisher. A display name alone is insufficient to choose either.
 Review preservation of existing package data before changing identity; a new
 identity has a different package data folder. Do not uninstall the owner's app
 to test the transition.
+
+The [owner decision packet](../plans/deployment-owner-decisions.md) records
+the selected route/override policy and the remaining identity, signing, version,
+licensing/asset and protection values. Those selections do not authorize
+certificate trust, machine changes or publication. A custom SQLite path does
+not move attachments, credentials or broker-share state; final installed tests
+must also verify ordinary package LocalState and real-time defaults.
 
 ## Manual gate session
 

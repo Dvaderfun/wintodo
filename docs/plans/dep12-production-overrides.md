@@ -1,10 +1,14 @@
-# DEP-12 — Production override policy proposal
+# DEP-12 — Supported production override policy
 
-Status: inventory complete; owner policy decision and acceptance tests pending.
-Prepared on 2026-11-08 against source at `812dd73`. This document changes no app
-behavior and does not mark DEP-12 complete.
+Status: **Policy A selected/documented; 26 host launch-policy tests PASS;
+guest and final-package acceptance PENDING.**
+Prepared on 2026-11-08 against `812dd73`; source rechecked on 2026-11-09 against
+`db6c448`, followed by the reviewed launch-policy extraction. The owner authorized the proposed retain/document approach with
+"Lets do it" on 2026-11-09. This records established behavior and extracts
+testable startup decisions without changing supported behavior or an accepted
+ADR. DEP-12 stays open until its required runtime checks pass.
 
-Recommended decision: retain and document the current local launch overrides
+Selected policy: retain and document the current local launch overrides
 in Release, including Native AOT, as advanced diagnostics/test controls. Keep
 Graph fixtures, persistent trace-file output and notification scratch-path
 propagation Debug-only. Broker shares continue to use package LocalState and
@@ -15,13 +19,14 @@ disposable database. A database override selects only the SQLite file; it is
 not a portable mode or an isolated app profile. Attachments and other package
 state remain under the package's LocalState directory.
 
-## Owner decision
+## Recorded decision
 
-Choose one policy before implementation or release acceptance:
+The selected policy is A. B remains an unselected alternative from the original
+proposal, with its implementation consequences retained for reference.
 
 | Choice | Result | Verification consequence |
 |---|---|---|
-| **A — Keep and document existing overrides (recommended)** | Current Release/AOT launch behavior stays supported for advanced local use. Debug-only fixture/trace behavior and broker defaults stay explicit. | Existing AOT M13, Release diagnostics, warmup and performance paths keep testing the ordinary Release app. Add missing default/precedence/time/share checks. |
+| **A — Keep and document existing overrides (selected 2026-11-09)** | Current Release/AOT launch behavior stays supported for advanced local use. Debug-only fixture/trace behavior and broker defaults stay explicit. | Existing AOT M13, Release diagnostics, warmup and performance paths keep testing the ordinary Release app. Add missing default/precedence/time/share checks. |
 | B — Restrict overrides to test builds | Production Release ignores database, environment, clock, onboarding and scroll-output controls. A distinct build opt-in enables them for test Release/AOT artifacts. | Adapt affected gates and label test artifacts clearly. Production candidate still needs separate default-storage/time and functional deployment checks; an opt-in build alone cannot prove the shipped package. |
 
 Choice A is documentation and verification of established behavior. Choice B
@@ -30,11 +35,11 @@ changes established launch behavior, including the onboarding contract in
 acknowledgement before applying that change. Neither choice authorizes host UI
 automation, certificate trust, guest provisioning or publication.
 
-## Current behavior and recommended matrix
+## Supported behavior matrix
 
-The table describes code observed in the inventory and the behavior proposed
-for Choice A. Release JIT and Release Native AOT share these preprocessor paths.
-The inventory is source evidence, not a new runtime gate result.
+The table describes established code rechecked for selected Policy A. Release
+JIT and Release Native AOT share these preprocessor paths. This is source
+evidence, not a new runtime gate result.
 
 | Input / activation | Debug ordinary launch | Release / Native AOT ordinary launch | Broker ShareTarget, Debug and Release |
 |---|---|---|---|
@@ -51,7 +56,7 @@ The inventory is source evidence, not a new runtime gate result.
 | `--perf-scroll-items <count>` | Threshold for the scroll probe; absent or unparseable value defaults to 10,000 | Same | No effect |
 | Toast payload `debugDatabasePath` | Accepted only for AppNotification activation and an existing file named `m7-gate.db`, after command-line precedence | Ignored | No effect |
 
-Important details to document with Choice A:
+Supported usage and scope:
 
 - `--show-onboarding` allows onboarding; it does not force Welcome for an
   already onboarded or populated database. Only a **command-line** database
@@ -62,6 +67,11 @@ Important details to document with Choice A:
   `CreateImportEnvironment` still selects the package LocalState attachment
   root. Tests needing whole-profile isolation continue to use the disposable VM
   package, as the existing broker share gate does.
+- Settings persisted through the selected SQLite store, including task
+  preferences, onboarding completion and shell placement/navigation, follow that
+  database. Files in LocalState and PasswordVault entries do not. Imported and
+  manually attached files use the package's `attachments` root even with a
+  custom database; a SQLite-only backup cannot preserve the whole profile.
 - Ordinary startup resolves overrides before notification/task handling.
   Debug M7 toasts can carry their validated scratch path across activation;
   Release toasts do not embed that Debug field. The supported matrix must not
@@ -71,6 +81,11 @@ Important details to document with Choice A:
   case-sensitive names; the first matching value wins. A recognized value
   option without a following argument throws. There is no general unknown-flag
   rejection. Fixture modifiers alone have no effect without a fixture connector.
+- Overrides are local launch inputs, not persisted launch preferences. A later
+  Start, startup-task or toast activation resolves its own process inputs.
+  Non-share activations use the same database/clock resolution; no Release toast
+  embeds or restores a previous command-line database path. A shell opened on a
+  custom database and a broker share can therefore write different databases.
 - These are locally controlled launch inputs. The inventory does not classify
   them as remote vulnerabilities. A clock file can affect stored task timestamps
   and time-dependent behavior; use synthetic data for reproducible gates.
@@ -87,7 +102,7 @@ and may move during later work.
 |---|---|
 | Share routing before ordinary startup resolution | [App.xaml.cs](../../src/Wintodo.App/App.xaml.cs#L68), `OnLaunched` |
 | Command-line / notification / environment / default database precedence | [App.xaml.cs](../../src/Wintodo.App/App.xaml.cs#L305), `ResolveDatabasePath`, `IsM7GateDatabasePath` |
-| Import connector and command-line-only onboarding suppression | [App.xaml.cs](../../src/Wintodo.App/App.xaml.cs#L345), `CreateImportEnvironment` |
+| Import connector and command-line-only onboarding suppression | [App.xaml.cs](../../src/Wintodo.App/App.xaml.cs#L344), `CreateImportEnvironment`; [LaunchOptions.cs](../../src/Wintodo.App/Services/LaunchOptions.cs#L53), `AllowsOnboarding` |
 | Flag/value parsing and clock selection | [App.xaml.cs](../../src/Wintodo.App/App.xaml.cs#L371), `HasCommandLineFlag`, `ResolveClock`, `GetCommandLineOption` |
 | Debug persistent app trace listener | [App.xaml.cs](../../src/Wintodo.App/App.xaml.cs#L42), `App` constructor |
 | Broker storage and time fixed in both configurations | [App.Share.cs](../../src/Wintodo.App/App.Share.cs#L43), `HandleShareAsync` |
@@ -96,6 +111,10 @@ and may move during later work.
 | Debug notification scratch path and state export | [WindowsIntegrationService.cs](../../src/Wintodo.App/Services/WindowsIntegrationService.cs#L23), `DebugDatabasePathArgument`, `BuildNotification`, `WriteGateNotificationState` |
 | Welcome requires unset completion and an otherwise fresh database | [ShellViewModel.Import.cs](../../src/Wintodo.App/ViewModels/ShellViewModel.Import.cs#L70), `InitializeOnboardingAsync` |
 | Package LocalState attachment staging | [ImportWizardViewModel.cs](../../src/Wintodo.App/ViewModels/ImportWizardViewModel.cs#L320), `ImportAsync`; `CreateImportEnvironment` |
+| Manually attached files and path resolution remain package-local | [TaskDetailViewModel.Attachments.cs](../../src/Wintodo.App/ViewModels/TaskDetailViewModel.Attachments.cs#L39), `AttachFileAsync`, `TryResolveAttachmentPath` |
+| Database-backed shell placement/navigation follows the selected store | [ShellStateService.cs](../../src/Wintodo.App/Services/ShellStateService.cs#L17), settings-store constructor and load/save methods |
+| Credential location remains PasswordVault | [PasswordVaultCredentialStore.cs](../../src/Wintodo.App/Services/PasswordVaultCredentialStore.cs#L8), `_vault` |
+| Executable value/flag, lazy database, onboarding and clock policy | [LaunchOptions.cs](../../src/Wintodo.App/Services/LaunchOptions.cs#L8), linked unchanged into [Core.Tests](../../tests/Wintodo.Core.Tests/Wintodo.Core.Tests.csproj) |
 
 Related accepted decisions: [ADR-013](../adr/ADR-013-hyperv-test-vm.md) fixes
 the guest-only gate boundary; [ADR-016](../adr/ADR-016-microsoft-todo-import.md)
@@ -118,14 +137,20 @@ defines scratch-database onboarding. Existing operational descriptions are in
 | [run-schema-guard-gate.ps1](../../tests/ui/run-schema-guard-gate.ps1#L39) | Selects a synthetic newer-schema database for startup rejection. |
 | M0/M3/M4/M5/M6/M8, settings, undo, sorting and layout gate runners | Scratch database launch; time-sensitive M5/settings/undo/sort paths also use `--clock-file`. |
 
-## Implementation and acceptance after the choice
+## Documentation and remaining acceptance
 
-For Choice A, first record the selected policy, then update the operational
-option table and release checklist to describe the matrix and database-only
-scope. Keep existing production behavior. Add focused tests for actual default
-storage/time and precedence; extract a small policy/parser seam only if needed
-to test those decisions without a desktop. Do not broaden this into a portable
-profile, new settings UI, fixture support in Release, or a new storage format.
+Policy A is recorded here. The [operational option table](../guides/build-and-run.md),
+[installation/recovery draft](../releases/INSTALLATION.md) and
+[privacy draft](../releases/PRIVACY.md) now describe supported overrides and their
+database-only scope. The direct-MSIX-first route is selected, while exact public
+identity, legal/contact fields, signing and final deployment remain pending.
+Existing production behavior stays intact. A BCL/Core-only `LaunchOptions` helper
+now owns the extracted value/flag, lazy database, onboarding and clock decisions.
+App retains platform activation routing, Debug notification eligibility and
+environment lookup; LocalFolder is evaluated only when no selected override
+exists. Core.Tests compiles the same production helper and existing file clock,
+with no App project reference, dependency or lock changes. This work adds no portable
+profile, settings UI, Release fixture support or storage format.
 
 Required acceptance evidence:
 
@@ -149,13 +174,31 @@ Required acceptance evidence:
    diagnostics, import and share. Run the performance override path only when
    needed to prove it works; make no unmeasured performance claims.
 
-For Choice B, additionally define one explicit test build property, separate
+For the unselected Choice B, additionally define one explicit test build property, separate
 output/package handling and a complete production-default replacement for
 gates whose scratch controls are removed. Record any required ADR amendment
 before editing. Build/test artifacts must be identified honestly in release
 evidence; final deployment checks still use the exact production candidate.
 
-No fresh build, unit suite, UI gate, performance run or installed-package check
-was performed for this inventory. The previously recorded gates are background
-evidence only. DEP-12 remains pending until a policy is selected, documented and
-tested; failed or skipped rows remain visible.
+The 2026-11-09 source review confirms precedence, first-value parsing, clock,
+onboarding, Debug exclusions, broker defaults and package-local attachment/vault
+scope. The focused [LaunchOptionsTests](../../tests/Wintodo.Core.Tests/LaunchOptionsTests.cs)
+run passes **26/26**, zero failed/skipped, exercising the production helper for
+case/first-value/missing-value behavior, lazy command-line/fallback/default path
+selection, invalid selected paths, command-line versus environment onboarding,
+real/file clock selection, per-read UTC normalization, timezone and missing/invalid
+clock contents. These tests use synthetic files and never activate the app.
+
+```powershell
+dotnet test --project tests/Wintodo.Core.Tests/Wintodo.Core.Tests.csproj `
+  -p:Platform=x64 --filter-class '*LaunchOptionsTests' --report-trx
+```
+
+Host proof is scoped to pure decisions. Actual Windows LocalFolder, Debug toast
+eligibility, Release fixture/trace exclusion, app error/onboarding presentation,
+broker activation, numeric probe and affected guest/final Release/AOT gates in
+the six acceptance rows remain PENDING. Previously recorded runtime gates are
+background evidence only. No UI, performance or installed-package gate ran in
+this stream. Documentation results and private focused logs are under
+`artifacts/dep12-policy/`; parent integration records full build/unit outcomes
+separately without converting host tests into final-package acceptance.

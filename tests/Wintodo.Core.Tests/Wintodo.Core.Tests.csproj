@@ -20,6 +20,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Test the same BCL/Core-only launch policy compiled into the app, without WinUI activation. -->
+    <Compile Include="..\..\src\Wintodo.App\Services\LaunchOptions.cs" Link="App\LaunchOptions.cs" />
+    <Compile Include="..\..\src\Wintodo.App\Services\FileBackedClock.cs" Link="App\FileBackedClock.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="..\fixtures\ical\**\*.ics"
              Link="fixtures\ical\%(RecursiveDir)%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" />

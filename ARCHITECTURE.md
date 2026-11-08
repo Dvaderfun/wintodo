@@ -163,6 +163,14 @@ SqliteTaskStore (all IO off the UI thread)        CalDavSyncService ──► Ca
 startup-task activations initialise only what they need and may exit without
 showing a window.
 
+`Services/LaunchOptions` owns the platform-free argument, database-selection,
+onboarding and clock decisions. App retains activation routing and the Debug-only
+notification fallback; lazy lookups preserve command-line precedence and avoid
+opening package LocalState when an override wins. Core.Tests links this same
+BCL/Core-only helper and file clock without referencing the WinUI app project.
+The selected DEP-12 policy retains these local controls in Release/AOT; broker
+shares continue to use package LocalState and real time.
+
 ShareTarget is routed before notifications, main window, integration and sync.
 Program captures the consumable activation payload before `Application.Start`;
 App queries `IShareTargetActivatedEventArgs` explicitly for its AOT projection.
