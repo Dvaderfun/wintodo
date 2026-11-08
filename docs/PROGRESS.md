@@ -40,13 +40,18 @@ As of 2026-11-08:
   adopted or credited with resolving HarfBuzz/runtime provenance. Owner policy,
   identity/licence/signing, guest setup and final hosted/package acceptance stay
   pending. See [the deployment plan](plans/deployment-readiness.md).
-- **Inherited supplier notice integration (2026-11-08):** nine exact NuGet
-  legal texts now ship in the source notice file with all original bodies and
-  the existing prefix intact. Source privacy passes with zero findings; Debug
-  x64 build is clean and all 678 MTP tests pass. Fresh notice-containing
-  x64/ARM64 packages, dependency/SBOM export and unsigned candidate handoff
-  checks are the active parallel batch. First-party/image rights, final legal
-  distribution, identity/signing, owner policy and final deployment stay pending.
+- **Notice/SBOM/handoff parallel batch (2026-11-08):** nine whole supplier
+  legal texts are integrated. Fresh clean `9106040` x64/ARM64 unsigned MSIX
+  contain their exact 898,198-byte notice file and pass AOT, structure/privacy,
+  source preservation and 311/307 layout-equivalence checks. Qualified BOMs
+  hash-match all 105 vendor binary files and pass official CycloneDX schema and
+  privacy; full linked-code/vendor/projection closure remains INCOMPLETE. The
+  unsigned paired handoff passes with release authorization false. Debug build
+  is clean, 678 MTP tests and 104 script tests pass; unsigned CI exports and
+  privacy-checks the qualified BOM. Owner policy/identity/licensing/signing,
+  native advisories/provenance, hosted CI/protection, guest SDK setup and final
+  signed/deployment/live/native-ARM64 gates remain pending. See the
+  [deployment plan](plans/deployment-readiness.md).
 - **Clean-source release evidence (2026-11-08):** unsigned x64/ARM64 MSIX from
   clean `965d86b` pass exact structure/privacy and 311/307 shared-file layout
   equivalence. A reproduced containing-solution AOT restore failure is corrected
@@ -4311,3 +4316,47 @@ file is 898,198 bytes, SHA-256
 Evidence: [notice integration](plans/dep17-notice-integration.md),
 private `artifacts/dep-notice-integration/`, and the
 [deployment plan](plans/deployment-readiness.md).
+
+### 2026-11-08 — M10 DEP-16/17/18: exact-package SBOM and unsigned handoff
+
+The owner requested parallel preparation. Three bounded streams integrated
+inherited supplier notices, added exact-MSIX dependency evidence and verified a
+hash-pinned unsigned signing-input handoff. The first stream also rebuilt both
+notice-containing packages from clean `9106040` in an isolated source archive.
+
+- x64/ARM64 locked AOT publish and SDK-native packaging PASS, zero unresolved
+  compiler/WinUI/trim/AOT warnings. All 500 archived files and 20 locks remain
+  unchanged. Actual notices are identical in both packages: 898,198 bytes,
+  SHA-256 `ba042235866020798b50fcc24483abaea5a61c827340ca8db943a6819cac98fa`.
+- Exact structure/privacy and 311/307 layout-common comparisons PASS; package
+  privacy covers 322/318 files with zero findings. App-only NuGet audits have
+  zero vulnerable packages/advisories; tool exports retain their availability
+  and ancestor-root attribution limitations rather than asserting execution.
+- Exact-package CycloneDX 1.6 export, official schema and BOM privacy PASS on
+  both targets. All 105 vendor binary files match original NuGet bytes;
+  complete linked-code/vendor/projection closure stays INCOMPLETE. Signed raw
+  archive hashes and normalized restore hashes remain distinct, with qualified
+  local-cache metadata binding rather than signature authentication. Unverified
+  restored inputs are separate metadata evidence. Twenty-two regressions pass.
+- Unsigned paired handoff PASS; 24 regressions verify tampering, malformed or
+  missing gates, entry/report/source mismatches, combined CI privacy, aliases,
+  stale results and signed-input rejection. Actual fresh-pair report privacy
+  passes; release authorization stays false and ten final gates stay pending.
+- Integration PASS: Debug x64 solution build zero warnings/errors, four MTP
+  suites 678/678 with zero failed/skipped, 104 Python script tests, Actionlint,
+  whitespace and local link checks. Scoped vendored WinUI review found nothing
+  above informational; no new XAML, C# UI logic or UI behavior was introduced.
+- CI exports the qualified BOM and its privacy report only in the existing
+  read-only unsigned matrix. No signing environment, privilege, remote setting,
+  guest setup, host UI, certificate trust, installation, signing, draft release
+  or publication was added. First-party/image rights, owner policy/identity/
+  version/signing, complete legal/SBOM/provenance/native advisory disposition,
+  hosted CI/protection and final signed/deployment/live/ARM64 runtime remain
+  PENDING; M9 remains owner-deferred.
+
+Details: [notice packages](plans/dep17-notice-package-validation.md),
+[SBOM evidence](plans/dep16-sbom-evidence.md),
+[unsigned handoff](plans/dep18-candidate-handoff.md), and
+[deployment plan](plans/deployment-readiness.md). Private evidence is under
+`artifacts/dep-notice-candidates/`, `artifacts/dep-sbom/` and
+`artifacts/dep18-handoff/`; raw logs/assets/cache metadata are not release assets.

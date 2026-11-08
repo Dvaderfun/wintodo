@@ -175,6 +175,19 @@ jobs:
             --expected-version $candidateIdentity.GetAttribute('Version')
           if ($LASTEXITCODE -ne 0) { throw 'MSIX structural inspection failed.' }
 
+      - name: Export exact-package dependency evidence (retained-code closure pending)
+        run: |
+          $candidatePath = 'publish/msix/Wintodo-${{ matrix.arch }}.msix'
+          $candidateHash = (Get-FileHash -LiteralPath $candidatePath -Algorithm SHA256).Hash.ToLowerInvariant()
+          python scripts/Export-ReleaseSbom.py $candidatePath `
+            --assets src/Wintodo.App/obj/project.assets.json --architecture ${{ matrix.platform }} `
+            --source-commit $env:GITHUB_SHA --expected-package-sha256 $candidateHash `
+            --output SafeTestResults/release-sbom.json
+          if ($LASTEXITCODE -ne 0) { throw 'Package dependency evidence export failed.' }
+          python scripts/Test-ReleasePrivacy.py SafeTestResults/release-sbom.json `
+            --private-root "$PWD" --output SafeTestResults/release-sbom-privacy.json
+          if ($LASTEXITCODE -ne 0) { throw 'Package dependency evidence privacy check failed.' }
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: M10-unsigned-${{ matrix.arch }}
@@ -185,5 +198,7 @@ jobs:
             SafeTestResults/toolchain.json
             SafeTestResults/release-privacy.json
             SafeTestResults/release-package.json
+            SafeTestResults/release-sbom.json
+            SafeTestResults/release-sbom-privacy.json
           retention-days: 14
           if-no-files-found: error

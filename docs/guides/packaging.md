@@ -99,6 +99,30 @@ publishing in CI. Ordinary main pushes and PRs run build/test and security
 checks. Tag names do not change the placeholder manifest version. See
 [CI policy and remaining enforcement gates](ci.md).
 
+## Exact-package dependency evidence and unsigned handoff
+
+Unsigned candidate CI exports a qualified CycloneDX 1.6 record from the actual
+MSIX, the matching target-specific private `project.assets.json` and original
+NuGet archives. Its source commit and package SHA-256 identify the supplied
+inputs. Hash-matched vendor files are recorded separately from restored inputs
+whose retention in Native AOT is unverified. The latter remain evidence rather
+than declared runtime dependencies. The complete linked-code/vendor/projection
+closure and independent source/build attestation remain pending; an export PASS
+is not release acceptance. Signed NuGet raw archive hashes and normalized restore
+content hashes are distinguished, with local cache-metadata binding qualified.
+See [the SBOM evidence record](../plans/dep16-sbom-evidence.md) for the command,
+source-integrity limits and remaining closure checks.
+
+[Test-ReleaseCandidate.py](../../scripts/Test-ReleaseCandidate.py) accepts a
+private hash-pinned descriptor for one unsigned x64 and one unsigned ARM64 MSIX
+plus each target's structural/privacy/toolchain/app-only audit reports. It
+rehashes the files and package entries, compares source/report consistency and
+identity/version equality, and emits sanitized input-consistency evidence with
+`release_authorized: false`. The [handoff record](../plans/dep18-candidate-handoff.md)
+describes its input schema and negative tests. Production policy, signing,
+protected source ancestry and exact tool/audit execution provenance require
+their separate gates. New checksums and inspection are required after signing.
+
 ## Local test signature
 
 Keep the certificate and package copy inside the ignored `publish` directory:
