@@ -56,6 +56,19 @@ downloaded hash-pinned matrix inputs locally, including the normal combined
 layout/MSIX privacy reports, while retaining signing/production authorization
 and provenance gates as pending.
 
+Candidate app audits now pass `-AppOnly -Architecture x64` (or `arm64`). The
+audit observes the actual app assets bytes and checked-out HEAD before and
+after the no-restore NuGet command and before publishing its safe summary. A
+changed source/graph or mismatched target fails without retaining a public
+PASS. `dependencies.json` records the full source commit, target and exact
+assets SHA-256, and the final toolchain export hashes the exact assets bytes
+it parses, rejecting changes during export. The unsigned handoff requires
+those bindings to agree; legacy unbound reports must be regenerated. Generic
+solution audits remain supported outside candidate handoff. These checks bind
+the supplied reports to the same observed graph; they do not authenticate
+execution or prove that those inputs produced the package bytes. See
+[the audit binding record](../plans/dep18-audit-graph-binding.md).
+
 Packaging uses `--no-restore` after the explicit target-specific locked AOT
 restore and publish. WinApp 0.7.1's default containing-solution restore would
 also request unsupported AOT test-project locks (`WTDLOCK001`). Skipping that
@@ -167,4 +180,5 @@ python -m unittest discover -s tests/scripts -p 'test_*.py'
 .\scripts\Export-CiToolchain.ps1 -Architecture x64
 # After the reviewed target's AOT restore/publish:
 .\scripts\Export-CiToolchain.ps1 -Architecture arm64 -RequireAot
+.\scripts\Invoke-CiDependencyAudit.ps1 -AppOnly -Architecture arm64
 ```

@@ -1,7 +1,8 @@
 # DEP-18 unsigned candidate handoff checks
 
-Prepared 2026-11-08. Status: **IMPLEMENTED; 24 synthetic regressions PASS;
-old/fresh unsigned input-consistency checks PASS. Protected signing and
+Prepared 2026-11-08; audit-binding follow-up 2026-11-09. Status: **IMPLEMENTED;
+28 synthetic regressions PASS; historical old/fresh unsigned input-consistency
+checks PASS under their then-current contract. Protected signing and
 release acceptance remain PENDING.**
 
 [Test-ReleaseCandidate.py](../../scripts/Test-ReleaseCandidate.py) checks one
@@ -54,8 +55,11 @@ python -B -m unittest discover -s tests/scripts -p test_release_candidate.py
 ```
 
 Use the app-only, target-specific `dependencies.json` produced by
-`Invoke-CiDependencyAudit.ps1 -AppOnly`. A solution-wide report cannot substitute
-for the candidate's app audit. Reports from the existing combined CI privacy
+`Invoke-CiDependencyAudit.ps1 -AppOnly -Architecture x64` (or `arm64`), with
+`AssetsSha256` in the matching new toolchain export. The checker now rejects
+legacy unbound summaries; regenerate audit/toolchain evidence for a new candidate
+from that candidate's reviewed source and restored graph. A solution-wide report
+cannot substitute for the candidate's app audit. Reports from the existing combined CI privacy
 scan are supported: layout/metadata records are retained in the input report,
 while package records and its first-party binary are selected by the MSIX input
 ordinal. A layout executable cannot substitute for the executable in the package.
@@ -81,8 +85,14 @@ have an explicitly verified AOT graph, contain numeric tool/runtime versions,
 and associate the target compiler/runtime and restored WinApp consistently.
 Common resolved package versions and SDK/CLI/runtime versions must agree across
 architectures. The dependency summary must be a passing NuGet app audit with one
-project and zero vulnerable packages/advisories. These checks validate the supplied
-report's shape and consistency, not the underlying execution's authenticity.
+project and zero vulnerable packages/advisories. Its binding must identify the
+descriptor's source commit, exact lowercase target, app-only scope and assets
+SHA-256 recorded by the toolchain export. The wrapper verifies that HEAD and the
+fixed app assets bytes remain unchanged around the no-restore audit. Passing
+handoffs record `audit_to_resolved_graph_binding: MATCH; locally_observed_reports_only`
+for each target. These checks validate the supplied reports' observed graph
+binding and consistency, not the underlying execution's authenticity. See
+[the binding follow-up](dep18-audit-graph-binding.md).
 
 Diagnostics contain fixed categories and package/evidence ordinals, never input
 paths, raw identity values, exception text or report fields supplied by an input.
@@ -94,7 +104,7 @@ Consumers must honor that exit code rather than reading an older report alone.
 
 ## Evidence and remaining gates
 
-[Twenty-four focused regressions](../../tests/scripts/test_release_candidate.py)
+[Twenty-eight focused regressions](../../tests/scripts/test_release_candidate.py)
 pass with real synthetic MSIX files. They cover valid pairs and combined CI
 reports, missing/duplicate/swapped architectures, abbreviated/private source
 values, altered package/report bytes, stale structural or privacy reports,
@@ -102,7 +112,9 @@ entry-hash/size/ordinal substitution, incomplete/failed gates, source/target/AOT
 graph mismatches, divergent dependency versions, failed or solution-wide audits,
 signature presence, differing identities/versions, malformed/duplicate-key JSON,
 stale output invalidation, alias/hard-link protection, late mutation and failed
-atomic output cleanup. No build or desktop automation is required.
+atomic output cleanup. Four binding regressions additionally reject missing or
+malformed legacy evidence, source/architecture/graph mismatch, incorrect scope
+and missing toolchain assets hashes. No build or desktop automation is required.
 
 The private bounded validation descriptor for the existing clean `965d86b`
 unsigned pair is under `artifacts/dep18-handoff/old-candidate-inputs.json`;
@@ -111,9 +123,9 @@ in [the clean candidate review](dep16-local-candidate-validation.md). Their
 documented source identity and notice payload are a previous baseline; packages
 with integrated notice additions require their own fresh descriptor and checks.
 
-The fresh notice-integrated pair from clean source
-`9106040bc1eb460c1cd74fa7122d95460aa38a80` also passes the complete local
-consistency check, including recomputed structural/privacy evidence, every
+The notice-integrated pair from clean source
+`9106040bc1eb460c1cd74fa7122d95460aa38a80` passed the then-current local
+consistency check on 2026-11-08, including recomputed structural/privacy evidence, every
 package-entry hash/size/ordinal and the shared identity/version/tool graph.
 Both package hashes match the separate fresh-package validation records:
 
@@ -130,17 +142,20 @@ its pinned descriptor SHA-256 is
 The existing release privacy scanner checks the public handoff report as one
 text input with zero findings. The descriptor remains private because it names
 local inputs. No candidate, source or input report was modified by these checks.
-The successful handoff still records ten pending production/provenance gates and
-`release_authorized: false`.
+That historical handoff records ten pending production/provenance gates and
+`release_authorized: false`. It has not been regenerated or upgraded in place;
+its old unbound audit/toolchain inputs fail the current stricter checker.
 
-The existing dependency summary does not record its source commit, architecture,
-resolved graph hash or package hash. Pinning its bytes therefore cannot establish
-that its audit ran against the exact candidate graph. Likewise, toolchain exports
-describe reported availability/configuration and resolved inputs, not which
-binaries executed to create the supplied MSIX. Matching a declared commit in those
-records is not proof that the package was built from it. The output keeps
-`audit_to_resolved_graph_binding` and `source_to_package_execution_provenance`
-pending, along with native/tool advisories, complete SBOM/legal review, hosted CI
+New app-only bound dependency summaries record the source commit, architecture
+and exact observed assets SHA-256; matching new toolchain evidence closes the
+local audit/report graph-consistency gap. A newly passing report retains nine
+production/provenance gates. It does not bind audit execution cryptographically
+to the candidate or verify clean-source ancestry. Toolchain exports describe
+reported availability/configuration and resolved inputs, not which binaries
+executed to create the supplied MSIX. Matching a declared commit and assets hash
+in those records is not proof that the package was built from them. The output
+keeps `source_to_package_execution_provenance` pending, along with native/tool
+advisories, complete SBOM/legal review, hosted CI
 and protected refs, approved identity/version/payload, production signing/trust,
 final signed-byte/deployment gates and explicit publication authorization.
 

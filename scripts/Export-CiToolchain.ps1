@@ -61,6 +61,42 @@ function Get-CiConfiguredSdkTools {
     return $tools
 }
 
+function Get-CiAssetsSnapshot {
+    param([Parameter(Mandatory)][string]$Path)
+
+    try {
+        $reader = [IO.BinaryReader]::new([IO.File]::OpenRead($Path))
+        try { $bytes = $reader.ReadBytes(16MB + 1) } finally { $reader.Dispose() }
+        if ($bytes.Length -gt 16MB) { throw 'Assets exceed the evidence limit.' }
+        $text = [Text.UTF8Encoding]::new($false, $true).GetString($bytes).TrimStart([char]0xFEFF)
+        $graph = ConvertFrom-Json -InputObject $text -AsHashtable
+        if ($graph -isnot [System.Collections.IDictionary] -or
+            $graph.libraries -isnot [System.Collections.IDictionary] -or
+            $graph.targets -isnot [System.Collections.IDictionary]) {
+            throw 'Invalid assets graph.'
+        }
+        return @{
+            Graph = $graph
+            Sha256 = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).ToLowerInvariant()
+        }
+    } catch {
+        throw 'WINTODO_ASSETS_EVIDENCE_INVALID'
+    }
+}
+
+function Assert-CiAssetsUnchanged {
+    param([Parameter(Mandatory)][string]$Path, [Parameter(Mandatory)][string]$Sha256)
+
+    try {
+        if ($Sha256 -cnotmatch '^[a-f0-9]{64}$' -or
+            (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $Sha256) {
+            throw 'Assets changed during export.'
+        }
+    } catch {
+        throw 'WINTODO_ASSETS_EVIDENCE_INVALID'
+    }
+}
+
 $stage = 'sdk'
 try {
     if (Test-Path -LiteralPath $output) { Remove-Item -LiteralPath $output }
@@ -116,7 +152,9 @@ try {
     if ($LASTEXITCODE -ne 0 -or $commit -notmatch '^[a-f0-9]{40}$') { throw 'Source commit was not resolved.' }
     $stage = 'packages'
     $packages = [ordered]@{}
-    $assets = Get-Content -LiteralPath (Join-Path $repositoryRoot 'src/Wintodo.App/obj/project.assets.json') -Raw | ConvertFrom-Json -AsHashtable
+    $assetsPath = Join-Path $repositoryRoot 'src/Wintodo.App/obj/project.assets.json'
+    $assetsSnapshot = Get-CiAssetsSnapshot -Path $assetsPath
+    $assets = $assetsSnapshot.Graph
     foreach ($library in ($assets.libraries.Keys | Sort-Object)) {
         if ($assets.libraries[$library].type -ne 'package') { continue }
         $parts = $library.Split('/')
@@ -161,9 +199,14 @@ try {
     $toolConfiguration = ($toolProperties -join "`n") | ConvertFrom-Json -AsHashtable
     $buildToolsRoot = Join-Path $nugetRoot "microsoft.windows.sdk.buildtools/$($packages['Microsoft.Windows.SDK.BuildTools'])"
     $configuredSdkTools = Get-CiConfiguredSdkTools -Properties $toolConfiguration.Properties -PackageRoot $buildToolsRoot
+    $stage = 'stable-source-and-assets'
+    Assert-CiAssetsUnchanged -Path $assetsPath -Sha256 $assetsSnapshot.Sha256
+    $finalCommit = (& git -C $repositoryRoot rev-parse HEAD).Trim()
+    if ($LASTEXITCODE -ne 0 -or $finalCommit -cne $commit) { throw 'Source changed during export.' }
     $evidence = [ordered]@{
         SourceCommit = $commit
         Architecture = $Architecture
+        AssetsSha256 = $assetsSnapshot.Sha256
         DotnetSdk = $sdk
         SdkRollForward = $sdkPolicy.sdk.rollForward
         RunnerImage = if ($env:ImageOS -match '^[a-zA-Z0-9_-]+$') { $env:ImageOS } else { 'local' }

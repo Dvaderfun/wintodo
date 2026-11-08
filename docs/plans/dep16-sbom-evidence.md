@@ -40,6 +40,14 @@ and generated Windows projections remain `PENDING`. Hash ownership does not
 resolve embedded ONNX/DirectML versions, every inherited licence obligation,
 source authenticity, signatures or deployment behaviour.
 
+[The native retained-code follow-up](dep02-native-closure-followup.md) adds
+positive symbol evidence from private PDBs matched to the exact `9106040`
+packaged executables. It identifies retained SQLite, Toolkit, WinRT, generated
+projections and native runtime helpers on both architectures. Symbol names
+associate code with reviewed inputs but do not attest versions, prove absent
+code was removed, or resolve vendor-embedded contents. This separate evidence
+does not change the exporter's qualified INCOMPLETE closure status.
+
 ## NuGet hash binding
 
 Signed NuGet archives have two different hashes. The assets `sha512` value is

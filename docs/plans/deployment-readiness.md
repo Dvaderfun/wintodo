@@ -96,7 +96,7 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | ID | Work package | Priority | Depends on | Owner | Status |
 |---|---|---|---|---|---|
 | DEP-01 | Preserve fixture bytes and repair CI | Blocker | — | Codex / dep01_fixture_ci | COMPLETE; CI PASS (`5604256`) |
-| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence | FOLLOW-UP REVIEWED; exact-tool metadata LOCAL PASS; advisory disposition, embedded-runtime/native provenance and hosted acceptance PENDING |
+| DEP-02 | Patch and verify release toolchain | Security | — | Codex / dep02_toolchain_review + release_toolchain_followup + exact_toolchain_evidence + native_closure_followup | Retained-code/PDB evidence and advisory refresh REVIEWED; exact-tool metadata LOCAL PASS; vendor/runtime provenance, advisory disposition and hosted acceptance PENDING |
 | DEP-03 | Protect local edits during sync pull | Blocker | DEP-01 | Codex / dep03_sync_pull | COMPLETE; automated acceptance PASS |
 | DEP-04 | Implement recoverable synced task moves | Blocker | DEP-03; ADR-017 accepted | Codex / dep04_data + dep04_sync + dep04_regressions | AUTOMATED ACCEPTANCE PASS; guest UI/live/final-package checks PENDING |
 | DEP-05 | Validate Graph request destinations | Blocker | DEP-01 | Codex / dep05_graph_origin | COMPLETE; automated acceptance PASS |
@@ -109,11 +109,11 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-12 | Resolve production test/storage overrides | Policy | Owner decision | Codex / dep12_overrides | INVENTORY COMPLETE; production policy/acceptance PENDING |
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
-| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence | LOCKED RESTORE/LOCAL CHECKS PASS; exact-tool metadata LOCAL PASS; remote CI/protection/native advisory disposition PENDING |
+| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding | LOCKED RESTORE/LOCAL CHECKS PASS; exact audit/source/target graph bindings LOCAL PASS; remote CI/protection/native advisory disposition PENDING |
 | DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom | Clean-source notice-containing x64/ARM64 packages and qualified SBOM/schema/privacy PASS; hosted/approved-identity/payload/full linked-code closure/final-candidate acceptance PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Nine inherited texts INTEGRATED; fresh x64/ARM64 notice-package checks PASS; privacy/installation DRAFTS; final legal/owner/assets/live sign-in acceptance PENDING |
-| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff | Unsigned fresh-pair consistency and 24 regressions PASS; protected signing/release stages PENDING |
-| DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Unassigned | PENDING |
+| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding | Exact audit/source/target graph binding and 28 handoff regressions LOCAL PASS; historical unsigned fresh-pair PASS; fresh bound pair/protected signing/release stages PENDING |
+| DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory | Gate/prerequisite inventory PASS; clean signed install/update/uninstall path and final deployment acceptance PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
 
 Execution sequence:
@@ -235,6 +235,23 @@ authorization false; all 104 script tests and 678 MTP tests pass. Unsigned CI
 now exports and privacy-checks the qualified BOM. Hosted CI, owner decisions,
 signing and final deployment acceptance remain pending.
 
+The owner authorized parallel work on 2026-11-09. Three bounded streams address
+the dependency-audit/source/target graph binding gap (DEP-15/18), investigate
+remaining native/runtime provenance and advisories (DEP-02/16), and map existing
+gates to final signed deployment requirements (DEP-19). Agents own disjoint
+files; Codex owns shared tracking, integration and verification. Investigation
+results must distinguish established ownership from unresolved vendor evidence.
+The gate inventory does not execute installation, trust changes, host UI or
+guest provisioning. Production decisions, remote changes, signing and
+publication retain their existing prerequisites.
+
+This batch is integrated locally: actual x64/ARM64 audit/tool graph bindings,
+124 script regressions, clean Debug build and full 678-test rerun pass. The
+initial SQLite fixture failure is retained in the evidence register. Native
+retained-code observations and the signed-deployment gate matrix are linked
+below. Fresh bound candidates, hosted/protected execution, vendor dispositions,
+owner production decisions and signed deployment remain pending.
+
 ## 5. Detailed work packages
 
 After the owner acknowledged ADR-017, DEP-04 implementation starts in three
@@ -306,6 +323,13 @@ The follow-up traces the unsigned native-SDK command path and proposes a
 bounded HarfBuzz non-applicability disposition for owner review. Stable WinApp
 0.8.0 includes signing fixes but retains the same graphics dependencies; it is
 an upgrade candidate, not a demonstrated HarfBuzz or embedded-runtime fix.
+
+[The 2026-11-09 native closure follow-up](dep02-native-closure-followup.md)
+matches private PDBs to the exact earlier unsigned executables and identifies
+positive retained SQLite/Toolkit/WinRT/projection/runtime symbols. Current
+primary advisories were refreshed. ONNX suffix and DirectML product-version
+comparisons fail to establish vendor source/build equivalence; full native
+closure and WinApp embedded-runtime provenance remain pending.
 
 ### DEP-03 — Protect local edits during sync pull
 
@@ -715,6 +739,12 @@ ten production/provenance gates pending. This bounded helper does not close
 protected-event/ref checks, signer authority, final signed bytes or draft/public
 release stages.
 
+[The audit graph-binding follow-up](dep18-audit-graph-binding.md) now records
+actual observed HEAD, target and app assets hashes around the no-restore audit.
+The stricter handoff requires them to match the toolchain export. Real x64/ARM64
+local target audits and 28 handoff regressions pass. Historical unbound reports
+must be regenerated; local report agreement is not authenticated build execution.
+
 ### DEP-19 — Verify final deployment and functional gates
 
 Use the exact signed candidates; record commit, final SHA-256, architecture,
@@ -748,6 +778,12 @@ OS build, dependency/trust baseline, commands, results and redacted evidence.
 Acceptance: all blocking final-package gates pass for each claimed architecture.
 Any unavailable, failed, skipped or deferred row remains explicit; do not call
 the full release ready while a blocking architecture/deployment gate is open.
+
+[The final deployment gate matrix](dep19-deployment-gate-matrix.md) maps every
+requirement to existing assertions and concrete prerequisites. The development
+VM/layout runners cannot establish exact signed install/update/uninstall;
+those sessions need a separate customer baseline and verified native ARM64
+target. Read-only inventory PASS does not close any final runtime gate.
 
 ### DEP-20 — Publish approved assets and maintain releases
 
@@ -1267,6 +1303,49 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
   runtime gates and explicit publication. M9 stays owner-deferred. No remote
   setting, machine setup, host UI, certificate trust, signing, installation,
   draft release or publication occurred.
+
+### 2026-11-09 — Audit graph binding, native closure and deployment gate inventory
+
+- **DEP-15/18 bounded binding — LOCAL PASS:** target app audits observe HEAD
+  and exact assets bytes around the no-restore NuGet command and publish their
+  safe summary only after stable binding checks. Tool exports hash the exact
+  parsed assets bytes; handoff rejects missing or mismatched bindings. The
+  unsigned CI matrix supplies each architecture and privacy-checks the audit.
+  Thirteen wrapper, 28 handoff and ten toolchain regressions pass. Legacy
+  unbound evidence remains historical and cannot satisfy the new handoff.
+- **Actual targets — LOCAL PASS:** matching locked x64/ARM64 AOT restores,
+  bound app audits and tool exports have zero NuGet vulnerabilities/advisories
+  and agreeing source/target/graph hashes. Observed HEAD is
+  `8d54cc15a2b2bd0e2e2a8cf847942ebb1ca73145` with this reviewed script overlay;
+  no candidate was rebuilt. Assets hashes are
+  `eaeee37da8d910384573bfa160ed5cd38cc4b698a41b8dfb6164a0308852cadf` (x64),
+  `f23ba2044d2349508413c00c0e6ad9c2139d7bd8140d586eb7388d1f5877e01b` (ARM64).
+  Ordinary x64 development restore was restored afterward; locks are unchanged.
+- **DEP-02/16 retained-code follow-up — REVIEWED:** private PDB GUID/age match
+  exact `9106040` MSIX executables on both architectures and address-bearing
+  symbols identify retained SQLite/Toolkit/WinRT/projection/runtime code.
+  Primary advisory refresh is recorded. ONNX suffix and DirectML same-version
+  binaries do not establish vendor build/patch equivalence. Full closure stays
+  INCOMPLETE and WinApp runtime/vendor/HarfBuzz disposition stays PENDING.
+- **DEP-19 inventory — PASS, final gates PENDING:** every requirement now maps
+  to an existing assertion or explicit installed-package gap. Metadata-only VM
+  checks show the development VM Off with its existing clean checkpoint.
+  Final signed install/update/uninstall and native ARM64 need their own
+  baseline/target; guest SDK preflight and manual/live rows remain pending.
+- **Integration — PASS with initial failure retained:** Debug x64 build zero
+  warnings/errors; final script discovery 124/124; Actionlint and link/whitespace
+  checks pass. Initial MTP run was 677/678 with a disposed SQLite handle during
+  DefaultList fixture startup. The affected test passes alone and a full rerun
+  passes 678/678, zero failed/skipped. No runtime change was made for that
+  nonreproduced failure; its cause is not established.
+- **Evidence and boundaries:** new linked review records plus private
+  `artifacts/dep-audit-binding-integration/`,
+  `artifacts/dep-native-closure-followup/`, `artifacts/dep-audit-binding/` and
+  `artifacts/dep19-gate-inventory/`. Read-only GitHub checks still show latest CI
+  at `da945199`, not current source. Owner decisions, hosted/protected execution,
+  signing, fresh bound candidate pair and final deployment remain pending.
+  No guest start/provisioning, host UI, trust, installation, remote write,
+  signing or publication occurred; M9 remains owner-deferred.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

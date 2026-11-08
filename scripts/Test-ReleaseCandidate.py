@@ -21,7 +21,7 @@ KINDS = ("package", "structural", "privacy", "toolchain", "dependencies")
 ARCHITECTURES = ("x64", "ARM64")
 JSON_LIMIT = 16 * 1024 * 1024
 PENDING = ("production_identity_version_and_payload_approval", "tag_and_main_ancestry_policy",
-           "source_to_package_execution_provenance", "audit_to_resolved_graph_binding",
+           "source_to_package_execution_provenance",
            "native_tool_advisory_disposition", "complete_sbom_and_legal_review", "hosted_ci_and_protection",
            "production_signing_timestamp_and_trust", "final_signed_package_and_deployment_gates",
            "explicit_publication_authorization")
@@ -95,6 +95,7 @@ def check_toolchain(report, commit, architecture, ordinal):
     require(isinstance(report.get("Architecture"), str) and report["Architecture"].casefold() == architecture.casefold(),
             "evidence_architecture_mismatch", ordinal, "toolchain")
     require(report.get("AotGraphVerified") is True, "aot_graph_not_verified", ordinal, "toolchain")
+    require(sha256(report.get("AssetsSha256")), "invalid_toolchain_evidence", ordinal, "toolchain")
     for name, pattern in (("DotnetSdk", r"[0-9]+(?:\.[0-9]+){2}"), ("WinAppCli", r"[0-9]+(?:\.[0-9]+){2}"),
                           ("TargetRuntime", r"[0-9]+(?:\.[0-9]+){2}"), ("Msvc", r"[0-9]+(?:\.[0-9]+){2}"),
                           ("VisualStudio", r"[0-9]+(?:\.[0-9]+){2,3}"), ("WindowsSdkAvailable", r"[0-9]+(?:\.[0-9]+){3}")):
@@ -128,7 +129,7 @@ def inspect_candidate(document, base):
     output = {"status": "PASS", "scope": "unsigned_candidate_input_consistency", "release_authorized": False,
               "source_commit": commit, "packages": [], "findings": [], "pending_gates": list(PENDING),
               "toolchain_scope": "reported_graph_and_tool_availability; execution_not_verified",
-              "dependency_scope": "hash_pinned_summary; source_and_resolved_graph_not_recorded_by_audit"}
+              "dependency_scope": "reported_audit_source_target_and_assets_hash_match; execution_not_authenticated"}
     checked_files = []
     identities = []
     toolchains = []
@@ -238,9 +239,22 @@ def inspect_candidate(document, base):
                 and dependencies.get("findings", []) == [],
                 "dependency_gate_not_passed_or_malformed", ordinal, "dependencies")
         toolchains.append((reports["toolchain"], check_toolchain(reports["toolchain"], commit, architecture, ordinal)))
+        binding = dependencies.get("binding")
+        require(isinstance(binding, dict) and set(binding) == {"source_commit", "architecture", "assets_sha256", "project_set", "scope"}
+                and binding.get("project_set") == "app"
+                and binding.get("scope") == "app_assets_observed_before_and_after_audit"
+                and isinstance(binding.get("source_commit"), str)
+                and isinstance(binding.get("architecture"), str) and sha256(binding.get("assets_sha256")),
+                "dependency_binding_missing_or_malformed", ordinal, "dependencies")
+        require(binding["source_commit"] == commit, "source_commit_mismatch", ordinal, "dependencies")
+        require(binding["architecture"] == architecture.casefold(), "evidence_architecture_mismatch", ordinal, "dependencies")
+        require(binding["assets_sha256"] == reports["toolchain"]["AssetsSha256"],
+                "dependency_assets_hash_mismatch", ordinal, "dependencies")
         output["packages"].append({"architecture": architecture, "package_sha256": evidence["package"],
                                    "manifest_sha256": fresh["manifest_sha256"], "executable_sha256": executable_hash,
-                                   "unsigned": True, "evidence_sha256": {k: evidence[k] for k in KINDS if k != "package"}})
+                                   "unsigned": True, "assets_sha256": binding["assets_sha256"],
+                                   "audit_to_resolved_graph_binding": "MATCH; locally_observed_reports_only",
+                                   "evidence_sha256": {k: evidence[k] for k in KINDS if k != "package"}})
 
     require(identities[0] == identities[1], "cross_architecture_identity_or_version_mismatch")
     require(all(toolchains[0][0][key] == toolchains[1][0][key] for key in ("DotnetSdk", "WinAppCli", "TargetRuntime")),
