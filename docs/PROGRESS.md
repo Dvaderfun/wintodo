@@ -20,13 +20,13 @@ As of 2026-11-08:
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
-- **Build:** Fresh isolated Windows checkout of `2e149ca`'s exact source tree
-  passed Debug x64 with zero warnings/errors on 2026-11-08. All four MTP suites
-  passed 392/392, zero failed/skipped (Core 212, Data 97, Import 73, Sync 10).
-  Fresh Release/Native AOT x64 and ARM64 publishes passed with warnings-as-errors
-  using patched compiler/runtime 10.0.14. Intermediate native architecture
-  checks pass; fresh runtime, MSIX and installation evidence are not claimed.
-  GitHub CI for the configuration fixes has not run.
+- **Build:** Debug and Release x64 passed with zero warnings/errors on
+  2026-11-08 after DEP-03/05/11. All four MTP suites passed 455/455, zero
+  failed/skipped (Core 212, Data 106, Import 104, Sync 33). The latest x64/ARM64
+  AOT outputs remain the earlier `2e149ca` tree with compiler/runtime 10.0.14;
+  the second batch has not been republished or tested as final packages.
+  GitHub run `42424857115` passed the first batch at `5604256` with 392/392
+  tests. Fresh CI for the second batch is pending until its implementation push.
 - **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Deployment preparation (2026-11-08):** Three agents split DEP-01 fixture
@@ -34,7 +34,13 @@ As of 2026-11-08:
   Commit `2e149ca` preserves raw attachment checkout bytes and pins the patched
   SDK. Gitleaks 8.30.1 scans of reachable history, source archive and current
   source found zero matches; identifying image metadata checks were clear in
-  inspected fields. GitHub CI, native/tool advisory coverage, attribution/archive
+  inspected fields. DEP-01's fresh-checkout GitHub CI is complete.
+  DEP-03 (`97e7107`), DEP-05 (`0d5dc94`) and DEP-11 (`015a6a8`) now pass their
+  automated acceptance: guarded sync pull with step/chooser recovery, Graph
+  origin/redirect checks and newer-schema rejection with localized startup
+  guidance. WintodoTest: schema 5/5, M13 11/11, import 20/20, M8 17/17; capture
+  review and vendored WinUI review pass. Current source Gitleaks scan: zero
+  findings in 410 files. Native/tool advisory coverage, attribution/archive
   policy and final privacy/deployment gates remain pending. Details and local
   redacted evidence links are in [the deployment plan](plans/deployment-readiness.md).
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
@@ -3938,3 +3944,46 @@ UI automation. ARM64 not rebuilt.
   not marked complete. Owner decisions and M9 deferral are preserved. Existing
   plan/index/progress edits remain in the working tree; only the two validated
   configuration fixes were committed.
+
+### 2026-11-08 — M10 / DEP-01 CI closure and DEP-03, DEP-05, DEP-11 batch
+
+- **DEP-01 COMPLETE:** committed/pushed tracking as `5604256`; GitHub CI run
+  `42424857115` passed clean build and all four suites, 392/392, zero skipped,
+  verified from downloaded TRX. This released the three dependent work packages.
+- **DEP-03 COMPLETE (`97e7107`):** pull checks current dirty/pending state,
+  Sequence, membership, tombstones and remote version inside the writer
+  transaction. Newer local state becomes an explicit conflict; counts reflect
+  actual writes and unresolved deltas retain the old token for restart. All
+  three chooser outcomes preserve/discard flat steps as selected; normal store
+  callers retain default behavior. Baseline races failed 12/12; Sync passes
+  33/33, including restart and second-client simulations. Initial integration
+  exposed three Undo failures from clearing automatic transaction enlistment;
+  the conditional explicit-transaction fix restores Undo 6/6 and full Data.
+- **DEP-05 COMPLETE (`0d5dc94`):** Graph resolves URLs then checks scheme,
+  normalized host, effective port, userinfo and fragment before authentication.
+  App uses the redirect-disabled production factory. Seven baseline bypass
+  cases failed; destination tests 31/31 and Import 104/104 pass. Real loopback
+  301/302/303/307/308 redirects never reach the second origin with a request.
+  GET-only, timeout, retry/cancellation and attachment fallback are preserved.
+- **DEP-11 COMPLETE (`015a6a8`):** rejects future schemas before journal changes
+  or writes and releases failed initialization handles. All nine new cases
+  pass, including huge versions, unchanged rejected files/rows, supported 1–4
+  upgrades and restored backups; existing migration/list tests 10/10 pass.
+  Localized startup/share guidance is wired; startup closes without writing
+  placement. Schema VM gate passes 5/5 with unchanged bytes after both close
+  actions and reopening. Warning screenshot passed visual review.
+- **Integrated gates PASS:** Debug/Release x64 builds zero warnings/errors;
+  455/455 MTP tests, zero skips (212 Core, 106 Data, 104 Import, 33 Sync).
+  WintodoTest M13 11/11, import 20/20, M8 17/17; all captures reviewed, including
+  four contrast palettes. Vendored WinUI code review: no finding above
+  informational. Current source Gitleaks 8.30.1: zero findings in 410 files.
+- **Evidence:** `artifacts/dep03/evidence.json`, `artifacts/dep05/evidence.json`,
+  `artifacts/dep11-schema/evidence.json` and
+  `artifacts/deployment-batch02/evidence.json`; raw logs/TRX/coverage remain
+  ignored/private. Capture runs: schema `run-eb127d4c11884531a4c7566cc8a51453`,
+  M13 `run-20261107-234155`, import `run-20261107-234615`, M8 `run-20261107-235630`.
+- **Remaining:** second-batch CI awaits its push. No new AOT/MSIX, signed final
+  deployment, live-server or actual conflict-dialog UI gate is claimed. DEP-04,
+  DEP-06 and the other pending work remain open. No schema migration, accepted
+  ADR change, host UI automation, provisioning or certificate trust change;
+  owner decisions and M9 performance deferral are preserved.
