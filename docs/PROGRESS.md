@@ -40,6 +40,13 @@ As of 2026-11-08:
   adopted or credited with resolving HarfBuzz/runtime provenance. Owner policy,
   identity/licence/signing, guest setup and final hosted/package acceptance stay
   pending. See [the deployment plan](plans/deployment-readiness.md).
+- **Inherited supplier notice integration (2026-11-08):** nine exact NuGet
+  legal texts now ship in the source notice file with all original bodies and
+  the existing prefix intact. Source privacy passes with zero findings; Debug
+  x64 build is clean and all 678 MTP tests pass. Fresh notice-containing
+  x64/ARM64 packages, dependency/SBOM export and unsigned candidate handoff
+  checks are the active parallel batch. First-party/image rights, final legal
+  distribution, identity/signing, owner policy and final deployment stay pending.
 - **Clean-source release evidence (2026-11-08):** unsigned x64/ARM64 MSIX from
   clean `965d86b` pass exact structure/privacy and 311/307 shared-file layout
   equivalence. A reproduced containing-solution AOT restore failure is corrected
@@ -4280,3 +4287,27 @@ UI automation. ARM64 not rebuilt.
   candidate/tool/notices directories record sanitized counters/source hashes.
   Shared deployment tracking and document index are updated. This batch is
   committed locally as an M10 preparation unit.
+
+### 2026-11-08 — M10 DEP-17: integrate inherited supplier notices
+
+Nine missing whole supplier legal texts are retained in
+`src/Wintodo.App/Assets/ThirdPartyNotices.txt`, preserving its original
+38,748-byte prefix and the exact original NuGet source bodies. The final source
+file is 898,198 bytes, SHA-256
+`ba042235866020798b50fcc24483abaea5a61c827340ca8db943a6819cac98fa`.
+
+- Source integrity: 9/9 original NuGet archive matches and 9/9 intact body
+  inclusions PASS. Source privacy PASS, zero findings.
+- Debug x64 warnings-as-errors solution build PASS, zero warnings/errors;
+  all four MTP suites PASS 678/678, zero failed/skipped.
+- Narrow `-text -whitespace` supplier-file attributes preserve inherited legal
+  line endings/trailing whitespace without suppressing compiler/analyzer errors.
+- Fresh package inclusion, final legal/SBOM closure, first-party/image rights,
+  owner identity/signing/policy choices and deployment remain PENDING. The older
+  clean `965d86b` packages retain their original notice bytes.
+- No app logic, dependency, machine setup, remote setting, certificate trust,
+  UI automation, signing, installation or publication changed.
+
+Evidence: [notice integration](plans/dep17-notice-integration.md),
+private `artifacts/dep-notice-integration/`, and the
+[deployment plan](plans/deployment-readiness.md).

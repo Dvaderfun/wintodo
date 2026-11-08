@@ -110,9 +110,9 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
 | DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence | LOCKED RESTORE/LOCAL CHECKS PASS; exact-tool metadata LOCAL PASS; remote CI/protection/native advisory disposition PENDING |
-| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation | Clean-source unsigned x64/ARM64 structure/privacy/equivalence PASS; hosted/approved-identity/payload/SBOM/final-candidate acceptance PENDING |
-| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review | Privacy/installation DRAFTS and exact shipped-notice ADDITIONS PREPARED; notice integration/owner decisions/assets/live sign-in acceptance PENDING |
-| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Unassigned | PENDING |
+| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom | SBOM exporter IN PROGRESS; clean-source unsigned x64/ARM64 structure/privacy/equivalence PASS; hosted/approved-identity/payload/SBOM/final-candidate acceptance PENDING |
+| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Inherited notice source integrity/privacy PASS; fresh notice packages PENDING; privacy/installation DRAFTS and exact shipped-notice ADDITIONS PREPARED; notice integration/owner decisions/assets/live sign-in acceptance PENDING |
+| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff | Decision-independent candidate handoff checks IN PROGRESS; signing/release stages PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Unassigned | PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
 
@@ -214,6 +214,16 @@ and seven new regressions pass locally. The notice review matches 103 DLLs and
 two vendor helper executables to package sources and prepares nine inherited
 legal texts; the app payload is unchanged. These bounded results do not close
 the outstanding owner, hosted, legal/SBOM, signing or deployment gates.
+
+The owner requested the next parallel batch on 2026-11-08. Three bounded
+streams integrate inherited vendor notice texts (DEP-17), produce exact-package
+dependency/SBOM evidence with unresolved linked-code ownership visible (DEP-16),
+and validate unsigned candidate hashes/evidence for a future signing handoff
+(DEP-18). Agents own disjoint files; Codex owns shared tracking, integrated
+verification and commits. This batch does not select first-party licensing,
+identity/version policy, signing, distribution or production overrides, provision
+the guest, alter remote settings, sign packages or publish assets. Final
+release acceptance remains dependent on the listed owner and hosted gates.
 
 ## 5. Detailed work packages
 
