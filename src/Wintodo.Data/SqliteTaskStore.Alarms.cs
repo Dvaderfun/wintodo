@@ -255,7 +255,7 @@ public sealed partial class SqliteTaskStore
         command.Transaction = transaction;
         command.CommandText = """
             UPDATE tasks
-            SET modified_utc = @modifiedUtc, sequence = sequence + 1, is_dirty = 1
+            SET modified_utc = @modifiedUtc, sequence = sequence + 1, is_dirty = 1, remote_delete_state = 0
             WHERE id = @id;
             """;
         command.Parameters.AddWithValue("@modifiedUtc", SqliteMapper.FormatInstant(_clock.UtcNow));

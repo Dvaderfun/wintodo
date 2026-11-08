@@ -51,13 +51,26 @@ public sealed class IcalWriter
             attachmentRoot);
     }
 
+    /// <summary>
+    /// Writes a locally authored move revision while retaining unknown properties
+    /// and the ordinary import/export presence policy for other task fields.
+    /// </summary>
+    public byte[] WriteTaskMoveCalendar(TodoList list, TodoTask task, DateTimeOffset timestamp)
+    {
+        ArgumentNullException.ThrowIfNull(list);
+        ArgumentNullException.ThrowIfNull(task);
+        return Write(list.DisplayName, list.Color, list.IconEmoji, [task], timestamp,
+            attachmentRoot: null, taskMove: true);
+    }
+
     private byte[] Write(
         string? calendarName,
         ListColor? color,
         string? iconEmoji,
         IEnumerable<TodoTask> tasks,
         DateTimeOffset timestamp,
-        string? attachmentRoot)
+        string? attachmentRoot,
+        bool taskMove = false)
     {
         var output = new StringBuilder();
         AppendLine(output, "BEGIN:VCALENDAR");
@@ -81,7 +94,7 @@ public sealed class IcalWriter
 
         foreach (TodoTask task in tasks)
         {
-            AppendTask(output, task, timestamp, attachmentRoot);
+            AppendTask(output, task, timestamp, attachmentRoot, taskMove);
         }
 
         AppendLine(output, "END:VCALENDAR");
@@ -92,7 +105,8 @@ public sealed class IcalWriter
         StringBuilder output,
         TodoTask task,
         DateTimeOffset timestamp,
-        string? attachmentRoot)
+        string? attachmentRoot,
+        bool taskMove)
     {
         ArgumentNullException.ThrowIfNull(task);
         if (string.IsNullOrWhiteSpace(task.Uid))
@@ -107,6 +121,23 @@ public sealed class IcalWriter
 
         IReadOnlyList<IcalUnknownEntry> unknown = IcalUnknownCodec.Decode(task.IcalUnknown);
         HashSet<string>? present = ReadPresence(unknown);
+        if (taskMove && present is not null)
+        {
+            // A moved revision contains current authored values, even when an
+            // imported VTODO originally omitted those known properties.
+            (string Name, bool HasValue)[] authored =
+            [
+                ("DESCRIPTION", task.Description is not null), ("STATUS", task.Status != TaskStatus.NeedsAction),
+                ("PERCENT-COMPLETE", task.PercentComplete is not null), ("PRIORITY", task.Priority != 0),
+                ("DUE", task.Due is not null), ("DTSTART", task.Start is not null),
+                ("COMPLETED", task.CompletedAt is not null), ("CREATED", task.Created != default),
+                ("RRULE", task.RRule is not null), ("CATEGORIES", task.Categories.Count > 0),
+                ("LOCATION", task.Location is not null), ("URL", task.Url is not null),
+                ("CLASS", task.Class != Classification.Public), ("X-WINTODO-MYDAY", task.MyDayDate is not null),
+            ];
+            foreach ((string name, bool hasValue) in authored)
+                if (hasValue) present.Add(name);
+        }
         AppendLine(output, "BEGIN:VTODO");
         AppendLine(output, "UID:" + EscapeText(task.Uid));
         AppendLine(output, "DTSTAMP:" + FormatUtc(timestamp));
@@ -163,12 +194,13 @@ public sealed class IcalWriter
             AppendLine(output, "CREATED:" + FormatUtc(task.Created));
         }
 
-        if (ShouldWrite(present, "LAST-MODIFIED", task.LastModified != default))
+        if (taskMove && task.LastModified != default
+            || ShouldWrite(present, "LAST-MODIFIED", task.LastModified != default))
         {
             AppendLine(output, "LAST-MODIFIED:" + FormatUtc(task.LastModified));
         }
 
-        if (ShouldWrite(present, "SEQUENCE", alwaysForLocalTask: true))
+        if (taskMove || ShouldWrite(present, "SEQUENCE", alwaysForLocalTask: true))
         {
             AppendLine(output, "SEQUENCE:" + task.Sequence.ToString(CultureInfo.InvariantCulture));
         }
@@ -178,7 +210,7 @@ public sealed class IcalWriter
             AppendLine(output, "RRULE:" + task.RRule);
         }
 
-        if (ShouldWrite(present, "RELATED-TO", task.ParentUid is not null)
+        if ((taskMove || ShouldWrite(present, "RELATED-TO", task.ParentUid is not null))
             && task.ParentUid is not null)
         {
             AppendLine(output, "RELATED-TO;RELTYPE=PARENT:" + EscapeText(task.ParentUid));
@@ -192,7 +224,10 @@ public sealed class IcalWriter
                 .FirstOrDefault();
             if (categoriesOverride is not null)
             {
-                AppendRaw(output, categoriesOverride.Value.Raw);
+                if (taskMove)
+                    AppendMovedCategories(output, categoriesOverride.Value.Raw, task.Categories);
+                else
+                    AppendRaw(output, categoriesOverride.Value.Raw);
             }
             else
             {
@@ -217,7 +252,7 @@ public sealed class IcalWriter
             AppendLine(output, "CLASS:" + FormatClassification(task.Class));
         }
 
-        if (ShouldWrite(present, "X-APPLE-SORT-ORDER", alwaysForLocalTask: true))
+        if (taskMove || ShouldWrite(present, "X-APPLE-SORT-ORDER", alwaysForLocalTask: true))
         {
             AppendLine(
                 output,
@@ -320,6 +355,27 @@ public sealed class IcalWriter
                 "ATTACH;FMTTYPE=" + EscapeParameter(mediaType) + ":" +
                 new Uri(Path.GetFullPath(path)).AbsoluteUri);
         }
+    }
+
+    private static void AppendMovedCategories(StringBuilder output, string original, IReadOnlyList<string> values)
+    {
+        string line = original.Replace("\r\n ", string.Empty, StringComparison.Ordinal)
+            .Replace("\r\n\t", string.Empty, StringComparison.Ordinal)
+            .Replace("\n ", string.Empty, StringComparison.Ordinal)
+            .Replace("\n\t", string.Empty, StringComparison.Ordinal).TrimEnd('\r', '\n');
+        bool quoted = false;
+        for (int index = 0; index < line.Length; index++)
+        {
+            if (line[index] == '"') quoted = !quoted;
+            else if (line[index] == ':' && !quoted)
+            {
+                // Retain every original parameter, including vendor extensions;
+                // only the modeled category values belong to the authored edit.
+                AppendLine(output, line[..(index + 1)] + string.Join(',', values.Select(EscapeText)));
+                return;
+            }
+        }
+        throw new ArgumentException("The preserved category property has no value separator.", nameof(original));
     }
 
     private void AppendDate(

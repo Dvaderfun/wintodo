@@ -44,6 +44,18 @@ public sealed partial class SqliteTaskStore
         return ExecuteWriteAsync(
             (connection, transaction, _) =>
             {
+                if (account.Id != 0)
+                {
+                    using SqliteCommand existing = connection.CreateCommand();
+                    existing.Transaction = transaction;
+                    existing.CommandText = "SELECT server_url, username, credential_key FROM accounts WHERE id = @id;";
+                    existing.Parameters.AddWithValue("@id", account.Id);
+                    using SqliteDataReader reader = existing.ExecuteReader();
+                    bool identityChanged = reader.Read() && (reader.GetString(0) != account.ServerUrl
+                        || reader.GetString(1) != account.Username || reader.GetString(2) != account.CredentialKey);
+                    reader.Dispose();
+                    if (identityChanged) GuardMoveObligations(connection, transaction, accountId: account.Id);
+                }
                 using SqliteCommand command = connection.CreateCommand();
                 command.Transaction = transaction;
                 if (account.Id == 0)
@@ -93,6 +105,7 @@ public sealed partial class SqliteTaskStore
         return ExecuteWriteAsync(
             (connection, transaction, context) =>
             {
+                GuardMoveObligations(connection, transaction, accountId: accountId);
                 using (SqliteCommand lists = connection.CreateCommand())
                 {
                     lists.Transaction = transaction;
@@ -184,7 +197,9 @@ public sealed partial class SqliteTaskStore
                     FROM lists
                     WHERE account_id = @accountId AND (remote_url IS NOT NULL OR
                           (is_deleted = 0 AND EXISTS(SELECT 1 FROM change_log
-                           WHERE entity_type = 1 AND entity_uid = lists.uid AND synced = 0 AND operation = 0)))
+                           WHERE entity_type = 1 AND entity_uid = lists.uid AND synced = 0 AND operation = 0))
+                          OR EXISTS(SELECT 1 FROM task_move_outbox
+                              WHERE source_list_id = lists.id OR destination_list_id = lists.id))
                           AND NOT EXISTS(
                               SELECT 1 FROM settings
                               WHERE key = 'sync.list.' || lists.uid || '.disabled'
@@ -341,6 +356,10 @@ public sealed partial class SqliteTaskStore
             (connection, transaction, context) =>
             {
                 string uid = GetListUid(connection, transaction, listId, includeDeleted: true);
+                TodoList binding = ReadListById(connection, transaction, listId);
+                if (binding.AccountId != accountId || (!string.IsNullOrWhiteSpace(binding.RemoteUrl)
+                    && binding.RemoteUrl != remoteUrl))
+                    GuardMoveObligations(connection, transaction, listId: listId);
                 using SqliteCommand command = connection.CreateCommand();
                 command.Transaction = transaction;
                 command.CommandText = """
@@ -445,6 +464,7 @@ public sealed partial class SqliteTaskStore
                 {
                     if (candidate.EntityType == SyncEntityType.Task)
                     {
+                        if (HasTaskMove(connection, null, candidate.EntityUid)) continue;
                         TodoTask? task = ReadTaskByUid(
                             connection,
                             transaction: null,
@@ -586,6 +606,18 @@ public sealed partial class SqliteTaskStore
                         transaction,
                         task.Uid,
                         includeDeleted: true);
+                    if (HasTaskMove(connection, transaction, task.Uid))
+                    {
+                        result.HasDeferredChanges = true;
+                        continue;
+                    }
+                    if (expectedByUid is not null && existing is not null
+                        && ReadRemoteDeleteState(connection, transaction, existing.Uid) == 2)
+                    {
+                        result.HasDeferredChanges = true;
+                        AddPullConflict(connection, transaction, result, existing, task, remote.Href, remote.ETag);
+                        continue;
+                    }
                     if (expectedByUid is not null)
                     {
                         expectedByUid.TryGetValue(task.Uid, out RemoteTaskState? expected);
@@ -598,6 +630,14 @@ public sealed partial class SqliteTaskStore
                         if (existing is not null && IsPullConflict(
                             connection, transaction, listId, existing, expected))
                         {
+                            if (expected is not null && existing.ListId != listId
+                                && existing.RemoteHref != remote.Href && !existing.IsDirty
+                                && !HasUnsyncedEntityChange(connection, transaction, SyncEntityType.Task, existing.Uid))
+                            {
+                                // An in-flight response for the old binding cannot revive a confirmed move.
+                                result.HasDeferredChanges = true;
+                                continue;
+                            }
                             AddPullConflict(connection, transaction, result, existing,
                                 task, remote.Href, remote.ETag);
                             continue;
@@ -696,6 +736,17 @@ public sealed partial class SqliteTaskStore
                         continue;
                     }
 
+                    if (HasTaskMove(connection, transaction, uid))
+                    {
+                        result.HasDeferredChanges = true;
+                        continue;
+                    }
+                    if (expectedByHref is not null && ReadRemoteDeleteState(connection, transaction, uid) == 2)
+                    {
+                        result.HasDeferredChanges = true;
+                        continue;
+                    }
+
                     if (expectedByHref is not null)
                     {
                         TodoTask? existing = ReadTaskByUid(connection, transaction, uid, includeDeleted: true);
@@ -704,6 +755,10 @@ public sealed partial class SqliteTaskStore
                             result.HasDeferredChanges |= expected is not null;
                             continue;
                         }
+
+                        if (existing.ListId != listId && existing.RemoteHref != href && !existing.IsDirty
+                            && !HasUnsyncedEntityChange(connection, transaction, SyncEntityType.Task, existing.Uid))
+                            continue;
 
                         if (IsPullConflict(connection, transaction, listId, existing, expected)
                             || HasPullStepConflict(connection, transaction, existing, expectedByUid!))
@@ -718,11 +773,14 @@ public sealed partial class SqliteTaskStore
                     delete.Transaction = transaction;
                     delete.CommandText = """
                         UPDATE tasks
-                        SET is_deleted = 1, is_dirty = 0, remote_etag = NULL
+                        SET is_deleted = 1, is_dirty = 0, remote_etag = NULL,
+                            remote_delete_state = CASE WHEN @fromPull AND (is_deleted = 0 OR remote_delete_state = 1)
+                                THEN 1 ELSE 0 END
                         WHERE list_id = @listId AND remote_href = @href;
                         """;
                     delete.Parameters.AddWithValue("@listId", listId);
                     delete.Parameters.AddWithValue("@href", href);
+                    delete.Parameters.AddWithValue("@fromPull", expectedStates is not null);
                     int deletedCount = delete.ExecuteNonQuery();
                     MarkEntityChangesSynced(connection, transaction, SyncEntityType.Task, uid);
                     context.AddTask(listId, uid);
@@ -734,7 +792,7 @@ public sealed partial class SqliteTaskStore
                             using SqliteCommand discard = connection.CreateCommand();
                             discard.Transaction = transaction;
                             discard.CommandText = """
-                                UPDATE tasks SET is_deleted = 1, is_dirty = 1,
+                                UPDATE tasks SET is_deleted = 1, is_dirty = 1, remote_delete_state = 0,
                                     modified_utc = @modifiedUtc, sequence = sequence + 1
                                 WHERE uid = @uid;
                                 """;
@@ -760,6 +818,7 @@ public sealed partial class SqliteTaskStore
         RemoteTaskState? expected)
     {
         return existing.IsDirty
+            || HasTaskMove(connection, transaction, existing.Uid)
             || HasUnsyncedEntityChange(connection, transaction, SyncEntityType.Task, existing.Uid)
             || expected is null
             || existing.ListId != listId
@@ -825,6 +884,7 @@ public sealed partial class SqliteTaskStore
             (connection, transaction, context) =>
             {
                 TaskIdentity identity = GetTaskIdentity(connection, transaction, uid, includeDeleted: true);
+                if (HasTaskMove(connection, transaction, uid)) return;
                 MarkEntityChangesSyncedThrough(
                     connection,
                     transaction,
@@ -841,7 +901,7 @@ public sealed partial class SqliteTaskStore
                 update.CommandText = """
                     UPDATE tasks
                     SET remote_href = @remoteHref, remote_etag = @remoteETag,
-                        is_dirty = @isDirty
+                        is_dirty = @isDirty, remote_delete_state = 0
                     WHERE id = @id;
                     """;
                 AddParameter(update, "@remoteHref", remoteHref);
@@ -896,6 +956,8 @@ public sealed partial class SqliteTaskStore
             {
                 TodoTask task = ReadTaskByUid(connection, transaction, uid, includeDeleted: true)
                     ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
+                if (HasTaskMove(connection, transaction, uid)) return;
+                if (ensureLocalChange && QueueReverseMove(connection, transaction, context, task, remoteHref, remoteETag)) return;
                 bool queueLocalChoice = ensureLocalChange && !task.IsDirty
                     && !HasUnsyncedEntityChange(connection, transaction, SyncEntityType.Task, uid);
                 using SqliteCommand command = connection.CreateCommand();
@@ -903,12 +965,14 @@ public sealed partial class SqliteTaskStore
                 command.CommandText = """
                     UPDATE tasks
                     SET remote_href = @remoteHref, remote_etag = @remoteETag,
-                        is_dirty = CASE WHEN @queueLocalChoice THEN 1 ELSE is_dirty END
+                        is_dirty = CASE WHEN @queueLocalChoice THEN 1 ELSE is_dirty END,
+                        remote_delete_state = CASE WHEN @explicitChoice THEN 0 ELSE remote_delete_state END
                     WHERE uid = @uid;
                     """;
                 AddParameter(command, "@remoteHref", remoteHref);
                 AddParameter(command, "@remoteETag", remoteETag);
                 command.Parameters.AddWithValue("@queueLocalChoice", queueLocalChoice);
+                command.Parameters.AddWithValue("@explicitChoice", ensureLocalChange);
                 command.Parameters.AddWithValue("@uid", uid);
                 if (command.ExecuteNonQuery() != 1)
                 {
@@ -960,7 +1024,7 @@ public sealed partial class SqliteTaskStore
                     using SqliteCommand reparent = connection.CreateCommand();
                     reparent.Transaction = transaction;
                     reparent.CommandText = """
-                        UPDATE tasks SET parent_uid = @parentUid, is_dirty = 1,
+                        UPDATE tasks SET parent_uid = @parentUid, is_dirty = 1, remote_delete_state = 0,
                             modified_utc = @modifiedUtc, sequence = sequence + 1
                         WHERE uid = @uid;
                         """;

@@ -21,9 +21,9 @@ As of 2026-11-08:
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
 - **Build:** Debug and Release x64 passed with zero warnings/errors on
-  2026-11-08 after DEP-10/15. All four MTP suites
-  passed 578/578, zero failed/skipped (Core 227, Data 106, Import 155, Sync 90).
-  Fresh x64/ARM64 AOT outputs include the integrated current code with compiler/
+  2026-11-08 after DEP-04. All four MTP suites
+  passed 678/678, zero failed/skipped (Core 231, Data 130, Import 155, Sync 162).
+  Fresh DEP-04 x64/ARM64 AOT outputs include the integrated current code with compiler/
   runtime 10.0.14; both layouts and their relative summary pass the privacy scan
   (649 files, zero findings). Final signed packages/install gates remain pending.
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
@@ -51,8 +51,8 @@ As of 2026-11-08:
   its final signed-package acceptance remains pending. WintodoTest import 25/25,
   Debug/AOT M13 11/11 each and all 23 final captures pass after fixing dialog IDs
   and launch-window ownership/cleanup; the initial 23/25 failure remains recorded.
-  DEP-04 has seven baseline failures and proposed ADR-017; implementation awaits
-  acknowledgement for the next batch. Current source-only Gitleaks scan: zero
+  DEP-04's seven baseline failures are retained; ADR-017 is acknowledged and
+  durable moves now pass automated acceptance. Current source-only Gitleaks scan: zero
   findings in 433 files. Fifth-batch DEP-10 adds privacy-minimal Internet-zone
   markers at download/final-copy boundaries and Windows Launcher untrusted
   warnings; 11 new regressions pass. DEP-15 adds pinned Actions, read-only PR
@@ -79,6 +79,20 @@ As of 2026-11-08:
   Latest passing remote CI predates recent fixes; protection/rulesets still
   return HTTP 403. No new AOT/UI/final-package or publication claim. See the
   [deployment plan](plans/deployment-readiness.md) for evidence and next decisions.
+- **DEP-04 (2026-11-08):** ADR-017 is accepted. Migration 005 adds the durable
+  move outbox and internal remote-deletion provenance. Single/bulk/undo moves
+  retain UIDs and move parents with steps, with conditional destination/source
+  recovery and guarded cross-list conflict choices. The independent matrix is
+  71/71; the full solution is 678/678, zero failed/skipped. Core move serialization
+  preserves authored fields and unknown relationships; both solution builds are
+  clean. Schema compatibility and backup tests cover versions 1–5 and reject 6
+  unchanged. Fresh x64/ARM64 AOT publishes pass and their layouts/summary pass
+  privacy across 649 files, zero findings. The final NuGet audit covers nine
+  projects with zero advisories; native-tool dispositions remain separate.
+  Guest UI/live/provider and final-package acceptance remain pending
+  because the existing VM SDK is outdated; no host fallback or setup occurred.
+  Evidence and retained initial failures are in the
+  [implementation plan](plans/dep04-synced-moves.md).
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
   strengthened list stability passes 3/3 twice, with 10 px drift on immediate
   and settled completion/uncompletion against the unchanged 54 px limit.
@@ -4164,3 +4178,30 @@ UI automation. ARM64 not rebuilt.
   No fresh AOT publish, UI gate, signed package, remote write or publication.
 - **Evidence:** docs/plans/deployment-readiness.md and linked native/source
   reports; redacted integration record artifacts/dep-batch6/evidence.json.
+
+### 2026-11-08 — M10 DEP-04: recoverable synced moves under acknowledged ADR-017
+
+- **Gate:** Debug/Release x64 warnings-as-errors builds PASS; MTP 678/678,
+  zero failed/skipped (Core 231, Data 130, Import 155, Sync 162). Independent
+  SQLite/CalDAV matrix 71/71, focused Data 23/23, Core writer 4/4 and script
+  regressions 27/27 PASS. Final nine-project NuGet audit: zero advisories.
+- **Shipped:** migration 005 with grouped move outbox and internal deletion
+  provenance; conditional create-confirm-remove recovery, source binding proof,
+  revision/change-boundary guards, atomic family completion, parent/step moves,
+  repeated moves/undo and safe chooser compensation. Newly authored fields and
+  unknown iCalendar/category parameters survive move serialization.
+- **Native:** fresh x64/ARM64 AOT publishes PASS; both layouts and summary
+  privacy scan PASS across 649 files, zero findings. Exact hashes/source overlays
+  are in artifacts/dep04-integration/evidence.json. Final signed packages pending.
+- **Preserved failures:** baseline 16/19 failed; move iterations 38/51, 50/51,
+  57/62; initial integration 673/677. Root-only cached conflict takeover was
+  replaced with fresh verification and a no-mutation offline control. Old pull
+  move tests assert durable deferral while retaining local/revision/token checks.
+  Ordinary remote-deletion KeepBoth retains original step UIDs and collections.
+- **Pending:** affected schema/M13/move/undo/interop UI and visual checks need
+  WintodoTest SDK setup (10.0.401 installed, 10.0.403 required). Guest unchanged;
+  no host fallback. Live providers, final installed packages, native advisories,
+  DEP-12 policy and branding/signing/licensing remain pending. No remote push,
+  settings change, certificate trust, machine provisioning or publication.
+- **Docs:** accepted ADR-017, architecture/data model, implementation plan,
+  deployment tracking and schema-6 seed/gate references updated.

@@ -1,8 +1,9 @@
 # DEP-04 — Recoverable synced moves proposal
 
-Prepared 2026-11-08 against `79ce9b1`. Status: **PROPOSED; owner acknowledgement
-pending**. [ADR-017](../adr/ADR-017-recoverable-synced-task-moves.md) is the decision
-to acknowledge. No production code or schema has changed for this proposal.
+Prepared 2026-11-08 against `79ce9b1`. Status: **IMPLEMENTED; automated
+acceptance PASS; guest UI/live/final-package checks pending**. The owner acknowledged
+[ADR-017](../adr/ADR-017-recoverable-synced-task-moves.md) in this session on
+2026-11-08. The baseline evidence below predates implementation.
 
 ## Outcome
 
@@ -106,6 +107,47 @@ those synthetic fixtures to the new maximum plus one, including the VM seed,
 without weakening unchanged-rejection assertions.
 
 ## Acceptance matrix
+
+Implementation evidence: baseline `3615b31` plus reviewed overlays. The
+independent SQLite/CalDAV suite passes 71/71, and the final integrated solution
+passes 678/678 (Core 231, Data 130, Import 155, Sync 162), zero failed/skipped.
+Debug/Release x64 warnings-as-errors builds are clean. The final source commit,
+hashes and architecture evidence are recorded under
+`artifacts/dep04-integration/`; raw test/build logs remain private.
+Fresh Native AOT publishes for x64 and ARM64 pass with compiler/runtime
+10.0.14. The actual layouts and relative summary pass the privacy scan across
+649 files with zero findings. A final nine-project NuGet audit has zero
+advisories; unresolved native/tool findings remain DEP-02's separate disposition.
+
+The implementation uses atomic family preparation, phase updates, source
+restoration and completion. Real attempted payloads remain immutable; empty
+skipped destinations that never received a PUT can capture a fresh live family
+after restoration. Source bindings require an approved collection/account
+proof before credentials are selected. Unknown or ambiguous legacy bindings
+retain attention rather than guessing an origin. Remote-pull tombstones and
+held known versions use internal `remote_delete_state` metadata; explicit user
+deletions retain their separate behavior. Cross-list chooser actions use the
+same durable machinery, with stale family/remote-snapshot checks.
+
+The move writer exports newly authored fields and preserves unknown properties
+and category parameters. Ordinary import/export retains its presence policy.
+Generic conflict choices now revalidate remote snapshots; an offline verification
+returns Offline without copying or overwriting a cached version. The matching
+older test uses a fresh synthetic GET, and a new offline no-mutation regression
+preserves that distinction.
+
+Initial evidence is retained: baseline 3/19 passed and 16/19 failed; intermediate
+move runs were 38/51, 50/51 and 57/62. The first integrated solution run was
+673/677 with four failures. Fixes preserve the original step UID under ordinary
+remote-deletion KeepBoth, and move races defer through durable outbox state
+instead of an obsolete generic chooser. The unchanged data/revision/token checks
+and the final full suite pass. Fixture-only status/category mutation corrections
+are recorded separately from production fixes.
+
+The guest still has SDK 10.0.401, below the required 10.0.403. Schema warning,
+M13, move/undo, interop and visual checks remain pending in WintodoTest; no host
+UI fallback or guest setup was performed. A separate schema-6 seed preserves the
+older fixture. Live Radicale/Nextcloud and installed-package checks remain DEP-19.
 
 | Scenario | Required result |
 |---|---|

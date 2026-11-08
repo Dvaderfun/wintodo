@@ -13,6 +13,10 @@ client documentation. They contain no personal data:
 - `apple-reminders.ics` follows a published Apple Reminders VTODO export:
   <https://gist.github.com/n8henrie/d2288416b28dd90d3b1c>
 - `malformed.ics` is an intentionally invalid local regression fixture.
+- `task-move-missing-revision.ics` is hand-written synthetic input without
+  SEQUENCE, modeled parent or sort metadata. It retains sibling and opaque
+  vendor relations to prove a locally authored move preserves unknown links
+  while adding its revision, or promoting a step out of its modeled parent.
 
 The corpus verifies repeatable parser, writer, storage, and UI behavior. It does
 not replace the M6 gate's manual import of a Wintodo export into current

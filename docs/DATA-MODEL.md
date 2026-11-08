@@ -1,8 +1,9 @@
 # Wintodo — Data Model
 
 > Read before writing any model or storage code. This schema is designed so that
-> **M13 (CalDAV sync) needs zero migrations** — every column sync will need is
-> already here in `001_init.sql`, unused until then.
+> **Initial M13 (CalDAV sync) needs zero migrations** — its columns are in
+> `001_init.sql`. Recoverable synced moves add the durable outbox in migration
+> 005 under accepted ADR-017.
 
 ---
 
@@ -213,6 +214,7 @@ CREATE TABLE tasks (
     ical_unknown        TEXT    NULL,                  -- verbatim unmodelled properties
 
     is_deleted          INTEGER NOT NULL DEFAULT 0,
+    remote_delete_state INTEGER NOT NULL DEFAULT 0,   -- migration 005, internal provisional/held deletion
     -- sync (M13)
     remote_href         TEXT    NULL,
     remote_etag         TEXT    NULL,
@@ -367,6 +369,7 @@ in-memory index competing for the working-set budget.
   the colour-dot fallback.
 - `003_list_delete_membership.sql` records which tasks a list delete removed (§3.2).
 - `004_import_links.sql` adds `import_sources` and `import_links` (§3.6).
+- `005_task_move_outbox.sql` adds durable conditional move/recovery intent (§3.7).
 
 ### 3.6 Import links (migration 004, ADR-016)
 
@@ -418,6 +421,73 @@ Nothing is deleted because it disappeared from the source.
 created (`created_run_id`) and forgets those links.
 
 ---
+
+### 3.7 Recoverable task moves (migration 005, ADR-017)
+
+`task_move_outbox` stores pending remote obligations, separately from task
+content and the ordinary change log. A movement transaction records source and
+destination list/account identity, source href/ETag, group/predecessor ordering,
+task sequence and acknowledgement boundary. The same transaction moves a root
+and its existing steps. A repeated move may coalesce only before a remote attempt;
+later moves append ordered successors. No credential is stored, and pending rows
+have no cascade-delete foreign keys.
+
+An attempt stores exact VTODO bytes and their sequence/change boundary before a
+conditional destination creation. Versioned phase transitions persist destination
+confirmation before conditional source removal. Completion releases attempt bytes,
+binds only current destination membership, and acknowledges only the attempted
+change boundary; later edits and deletes remain queued. Source conflict choices
+persist their fetched source payload/ETag and any conditional KeepBoth copy or
+KeepTheirs destination compensation before network operations.
+
+The table contains `id`, `task_uid`, `group_id`, `predecessor_id`, `version`,
+`source_account_id`, `source_list_id`, `source_list_uid`, `source_href`,
+`source_etag`, `source_payload`, `source_restored`, `restored_source_etag`,
+`source_binding_verified`,
+`destination_account_id`, `destination_list_id`,
+`destination_list_uid`, `destination_href`, `local_sequence`, `change_id`,
+`phase`, `attempted_payload`, `attempted_sequence`, `attempted_change_id`,
+`destination_etag`, `destination_removed`, `resolution_choice`, `resolution_sequence`,
+`resolution_list_id`,
+`resolution_source_payload`, `resolution_source_etag`, `resolution_copy_uid`,
+`resolution_copy_href`, `resolution_copy_payload`, `resolution_copy_etag`,
+`resolution_copy_confirmed`, `resolution_destination_removed`,
+`resolution_is_destination_conflict`, `created_utc`,
+and `updated_utc`. Integer revision/phase fields and nullable BLOB payloads are
+mapped manually; dates use `IClock`. Active intent guards ordinary pushes,
+pulls and acknowledgements. Account disconnect and list deletion are blocked
+while pending obligations reference them. Disabling a list retains its intent.
+Each root and its steps share a group; unrelated roots in one bulk selection
+remain separate chooser decisions within the same movement transaction. Group
+attempts and source restoration commit atomically under all captured revisions.
+Renewed conflict choices require explicit fresh group revision/membership checks.
+Confirmed source/destination recreation receipts preserve immutable attempts and
+prevent completion while a recreated source resource still needs cleanup. A
+deleted root suppresses child destination creation; restoring it requeues children
+whose completed move left no remote binding.
+An empty skipped-destination placeholder has issued no remote PUT. If that task
+or its root is restored, the same verified source/destination intent may freeze
+a live payload and newer acknowledgement boundary again, atomically with the
+family. Existing nonempty attempts remain immutable; source snapshots and ETags
+are retained so source-removal replay remains conditional or idempotent.
+Migration 005 also adds internal `tasks.remote_delete_state`: 0 means explicit
+or unproven state, 1 records an ordinary pull tombstone, and 2 holds a known
+visible version when a confirmed remote move offers an older or ambiguous
+destination. Only a proven pull tombstone may be revived; old-schema and user
+deletions remain conservative. Held versions defer further pull deletion/update
+without automatically creating a source copy. Local writes and explicit conflict
+choices reset the marker; it is not a public model or iCalendar field.
+Ordinary cross-collection UID conflicts also use a guarded family snapshot.
+Keep mine queues a durable reverse move from the proven foreign resource to the
+current local collection; it never binds a foreign href to the current list.
+Keep theirs and Keep both recheck every captured local revision before adopting
+the fetched remote version. Keep both copies the retained local family under
+fresh UIDs, including fresh child-to-parent relationships, in the same writer
+transaction. Source/destination credentials remain independently selected.
+For an ordinary remote-parent deletion, Keep both retains existing step UIDs
+and reparents those steps to the new local copy, queuing their updates after
+the copy's creation. This preserves the existing step/undo contract; no original
+remote parent family remains at a destination requiring competing child UIDs.
 
 ## 4. `VTODO` mapping
 
