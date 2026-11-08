@@ -26,7 +26,8 @@ As of 2026-11-08:
   AOT outputs remain the earlier `2e149ca` tree with compiler/runtime 10.0.14;
   the second batch has not been republished or tested as final packages.
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
-  tests. Fresh CI for the second batch is pending until its implementation push.
+  tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
+  455/455 and zero failures/skips verified from the four uploaded TRX files.
 - **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **Deployment preparation (2026-11-08):** Three agents split DEP-01 fixture
@@ -3982,7 +3983,11 @@ UI automation. ARM64 not rebuilt.
   `artifacts/deployment-batch02/evidence.json`; raw logs/TRX/coverage remain
   ignored/private. Capture runs: schema `run-eb127d4c11884531a4c7566cc8a51453`,
   M13 `run-20261107-234155`, import `run-20261107-234615`, M8 `run-20261107-235630`.
-- **Remaining:** second-batch CI awaits its push. No new AOT/MSIX, signed final
+- **CI PASS:** implementation/evidence pushed as `6342f82`; GitHub run
+  `42428523717` passed compilation and all four suites, 455/455, zero skipped,
+  verified from downloaded TRX. Implementation code remains in the three
+  separately reviewable DEP commits above.
+- **Remaining:** no new AOT/MSIX, signed final
   deployment, live-server or actual conflict-dialog UI gate is claimed. DEP-04,
   DEP-06 and the other pending work remain open. No schema migration, accepted
   ADR change, host UI automation, provisioning or certificate trust change;
