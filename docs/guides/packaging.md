@@ -123,6 +123,29 @@ describes its input schema and negative tests. Production policy, signing,
 protected source ancestry and exact tool/audit execution provenance require
 their separate gates. New checksums and inspection are required after signing.
 
+## Payload continuity after signing
+
+[Test-SignedPackageContinuity.py](../../scripts/Test-SignedPackageContinuity.py)
+compares a reviewed unsigned MSIX with its signed copy using both independently
+recorded SHA-256 values. Run it for each architecture after signing:
+
+```powershell
+python -B scripts/Test-SignedPackageContinuity.py '<unsigned.msix>' '<signed.msix>' `
+  --architecture x64 --unsigned-sha256 '<reviewed unsigned SHA-256>' `
+  --signed-sha256 '<recorded signed SHA-256>' `
+  --output artifacts/signed-package-continuity.json
+```
+
+Create the private output directory first. Every original entry, including the
+manifest and block map, must retain its exact name and bytes. The checker allows
+only the signature and optional code-integrity catalog additions plus their
+exact content-type declarations. It checks payload continuity; signature trust,
+timestamp policy, source provenance and deployment acceptance remain separate
+gates, with `release_authorized: false`. Repeat the structural/privacy checks on
+the signed bytes and verify the approved signer/trust/timestamp independently.
+See [the continuity evidence record](../plans/dep18-signed-package-continuity.md)
+for supported signing changes and the historical-pair qualification.
+
 ## Local test signature
 
 Keep the certificate and package copy inside the ignored `publish` directory:
