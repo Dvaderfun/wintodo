@@ -852,6 +852,9 @@ public sealed partial class SqliteTaskStore
                 Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
                 File.Copy(source, destination, overwrite: false);
                 copied.Add(destination);
+                // Reapply at the final boundary even if an intermediate filesystem
+                // did not preserve the staging file's named streams.
+                DownloadedAttachmentProvenance.MarkInternet(destination);
             }
         }
         catch

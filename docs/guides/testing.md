@@ -112,6 +112,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-m5-gate.ps1` | Smart lists, search, sort; single/repeated/multi-task drops on My Day and Important, original-list retention and restart persistence |
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |
 | `run-import-gate.ps1` | Onboarding Welcome on a fresh database, Microsoft To Do wizard end to end against `tests/fixtures/mstodo/basic` (`--import-fixture`, Debug only), dry-run counts, second import from Settings duplicates nothing, cancel, expired sign-in returns to sign-in and keeps choices (`--import-fixture-expire-once`), Start fresh, scratch databases skip Welcome, accessibility audit |
+| `run-attachment-provenance-gate.ps1` | DEP-10: synthetic staging/final metadata and cleanup regressions, real wizard import with hostile filename confinement, benign document opening through Windows, removal/restart and failed-download cleanup; uses an existing guest document association |
 | `run-m7-gate.ps1` | Reminders, toasts, badge, jump list (`-VerifyToastCompletion`, `-VerifyToastSnooze`) |
 | `run-m8-gate.ps1` | Design, responsive layout, all four Windows contrast palettes (selected/unselected custom list, search border and header focus), accessibility audit |
 | `run-m13-gate.ps1` | CalDAV Configure dialog, cancel/retry, sync, list toggles, footer visibility before connect/after connect/restart/disconnect (`-Aot` for published x64) |

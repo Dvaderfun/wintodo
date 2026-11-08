@@ -5,6 +5,9 @@ on:
     branches: [main]
     tags: ['v*']
   pull_request:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -13,19 +16,46 @@ concurrency:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: pwsh
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 jobs:
   build-and-test:
-    runs-on: windows-latest
-    timeout-minutes: 30
+    runs-on: windows-2025
+    timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
 
-      - name: Restore
-        run: dotnet restore Wintodo.sln -p:Platform=x64
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+
+      - name: Verify safe scanner and release-privacy reports
+        run: python -m unittest discover -s tests/scripts -p 'test_*.py'
+
+      - name: Scan reachable history and source archive (redacted, pinned scanner)
+        run: ./scripts/Invoke-CiSecretScan.ps1
+
+      - name: Restore (all transitive advisories, warnings as errors)
+        run: dotnet restore Wintodo.sln -p:Platform=x64 -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low -warnaserror
+
+      - name: Audit direct and transitive dependencies
+        run: ./scripts/Invoke-CiDependencyAudit.ps1
+
+      - name: Verify runner, native tools and restored CLI versions
+        run: ./scripts/Export-CiToolchain.ps1 -Architecture x64
 
       - name: Build (x64 Debug, warnings as errors, WinUI + AOT analyzers)
         run: dotnet build Wintodo.sln -p:Platform=x64 -warnaserror --no-restore
@@ -36,23 +66,34 @@ jobs:
       - name: Unit tests (Core, Data, Sync, Import — xunit v3 on Microsoft Testing Platform)
         run: >
           dotnet test --solution Wintodo.sln -p:Platform=x64 --no-build
-          --report-trx --coverage --results-directory ${{ github.workspace }}/TestResults
+          --report-trx --coverage --results-directory TestResults
 
       - name: Export diagnostic-safe test summary
         if: always()
         run: ./scripts/Export-SafeTestResults.ps1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: test-results
-          path: SafeTestResults/summary.json
+          path: |
+            SafeTestResults/summary.json
+            SafeTestResults/secrets-history.json
+            SafeTestResults/secrets-tree.json
+            SafeTestResults/dependencies.json
+            SafeTestResults/toolchain.json
+          retention-days: 14
+          if-no-files-found: error
 
   release:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    # Default-branch maintenance and writable tags only; no signing authority.
+    if: >
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     needs: build-and-test
-    runs-on: windows-latest
-    timeout-minutes: 60
+    runs-on: windows-2025
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
@@ -65,26 +106,26 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           global-json-file: global.json
 
-      - name: Locate the Native AOT toolchain (x64 host, target architecture)
-        run: |
-          $installer = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio/Installer'
-          $vswhere = Join-Path $installer 'vswhere.exe'
-          $component = if ('${{ matrix.arch }}' -eq 'arm64') {
-            'Microsoft.VisualStudio.Component.VC.Tools.ARM64'
-          } else {
-            'Microsoft.VisualStudio.Component.VC.Tools.x86.x64'
-          }
-          $installation = & $vswhere -latest -products '*' -requires $component -property installationPath
-          if ($LASTEXITCODE -ne 0 -or -not $installation) {
-            throw "Native AOT toolchain is missing: $component"
-          }
-          $installer | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.13'
+
+      - name: Restore target AOT dependencies (all advisories, warnings as errors)
+        run: >
+          dotnet restore src/Wintodo.App/Wintodo.csproj -r win-${{ matrix.arch }}
+          -p:Platform=${{ matrix.platform }} -p:PublishAot=true
+          -p:NuGetAudit=true -p:NuGetAuditMode=all -p:NuGetAuditLevel=low -warnaserror
+
+      - name: Verify target native toolchain before publishing
+        run: ./scripts/Export-CiToolchain.ps1 -Architecture ${{ matrix.arch }} -RequireAot
 
       - name: Publish Native AOT (self-contained, warnings as errors)
         run: ./scripts/Publish-Aot.ps1 -Platforms ${{ matrix.platform }}
@@ -104,10 +145,28 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Unsigned MSIX packaging failed.' }
           if (-not (Test-Path -LiteralPath $output)) { throw 'MSIX artifact was not produced.' }
 
-      - uses: actions/upload-artifact@v4
+      - name: Audit final resolved dependency graph after packaging
+        run: ./scripts/Invoke-CiDependencyAudit.ps1 -AppOnly
+
+      - name: Record final resolved AOT and toolchain versions after packaging
+        run: ./scripts/Export-CiToolchain.ps1 -Architecture ${{ matrix.arch }} -RequireAot
+
+      - name: Verify exact unsigned layout, MSIX and public metadata privacy
+        run: >
+          python scripts/Test-ReleasePrivacy.py publish/aot/win-${{ matrix.arch }}
+          publish/msix/Wintodo-${{ matrix.arch }}.msix publish/aot/summary.json
+          SafeTestResults/toolchain.json --require-architecture ${{ matrix.platform }}
+          --private-root "$PWD"
+          --output SafeTestResults/release-privacy.json
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: M10-unsigned-${{ matrix.arch }}
           path: |
             publish/msix/Wintodo-${{ matrix.arch }}.msix
             publish/aot/summary.json
+            SafeTestResults/dependencies.json
+            SafeTestResults/toolchain.json
+            SafeTestResults/release-privacy.json
+          retention-days: 14
           if-no-files-found: error

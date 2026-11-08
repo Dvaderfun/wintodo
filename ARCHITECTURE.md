@@ -241,7 +241,12 @@ Settings → Data.
   and are copied under `attachments\<uid>\` inside the import transaction.
 - **Saving.** `IImportStore` (implemented by `SqliteTaskStore.Import.cs`,
   DATA-MODEL §3.6) previews in a rolled-back transaction and applies in one
-  writer transaction.
+  writer transaction. Completed Graph downloads and final attachment copies
+  receive Internet-zone metadata on Windows filesystems supporting named
+  streams, without source URLs or account details. Ordinary marking failures
+  use the existing owned-file rollback cleanup. Attachment opening retains
+  Windows Launcher and requests `TreatAsUntrusted`; see
+  [the provenance policy](docs/plans/dep10-attachment-provenance.md).
 - **Onboarding.** `ShellViewModel` shows Welcome when `onboarding.completed`
   is unset and the database has no tasks and only the default list. Starting
   fresh, importing, or navigating away sets the key. Launches with

@@ -21,8 +21,8 @@ As of 2026-11-08:
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
 - **Build:** Debug and Release x64 passed with zero warnings/errors on
-  2026-11-08 after DEP-07/14 and the import gate fixes. All four MTP suites
-  passed 567/567, zero failed/skipped (Core 227, Data 106, Import 144, Sync 90).
+  2026-11-08 after DEP-10/15. All four MTP suites
+  passed 578/578, zero failed/skipped (Core 227, Data 106, Import 155, Sync 90).
   Fresh x64/ARM64 AOT outputs include the integrated current code with compiler/
   runtime 10.0.14; both layouts and their relative summary pass the privacy scan
   (649 files, zero findings). Final signed packages/install gates remain pending.
@@ -53,7 +53,18 @@ As of 2026-11-08:
   and launch-window ownership/cleanup; the initial 23/25 failure remains recorded.
   DEP-04 has seven baseline failures and proposed ADR-017; implementation awaits
   acknowledgement for the next batch. Current source-only Gitleaks scan: zero
-  findings in 433 files. Fresh GitHub CI remains pending. Native/tool advisory coverage, attribution/archive
+  findings in 433 files. Fifth-batch DEP-10 adds privacy-minimal Internet-zone
+  markers at download/final-copy boundaries and Windows Launcher untrusted
+  warnings; 11 new regressions pass. DEP-15 adds pinned Actions, read-only PR
+  checks, redacted scanner/audit/version evidence and weekly/manual trusted-main
+  unsigned AOT candidates; 27 scanner/privacy regressions and local audits pass.
+  Fresh x64/ARM64 AOT layouts again pass privacy across 649 files, zero findings.
+  DEP-12's override inventory/proposal is complete; production policy remains
+  owner-pending. WintodoTest's new provenance gate failed before executing tests:
+  its clean checkpoint has SDK 10.0.401, below the required 10.0.403. Guest setup
+  is owner-invoked; affected import/open/delete UI acceptance remains pending.
+  GitHub protection/ruleset APIs return HTTP 403 for the current private-repo
+  plan; remote enforcement and fresh CI remain pending. Native/tool advisory coverage, attribution/archive
   policy and final privacy/deployment gates remain pending. Details and local
   redacted evidence links are in [the deployment plan](plans/deployment-readiness.md).
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
@@ -4080,3 +4091,38 @@ UI automation. ARM64 not rebuilt.
   hardening can proceed independently. Fresh GitHub CI, native/tool advisory
   coverage, attribution/archive decisions, final identity/signing/deployment and
   publication remain pending.
+
+### 2026-11-08 — M10 DEP-10/15 implementation and DEP-12 inventory
+
+- **Shipped:** Graph downloads/final copies receive privacy-minimal Internet
+  zone metadata, with ordinary IO/permission failures using existing cleanup.
+  Attachment opens retain Windows Launcher and request `TreatAsUntrusted`.
+  CI pins independently verified Actions, disables persisted checkout
+  credentials, adds reviewed dependency updates and redacted scanner/audit/
+  version gates, and prepares weekly/manual trusted-main unsigned AOT
+  candidates with exact-artifact privacy checks and explicit retention.
+  DEP-12's concrete override matrix/proposal is ready; behavior is unchanged.
+- **Host validation — PASS:** Debug/Release x64 warnings-as-errors builds;
+  all four MTP suites 578/578, zero failed/skipped; 11 new provenance and 27
+  scanner/privacy regressions; safe-TRX marker/invalid-input checks; Actionlint
+  and PowerShell parsing; local history/source secret scans and solution/app
+  direct/transitive audits, zero findings/advisories. Fresh x64/ARM64 AOT
+  publishes and both layouts/summary privacy scan pass, 649 files, zero findings.
+  WinUI review of changed attachment command has no issue above informational.
+- **VM preflight — FAIL; UI tests not run:** WintodoTest's clean checkpoint
+  contains SDK 10.0.401; the repo requests 10.0.403. Full read-only diagnostic
+  confirms SDK resolution failure. No guest SDK install, weaker pin or host UI
+  fallback. Focused provenance/import/open/delete/restart and screenshot
+  acceptance remain pending after owner-invoked setup. Earlier gate PASS
+  results do not certify this source.
+- **Limits/deviations:** initial concurrent audit report contention was repaired
+  with per-run private directories. GitHub branch protection/rulesets return
+  the current private-plan HTTP 403; no remote settings changed. Fresh remote
+  CI, transitive lockfiles, native/tool advisory review, unsupported-filesystem
+  runtime checks, owner override/ADR-017 decisions, final identity/signing/
+  installed-package gates, ARM64 runtime and publication remain pending.
+- **Evidence:** source/candidate hashes, safe counters, toolchain graph and
+  pending/failure dispositions are in `artifacts/dep-batch5/evidence.json` and
+  [the deployment plan](plans/deployment-readiness.md). Raw logs/test/scanner
+  reports, scratch data and symbols remain private/ignored. Work is committed
+  locally as an M10 preparation unit; no push or release publication.
