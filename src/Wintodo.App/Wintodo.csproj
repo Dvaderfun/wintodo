@@ -90,5 +90,20 @@
     <PublishTrimmed>true</PublishTrimmed>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredPGO>true</TieredPGO>
+    <!-- Native and managed symbols stay in bin/obj, outside distributed layouts. -->
+    <CopyOutputSymbolsToPublishDirectory>false</CopyOutputSymbolsToPublishDirectory>
   </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- ILCompiler passes LinkerArg to MSVC; PathMap cannot fix PE CodeView. -->
+    <LinkerArg Include="/PDBALTPATH:Wintodo.pdb" />
+  </ItemGroup>
+  <Target Name="ExcludePrivateReleaseSymbols" AfterTargets="ComputeFilesToPublish"
+          Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <!-- Project-reference PDBs arrive through ReferenceCopyLocalPaths despite
+           CopyOutputSymbolsToPublishDirectory; exclude them at the payload seam. -->
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+                             Condition="'%(ResolvedFileToPublish.Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
 </Project>

@@ -38,6 +38,7 @@ tests/ui/artifacts/
 # Logs and generated files
 *.binlog
 *.log
+__pycache__/
 Generated Files/
 *_wpftmp.csproj
 

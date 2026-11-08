@@ -128,7 +128,7 @@ public sealed partial class ImportWizardView : UserControl
     private async Task<bool> ConfirmRemovalAsync(string message)
     {
         var resources = new ResourceLoader();
-        var dialog = new ContentDialog
+        var dialog = new ImportRemovalDialog
         {
             XamlRoot = XamlRoot,
             Title = resources.GetString("Import_RemoveConfirmTitle"),
@@ -139,20 +139,20 @@ public sealed partial class ImportWizardView : UserControl
             DefaultButton = ContentDialogButton.Close,
         };
         AutomationProperties.SetAutomationId(dialog, "Todo.Import.RemoveConfirm");
-        dialog.Opened += (_, _) => DispatcherQueue.TryEnqueue(() =>
-        {
-            foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(XamlRoot))
-                SetPrimaryId(popup.Child);
-        });
         return await dialog.ShowAsync() == ContentDialogResult.Primary;
     }
 
-    private static void SetPrimaryId(DependencyObject root)
+    private sealed partial class ImportRemovalDialog : ContentDialog
     {
-        if (root is Button { Name: "PrimaryButton" } button)
-            AutomationProperties.SetAutomationId(button, "Todo.Import.RemoveConfirm.Primary");
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-            SetPrimaryId(VisualTreeHelper.GetChild(root, i));
+        protected override void OnApplyTemplate()
+        {
+            base.OnApplyTemplate();
+            // Local IDs survive the template's default-button style changes.
+            if (GetTemplateChild("PrimaryButton") is Button primary)
+                AutomationProperties.SetAutomationId(primary, "Todo.Import.RemoveConfirm.Primary");
+            if (GetTemplateChild("CloseButton") is Button close)
+                AutomationProperties.SetAutomationId(close, "Todo.Import.RemoveConfirm.Close");
+        }
     }
 
     public static bool HasOpenDialog(XamlRoot root)

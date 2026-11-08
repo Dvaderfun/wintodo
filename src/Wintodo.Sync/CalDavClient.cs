@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Xml;
 using System.Xml.Linq;
+using Wintodo.Core.IO;
 using Wintodo.Core.Models;
 
 namespace Wintodo.Sync;
@@ -41,6 +42,8 @@ public sealed class CalDavClient
         string secret,
         CancellationToken cancellationToken = default)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         Uri serverUrl = ValidateServerUrl(account.ServerUrl);
         XDocument initial = await SendXmlAsync(
             PropFind,
@@ -97,6 +100,8 @@ public sealed class CalDavClient
         string secret,
         CancellationToken cancellationToken = default)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         if (string.IsNullOrWhiteSpace(account.HomeSetUrl))
         {
             throw new InvalidOperationException("CalDAV discovery has not completed.");
@@ -167,6 +172,8 @@ public sealed class CalDavClient
         TodoList list,
         CancellationToken cancellationToken = default)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         if (string.IsNullOrWhiteSpace(list.RemoteUrl))
         {
             throw new InvalidOperationException("The list is not linked to a CalDAV collection.");
@@ -192,7 +199,7 @@ public sealed class CalDavClient
             string body = await ReadLimitedStringAsync(response, cancellationToken);
             if (response.StatusCode == HttpStatusCode.MultiStatus)
             {
-                return ParseDelta(ParseXml(body), collectionUrl, isFullSnapshot: false);
+                return ParseDelta(await ParseXmlAsync(body, cancellationToken), collectionUrl, isFullSnapshot: false);
             }
 
             if (response.StatusCode is not HttpStatusCode.Forbidden
@@ -237,6 +244,8 @@ public sealed class CalDavClient
         Uri resourceUrl,
         CancellationToken cancellationToken = default)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         using var request = CreateRequest(HttpMethod.Get, resourceUrl, account, secret);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/calendar"));
         using HttpResponseMessage response = await SendRequestAsync(request, cancellationToken);
@@ -246,11 +255,11 @@ public sealed class CalDavClient
             ThrowProtocol(response.StatusCode, "CalDAV resource GET failed", body);
         }
 
-        byte[] content = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-        if (content.Length > MaximumCalendarBytes)
-        {
-            throw new InvalidOperationException("The CalDAV resource exceeds the 32 MB limit.");
-        }
+        await using Stream source = await OpenBoundedBodyAsync(response, MaximumCalendarBytes, cancellationToken);
+        using var buffer = new MemoryStream();
+        await source.CopyToAsync(buffer, cancellationToken);
+        byte[] content = buffer.ToArray();
+        cancellationToken.ThrowIfCancellationRequested();
 
         return new CalDavContent
         {
@@ -267,6 +276,8 @@ public sealed class CalDavClient
         string? expectedETag,
         CancellationToken cancellationToken = default)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         using var request = CreateRequest(HttpMethod.Put, resourceUrl, account, secret);
         request.Content = new ByteArrayContent(content);
         request.Content.Headers.ContentType = MediaTypeHeaderValue.Parse("text/calendar; charset=utf-8");
@@ -287,6 +298,8 @@ public sealed class CalDavClient
         string? expectedETag,
         CancellationToken cancellationToken = default)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         using var request = CreateRequest(HttpMethod.Delete, resourceUrl, account, secret);
         if (!string.IsNullOrWhiteSpace(expectedETag))
         {
@@ -309,6 +322,8 @@ public sealed class CalDavClient
         string displayName,
         CancellationToken cancellationToken = default)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         if (string.IsNullOrWhiteSpace(account.HomeSetUrl))
         {
             throw new InvalidOperationException("CalDAV discovery has not completed.");
@@ -356,6 +371,8 @@ public sealed class CalDavClient
         string displayName,
         CancellationToken cancellationToken = default)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         var body = new XDocument(
             new XElement(
                 Dav + "propertyupdate",
@@ -384,6 +401,8 @@ public sealed class CalDavClient
         Uri collectionUrl,
         CancellationToken cancellationToken = default)
     {
+        using CancellationTokenSource deadline = CreateDeadline(cancellationToken);
+        cancellationToken = deadline.Token;
         using var request = CreateRequest(HttpMethod.Delete, collectionUrl, account, secret);
         using HttpResponseMessage response = await SendRequestAsync(request, cancellationToken);
         if (!response.IsSuccessStatusCode && response.StatusCode != HttpStatusCode.NotFound)
@@ -523,7 +542,7 @@ public sealed class CalDavClient
             ThrowProtocol(response.StatusCode, $"{method.Method} failed", responseBody);
         }
 
-        return ParseXml(responseBody);
+        return await ParseXmlAsync(responseBody, cancellationToken);
     }
 
     private async Task<HttpResponseMessage> SendAsync(
@@ -649,35 +668,55 @@ public sealed class CalDavClient
         }
     }
 
-    private static XDocument ParseXml(string value)
+    private static async Task<XDocument> ParseXmlAsync(string value, CancellationToken cancellationToken)
     {
         var settings = new XmlReaderSettings
         {
+            Async = true,
             DtdProcessing = DtdProcessing.Prohibit,
             XmlResolver = null,
             MaxCharactersInDocument = MaximumXmlCharacters,
         };
         using var textReader = new StringReader(value);
         using XmlReader reader = XmlReader.Create(textReader, settings);
-        return XDocument.Load(reader, LoadOptions.PreserveWhitespace);
+        return await XDocument.LoadAsync(reader, LoadOptions.PreserveWhitespace, cancellationToken);
     }
 
     private static async Task<string> ReadLimitedStringAsync(
         HttpResponseMessage response,
         CancellationToken cancellationToken)
     {
-        if (response.Content.Headers.ContentLength > MaximumXmlCharacters)
-        {
-            throw new InvalidOperationException("The CalDAV XML response exceeds the 16 MB limit.");
-        }
-
-        string value = await response.Content.ReadAsStringAsync(cancellationToken);
+        await using Stream source = await OpenBoundedBodyAsync(response, MaximumXmlCharacters, cancellationToken);
+        string? charset = response.Content.Headers.ContentType?.CharSet?.Trim('"');
+        Encoding encoding = string.IsNullOrWhiteSpace(charset) ? Encoding.UTF8 : Encoding.GetEncoding(charset);
+        using var reader = new StreamReader(source, encoding, detectEncodingFromByteOrderMarks: true);
+        string value = await reader.ReadToEndAsync(cancellationToken);
         if (value.Length > MaximumXmlCharacters)
         {
             throw new InvalidOperationException("The CalDAV XML response exceeds the 16 MB limit.");
         }
 
         return value;
+    }
+
+    private CancellationTokenSource CreateDeadline(CancellationToken cancellationToken)
+    {
+        var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        TimeSpan maximum = TimeSpan.FromSeconds(100);
+        deadline.CancelAfter(_httpClient.Timeout != Timeout.InfiniteTimeSpan && _httpClient.Timeout < maximum
+            ? _httpClient.Timeout : maximum);
+        return deadline;
+    }
+
+    private static async Task<Stream> OpenBoundedBodyAsync(HttpResponseMessage response, long maximumBytes,
+        CancellationToken cancellationToken)
+    {
+        if (response.Content.Headers.ContentLength > maximumBytes)
+            throw new InvalidDataException("The CalDAV response exceeds the byte limit.");
+        if (response.Content.Headers.ContentEncoding.Count != 0)
+            throw new InvalidDataException("The CalDAV response uses an unsupported content encoding.");
+        Stream source = await response.Content.ReadAsStreamAsync(cancellationToken);
+        return new BoundedReadStream(source, maximumBytes, cancellationToken, response.Content.Headers.ContentLength);
     }
 
     private static Uri EnsureTrailingSlash(Uri value)

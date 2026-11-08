@@ -193,8 +193,10 @@ and editor drafts. No storage override is accepted by broker shares in Release.
   conflict choices retain their separate write path and handle direct steps.
 - CalDAV's production HTTP handler disables automatic redirects. All response
   paths reject 3xx before reading a response body, including same-origin
-  redirects; discovery hrefs retain their existing origin checks. Streamed-body
-  byte budgets and deadlines remain deployment work package DEP-07.
+  redirects; discovery hrefs retain their existing origin checks. Headers-first
+  bodies enforce 16 MiB XML and 32 MiB calendar byte limits, declared-length
+  consistency and an operation deadline through XML parsing. Unsupported
+  Content-Encoding is rejected; the production handler does not decompress.
 
 ### Time
 
@@ -225,6 +227,12 @@ Settings → Data.
 - **Graph transport.** The production client disables automatic redirects.
   Paging and attachment paths validate the resolved scheme, normalized host,
   effective port, userinfo and fragment before creating an authenticated request.
+  Responses and decoded attachment output have streamed byte boundaries; each
+  attachment is capped at 25 MiB and an import attempt at 256 MiB of attachment
+  output. Deadlines cover retries, bodies and decoding. Failed staging removes
+  only the newly created partial file; committed imports and existing files
+  remain intact. Exact limits and parser rules are in
+  [the network limits guide](docs/guides/network-limits.md).
   `MicrosoftTodoRegistration.ClientId` holds the public client id of the Entra
   app; when it is empty the wizard says sign-in isn't set up.
 - **Reading and mapping.** `MicrosoftTodoReader` reads the account into a

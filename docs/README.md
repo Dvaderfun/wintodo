@@ -20,6 +20,7 @@ All new planning documents belong under `docs/plans/`.
 | Plan | Scope |
 |---|---|
 | [Deployment readiness and GitHub release](plans/deployment-readiness.md) | Audit remediation, data/API security, privacy, CI/CD, signing and final deployment gates (`DEP-01`–`DEP-20`) |
+| [Recoverable synced moves proposal](plans/dep04-synced-moves.md) | DEP-04 baseline reproduction and proposed durable recovery; ADR-017 acknowledgement pending |
 
 ## Records
 
@@ -34,6 +35,7 @@ All new planning documents belong under `docs/plans/`.
 - [guides/build-and-run.md](guides/build-and-run.md) — prerequisites, build, run, debug a crash, AOT publish
 - [guides/testing.md](guides/testing.md) — unit tests, UI gate scripts, AutomationIds, writing a new gate
 - [guides/diagnostics.md](guides/diagnostics.md) — safe app traces, private diagnostic limits and sanitized CI test summaries
+- [guides/network-limits.md](guides/network-limits.md) — response, attachment and import byte budgets, deadlines and staging cleanup
 - [guides/migrations.md](guides/migrations.md) — adding a SQLite schema migration
 - [guides/performance.md](guides/performance.md) — measuring, recording, and the budget rules
 - [guides/packaging.md](guides/packaging.md) — unsigned tag artifacts, placeholder identity, local test signatures and open release gates

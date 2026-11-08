@@ -17,4 +17,9 @@
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
     <InvariantGlobalization>false</InvariantGlobalization>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- Map first-party source documents while retaining usable private symbols. -->
+    <PathMap Condition="'$(PathMap)' != ''">$(MSBuildThisFileDirectory)=/_/,$(PathMap)</PathMap>
+    <PathMap Condition="'$(PathMap)' == ''">$(MSBuildThisFileDirectory)=/_/</PathMap>
+  </PropertyGroup>
 </Project>

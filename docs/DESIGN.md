@@ -789,6 +789,8 @@ Preserved repeats, renamed empty titles and acknowledged reminders are reported.
 Done uses a success/informational InfoBar, the same grouped summary, Copy details
 (account/date/version/counts only) and Open My Day. Removal always confirms created
 counts, defaults to Cancel and explains that updates to existing tasks stay.
+Its primary and Cancel buttons expose `Todo.Import.RemoveConfirm.Primary` and
+`Todo.Import.RemoveConfirm.Close` throughout the dialog lifetime.
 
 Errors show a titled InfoBar with retry/sign-in actions. Administrator link copying
 requires a work tenant claim; its URL remains owner-verify. AutomationIds remain

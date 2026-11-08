@@ -136,7 +136,8 @@ $results = foreach ($platform in $Platforms) {
         RuntimeIdentifier = $runtimeIdentifier
         BinarySizeMb = [Math]::Round($binaryBytes / 1MB, 2)
         PublishSizeMb = [Math]::Round($publishBytes / 1MB, 2)
-        PublishDirectory = $publishDirectory
+        # Locations in this public summary are relative to summary.json.
+        PublishDirectory = $runtimeIdentifier
     }
 }
 
@@ -144,4 +145,4 @@ New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 $summaryPath = Join-Path $OutputDirectory "summary.json"
 $results | ConvertTo-Json | Set-Content -LiteralPath $summaryPath -Encoding utf8
 $results | Format-Table -AutoSize
-Write-Host "Summary: $summaryPath"
+Write-Host "Summary: summary.json (relative to OutputDirectory)"
