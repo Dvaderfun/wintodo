@@ -162,6 +162,17 @@ jobs:
           --private-root "$PWD"
           --output SafeTestResults/release-privacy.json
 
+      - name: Inspect exact unsigned MSIX structure against the reviewed manifest
+        run: |
+          [xml]$candidateManifest = Get-Content -LiteralPath src/Wintodo.App/Package.appxmanifest
+          $candidateIdentity = $candidateManifest.Package.Identity
+          python scripts/Test-ReleasePackage.py publish/msix/Wintodo-${{ matrix.arch }}.msix `
+            --architecture ${{ matrix.platform }} --output SafeTestResults/release-package.json `
+            --expected-identity $candidateIdentity.GetAttribute('Name') `
+            --expected-publisher $candidateIdentity.GetAttribute('Publisher') `
+            --expected-version $candidateIdentity.GetAttribute('Version')
+          if ($LASTEXITCODE -ne 0) { throw 'MSIX structural inspection failed.' }
+
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: M10-unsigned-${{ matrix.arch }}
@@ -171,5 +182,6 @@ jobs:
             SafeTestResults/dependencies.json
             SafeTestResults/toolchain.json
             SafeTestResults/release-privacy.json
+            SafeTestResults/release-package.json
           retention-days: 14
           if-no-files-found: error

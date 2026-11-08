@@ -21,7 +21,7 @@ As of 2026-11-08:
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
 - **Build:** Debug and Release x64 passed with zero warnings/errors on
-  2026-11-08 after DEP-04. All four MTP suites
+  2026-11-08 after DEP-04 and the release-preparation follow-up. All four MTP suites
   passed 678/678, zero failed/skipped (Core 231, Data 130, Import 155, Sync 162).
   Fresh DEP-04 x64/ARM64 AOT outputs include the integrated current code with compiler/
   runtime 10.0.14; both layouts and their relative summary pass the privacy scan
@@ -31,6 +31,15 @@ As of 2026-11-08:
   455/455 and zero failures/skips verified from the four uploaded TRX files.
 - **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   win-dev-skills v0.7.1 vendored (ADR-010).
+- **Release preparation follow-up (2026-11-08):** three independent streams
+  extend DEP-02 source/advisory evidence, add DEP-16 exact-MSIX structural
+  inspection and prepare DEP-17 unpublished privacy/installation drafts.
+  All 24 new package and 27 existing script regressions pass; unsigned CI is
+  wired and Actionlint passes. Independent review findings are fixed. WinApp
+  0.8.0 is a supported upgrade candidate with signing fixes; it has not been
+  adopted or credited with resolving HarfBuzz/runtime provenance. Owner policy,
+  identity/licence/signing, guest setup and final hosted/package acceptance stay
+  pending. See [the deployment plan](plans/deployment-readiness.md).
 - **Deployment preparation (2026-11-08):** Three agents split DEP-01 fixture
   repair, DEP-02 patched-toolchain proof and preliminary DEP-13 privacy scans.
   Commit `2e149ca` preserves raw attachment checkout bytes and pins the patched
@@ -4205,3 +4214,27 @@ UI automation. ARM64 not rebuilt.
   settings change, certificate trust, machine provisioning or publication.
 - **Docs:** accepted ADR-017, architecture/data model, implementation plan,
   deployment tracking and schema-6 seed/gate references updated.
+
+## M10 — Parallel package inspection and release-documentation preparation — 2026-11-08
+
+- **Gate:** Debug/Release x64 warnings-as-errors builds PASS, zero warnings/errors;
+  MTP 678/678 with zero failed/skipped. All 51 script tests PASS, including
+  24 new package regressions. Actionlint and the synthetic CI argument/report
+  invocation PASS. All 40 local links in new preparation documents resolve.
+- **Shipped:** reusable exact-MSIX structural/privacy inspection, optional
+  source identity/version and reviewed payload expectations, sanitized hashes
+  and reports; unsigned-candidate CI integration; source-backed unpublished
+  privacy/installation/update/recovery drafts. The DEP-02 follow-up extends
+  pinned command/binding evidence and identifies WinApp 0.8.0 signing fixes.
+- **Review:** independent review verified fixes for output aliases that could
+  overwrite candidates, four malformed-manifest false passes and stale PASS
+  reports on failed reruns. A legacy x64 MSIX remains unchanged, passes
+  structure and correctly fails its two known privacy findings.
+- **Pending:** owner advisory/override/distribution/identity/licence/signing
+  decisions, WinApp upgrade/runtime provenance, actual hosted CI, complete
+  payload/SBOM/schema/signature/runtime acceptance and final signed guest/native
+  ARM64 deployment. Existing guest SDK setup and live sign-in/server gates stay
+  open. No product/dependency/lockfile/ADR change, push, setup, UI/AOT run,
+  certificate trust, signing, installation or publication occurred.
+- **Evidence:** artifacts/dep-next/evidence.json records baseline, local commit,
+  changed-file hashes and safe counters; raw build/test logs remain ignored.

@@ -25,6 +25,12 @@ All new planning documents belong under `docs/plans/`.
 | [Production override policy proposal](plans/dep12-production-overrides.md) | DEP-12 launch/storage/clock inventory, affected AOT gates and concrete owner policy choices |
 | [Native dependency/toolchain review](plans/dep02-toolchain-review.md) | DEP-02 exact native origins, upstream advisory dispositions and remaining runner/tool provenance gaps |
 | [Source archive and asset privacy review](plans/dep13-source-privacy-review.md) | DEP-13 archive exclusions, fixture byte preservation, asset metadata and pending attribution/licensing choices |
+| [Exact-package inspection preparation](plans/dep16-package-inspection.md) | DEP-16 reusable MSIX structural/privacy gate and pending final identity/payload/deployment evidence |
+| [Release documentation preparation](plans/dep17-release-docs.md) | DEP-17 source-backed privacy/installation drafts and remaining owner/publication decisions |
+
+Release review drafts: [privacy](releases/PRIVACY.md) and
+[installation, update and recovery](releases/INSTALLATION.md). These are
+unpublished; final identity, signing and deployment evidence remain pending.
 
 ## Records
 

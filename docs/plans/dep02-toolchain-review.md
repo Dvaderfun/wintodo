@@ -97,8 +97,8 @@ The source is pinned to
 [the `v0.7.1` commit](https://github.com/microsoft/WinAppCli/tree/e3cd0b94f3e7b776ac51ba0564f4908094e979b5),
 and private evidence retains the three inspected files and response hashes.
 
-Leave DEP-02's tool advisory disposition open. Review WinApp/Svg.Skia's actual
-font-subsetting use and trusted asset inputs before deciding applicability.
+Leave DEP-02's tool advisory disposition open. The follow-up below traces
+WinApp/Svg.Skia's actual operations and proposes a bounded disposition.
 If applicable, obtain a vendor-patched compatible WinApp/native build and rerun
 packaging/AOT/privacy acceptance. No stable patched release was identified, so
 an arbitrary WinApp or HarfBuzz version bump is not an established fix. Any
@@ -110,6 +110,60 @@ Other fetched HarfBuzz advisories list earlier fixed/affected releases below
 package query returned no advisories. Upstream WinApp's central package comment
 states its selected Skia version carries the libexpat fix for
 `CVE-2025-59375`; the bundled expat build was not independently inspected.
+
+### Follow-up: affected HarfBuzz operations and a newer WinApp candidate
+
+The 2026-11-08 follow-up uses Wintodo baseline `4fa223d` and the same pinned
+WinApp `v0.7.1` source. It extends the earlier review through startup service
+registration, package preparation, native publishing and final delivery:
+
+| Step | Verified operation in pinned WinApp source |
+|---|---|
+| Command construction | `HostBuilderExtensions.UseCommandHandler` resolves the selected handler inside its command action. Registering image/search services does not invoke their handlers. |
+| Input routing | A single explicit `.csproj` enters `RunProjectModeAsync` before folder packaging. `PreparePackageAsync` evaluates project properties and selects active native MSIX tooling. |
+| Native publish | `PublishNativeMsixAsync` delegates argument tokens to `dotnet publish`; the Windows App SDK produces the MSIX. The reviewed preparation and native-publish code does not invoke SVG rendering or a font subsetter. |
+| Unsigned delivery | `DeliverNativeMsixAsync` reads the ZIP manifest, copies the SDK-produced MSIX to a sibling staging file and moves it to the destination. With `--no-sign`, it skips signing. It neither renders images nor produces a font. |
+
+The current CI invocation selects this explicit project/native-SDK path and
+requests unsigned single-architecture packages. This is source evidence for
+that invocation; actual hosted execution and final-package inspection remain
+separate gates.
+
+The downloaded `Svg.Skia/5.2.3` nuspec pins source commit
+[`7910666415a96a09643d1729eb5da5d115d75748`](https://github.com/wieslawsoltes/Svg.Skia/tree/7910666415a96a09643d1729eb5da5d115d75748)
+and explicitly depends on `HarfBuzzSharp/14.2.0`. Its
+`SkiaModel.TextShaping.cs` calls `Font.Shape` and `Font.SetVariations` while
+calculating glyphs. The matching `HarfBuzzSharp/14.2.0` nuspec pins binding
+commit [`4e4ce7af7ea8702593af5aeb25d05c65ffb74e90`](https://github.com/mono/SkiaSharp/tree/4e4ce7af7ea8702593af5aeb25d05c65ffb74e90);
+`Font.cs` maps those methods to `hb_shape_full` and
+`hb_font_set_variations`. No subsetter call was found in the reviewed shaping,
+document-font loading or font-provider files. Selecting variation coordinates
+for shaping does not itself establish the advisory's generated-font instancing
+path. WinApp's separate image service renders its SVG picture to PNG.
+
+**Recommended disposition for owner review:** record this HarfBuzz advisory as
+not applicable to the reviewed unsigned native-SDK packaging invocation,
+because that path does not invoke the affected operation or emit a generated
+font. Keep the affected build-only DLL/version visible in tool inventory and
+revisit the assessment after a CLI/asset-generation/command change. This
+recommendation is not an accepted exception, a whole-CLI safety claim, or a
+proof about every transitive Skia operation. The refreshed advisory still lists
+`>= 5.3.0, <= 14.6.0`, with no selected patched version.
+
+A new stable [WinApp `v0.8.0` release](https://github.com/microsoft/WinAppCli/releases/tag/v0.8.0)
+was published on 2026-11-07. Its NuGet repository metadata matches release
+commit `e5cedcc04921f6f74535cf45668292203e439d45`. The release includes fixes
+for private-key container leakage during signing and pins
+`System.Security.Cryptography.Pkcs/10.0.13` for
+[GHSA-846f-f764-76mx](https://github.com/advisories/GHSA-846f-f764-76mx) and
+[GHSA-2fmv-rv2c-59x7](https://github.com/advisories/GHSA-2fmv-rv2c-59x7).
+Both advisory records list affected .NET 10 package releases through
+`10.0.12` and first patched version `10.0.13`. This identifies a concrete
+supported upgrade candidate for review; it does not identify the PKCS version
+retained in the old AOT executable or demonstrate exploitability in Wintodo's
+unsigned command. The newer source keeps `Svg.Skia/5.2.3` and
+`SkiaSharp/4.152.0`, so its version number alone is not a HarfBuzz remediation.
+No package reference, lockfile, vendored skill or installed CLI changed.
 
 ### Visual Studio servicing is distinct from compiler vulnerability
 
@@ -162,6 +216,21 @@ successful x64/ARM64 packaging. Hosted-image inventory is not execution proof.
   the compiler/runtime embedded in the shipped CLI. Obtain vendor release
   provenance or inspect a supported vendor record before claiming its embedded
   runtime is patched. Wintodo's selected SDK does not rebuild this downloaded CLI.
+- The follow-up inspected the unchanged restored x64 WinApp executable
+  (SHA-256 `bf29f665ab4a030f20cd34a9121276301871ee89fd9c13118c7221563858d692`).
+  Its retained metadata includes a `System.Text.Json` informational version
+  `10.0.12+95017c711e6afc1085133d440e42b4bd78155701` and other assembly versions
+  `10.0.5`/`10.0.3`. These assembly strings do not establish the linked AOT
+  compiler/runtime or Brotli patch level. The cached NuGet archive includes no
+  SBOM, `deps.json` or `runtimeconfig.json`; the queried GitHub release lists no
+  SBOM asset, and the queried artifact-attestation endpoint returned HTTP 404.
+  No usable release-runtime provenance was obtained from those routes. The
+  pinned source does use `BrotliStream` for lazy loading of embedded `find-ui`
+  snapshots. This is a separate command/trusted embedded-resource path, absent
+  from the reviewed package path; it is not evidence that WinApp never uses
+  Brotli. The `v0.8.0` build template still requests `10.0.x`, leaving its exact
+  embedded compiler/runtime to be verified before an upgrade is credited with
+  resolving that gap.
 - Installed Windows SDK family names and NuGet tool package versions need a
   final actual-tool-to-advisory mapping. No exact component vulnerability was
   established in this bounded review; do not mark the whole SDK advisory-free.
@@ -196,6 +265,12 @@ local actual-tool versions, SQLite source identity, CLI native versions,
 HarfBuzz subsetter-export presence and structured MSRC advisory extracts.
 Upstream raw responses and local package paths should not be copied wholesale
 to public release evidence.
+
+Follow-up private evidence is under `artifacts/dep-next-toolchain/`: pinned
+source files and SHA-256 records, downloaded nuspec/package metadata, refreshed
+advisory/version responses and bounded binary metadata. Read-only HTTP and
+archive/string inspection added this evidence; no CLI was launched, installed
+or updated. Product behavior is unchanged, so no app build/UI gate was run.
 
 To close DEP-02, resolve the HarfBuzz/WinApp embedded-runtime and native vendor
 mapping dispositions, then produce exact reviewed-tool evidence in a fresh
