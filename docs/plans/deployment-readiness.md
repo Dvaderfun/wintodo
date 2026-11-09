@@ -114,8 +114,8 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-12 | Resolve production test/storage overrides | Policy | Policy A selected | Codex / dep12_overrides + production_override_policy | A SELECTED/DOCUMENTED; 26 host launch-policy tests PASS; actual guest/Release/AOT/default/broker/final-package acceptance PENDING |
 | DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
-| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding + production_override_policy | Locked restores/bindings and corrected Data fixture pool isolation LOCAL PASS; final 707 unit/204 script tests PASS; corrected hosted/protection/native advisory acceptance PENDING |
-| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export + vendor_provenance_resolution | Historical `f1b9af5` bound pair/SBOM/PDB checks PASS; isolated ML2.5.96 package and current-helper AOT checks LOCAL PASS; refreshed final-source packages/SBOM/approved identity/payload/full closure PENDING |
+| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding + production_override_policy | Local checks and hosted maintenance `42537269138` at `c5610bb` PASS: 707 unit/204 script tests and both AOT/MSIX jobs; protection/native advisory acceptance PENDING |
+| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export + vendor_provenance_resolution | Hosted `c5610bb` unsigned x64/ARM64 pair, bound audit/handoff and qualified SBOM/schema/privacy PASS; production identity/version/payload/full closure and signed acceptance PENDING |
 | DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Nine inherited texts INTEGRATED; fresh x64/ARM64 notice-package checks PASS; privacy/installation DRAFTS; final legal/owner/assets/live sign-in acceptance PENDING |
 | DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next + release_ref_policy | Unsigned/signed-continuity bounded checks PASS; ref/version gate and 33 regressions PASS with Windows path correction, tag CI WIRED; release authorization false; actual hosted/protected/signing/release acceptance PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory + installed_package_smoke | Guest-only installed-smoke runner PREPARED; 12 mocked/static checks PASS; actual guest/API/runtime/visual, signed install/update/uninstall and final deployment acceptance PENDING |
@@ -1570,6 +1570,28 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
   `alias-final-313.log`, and `artifacts/dep-production-next-integration/` contain
   the original hosted failure and successful local rerun. Local Debug/Release,
   707 unit tests and both AOT/privacy checks remain valid; no app source changed.
+
+### 2026-11-09 — Hosted maintenance and downloaded unsigned pair
+
+- **Hosted — PASS:** manual main run `42537269138` at exact source
+  `c5610bbb8f44c23c6fb6ceb6865389aca021b134` passes build/security, all 204
+  scripts, all 707 unit tests (zero failed/skipped/unresolved), and both
+  warnings-as-errors AOT/MSIX structure/privacy/audit/dependency-export jobs.
+- **Downloaded evidence — PASS:** both hash-pinned artifacts agree with source,
+  requested architectures and bound app/tool graphs. The current unsigned handoff
+  passes with release authorization false and nine gates pending. Qualified BOMs
+  pass the official CycloneDX 1.6 schema, zero errors; evidence privacy passes.
+  Exact package/graph/BOM hashes are in
+  [the hosted candidate record](dep16-hosted-candidate-validation.md).
+- **Limits — PENDING:** the maintenance trigger skips protected-tag eligibility;
+  existing placeholder identity/version, production signer, legal/asset values,
+  actual protection, full vendor/linked/projection closure and signed installed
+  deployment/native ARM64 runtime acceptance remain open. GitHub's forced action
+  runtime/deprecation notice is retained for maintenance. Initial failed hosted
+  run `42536237534` remains FAIL, with its skipped stages explicit. M9 is deferred.
+- **Evidence:** ignored `artifacts/dep-production-next-integration/hosted-42537269138/`.
+  Source commits were pushed only to existing private main; no repository visibility,
+  tag/protection/signing setting, publication, guest, certificate trust or UI changed.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

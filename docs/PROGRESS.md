@@ -54,6 +54,15 @@ licensing/assets and source visibility/protection values remain pending.
   uses directory identity while preserving raw-route link/traversal rejection.
   All 33 focused and 204 full Python 3.13 tests pass. Corrected hosted build/AOT
   verification follows; the failed run and skipped stages remain recorded.
+- **Hosted build and unsigned pair (2026-11-09):** manual main CI
+  [42537269138](https://github.com/Dvaderfun/wintodo/actions/runs/42537269138)
+  passes build/security, 204 script tests, all 707 unit tests and both AOT/MSIX
+  jobs against `c5610bb`. Downloaded x64/ARM64 input handoff and official qualified
+  BOM schemas pass; source/target audits agree. This closes current-code hosted
+  maintenance proof, while protected tag/signing, owner identity/legal/asset
+  values, full vendor/linked-code closure and final installed runtime remain
+  pending. Exact hashes and limits are in
+  [the hosted candidate record](plans/dep16-hosted-candidate-validation.md).
 - **Production policy and release refs (2026-11-09):** direct MSIX first and
   DEP-12 A are selected; the existing launch decisions now have 26 executable
   host tests. The strict stable-tag/source/main/version checker has 31 real-Git
@@ -4593,3 +4602,20 @@ actual hosted/protection/runtime/signing acceptance stays pending. Evidence:
 artifacts/dep-release-ref-policy/alias-reproduction.json and alias-final-313.log;
 artifacts/dep-production-next-integration/hosted-failure-42536237534.log and
 alias-final-script-tests.log. No guest/UI/trust/signing/publication ran.
+
+### 2026-11-09 — M10 DEP-15/16/18: hosted candidate acceptance
+
+Manual main CI 42537269138 succeeds against `c5610bb`: build/security, 204 script
+regressions, 707 unit tests (zero failed/skipped/unresolved), x64/ARM64 AOT/MSIX,
+structure/privacy, bound app audits and qualified SBOM exports. Downloaded paired
+handoff passes with release_authorized false; both qualified BOMs pass official
+CycloneDX 1.6 schemas. Exact hashes/source and evidence limits are in
+[dep16-hosted-candidate-validation.md](plans/dep16-hosted-candidate-validation.md).
+
+The earlier `8e562d8` hosted script failure remains FAIL. Maintenance skips the
+protected-tag step; identity/version/signer, legal/assets, actual protection,
+full native/vendor/linked/projection closure and installed deployment remain
+pending. M9 is owner-deferred. Source commits are pushed to existing private
+main; no visibility, signing/protection setting, guest/UI/trust/install or public
+release changed. Private artifacts are in
+artifacts/dep-production-next-integration/hosted-42537269138/.
