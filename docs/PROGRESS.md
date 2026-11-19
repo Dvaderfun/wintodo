@@ -18,7 +18,8 @@ will permit free self-builds and reserve commercial redistribution. The
 and version `1.0.0.0` are now in the manifest. The nine package icons are
 [attributed MIT template assets](plans/dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons).
 Rights for eight background JPEGs, first-party licence text, Store certification,
-customer tests and effective ref protection remain open.
+customer tests and effective ref protection remain open. The template icons
+are also a branding risk: [an original alternative is ready for review](adr/ADR-021-store-package-icon-proposal.md).
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -4712,3 +4713,8 @@ higher-version flight used to test updates. The
 [English gallery](releases/store/en-US/README.md) now also contains original
 text-free hero artwork for the Store banner. The signed deployment and manual
 checks remain open; no release tag, submission or publication took place.
+
+**Branding follow-up:** Microsoft's desktop certification guide checks for
+default template images. The proposed icon family matches all nine existing
+file dimensions and ICO frame sizes; the light/dark/16–48 px preview is
+in ADR-021. It has not been applied to the packages or certified.
