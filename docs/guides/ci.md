@@ -39,13 +39,17 @@ against the source manifest identity/version and requested native architecture,
 runtime/assets, capabilities and activation declarations. Its sanitized
 `release-package.json` report accompanies the candidate. The independently
 approved complete payload inventory remains pending; source-manifest consistency
-does not approve the placeholder production identity. These checks do not
-establish production signing or installation acceptance. The placeholder
-identity and first production version still require owner values; tags do not
-rewrite the manifest. DEP-18's protected signing stage remains pending.
+does not by itself prove a Store reservation. The source now uses the
+[reserved Store identity](../plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
+and version `1.0.0.0`; tags do not rewrite it. The Store supplies the production
+signature after approved submission. Installation and certification remain separate.
 
 Tag pushes must pass [the release-ref checker](../plans/dep18-release-ref-policy.md)
-before the target restore. It verifies canonical `vMAJOR.MINOR.PATCH` syntax,
+before the target restore. The tag job first requires GitHub's protected-tag
+flag and an affirmative read-only branch protection response for `main`. If
+the API is unavailable or either ref is unprotected, no tag candidate is built.
+Those signals alone do not establish the quality of the rules or authorize upload.
+The local checker verifies canonical `vMAJOR.MINOR.PATCH` syntax,
 the matching committed `MAJOR.MINOR.PATCH.0` manifest version, exact source/tag/
 HEAD bindings and ancestry under the explicitly pinned reviewed main commit.
 The release checkout fetches full history; the manifest's LF attribute preserves
@@ -115,8 +119,13 @@ package; the hosted image is serviced, not an immutable VM image. The reviewed
 Visual Studio 2022 17.14 and both x64/ARM64 tools. Each run verifies availability
 again; actual run evidence takes precedence over that inventory.
 
-The SDK policy remains `global.json` minimum 10.0.403, `latestFeature`, stable
-releases only. `NuGet.Config` clears inherited package sources and uses only
+Both setup-dotnet jobs install the exact SDK in `global.json` with roll-forward
+disabled. Weekly CI checks Microsoft's .NET 10 release feed for a newer patch
+and warns without changing the build. Review the SDK, all affected locks and
+runtime notices together in one update; retain locked restore and advisory checks.
+For a portable SDK, the .NET 10 host also searches the ignored
+`artifacts/toolset/dotnet` after the installed SDK location.
+`NuGet.Config` clears inherited package sources and uses only
 the HTTPS NuGet.org v3 feed. There is no custom Actions cache and no signing
 authority shared with PR jobs; ordinary hosted-runner NuGet package caches are
 scoped to the ephemeral job. Package-source changes require review with the
@@ -162,11 +171,11 @@ dotnet restore Wintodo.sln -p:Platform=x64 --locked-mode -warnaserror
 ```
 
 Lockfiles cover the NuGet dependency graph and content hashes; SDK implicit
-download dependencies/runtime packs can be outside that graph. SDK roll-forward
-and the serviced runner image remain deliberate sources of change, so lockfiles
+download dependencies/runtime packs can be outside that graph. Native tools
+on the serviced runner image can still change, so lockfiles
 do not establish identical native binaries or complete toolchain reproducibility.
 Record SDK, target compiler/runtime/download versions and rerun advisories for
-each candidate. A rolled-forward SDK that changes locked analyzer/compiler
+each candidate. An SDK update that changes locked analyzer/compiler
 dependencies requires the same reviewed update. For a finding, review
 the private report, update the narrow affected dependency/tool and rerun the
 full gate. A dependency/scanner exception requires an explicit documented owner

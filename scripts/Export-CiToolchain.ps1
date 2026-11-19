@@ -101,12 +101,10 @@ $stage = 'sdk'
 try {
     if (Test-Path -LiteralPath $output) { Remove-Item -LiteralPath $output }
     $sdk = (& dotnet --version).Trim()
-    if ($LASTEXITCODE -ne 0 -or $sdk -notmatch '^\d+\.\d+\.\d+$' -or [version]$sdk -lt [version]'10.0.403') {
-        throw 'Supported patched SDK was not resolved.'
-    }
     $sdkPolicy = Get-Content -LiteralPath (Join-Path $repositoryRoot 'global.json') -Raw | ConvertFrom-Json
-    if ($sdkPolicy.sdk.rollForward -notin @('disable', 'patch', 'feature', 'minor', 'major', 'latestPatch', 'latestFeature', 'latestMinor', 'latestMajor')) {
-        throw 'SDK roll-forward policy is unsupported.'
+    if ($LASTEXITCODE -ne 0 -or $sdk -notmatch '^\d+\.\d+\.\d+$' -or
+        $sdk -cne $sdkPolicy.sdk.version -or $sdkPolicy.sdk.rollForward -cne 'disable') {
+        throw 'The resolved SDK must match the exact global.json pin used to generate the locks.'
     }
     $stage = 'winapp'
     [xml]$centralPackages = Get-Content (Join-Path $repositoryRoot 'Directory.Packages.props')
