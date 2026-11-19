@@ -2,12 +2,16 @@
 
 A native Windows task manager: a packaged WinUI 3 app that starts as a faithful
 Microsoft To Do clone, built on open standards (iCalendar `VTODO`, CalDAV)
-instead of a proprietary backend. Native AOT, x64 and ARM64. `Wintodo` is a
-placeholder name.
+instead of a proprietary backend. Native AOT, x64 and ARM64. Wintodo is
+reserved in Microsoft Store under Univera LLC; publication is pending.
+
+The [source licence](LICENSE.md) allows free self-builds and free unbranded
+community distributions. The individual author retains the Wintodo brand and
+commercial licensing rights. Univera LLC publishes the official app.
 
 ## Build and run
 
-Prerequisites: .NET SDK 10.0.4xx, WinApp CLI 0.7+, Developer Mode.
+Prerequisites: the exact .NET SDK in `global.json`, WinApp CLI 0.7+, Developer Mode.
 
 ```powershell
 dotnet build Wintodo.sln -p:Platform=x64 -warnaserror

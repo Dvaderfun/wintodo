@@ -2,7 +2,6 @@
 
 <Package
   xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
-  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
   xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
@@ -10,15 +9,13 @@
   IgnorableNamespaces="uap com desktop rescap">
 
   <Identity
-    Name="5826186B-4750-4C22-BC50-B5DD1EED9CA5"
-    Publisher="CN=AppPublisher"
-    Version="1.0.0.5" />
-
-  <mp:PhoneIdentity PhoneProductId="5826186B-4750-4C22-BC50-B5DD1EED9CA5" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+    Name="47371DermenzhyStudio.Wintodo"
+    Publisher="CN=03D194EC-2260-464A-80F9-EF22C07F62D0"
+    Version="1.0.0.0" />
 
   <Properties>
     <DisplayName>ms-resource:AppDisplayName</DisplayName>
-    <PublisherDisplayName>ms-resource:PublisherDisplayName</PublisherDisplayName>
+    <PublisherDisplayName>Univera LLC</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
@@ -47,7 +44,7 @@
       <Extensions>
         <desktop:Extension Category="windows.toastNotificationActivation">
           <desktop:ToastNotificationActivation
-            ToastActivatorCLSID="C4D3564E-50A7-4D68-9411-2E7E9D2FE678" />
+            ToastActivatorCLSID="672D17A5-2196-4D29-BE1F-A13C63432566" />
         </desktop:Extension>
         <com:Extension Category="windows.comServer">
           <com:ComServer>
@@ -55,7 +52,7 @@
               Executable="Wintodo.exe"
               Arguments="----AppNotificationActivated:"
               DisplayName="ms-resource:AppDisplayName">
-              <com:Class Id="C4D3564E-50A7-4D68-9411-2E7E9D2FE678" />
+              <com:Class Id="672D17A5-2196-4D29-BE1F-A13C63432566" />
             </com:ExeServer>
           </com:ComServer>
         </com:Extension>

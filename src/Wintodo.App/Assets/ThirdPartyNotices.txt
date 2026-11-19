@@ -573,7 +573,7 @@ Component associations for the licence texts retained above and below:
 - Microsoft.Web.WebView2 1.0.3719.77 loader and interop: distinct supplier
   licence and notices retained below. This does not describe the separately
   installed WebView2 browser runtime or its version.
-- Microsoft.NETCore.App.Runtime.NativeAOT.win-x64 and win-arm64 10.0.14:
+- Microsoft.NETCore.App.Runtime.NativeAOT.win-x64 and win-arm64 10.0.15:
   linked .NET runtime MIT licence and third-party notices retained below;
   legal files are byte-identical for these two runtime packs.
 
@@ -726,9 +726,9 @@ SOFTWARE.
 =========================================
 END OF Sergio0694/ComputeSharp NOTICES AND INFORMATION
 
-===== .NET linked runtime 10.0.14; .NET-owned MIT managed dependencies =====
-Source: Microsoft.NETCore.App.Runtime.NativeAOT.win-x64/10.0.14, package file LICENSE.TXT
-Package: https://www.nuget.org/packages/Microsoft.NETCore.App.Runtime.NativeAOT.win-x64/10.0.14
+===== .NET linked runtime 10.0.15; .NET-owned MIT managed dependencies =====
+Source: Microsoft.NETCore.App.Runtime.NativeAOT.win-x64/10.0.15, package file LICENSE.TXT
+Package: https://www.nuget.org/packages/Microsoft.NETCore.App.Runtime.NativeAOT.win-x64/10.0.15
 
 The MIT License (MIT)
 
@@ -755,9 +755,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-===== .NET linked runtime 10.0.14, x64 and ARM64 =====
-Source: Microsoft.NETCore.App.Runtime.NativeAOT.win-x64/10.0.14, package file THIRD-PARTY-NOTICES.TXT
-Package: https://www.nuget.org/packages/Microsoft.NETCore.App.Runtime.NativeAOT.win-x64/10.0.14
+===== .NET linked runtime 10.0.15, x64 and ARM64 =====
+Source: Microsoft.NETCore.App.Runtime.NativeAOT.win-x64/10.0.15, package file THIRD-PARTY-NOTICES.TXT
+Package: https://www.nuget.org/packages/Microsoft.NETCore.App.Runtime.NativeAOT.win-x64/10.0.15
 
 .NET Runtime uses third-party libraries or other resources that may be
 distributed under licenses different than the .NET Runtime software.

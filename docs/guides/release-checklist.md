@@ -9,22 +9,28 @@ M9 performance remains owner-deferred.
 
 | Decision | Current value | Needed before |
 |---|---|---|
-| App display name | Wintodo (placeholder) | Final icons, screenshots and listing copy |
-| Package identity / publisher | GUID identity, `CN=AppPublisher` | Production signing and final install gates |
-| Distribution | Direct MSIX first (selected 2026-11-09); source visibility/protection pending | Signing and release CI |
-| Release version | `1.0.0.5` in the manifest (local header-descender test update) | Release tag; tags do not change this value |
+| App display name | Wintodo and the Glide icon selected; rights to eight retained backgrounds pending | Final listing and artwork acceptance |
+| Package identity / publisher | Partner Center reservation for Wintodo / Univera LLC is in the manifest | Verify actual Store-delivered package family |
+| Distribution | Store-first selected (ADR-019); public source after review selected; actual protection/visibility/submission pending | Store certification and release CI |
+| Release version | Manifest `1.0.0.0` on the reserved family; first tag is `v1.0.0` when authorized | Keep the test family separate and verify a staged higher-version update |
 | Production overrides | DEP-12 A selected: retain/document established local database/clock controls | Default-storage/time, precedence and final installed-package gates |
+| Source licence / contact | [First-party source licence](../../LICENSE.md); individual rights holder, official publisher Univera LLC; support@univera.app | Preserve third-party rights and separate Store customer terms |
 
 For Store distribution, use the exact reserved Partner Center identity and
 publisher. For direct distribution, the signing certificate subject must match
 the manifest publisher. A display name alone is insufficient to choose either.
-Review preservation of existing package data before changing identity; a new
-identity has a different package data folder. Do not uninstall the owner's app
-to test the transition.
+The owner accepts a fresh first production installation. The reserved production
+family starts at `1.0.0.0`, separately from the test family at `1.0.0.5`. Future
+production updates must preserve tasks, attachments, settings and credential
+access under the approved family, with actual installed-update evidence. A new
+identity has a different data folder; do not uninstall the owner's test app.
 
-The [owner decision packet](../plans/deployment-owner-decisions.md) records
-the selected route/override policy and the remaining identity, signing, version,
-licensing/asset and protection values. Those selections do not authorize
+The [Store-first preparation](../plans/deployment-store-first-preparation.md)
+lists the exact identity handoff and Store-signed deployment requirements. A
+purchased CA certificate is outside this first route. The
+[owner decision packet](../plans/deployment-owner-decisions.md) records
+the selected route/override policy, reserved identity and remaining licensing,
+asset and protection work. Those selections do not authorize
 certificate trust, machine changes or publication. A custom SQLite path does
 not move attachments, credentials or broker-share state; final installed tests
 must also verify ordinary package LocalState and real-time defaults.
@@ -144,26 +150,24 @@ automation row.
 ## M10: package and release
 
 Build commands and local test signing are in [packaging.md](packaging.md).
-Current placeholder packages are useful for local validation; they are not
-final branded, production-signed artifacts.
+The reserved identity is applied. Older packages with the test identity are
+not evidence for the new Store family.
 
-- [ ] Finalize identity, publisher, version and display strings.
-- [ ] Replace placeholder icons: title-bar `.ico`, Store logo, square logos,
-      wide tile, splash screen and required scale/target-size variants. Verify
-      their manifest paths and appearance against the chosen brand.
-- [ ] Capture release screenshots from the final build and prepare listing
-      text, support/contact details, privacy policy and Store submission fields
-      required for the selected distribution route.
-- [ ] Build unsigned self-contained Native AOT x64 and ARM64 packages. Inspect
-      the packaged manifests, executable architecture, assets and extensions;
-      confirm only the reviewed `runFullTrust` capability is present. Retain
-      artifact hashes and the source commit used to build them.
-- [ ] Apply production signing according to the selected distribution route.
-      Keep signing material in protected CI secrets, use an approved timestamp
-      service for direct distribution, and verify the delivered signatures.
-- [ ] Extend tag CI to sign and attach the approved artifacts to a release.
-      The current workflow uploads unsigned build artifacts only. For Store
-      upload, prepare the SDK/Partner Center submission artifact separately.
+- [x] Apply the reserved name, publisher, publisher display name and first version.
+- [x] Verify the nine [approved Glide icons](../adr/ADR-021-store-package-icon-proposal.md) in both unsigned MSIX files.
+- [ ] Confirm redistribution rights for the eight background JPEGs and review final logo/tile/splash presentation.
+- [x] Prepare [English screenshots, captions, hero art, listing copy and certification notes](../releases/store/en-US/README.md).
+- [x] Save the approved privacy text in Partner Center. Confirm Free, public audience and Store discoverability for the first launch.
+- [x] Verify the publisher's saved IARC ratings and the manual publication hold. All five required sections are Complete; the draft has not been submitted.
+- [ ] Compare the gallery with the final UI before submitting the reviewed packages.
+- [x] Build and inspect local unsigned self-contained Native AOT x64 and ARM64
+      packages: manifests, executable architecture, assets, extensions and
+      the single `runFullTrust` capability. [Source and SHA-256 for each target](../plans/deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery).
+- [ ] After merging the reviewed source, run the hosted main packaging workflow
+      and retain its exact upload hashes and reports.
+- [ ] Verify effective GitHub protection and the tag/source/hash handoff. Submit
+      the reviewed uploads through the controlled Partner Center session and
+      verify the resulting Microsoft signatures. Keep GitHub CI read-only.
 - [ ] Run the clean-install and uninstall checks below against the final
       delivered package. ARM64 runtime remains unverified without an ARM64
       machine; successful cross-compilation does not close that row.
@@ -178,7 +182,9 @@ certificate already trusted. Record installed runtime dependencies so a
 preinstalled development runtime cannot mask a missing package dependency.
 Preserve the normal `clean` checkpoint used by UI gates.
 
-For direct MSIX testing, first verify installation rejects the untrusted test
+For the [public Store launch](../plans/deployment-store-first-preparation.md#controlled-handoff), install the certified baseline on clean x64 and native ARM64 systems when Microsoft makes it available. Test a higher-version update on that installation before uninstalling. Keep Developer Mode off and use the ordinary Windows trust store. The first launch has no tester group or private flight.
+
+For separate direct MSIX testing, first verify installation rejects the untrusted test
 certificate. Then, with owner approval for that guest session, trust the public
 certificate in `LocalMachine\TrustedPeople`, install the signed package, and
 launch the installed app from the guest's Start menu using packaged activation.

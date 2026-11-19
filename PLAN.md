@@ -2,7 +2,7 @@
 
 > **Audience:** any implementing agent (see `AGENTS.md`) and the human owner.
 > **Status:** approved plan, in progress. M0–M9 and M13 implemented (some gate rows
-> still open); M10–M12 not started.
+> still open); M10 release preparation is in progress. M11–M12 are outside this release.
 > Current state: top of `docs/PROGRESS.md`. Code as built: `ARCHITECTURE.md`.
 > Restructured by [ADR-010](docs/adr/ADR-010-ai-friendly-repo-docs.md): section
 > numbers are stable; moved sections are now pointers.
@@ -20,12 +20,9 @@
 4. At the end of every milestone: update `docs/PROGRESS.md` with what shipped,
    what deviated from this plan, and why.
 
-`Wintodo` is a **placeholder name**. Final name is undecided. It appears as the
-root namespace, the solution name, the MSIX identity, and the window title.
-When the name is chosen, a single case-sensitive find-replace of `Wintodo` /
-`wintodo` across the repo plus a regenerated MSIX identity is the whole rename.
-**Do not scatter the name into strings** — put every user-visible occurrence in
-`Strings/en-US/Resources.resw` from M2 onward.
+`Wintodo` is the reserved Store name. The production package identity is
+assigned by Partner Center and must stay stable across updates. Keep localized
+display strings in `Strings/en-US/Resources.resw`.
 
 ---
 
@@ -97,7 +94,7 @@ by ADR-010). Index and template: [`docs/adr/README.md`](docs/adr/README.md).
 | Layer | Choice | Why |
 |---|---|---|
 | UI framework | **WinUI (WinUI 3)**, Windows App SDK **2.3.1+ stable** (2.5.1 since 2026-10-10) | Current native Windows stack. Microsoft now writes "WinUI" for what was WinUI 3. |
-| Runtime | **.NET 10** (`net10.0-windows10.0.26100.0`) | Current LTS. SDK minimum pinned in `global.json` (10.0.403 since 2026-11-08, DEP-02 security patch). Do not use .NET 11 previews; .NET 11 is STS — stay on the LTS line. |
+| Runtime | **.NET 10** (`net10.0-windows10.0.26100.0`) | Current LTS. Pin the exact SDK with its lockfiles ([ADR-020](docs/adr/ADR-020-pin-sdk-with-lockfiles.md)). |
 | Language | C# 14 | Partial properties (required by the modern `[ObservableProperty]` pattern), collection expressions. |
 | Packaging | **Packaged MSIX**, x64 + ARM64 | Required for `winapp run`, toasts, jump lists, badges, Store. |
 | MVVM | `CommunityToolkit.Mvvm` 8.4+ | Source-generated, zero reflection, AOT-clean. Use **partial properties**, not the legacy field-backed `[ObservableProperty]` — the WinUI analyzer flags the old form. |
@@ -636,19 +633,30 @@ single pass), then `/winui-code-review`.
 
 ### M10 — Packaging and release
 
+Selected first production route: [ADR-019](docs/adr/ADR-019-store-first-source-available-release.md)
+uses Store MSIX under Univera LLC, Microsoft-managed Store signing, public
+source after review and free self-builds with commercial redistribution reserved.
+Development test signatures remain groundwork; direct production signing and
+downloads are a separate later route. The Store identity and `1.0.0.0` are in
+the manifest. Rights, Store certification and customer/runtime gates remain pending.
+
 **Deliverables**
 - `winapp manifest` reviewed; identity, publisher, capabilities minimal
   (no `broadFileSystemAccess`).
-- `winapp cert generate` + trust for local install; `winapp sign` for the MSIX.
-- GitHub Actions: build + test + AOT publish + sign + attach MSIX to a release,
-  for x64 and ARM64.
+- Obtain Microsoft-signed packages from the approved Store submission. A historical
+  local test signature does not establish the customer signing path.
+- GitHub Actions: build + test + x64/ARM64 AOT/package evidence, approved Store
+  upload preparation and reviewed source-release metadata. Bind actual
+  Store-signed delivery to those inputs before publication.
 - App icons at every required size; Store-quality assets.
 
 **Skills:** `/winui-packaging`.
 
 **Gate**
-- MSIX installs from a clean VM (no dev mode, no dev cert pre-trusted, after
-  installing the cert) and launches.
+- The actual Store-signed MSIX installs from an approved clean customer baseline
+  (no Developer Mode or inherited test-certificate trust) and launches. Test
+  x64 and native ARM64, plus updates preserving tasks/attachments/settings and
+  credential access under the stable production family.
 - Uninstall leaves nothing behind outside the package data folder.
 
 ---
@@ -751,8 +759,9 @@ reminders become untestable.
 | Recurrence semantics differ per client | ADR-006 documents our choice; verify against live servers at M13, revisit only with evidence. |
 | Per-list background images blow the memory budget | Decode at display size (`BitmapImage.DecodePixelWidth`), cap dimensions, one cached image at a time. |
 
-**Open — needs the human:** final app name and MSIX identity/publisher.
-Everything else is decided.
+**Open — needs the owner:** source/asset rights, effective repository protection,
+controlled Store submission and customer acceptance. Wintodo's Store name and
+[package family](docs/plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff) are reserved.
 
 ---
 

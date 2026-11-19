@@ -5,12 +5,22 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-11-09:
+As of 2026-11-20:
 
-Direct MSIX is selected for the first release under
-[ADR-018](adr/ADR-018-direct-msix-first-release.md), and DEP-12 policy A retains
-documented production launch controls. Exact identity/version, signing,
-licensing/assets and source visibility/protection values remain pending.
+Store-first under **Univera LLC** is selected in
+[ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
+ADR-018's first distribution route. DEP-12 policy A retains documented launch
+controls. Wintodo/current artwork subject to rights, public source after review,
+a fresh production installation with data-preserving future updates, first
+`v1.0.0` / `1.0.0.0`, and support@univera.app are selected. The active
+[source licence](../LICENSE.md) allows free self-builds and unbranded community
+copies; the individual author retains the official brand and monetization. The
+[reserved Store identity](plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
+and version `1.0.0.0` are in both unsigned packages. Each contains the nine
+approved [Glide icon files](adr/ADR-021-store-package-icon-proposal.md).
+The [English Store gallery](releases/store/en-US/README.md) pairs complete
+Windows captures with separate promos and a text-free checklist illustration.
+All five required sections in the [Partner Center draft](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) are **Complete**, including Age ratings (PEGI 3 / ESRB Everyone). **Submit for certification** is enabled; the submission is still **In draft**. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is saved. The owner accepted the eight backgrounds for staging; their redistribution rights remain unverified. Native dependency review, ref protection, the final package handoff, certification and customer tests remain open.
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -19,24 +29,30 @@ licensing/assets and source visibility/protection values remain pending.
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | GROUNDWORK | Fresh x64/ARM64 AOT MSIX and local test signatures prepared; unsigned tag CI added; final identity/signing, Store assets and clean-VM install/uninstall gates pending |
+| M10 Packaging and release | IN PROGRESS | All five Store draft sections complete; not submitted. Rights, protection, native dependency review, final artifacts, certification and installed x64/native ARM64 checks remain open. |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
-- **Build:** Debug and Release x64 passed with zero warnings/errors on
-  2026-11-09. All four MTP suites passed 707/707, zero failed/skipped
-  (Core 257, Data 133, Import 155, Sync 162). The launch-policy/ref-gate
-  integration passes all 204 script regressions on Python 3.13. Current-helper x64/ARM64 AOT
-  publishes pass with ML 2.5.96; runtime and final candidate checks remain pending.
+- **Hosted CI — restore fix verified on an earlier PR revision:** [19 November build-and-test at `c2c8919`](https://github.com/Dvaderfun/wintodo/actions/runs/44593397992)
+  passed the locked restore, audited dependencies, build and tests on SDK
+  `10.0.404`. The [16 November scheduled failure](plans/deployment-readiness.md#2026-11-19-hosted-restore-failure)
+  preceded the fix. PRs skip the release matrix; a main maintenance run is due after merge.
+- **Last passing builds:** Debug and Release x64 passed with zero warnings/errors on
+  2026-11-19. All four MTP suites passed 707/707, zero failed/skipped
+  (Core 257, Data 133, Import 155, Sync 162); 206 script regressions passed on
+  Python 3.13. [Unsigned Glide x64 and ARM64 MSIX](plans/deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery)
+  at `aa59ff4` use .NET 10.0.15 and ML 2.5.96; structure, identity, privacy
+  and both zero-advisory NuGet audits passed. Store-signed packages and
+  customer/runtime checks remain pending.
   Earlier DEP-04 x64/ARM64 AOT outputs used compiler/
   runtime 10.0.14; both layouts and their relative summary pass the privacy scan
   (649 files, zero findings). Final signed packages/install gates remain pending.
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
   tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
   455/455 and zero failures/skips verified from the four uploaded TRX files.
-- **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
+- **Toolchain:** exact .NET SDK 10.0.404 (runtime/AOT compiler 10.0.15; [ADR-020](adr/ADR-020-pin-sdk-with-lockfiles.md)), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   Windows ML 2.5.96 explicitly selected within the SDK's range;
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **ML servicing and SQLite test isolation (2026-11-09):** the declared-compatible
@@ -58,8 +74,8 @@ licensing/assets and source visibility/protection values remain pending.
   [42537269138](https://github.com/Dvaderfun/wintodo/actions/runs/42537269138)
   passes build/security, 204 script tests, all 707 unit tests and both AOT/MSIX
   jobs against `c5610bb`. Downloaded x64/ARM64 input handoff and official qualified
-  BOM schemas pass; source/target audits agree. This closes current-code hosted
-  maintenance proof, while protected tag/signing, owner identity/legal/asset
+  BOM schemas pass; source/target audits agree. This established hosted
+  maintenance proof for that run, while protected tag/signing, owner identity/legal/asset
   values, full vendor/linked-code closure and final installed runtime remain
   pending. Exact hashes and limits are in
   [the hosted candidate record](plans/dep16-hosted-candidate-validation.md).
@@ -200,7 +216,7 @@ licensing/assets and source visibility/protection values remain pending.
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
   strengthened list stability passes 3/3 twice, with 10 px drift on immediate
   and settled completion/uncompletion against the unchanged 54 px limit.
-  Final app name and MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
+  UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **Header alignment:** Fixed-category and user-list display title text now use tight line bounds
   (user-list title button stretched to 44 px on 2026-10-20 so descenders are not clipped);
@@ -285,17 +301,16 @@ licensing/assets and source visibility/protection values remain pending.
   11/11; ARM64 runtime remains unclaimed.
   UX-10 expanded undo gate passes 12/12, M3 + restart and M4 + restart pass;
   M13 passes 11/11 and M8 17/17; UX-10 is complete. M9 remains owner-deferred;
-  final name/publisher, signing and M10 clean-VM gates remain pending.
+  Store signing and M10 clean-machine gates remain pending.
 
-- **Release readiness:** Viewport repair committed as `23881eb`; Debug/Release
+- **Historical development packages (October):** Viewport repair committed as `23881eb`; Debug/Release
   builds and 307/307 tests rechecked. UX-20 owner-run procedures and M10 acceptance
   are in [the release checklist](guides/release-checklist.md). Fresh unsigned
   x64/ARM64 MSIX and existing-certificate test-signed copies are in `publish/msix`;
   package inspection and SHA-256 hashes are in `inspection.json`. Host signature
   verification stops at the untrusted development certificate; no trust was added.
   The regular VM checkpoint has Developer Mode and certificate trust already,
-  so a separate clean-install baseline remains necessary. Final name, publisher,
-  distribution route, production signing/assets and owner-run gates remain open.
+  so a separate clean-install baseline remains necessary for the Store family.
 
 - **Completion viewport repair:** Panel updates keep their scroll offset rather
   than competing with the view's anchor correction. Transition-free updates
@@ -4619,3 +4634,155 @@ pending. M9 is owner-deferred. Source commits are pushed to existing private
 main; no visibility, signing/protection setting, guest/UI/trust/install or public
 release changed. Private artifacts are in
 artifacts/dep-production-next-integration/hosted-42537269138/.
+
+### 2026-11-09 — M10 DEP-13/16/17/18: owner choices and release research
+
+Owner selected Wintodo, retained icons/backgrounds, public source after review,
+a fresh production install with data-preserving future updates, and stable
+tags starting at `v1.0.0` / `1.0.0.0`. A new production package family is needed;
+no downgrade or removal of the owner's test installation is authorized.
+The owner wants freemium official releases with free personal source builds.
+
+[The signing/licensing recommendation](plans/deployment-signing-licensing-recommendation.md)
+compares Store-managed MSIX signing, eligible Artifact Signing and commercial
+CA signing, plus GPLv3/MIT/source-available commercial rights. Store-first and
+the exact licence remain proposals; accepted ADR-018 is unchanged. Exact legal
+publisher spelling, source/artwork rights, public contact and signer/identity
+remain pending. The decision packet, deployment plan and release checklist
+record these choices without closing runtime or final-package gates.
+
+Gate: documentation PASS for seven files, 173 local links, code fences and
+whitespace; builds, unit/UI/signing/deployment gates not rerun for documentation-only changes. Baseline
+`44a4ef6`; no manifest, artwork, licence, machine/trust, billing, remote setting,
+Store reservation or publication changed. M9 stays owner-deferred.
+
+### 2026-11-09 — M10 DEP-16/17/18: selected Store-first and source policy
+
+Owner explicitly selects Store-first under Univera LLC, reserves commercial
+redistribution while allowing free self-builds, and supplies support@univera.app.
+ADR-019 supersedes ADR-018's direct-first route; retained launch controls and
+blocking signed-runtime/deployment/privacy requirements remain. M10 and the
+deployment plan now describe reviewed Store uploads, actual signed delivery,
+controlled certification/publication and a source-release draft rather than
+first-release direct signing credentials/downloads.
+
+The Store preparation and source-available licence draft are ready for review.
+Exact Partner Center identity, copyright-owner authority, free community sharing,
+asset rights and final component/Store legal compatibility remain pending.
+Existing font-icon controls use Windows fonts without tracked font files;
+the eight JPEGs and generic package logos still need provenance/licensing proof.
+No asset, manifest or root licence was changed.
+
+Gate: documentation PASS for 14 files, 240 local links, code fences and
+whitespace; build/unit/UI, Store certification and installed-runtime gates not
+run for these doc changes.
+Baseline `44a4ef6`. No Store reservation/submission, machine/trust, signing,
+billing, remote visibility/protection or publication action ran. M9 stays
+owner-deferred.
+
+### 2026-11-19 — M10 DEP-15: hosted restore regression
+
+Read-only review of GitHub runs at `44a4ef6` confirmed the 16 November
+scheduled run failed `NU1004`: SDK `10.0.404` requests ILLink tasks `10.0.15`
+against locks for `10.0.14`. Local forced locked restore passed on `10.0.403`.
+The last full hosted pass was 9 November. No new package was produced or
+installed. The [deployment evidence register](plans/deployment-readiness.md#2026-11-19-hosted-restore-failure)
+records the skipped stages, protection status and remaining Store gates.
+
+### 2026-11-19 — M10: SDK servicing, production identity and English Store artwork
+
+The old locks reproduce `NU1004` on 10.0.404. The exact SDK pin, reviewed
+10.0.15 compiler/linker locks and unchanged supplier notice bodies resolve
+that mismatch. Debug and Release x64 builds passed without warnings; 707 unit
+and 206 script tests passed. The reserved family and version `1.0.0.0` are in
+package source `a567c88`. A protected-ref check runs before any tag candidate.
+The [English Store gallery](releases/store/en-US/README.md) contains five
+captioned screenshots and five separate promo designs. Scoped WinUI review
+found no new binding, accessibility or capability issue; no UI code changed.
+Customer installation, real ARM64 execution, effective GitHub enforcement,
+legal/vendor closure and Store publication remain pending.
+
+### 2026-11-19 — M10: passing PR, inspected Store family and listing handoff
+
+The hosted PR passed locked restore, build, 707 unit and 206 script tests.
+Both local unsigned MSIX files passed identity, structure, privacy and NuGet
+audit checks. The [register](plans/deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates)
+records their exact hashes and the limits of this evidence. Both packages
+contain the nine verified Microsoft template icons and their MIT attribution.
+The release guide separates the initial private Store audience from the
+higher-version flight used to test updates. The
+[English gallery](releases/store/en-US/README.md) now also contains original
+text-free hero artwork for the Store banner. The signed deployment and manual
+checks remain open; no release tag, submission or publication took place.
+
+**Branding follow-up:** Microsoft's desktop certification guide checks for
+default template images. The proposed icon family matches all nine existing
+file dimensions and ICO frame sizes; the light/dark/16–48 px preview is
+in ADR-021. It has not been applied to the packages or certified.
+
+### 2026-11-19 — M10: Fluent icon review and Store gallery
+
+The owner rejected the stacked-tile icon and decorative gradients. [Lift and
+Glide](adr/ADR-021-store-package-icon-proposal.md) now have transparent SVG
+masters, eight PNGs and a six-frame ICO each. Review covered light and dark
+and actual 16–48 px sizes. Both sets match the shipped asset dimensions.
+Neither has been selected or applied; the inspected MSIX hashes are unchanged.
+
+The [English listing](releases/store/en-US/README.md) now has five full-window
+WintodoTest captures on solid backgrounds, five separate promos and an original
+harbour illustration. The cover pairs two real My Day captures. The Microsoft
+To Do chooser uses a demo identity; the iCalendar export returned five tasks
+with recurrence. An earlier capture showed the success banner but did not
+recover the file from the requested directory; the repeat verified the actual
+export. All eleven images are RGB PNGs at 1920 × 1080. Visual and OCR review
+of the Store screenshots, caption lengths and ZIP contents passed. Store
+certification and the installed appearance of the selected icon remain pending.
+
+### 2026-11-19 — M10: Glide and final gallery framing
+
+The owner selected [Glide](adr/ADR-021-store-package-icon-proposal.md). Both
+local unsigned x64/ARM64 MSIX from clean source `aa59ff4` contain the eight
+approved PNGs, the six-frame ICO and the retained supplier notice. No other
+package inputs changed. [Exact hashes and handoff](plans/deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery):
+structure, identity, privacy, SBOM schema, archive signatures and paired input
+checks passed. Debug and Release x64 builds had zero warnings/errors; 707/707
+unit and 206/206 script tests passed.
+
+Six new English guest captures use the real Glide title-bar icon. The
+[gallery](releases/store/en-US/README.md) replaces the square OS edge and
+stacked outlines with one antialiased hairline. Promo type shares the window
+edges, with 60 px above the title and 29–30 px clear below the supporting
+line. A paper checklist with two ticks replaces the sailboat; its lower third
+is clear for the Store overlay. All four screenshot corners, 320 px previews,
+OCR, captions, the 14 ZIP entries and the five-task iCalendar export passed
+review. [Capture evidence and reproduction](releases/store/artwork/README.md).
+
+The old local Debug AppX folder belonged to a previous build. Its icon and
+identity failed preflight; the guest used the current SDK-generated recipe
+instead. This was a Debug capture, not a signed installation. Eight background
+rights, the remaining legal/native/protection work, Store certification and
+the owner's installed x64/native ARM64 tests are still open.
+
+### 2026-11-19 — M10: Partner Center draft populated
+
+[Submission 1](plans/deployment-store-first-preparation.md#partner-center-draft--19-november-2026) remains **In draft**. Partner Center shows both `1.0.0.0` architectures and both English listings as complete. The package form was reopened to verify that only Desktop is selected. The `en` import placed screenshots 4 and 5 out of order; the listing editor was used to set the import and iCalendar screenshots and their captions in the intended slots. The final server CSV contained all 27 prepared fields for each locale, and both reopened galleries matched the five source screenshots in order.
+
+The saved audience is private, with no automatic public date or selected tester group. The manual publication hold, Productivity category and English certification notes were read back. Pricing and Properties are incomplete; age ratings have not been started. No certification, publication, signed installation or runtime gate was run. The uploaded candidates are from `aa59ff4`, not a final reviewed `main` build.
+
+### 2026-11-20 — M10: free public launch settings and IARC preview
+
+The owner selected a free public launch without a tester group and approved the Store privacy text. [Submission 1](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) returned retail price `0`, Public audience, public discoverability and the full 4,556-character privacy text after reopening. Manual publication remains selected. The refreshed overview shows four sections Complete and Age ratings In Progress. The nine factual IARC answers were checked before preview; the service showed PEGI 3 and ESRB Everyone. The publisher-only Terms of Use and age-of-majority declaration was left unchecked. No app code or package was changed, submitted or published.
+
+### 2026-11-20 — M10: publisher saved the age ratings
+
+After the owner's Save, the refreshed Wintodo overview returned **Complete** for all five required sections and enabled **Submit for certification**. The saved ratings include PEGI 3 and ESRB E. No submission was sent; manual publication remains selected. The two local upload files still match the recorded candidate hashes. Each contains all eight background JPEGs with the same bytes as the source tree. [PR #5](https://github.com/Dvaderfun/wintodo/pull/5) is still a draft: `build-and-test` passed at `6c9f8c4`, and the release matrix was skipped. Remote `main` remains at `44a4ef6` with the old test identity/version; the uploaded production-family candidates are from `aa59ff4`.
+
+### 2026-11-20 — M10: first-party rights and PR #5 review
+
+[ADR-023](adr/ADR-023-first-party-rights-and-draft-artwork.md) records the
+individual rights holder, official publisher and the owner's draft-only artwork
+instruction. The root licence permits free, distinctly branded community
+builds and reserves official branding and monetization. The pre-merge x64 Debug
+build completed with zero warnings/errors; all four suites passed 707/707 with
+zero skips. This change does not alter any package input. No Store
+certification, publication or repository visibility change is part of this step.

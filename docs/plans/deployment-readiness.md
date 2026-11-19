@@ -4,6 +4,12 @@ Prepared: 2026-11-08. Audit baseline: `d8c2ac3`.
 
 Status: **IN PROGRESS — DEP-01, DEP-03, DEP-04, DEP-05, DEP-06, DEP-07, DEP-08, DEP-09 and DEP-11 automated acceptance passed. DEP-04 guest UI/live checks and DEP-14 final signed-package acceptance remain pending with the remaining release work.**
 
+**Release check, 2026-11-19: ready for review; NOT READY for publication.** Both [locally built unsigned Glide MSIX files](#2026-11-19--glide-packages-and-store-gallery) match the reserved Store identity. The [hosted restore fix](#2026-11-19--pr-ci-and-local-store-candidates) was verified on an earlier PR revision. The [English screenshots, captions and hero art](../releases/store/en-US/README.md) are ready for listing review. Effective ref protection, rights, native dependency evidence, Store certification and installed customer tests remain open.
+
+20 November: all five Store sections are complete. The [first-party licence](../../LICENSE.md)
+is active; the individual author approved keeping the eight backgrounds in the
+private draft, without claiming third-party rights. See [ADR-023](../adr/ADR-023-first-party-rights-and-draft-artwork.md).
+
 This plan turns the deployment-readiness audit into work packages for a safe
 GitHub release and GitHub Actions CI/CD. It covers data integrity, API security,
 credentials, personal-data exclusion, packaging, signing, documentation and
@@ -15,7 +21,11 @@ changes to accepted decisions, certificate trust or machine provisioning.
 The intended outcome is reviewed, production-signed, self-contained Native AOT
 MSIX packages for x64 and ARM64, produced from one clean source commit, with
 passing CI, verified privacy, reproducible provenance and tested installation,
-updates and removal. Store delivery is included if selected by the owner.
+updates and removal. The owner selects Store-first under Univera LLC in
+[ADR-019](../adr/ADR-019-store-first-source-available-release.md). Microsoft
+supplies the Store MSIX signature; direct production downloads and purchased
+Windows signing certificates are outside this first route. Public source uses
+the selected source-available/free-self-build policy after final rights review.
 
 Personal-data exclusion applies to repository content, public history,
 distributed packages, release metadata, screenshots and public diagnostics.
@@ -60,19 +70,25 @@ not a certification of release safety.
 
 Record decisions before dependent work. Keep unresolved choices visible.
 
-[The owner decision packet](deployment-owner-decisions.md) groups the seven
-remaining production choices, proposed options and the execution order. Its
-recommendations remain unapproved; operational approvals follow concrete
-preparation of their respective sessions and release stages.
+[The owner decision packet](deployment-owner-decisions.md) groups the recorded
+choices, remaining production values and execution order. Wintodo/current
+artwork, public source after review, a fresh production installation with
+data-preserving subsequent updates, and `v1.0.0` / `1.0.0.0` are selected.
+[ADR-019](../adr/ADR-019-store-first-source-available-release.md) records the
+owner's Store-first/Univera LLC selection, commercial redistribution restriction
+and support@univera.app contact. [Store preparation](deployment-store-first-preparation.md)
+and [the licence draft](wintodo-source-available-license-draft.md) identify exact
+Store identity and remaining rights/legal gaps. Operational approvals follow concrete preparation
+of their respective sessions and release stages.
 
 | Decision | Required record | Blocks |
 |---|---|---|
-| App name and branding | Final display name, asset ownership and branding direction | DEP-16, DEP-17 |
-| Distribution | Direct MSIX first selected (ADR-018); source visibility/protection remains pending | DEP-16, DEP-18, DEP-20 |
-| Package identity and publisher | Exact final identity, signing subject and preservation strategy for existing installations | DEP-16, DEP-18, DEP-19 |
-| Versioning | Valid tag syntax, four-part MSIX mapping, monotonic updates and Store requirements if applicable | DEP-16, DEP-18 |
-| Signing | Production provider, timestamp service, credential custody and renewal policy | DEP-18 |
-| Public attribution and licence | Approved publisher/repository attribution, first-party licence and organizational support contact | DEP-13, DEP-17 |
+| App name and branding | Wintodo and current artwork retained; asset source/redistribution rights pending | DEP-16, DEP-17 |
+| Distribution | Store-first selected (ADR-019); public source after review selected; reservation confirmed; submission/protection/visibility transition pending | DEP-16, DEP-18, DEP-20 |
+| Package identity and publisher | Univera LLC selected; fresh production installation acceptable; future updates preserve data; reserved package identity and publisher applied | DEP-16, DEP-18, DEP-19 |
+| Versioning | Stable `vMAJOR.MINOR.PATCH` → `MAJOR.MINOR.PATCH.0`, first `v1.0.0` / `1.0.0.0` applied on the new production family; monotonic installed-update test pending | DEP-16, DEP-18 |
+| Signing | Store-managed MSIX signing selected; actual certified/signed-package evidence and scoped submission authority pending; direct signing is a separate later route | DEP-18 |
+| Public attribution and licence | Free self-builds/commercial redistribution restriction selected; support@univera.app; copyright authority/exact source-available terms, Git attribution and asset rights pending | DEP-13, DEP-17 |
 | Production overrides | DEP-12 A selected: retain/document established controls; runtime acceptance pending | DEP-12 |
 | Deferred gates | Explicit M9 disposition and any other release limitations; no failed/skipped gate becomes PASS | DEP-19, DEP-20 |
 
@@ -112,12 +128,12 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-10 | Preserve untrusted attachment provenance | Security | DEP-07; API/policy review | Codex / dep10_provenance | IMPLEMENTED; host/AOT PASS; guest preflight FAIL, UI acceptance PENDING |
 | DEP-11 | Reject unsupported database schemas | Data safety | DEP-01 | Codex / dep11_schema_guard | COMPLETE; automated acceptance PASS |
 | DEP-12 | Resolve production test/storage overrides | Policy | Policy A selected | Codex / dep12_overrides + production_override_policy | A SELECTED/DOCUMENTED; 26 host launch-policy tests PASS; actual guest/Release/AOT/default/broker/final-package acceptance PENDING |
-| DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | ARCHIVE/FIXTURE/ASSET CHECKS PASS; attribution/licensing/final-source acceptance PENDING |
+| DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | Archive/fixture/asset checks PASS; the nine previous template icons were replaced with original Glide artwork. Background rights, public attribution and final-source acceptance PENDING. |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
-| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding + production_override_policy | Local checks and hosted maintenance `42537269138` at `c5610bb` PASS: 707 unit/204 script tests and both AOT/MSIX jobs; protection/native advisory acceptance PENDING |
-| DEP-16 | Finalize identity, version and package contents | Blocker | Identity/version decisions; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export + vendor_provenance_resolution | Hosted `c5610bb` unsigned x64/ARM64 pair, bound audit/handoff and qualified SBOM/schema/privacy PASS; production identity/version/payload/full closure and signed acceptance PENDING |
-| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Owner decisions | Codex / release_documentation + shipped_notices_review + notice_integration | Nine inherited texts INTEGRATED; fresh x64/ARM64 notice-package checks PASS; privacy/installation DRAFTS; final legal/owner/assets/live sign-in acceptance PENDING |
-| DEP-18 | Add protected signing and GitHub release stages | Blocker | DEP-13–17; signing decision | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next + release_ref_policy | Unsigned/signed-continuity bounded checks PASS; ref/version gate and 33 regressions PASS with Windows path correction, tag CI WIRED; release authorization false; actual hosted/protected/signing/release acceptance PENDING |
+| DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding + production_override_policy | 19 Nov hosted PR locked restore, build, 707 unit and 206 script tests PASS; [16 Nov failure retained](#2026-11-19-hosted-restore-failure). New main packaging run, ref protection and native advisory review PENDING. |
+| DEP-16 | Finalize identity, version and package contents | Blocker | Reserved Store identity; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export + vendor_provenance_resolution | Both local [`aa59ff4` Glide packages](#2026-11-19--glide-packages-and-store-gallery) PASS identity, version, icon/notice inclusion, structure, audit and privacy checks; final payload/vendor review and Store-signed acceptance PENDING. |
+| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Rights/licence finalization | Codex / release_documentation + shipped_notices_review + notice_integration + owner_decision_followup | Supplier texts retained; original Glide icons, five English screenshots and captions, checklist hero and five promotional renders prepared. Copyright/free-sharing terms, shipped artwork rights, final privacy URL and live work/school sign-in PENDING. |
+| DEP-18 | Add protected Store submission and release stages | Blocker | DEP-13–17; ADR-019 | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next + release_ref_policy | Read-only tag job rejects unprotected tags/main and unavailable API; Store-managed signing selected; direct production signing deferred; release authorization false; actual protected Store upload/certification/signed-result/release acceptance PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory + installed_package_smoke | Guest-only installed-smoke runner PREPARED; 12 mocked/static checks PASS; actual guest/API/runtime/visual, signed install/update/uninstall and final deployment acceptance PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
 
@@ -127,8 +143,10 @@ Execution sequence:
 2. Fix data/API/privacy defects and add meaningful regression coverage.
    Independent work packages may proceed concurrently with clear ownership.
 3. Harden CI, sanitize outputs and complete identity/documentation/assets.
-4. Produce and sign one candidate, then test those exact signed packages.
-5. Publish the approved verified files and establish ongoing release maintenance.
+4. Produce reviewed Store-upload candidates, obtain the approved staged/certified
+   signed results, then test those actual Store packages.
+5. Publish the approved Store release and reviewed source metadata, then
+   establish ongoing release maintenance.
 
 Parallel execution started on 2026-11-08 with three bounded streams: DEP-01
 fixture/checkout repair, DEP-02 toolchain verification, and the independent
@@ -675,7 +693,7 @@ plan limitation; no remote settings or visibility changed.
 Targets: `Package.appxmanifest`, app resources/assets, publish profiles,
 packaging scripts, inspection scripts and package tests.
 
-- [ ] Apply the approved name/identity/publisher and data-preservation strategy.
+- [x] Apply the reserved name/identity/publisher on a separate first-production family.
       Do not uninstall the owner's existing app to test an identity transition.
 - [ ] Validate strict tag/version mapping, MSIX component constraints and
       monotonic updates, including earlier test-package versions when identity
@@ -717,10 +735,14 @@ app assets/resources and Microsoft To Do deployment documentation.
 - [ ] Add the selected first-party licence and verify third-party notices
       against the actual shipped transitive/native closure. Check image/icon
       provenance; preserve required attribution and permitted redistribution.
-- [ ] Replace approved placeholder icons at required scales/target sizes;
-      validate manifest references and final title/tile/splash appearance.
-- [ ] Produce final screenshots and listing copy using synthetic tasks/accounts.
-      Add an organizational support/security contact and reporting instructions.
+- [x] Replace the [previous template artwork](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons)
+      with the nine approved [Glide files](../adr/ADR-021-store-package-icon-proposal.md).
+      Both unsigned MSIX contain the exact reviewed icons and the retained supplier notices.
+- [ ] Validate title/tile/splash appearance on the installed Store builds and
+      establish rights for all eight in-app background JPEGs.
+- [x] Prepare English screenshots and captions with synthetic tasks, a text-free
+      Store hero, listing and certification copy, and a support/security contact.
+- [ ] Compare the listing assets with the certified private build before public availability.
 - [ ] Publish an accurate privacy policy covering local tasks/account metadata,
       PasswordVault, optional CalDAV, one-way Graph import, attachments,
       diagnostics, deletion/uninstall and the verified telemetry behavior.
@@ -751,41 +773,53 @@ layout equivalence. This closes bounded supplier-text inclusion, while selected
 first-party licensing, image rights and vendor distribution/end-user conditions
 remain pending; it does not mark DEP-17 complete.
 
-### DEP-18 — Add protected signing and GitHub release stages
+### DEP-18 — Add protected Store submission and GitHub release stages
 
 Targets: GitHub workflow files, signing/release scripts and repository settings.
 
-The intended stages are:
+The selected first route is Store MSIX under ADR-019. Its stages are:
 
 | Stage | Trigger/input | Authority | Output |
 |---|---|---|---|
 | Validate | PR/main source | Read-only, no production credentials | Build/tests, redacted security/dependency results |
 | Candidate | Valid protected release tag on reviewed main ancestry | No signing secrets; narrowly scoped provenance permission if used | Inspected unsigned x64/ARM64 packages, sanitized manifest/SBOM |
-| Sign and verify | Approved candidate IDs/hashes | Protected environment; short-lived signer identity or protected signing secrets | Timestamped production-signed packages and final verification |
-| Draft release | Both verified architectures and required gates | `contents: write` only for the release job | Draft with signed assets, final checksums and release notes |
-| Publish | Verified draft plus explicit owner authorization | Approved release operator/job | Public release or selected distribution submission |
+| Store submission/certification | Approved upload candidates, exact reserved identity and listing | Scoped protected Partner Center session/job; no purchased CA signer | Controlled staged/certified Store result with uploaded/delivered provenance and signed-package verification |
+| Draft release | Verified delivered architectures and required gates | `contents: write` only for GitHub draft job; scoped Store authority separately | Reviewed Store publication state and source-release draft with approved metadata/notes; no direct production binaries |
+| Publish | Verified Store/source drafts plus explicit owner authorization | Approved release operator/job | Selected Store release and reviewed public source/release metadata |
 
 - [ ] Validate event, tag syntax, source ancestry, version and candidate hashes;
       do not interpolate untrusted ref/body values directly into shell scripts.
 - [ ] Verify environment protection works with the repository's GitHub plan.
       Define an equivalent authorized gate if unavailable; never silently weaken it.
-- [ ] Prefer supported short-lived signing authority. If PFX is selected, use
+- [ ] For the selected Store route, bind exact upload hashes/source to the
+      certification/submission and delivered signed package identity/version/
+      content. Test the actual signed results before release. Keep Store
+      publication controlled and permissions limited to the approved stage.
+- [ ] For a separately approved future direct route, prefer supported
+      short-lived signing authority. If PFX is selected, use
       protected secrets, ephemeral files, restrictive access and cleanup on every
       outcome. Never upload keys/passwords or trust a dev certificate in CI.
-- [ ] Match certificate subject and manifest publisher; timestamp direct
+- [ ] For that future direct route, match certificate subject and manifest
+      publisher; timestamp direct
       signatures with the approved service and verify signature/trust chains.
 - [ ] Limit credential/publication permissions by job and trusted trigger;
       validate downloaded artifact provenance and protect cancellation/retries.
-- [ ] Attach only approved signed MSIX/bundles, final SHA-256 checksums, sanitized
-      provenance/SBOM and reviewed release notes. No wholesale `publish/` upload.
+- [ ] For the first Store/source release, attach only reviewed source-release
+      metadata, terms, notes and sanitized provenance/SBOM as applicable. Keep
+      upload packages private unless separately approved. A future direct route
+      may attach approved signed MSIX/bundles and their final SHA-256 values.
+      No wholesale `publish/` upload.
 - [ ] Support safe reruns without overwriting a published version with different
       code. Compute hashes after signing; verify both architectures before release.
-- [ ] For Store delivery, implement the SDK/Partner Center submission artifact
+- [ ] Implement the selected Store SDK/Partner Center submission artifact
       and validation path separately; WinApp packaging is not Store submission.
 
-Acceptance: a complete authorized dry run produces a verified draft and correct
-assets, and negative tests demonstrate that PRs, malformed tags, missing gates
-and mismatched artifacts cannot sign or publish.
+Acceptance: a complete authorized Store preparation/certification path produces
+the reviewed publication state and source-release draft, with verified signed
+Store results. Negative checks demonstrate that PRs, malformed tags, missing
+gates and mismatched artifacts cannot submit or publish. Direct CA/PFX signing
+rows apply only if that later route is separately selected; no blocking Store,
+provenance, signed-runtime or deployment requirement is removed.
 
 [The unsigned candidate handoff checker](dep18-candidate-handoff.md) now
 validates exactly one x64/ARM64 pair and ten hash-pinned inputs, including
@@ -804,7 +838,9 @@ must be regenerated; local report agreement is not authenticated build execution
 
 ### DEP-19 — Verify final deployment and functional gates
 
-Use the exact signed candidates; record commit, final SHA-256, architecture,
+Use the actual Store-delivered signed candidates; record reviewed upload and
+delivered provenance/content, submission/certification IDs, commit, final
+SHA-256, architecture,
 OS build, dependency/trust baseline, commands, results and redacted evidence.
 
 - [ ] Prepare a separately identified clean test baseline with Developer Mode
@@ -844,10 +880,13 @@ target. Read-only inventory PASS does not close any final runtime gate.
 
 ### DEP-20 — Publish approved assets and maintain releases
 
-- [ ] Present the complete reviewed draft, final hashes and gate results to the
+- [ ] Present the reviewed Store publication state and GitHub source-release
+      draft, exact package/provenance evidence and gate results to the
       owner. Obtain publication/submission authorization after preparation.
-- [ ] Publish those exact verified files; confirm download hashes/signatures
-      and installation instructions against the public/customer-facing artifacts.
+- [ ] Publish the reviewed Store release and source metadata; verify customer
+      listing/publisher/version, Store installation/update/signatures and public
+      source/download metadata against the approved results. Direct production
+      files are outside this first route.
 - [ ] Define withdrawal/replacement and hotfix procedures. Prefer a new higher
       signed version; never replace published bytes under an existing version.
 - [ ] Preserve last-known-good artifacts and migration backups. An older
@@ -857,7 +896,9 @@ target. Read-only inventory PASS does not close any final runtime gate.
 - [ ] Publish limitations and security/support reporting instructions; record
       final release evidence in PROGRESS and mark only completed rows done.
 
-Acceptance: the approved release is downloadable with matching signatures/hashes,
+Acceptance: the approved Store release is obtainable with the verified identity,
+version/signatures and matched source/provenance, public source rights/metadata
+are correct,
 and recovery, maintenance and signing responsibilities have named owners.
 
 ## 6. Verification commands and evidence register
@@ -1593,6 +1634,173 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
   Source commits were pushed only to existing private main; no repository visibility,
   tag/protection/signing setting, publication, guest, certificate trust or UI changed.
 
+### 2026-11-09 — Owner production choices and signing/licensing research
+
+- **DECISIONS RECORDED:** retain Wintodo/current artwork; public source after
+  privacy/attribution/licensing review; fresh first production installation;
+  future updates preserve user data; stable tag mapping with first release
+  `v1.0.0` / `1.0.0.0` on a new production family. The test family `1.0.0.5`
+  remains separate; no manifest, package or installed profile changed.
+- **RESEARCH PREPARED:** [the signing/licensing recommendation](deployment-signing-licensing-recommendation.md)
+  uses current Microsoft and licence-author sources. Store-managed MSIX signing,
+  Artifact Signing and commercial CA options are compared. GPLv3, MIT and
+  source-available terms distinguish commercial fork rights while supporting
+  the owner's freemium/free-personal-build objective.
+- **DOCUMENTATION — PASS:** seven affected documents, 173 relative local links,
+  balanced code fences and whitespace checks pass. No build/unit/UI gate was
+  rerun for these documentation-only changes.
+- **LIMITS — PENDING:** exact legal publisher spelling/identity, first-party
+  ownership/licence/contact, retained artwork rights and selected signer remain
+  unresolved. Store-first is a proposal requiring a new acknowledged ADR;
+  accepted direct-MSIX-first ADR-018 is unchanged. No licence, billing, Store
+  reservation, remote protection/visibility, signing, trust, guest/UI or
+  publication action ran. All existing final-package gates and deferred M9
+  retain their dispositions. Baseline source: `44a4ef6`.
+
+### 2026-11-09 — Store-first acknowledgement, publisher/contact and source policy
+
+- **DECISIONS RECORDED:** explicit Store-first acknowledgement, Univera LLC as
+  official publisher, support@univera.app contact and reserved commercial
+  redistribution with free self-builds. ADR-019 supersedes ADR-018's first
+  route only; DEP-12 A and all blocking release/runtime/privacy gates remain.
+- **PREPARATION COMPLETE:** [Store-first handoff](deployment-store-first-preparation.md)
+  names the exact Partner Center identity fields, actual signed delivery/update
+  evidence and staged publication prerequisites. [The source-available draft](wintodo-source-available-license-draft.md)
+  awaits copyright authority and free-sharing scope; no root licence is applied.
+  The privacy/install drafts and M10/selected-route gates now match Store-first.
+- **DOCUMENTATION — PASS:** 14 changed/new Markdown files, 240 relative local
+  links, code fences and whitespace checks pass. No build/unit/UI or Store
+  acceptance gate was run for these documentation changes.
+- **ARTWORK — PENDING:** existing controls render Windows icon glyphs, with no
+  tracked font files. The reviewed package logos remain scaffold placeholders;
+  eight JPEG sources/licences are unknown. Microsoft's font-use guidance does
+  not establish those assets' redistribution rights. No artwork changed.
+- **LIMITS:** exact reserved Store identity, legal/asset/attribution closure,
+  actual protected submission/certification, final signed packages/customer
+  tests and publication remain pending. No reservation/submission, purchase,
+  signing, visibility/protection, guest/trust/UI or publication ran. Baseline
+  `44a4ef6`; M9 remains owner-deferred.
+
+### 2026-11-19 hosted restore failure
+
+This records the pre-fix state at `44a4ef6`. See the [current candidate checks](#2026-11-19--glide-packages-and-store-gallery).
+
+- **DEP-15 — hosted FAIL.** The [16 November scheduled run](https://github.com/Dvaderfun/wintodo/actions/runs/43878071848)
+  on `windows-2025` at `44a4ef6` installed SDK `10.0.404`. All 204 script tests
+  and the source scan passed. Locked restore then failed with `NU1004`:
+  the SDK requested `Microsoft.NET.ILLink.Tasks` `10.0.15`; the reviewed locks
+  specify `10.0.14`. Dependency audit, build, unit tests and release packaging
+  were skipped. The test summary export also failed after unit tests were skipped.
+- **Comparison — PASS in the earlier environment.** The [9 November scheduled run](https://github.com/Dvaderfun/wintodo/actions/runs/42629918468)
+  at the same commit passed 707 unit tests, 204 script tests and both unsigned
+  x64/ARM64 AOT/MSIX jobs with SDK `10.0.403`. A forced local x64 solution
+  restore with locked mode, full NuGet audit settings and warnings as errors
+  passed on `10.0.403` on 19 November. No new candidate was produced.
+- **Next engineering gate:** reconcile the serviced SDK and reviewed lockfiles
+  for all supported restore shapes, retain locked mode and auditing, then
+  obtain a passing hosted build, unit tests and both architecture jobs.
+  GitHub reports private `main` unprotected, rulesets unavailable on its current
+  plan (HTTP 403), no `v*` tags and no published release. A protected submission
+  path still needs to be established before any production tag or upload.
+- **Store release — PENDING.** The manifest still uses the test publisher and
+  `1.0.0.5`. The owner can supply the [reserved identity and rights evidence](deployment-store-first-preparation.md#owner-supplied-identity-handoff)
+  while CI is repaired. Review and commit the Store-first decisions; align the
+  M10 checklist's direct-signing/attachment wording with ADR-019. Final native
+  dependency evidence, certification and tests of the actual Store-signed
+  install, update and uninstall on x64 and native ARM64 remain open.
+
+### 2026-11-19 — Serviced SDK, reserved Store family and English listing
+
+- **DEP-15 — local PASS at the serviced toolchain.** Reproduced the old locks'
+  `NU1004` on SDK 10.0.404. Regenerated all 20 locks in isolation: only ILLink
+  and Native AOT compiler packages changed from 10.0.14 to 10.0.15. Both
+  architectures' .NET licence and notice bodies still match the original
+  packages byte for byte. Debug/Release x64 builds had zero warnings/errors;
+  707/707 unit tests and 206/206 Python script tests passed. Both CI jobs now
+  request the exact SDK; scheduled CI warns about servicing updates.
+- **DEP-16/18 — identity applied; protection checked.** Package source
+  `a567c88` contains the Partner Center identity for Store ID `9PF4DX2BSF0X`,
+  version `1.0.0.0`, and a separate toast COM class for the production family.
+  The tag job rejects an unprotected ref or unavailable main protection evidence.
+  Positive and negative guard tests passed; GitHub returned HTTP 403 for private
+  rulesets. No production tag, submission, visibility change or signing took place.
+- **DEP-17 — gallery prepared.** [Five desktop screenshots with English captions
+  and five promotional renders](../releases/store/en-US/README.md) use reviewed
+  synthetic test captures. All ten are 1920 × 1080 RGB PNGs with no ancillary
+  metadata. The Store images use no app background JPEGs. Rights for the artwork
+  still shipped in the app and final legal text remain separate obligations.
+- **DEP-19/20 — PENDING.** The owner will perform the final Store-signed install,
+  update and uninstall checks. The [controlled handoff](deployment-store-first-preparation.md#controlled-handoff)
+  describes protective settings, approved uploads and evidence to retain. M9
+  remains deferred.
+
+### 2026-11-19 — PR CI and local Store candidates
+
+[PR #5](https://github.com/Dvaderfun/wintodo/pull/5) passed first at
+[`9d61dd5`](https://github.com/Dvaderfun/wintodo/actions/runs/44590559062) and again
+on the [exact package source `c2c8919`](https://github.com/Dvaderfun/wintodo/actions/runs/44593397992) on `windows-2025`:
+locked restore with SDK `10.0.404`, nine-project NuGet audit, source/history scans,
+x64 Debug build with zero warnings/errors, 707 unit tests (zero skipped) and
+206 script tests. The release matrix was **skipped by design on the PR**.
+After review and merge, run the existing manual or scheduled **main** workflow
+to produce the hosted x64/ARM64 candidates without creating a release tag.
+
+Both local Native AOT packages below were built at `c2c8919985517b6349fb9972078cca3b3e36640a`
+with no tracked changes. Both include the [nine matching template icons](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons)
+and the updated notice (SHA-256 `cd610e2ea7a190e41f4ea5937633d5a2c3bdc130c74f4374d2b9d7291301a9f1`).
+Compared with the earlier `a567c88` packages, only the notice, the rebuilt
+native executable and the MSIX block map changed in either payload.
+The packaged manifests declare the reserved Name and Publisher, display
+`Univera LLC`, derive PFN `47371DermenzhyStudio.Wintodo_rg7xtn0gdgdnp`
+and carry version `1.0.0.0`. Neither MSIX contains a signature.
+
+| Architecture | Unsigned MSIX SHA-256 | Files / native binaries | Privacy scan | NuGet advisories |
+|---|---|---:|---|---:|
+| x64 | `29be8f5e2983bc2846ffdb1fe35d6dda312106d3e32f0d8906c61efe26475597` | 321 / 54 | 650 files, 0 findings | 0 |
+| ARM64 | `13f34367896d9eaf825fdd40f7e19a0e912a8d05c7fbdccee32065973444ea39` | 317 / 53 | 642 files, 0 findings | 0 |
+
+Both package inspections and CycloneDX 1.6 schema checks passed. The 45
+original NuGet archives have verified repository signatures and matching hashes.
+On the earlier pair an initial descriptor used the wrong ARM64 label and was
+rejected; the corrected descriptor passed. That handoff matched both template
+packages to their reports: `PASS`, `release_authorized: false`. The pair and its private
+evidence are archived under
+`artifacts/store-template-c2c8919/`. A clean NuGet audit does not settle the
+[remaining native component and licence questions](dep02-vendor-provenance-resolution.md#remaining-actions-and-evidence).
+
+### 2026-11-19 — Glide packages and Store gallery
+
+The [accepted Glide mark](../adr/ADR-021-store-package-icon-proposal.md) is in both
+unsigned self-contained Native AOT packages, built from clean source
+`aa59ff4e4a9a9b8d8f16b65186865721b9cbaade` with SDK 10.0.404. Each package
+contains the eight approved PNGs and six-frame ICO, byte for byte, and the
+remaining supplier notice (SHA-256
+`9bee8e92a0fdb6abe95901774c09ad2ec95b74e73430a8ba55119c71b1c92886`).
+The only payload changes from the preceding pair are those ten files, the
+rebuilt native executable and the block map. The manifest in each architecture
+is unchanged: reserved PFN `47371DermenzhyStudio.Wintodo_rg7xtn0gdgdnp`,
+publisher display name Univera LLC, version `1.0.0.0`.
+
+| Architecture | Unsigned MSIX SHA-256 | Files / native binaries | Privacy scan | NuGet advisories |
+|---|---|---:|---|---:|
+| x64 | `fe330ffb2edd7fe1dff454c57bf10bb016d5f72df1fc5be8afbd5541a002043f` | 321 / 54 | 650 files, 0 findings | 0 |
+| ARM64 | `ed7eb5d66828b91d5990f1e7f45d2042d1c227c03def8d56e2e622af391e0906` | 317 / 53 | 642 files, 0 findings | 0 |
+
+Package structure, CycloneDX 1.6 schema, original signatures/hashes for 45
+NuGet archives and the paired report check passed. Private outputs:
+`artifacts/store-1.0.0-rc/{x64,arm64}/`, `Wintodo-1.0.0-evidence.zip` and
+`Wintodo-Store-en-US.zip`. Handoff: `PASS`, `release_authorized: false`.
+The [English listing](../releases/store/en-US/README.md) has five plain
+desktop screenshots, five promos and a text-free checklist illustration.
+
+20 November follow-up: the owner chose a free public launch without a tester
+group. The [Store draft](deployment-store-first-preparation.md#partner-center-draft--20-november-2026)
+contains the approved privacy text and the publisher's saved IARC ratings. All
+five required portal sections are complete. Effective main/tag protection, native vendor evidence, the eight
+background rights, licence terms and final artifact review remain open.
+The [owner's Store-signed install/update/uninstall checks](../guides/release-checklist.md)
+on x64 and native ARM64 and the hosted main packaging run remain open.
+
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and
 limitations. Keep sensitive/raw evidence private and public records sanitized.
@@ -1601,8 +1809,9 @@ Update this register and PROGRESS after execution, not from intention alone.
 ## 7. Completion condition
 
 Release preparation is complete when DEP-01 through DEP-19 have their required
-acceptance evidence, no unresolved release blocker remains, the owner's decisions
-are recorded, and a verified draft contains the exact approved signed packages.
+selected-route acceptance evidence, no unresolved release blocker remains, the
+owner's decisions are recorded, and the reviewed Store publication/source draft
+is bound to the actual approved Store-signed packages and tested deployment.
 Publication is complete only after DEP-20's authorized delivery and verification.
 Deferred performance or unsupported environments must remain honestly described.
 
