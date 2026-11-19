@@ -159,12 +159,12 @@ not evidence for the new Store family.
 - [x] Prepare [English screenshots, captions, hero art, listing copy and certification notes](../releases/store/en-US/README.md).
 - [x] Save the approved privacy text in Partner Center. Confirm Free, public audience and Store discoverability for the first launch.
 - [x] Verify the publisher's saved IARC ratings and the manual publication hold. All five required sections are Complete; the draft has not been submitted.
-- [ ] Compare the gallery with the final UI before submitting the reviewed packages.
+- [x] Compare the gallery with the reviewed UI: no app source, artwork or resource changed between the approved gallery build and merged `98476b1`.
 - [x] Build and inspect local unsigned self-contained Native AOT x64 and ARM64
       packages: manifests, executable architecture, assets, extensions and
       the single `runFullTrust` capability. [Source and SHA-256 for each target](../plans/deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery).
-- [ ] After merging the reviewed source, run the hosted main packaging workflow
-      and retain its exact upload hashes and reports.
+- [x] Merge reviewed source and dispatch the [hosted main packaging workflow](https://github.com/Dvaderfun/wintodo/actions/runs/44630077895).
+      See the [handoff record](../plans/deployment-store-first-preparation.md#reviewed-main-packages--20-november-2026) for the per-architecture reports, hash comparison and portal status.
 - [ ] Verify effective GitHub protection and the tag/source/hash handoff. Submit
       the reviewed uploads through the controlled Partner Center session and
       verify the resulting Microsoft signatures. Keep GitHub CI read-only.

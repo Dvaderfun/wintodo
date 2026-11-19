@@ -1,5 +1,11 @@
 # Wintodo signing, distribution and licensing recommendation
 
+**20 November decision:** the individual author is the rights holder, Univera
+LLC is the authorized publisher, and the [source licence](../../LICENSE.md)
+is active. [ADR-023](../adr/ADR-023-first-party-rights-and-draft-artwork.md)
+records the artwork exception for the private draft. The research below
+describes the options as they stood on 9 November.
+
 Prepared: 2026-11-09 against source `44a4ef6`.
 Updated after the owner's follow-up decisions: **Store-first under Univera LLC,
 Store-managed MSIX signing and source-available commercial-redistribution
