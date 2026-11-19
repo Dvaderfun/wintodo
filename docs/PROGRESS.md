@@ -19,7 +19,7 @@ and version `1.0.0.0` are in both unsigned packages. Each contains the nine
 approved [Glide icon files](adr/ADR-021-store-package-icon-proposal.md).
 The [English Store gallery](releases/store/en-US/README.md) pairs complete
 Windows captures with separate promos and a text-free checklist illustration.
-In the [Partner Center draft](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026), **Pricing and availability, Properties, Packages and Store listings** are complete. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is saved. IARC is **In Progress**: the completed questionnaire previews PEGI 3 / ESRB Everyone; the publisher's personal declaration and Save remain. Rights for eight background JPEGs, first-party licence text, native dependency review, ref protection, final reviewed packages, certification and customer tests remain open.
+All five required sections in the [Partner Center draft](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) are **Complete**, including Age ratings (PEGI 3 / ESRB Everyone). **Submit for certification** is enabled; the submission is still **In draft**. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is saved. Rights for eight background JPEGs, first-party licence text, native dependency review, ref protection, final reviewed packages, certification and customer tests remain open.
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -28,7 +28,7 @@ In the [Partner Center draft](plans/deployment-store-first-preparation.md#partne
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | IN PROGRESS | Public/free draft has four complete sections; personal IARC acceptance pending. Rights, protection, native dependency review, final artifacts, certification and installed x64/native ARM64 checks remain open. |
+| M10 Packaging and release | IN PROGRESS | All five Store draft sections complete; not submitted. Rights, protection, native dependency review, final artifacts, certification and installed x64/native ARM64 checks remain open. |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
@@ -4771,3 +4771,7 @@ The saved audience is private, with no automatic public date or selected tester 
 ### 2026-11-20 — M10: free public launch settings and IARC preview
 
 The owner selected a free public launch without a tester group and approved the Store privacy text. [Submission 1](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) returned retail price `0`, Public audience, public discoverability and the full 4,556-character privacy text after reopening. Manual publication remains selected. The refreshed overview shows four sections Complete and Age ratings In Progress. The nine factual IARC answers were checked before preview; the service showed PEGI 3 and ESRB Everyone. The publisher-only Terms of Use and age-of-majority declaration was left unchecked. No app code or package was changed, submitted or published.
+
+### 2026-11-20 — M10: publisher saved the age ratings
+
+After the owner's Save, the refreshed Wintodo overview returned **Complete** for all five required sections and enabled **Submit for certification**. The saved ratings include PEGI 3 and ESRB E. No submission was sent; manual publication remains selected. The two local upload files still match the recorded candidate hashes. Each contains all eight background JPEGs with the same bytes as the source tree. [PR #5](https://github.com/Dvaderfun/wintodo/pull/5) is still a draft: `build-and-test` passed at `6c9f8c4`, and the release matrix was skipped. Remote `main` remains at `44a4ef6` with the old test identity/version; the uploaded production-family candidates are from `aa59ff4`.

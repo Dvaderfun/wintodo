@@ -1,7 +1,7 @@
 # Store-first release preparation
 
 Prepared: 2026-11-09 against source `44a4ef6` plus recorded owner decisions.
-Updated 2026-11-20: **The [Partner Center draft](#partner-center-draft--20-november-2026) is set to Free, public and discoverable.** All required sections except the publisher's final IARC acceptance show Complete. Publication is manual; nothing has been submitted for certification.
+Updated 2026-11-20: **All five required sections of the [Partner Center draft](#partner-center-draft--20-november-2026) are Complete.** The listing is configured as Free, public and discoverable. **Submit for certification** is enabled; nothing has been submitted and publication remains manual.
 Authority: [ADR-019](../adr/ADR-019-store-first-source-available-release.md) and the owner's [public launch decision](../adr/ADR-022-public-free-store-launch.md).
 
 ## Selected inputs
@@ -93,7 +93,7 @@ The read-only CI workflow has no Partner Center credential or upload step.
 For the first submission of Store ID `9PF4DX2BSF0X`:
 
 1. Keep **Public audience**, **available and discoverable**, retail price `0`, and manual publication. There is no first-release tester group.
-2. Compare the final reviewed source, upload hashes, manifest and dependency reports. Check the [English listing and certification notes](../releases/store/en-US/README.md), saved [privacy policy](../releases/PRIVACY.md), and age ratings. The publisher completes the personal IARC declaration. The owner separately submits the reviewed app for certification and decides when to publish.
+2. Compare the final reviewed source, upload hashes, manifest and dependency reports. Check the [English listing and certification notes](../releases/store/en-US/README.md), saved [privacy policy](../releases/PRIVACY.md), and saved age ratings against those packages. The owner separately submits the reviewed app for certification and decides when to publish.
 3. When the certified packages are available, record their versions, PFN, signatures and hashes on clean x64 and native ARM64 systems. Test a higher-version update against this baseline. A public draft or a certified submission held for publication cannot by itself prove installation from the customer Store.
 
 ## Partner Center draft — 20 November 2026
@@ -105,10 +105,12 @@ For the first submission of Store ID `9PF4DX2BSF0X`:
 | Pricing and availability — **Complete** | Retail price `0`, **Public audience**, **available and discoverable in the Microsoft Store**. |
 | Properties — **Complete** | Productivity. The portal's **Provide privacy policy text** option contains the [approved English policy](../releases/PRIVACY.md). All 4,556 characters matched after reopening. No external policy URL is needed for this draft. |
 | Packages and Store listings — **Complete** | Desktop x64/ARM64 `1.0.0.0` candidates and both verified English galleries; see the [package and listing readbacks](#partner-center-draft--19-november-2026). |
-| Age ratings — **In Progress** | All Other App Types; nine factual responses completed, with no physical distribution or separate board ratings. Preview: **PEGI 3**, **ESRB E (Everyone)** and **IARC 3**. The publisher must personally accept the IARC Terms of Use and confirm they are of the age of majority, then select **Save**. The preview alone is not a final rating. |
+| Age ratings — **Complete** | The publisher accepted and saved the IARC declaration. The reloaded submission overview confirms completion; the saved ratings include **PEGI 3** and **ESRB E (Everyone)**. All Other App Types; nine factual responses, no physical distribution or separate board ratings. |
 | Submission options | Reopened after changing the audience and price: **Don't publish this submission until I select Publish now** is on; automatic publication is off. |
 
 This version has no native chat, published user feed, promoted content catalogue or in-app purchases. Imported tasks, private attachments and sync through the user's own provider are distinct from those features. Revisit the relevant questionnaire answers and privacy text if a later version adds paid digital goods or changes these data flows.
+
+The enabled **Submit for certification** button establishes that Partner Center can accept this draft for review. It does not establish redistribution rights or a final `main` build. Both local upload hashes still match the original handoff, and both MSIX contain the exact eight JPEGs listed below. Remote `main` (`44a4ef6`) still has the test-family manifest at `1.0.0.5`. The production identity/version is in the `aa59ff4` candidates on [PR #5](https://github.com/Dvaderfun/wintodo/pull/5); changes from there to the PR head (`6c9f8c4`) are confined to documentation and Store artwork. The PR check passed, but release packaging was skipped on the PR.
 
 ## Partner Center draft — 19 November 2026
 
