@@ -29,7 +29,7 @@ owner's acknowledgement first (`AGENTS.md`, Working style).
 | [018](ADR-018-direct-msix-first-release.md) | Direct MSIX first release with preserved production launch controls | distribution superseded by ADR-019; launch policy retained |
 | [019](ADR-019-store-first-source-available-release.md) | Store-first under Univera LLC; free self-builds with commercial redistribution reserved | accepted |
 | [020](ADR-020-pin-sdk-with-lockfiles.md) | Service the exact .NET SDK and its reviewed lockfiles together | accepted |
-| [021](ADR-021-store-package-icon-proposal.md) | Replace Store package template icons with original Wintodo artwork | proposed |
+| [021](ADR-021-store-package-icon-proposal.md) | Use Glide for the Wintodo package icons | accepted |
 
 ADR-001…007 were written inline in `PLAN.md` §2 and moved here verbatim by ADR-010.
 
