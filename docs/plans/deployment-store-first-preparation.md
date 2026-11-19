@@ -1,9 +1,8 @@
 # Store-first release preparation
 
 Prepared: 2026-11-09 against source `44a4ef6` plus recorded owner decisions.
-Updated 2026-11-19: **Reserved identity and approved Glide icons verified in both unsigned MSIX files.** The English
-[gallery and listing copy](../releases/store/en-US/README.md) are prepared.
-Asset rights, legal text, controlled submission and customer tests remain open.
+Updated 2026-11-19: **Both package candidates and the English Store listings are saved in the [Partner Center draft](#partner-center-draft--19-november-2026).**
+The first submission is private, has no tester group yet, and is held for manual publication. It has not been sent for certification.
 Authority: [ADR-019](../adr/ADR-019-store-first-source-available-release.md).
 
 ## Selected inputs
@@ -113,6 +112,21 @@ For the first submission of Store ID `9PF4DX2BSF0X`:
    Move the listing to a public audience only after the remaining gates
    pass and the public submission is approved.
 
+## Partner Center draft — 19 November 2026
+
+[Wintodo in Partner Center](https://partner.microsoft.com/en-us/dashboard/products/9PF4DX2BSF0X/overview) shows **Submission 1** (`1152921505702452815`) **In draft**. The following settings were read back after saving:
+
+| Portal section | Saved state | Needed before certification |
+|---|---|---|
+| Packages — **Complete** | `Wintodo-x64.msix` and `Wintodo-arm64.msix`, both `1.0.0.0`. Desktop is on; Xbox, Mobile, Team, Mixed Reality and automatic future device families are off. The upload showed four Xbox compatibility warnings for the startup-task and toast-activation extensions. | These are the [unsigned candidates from `aa59ff4`](deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery). Compare the upload with the final reviewed `main` artifacts and replace it if the bytes differ. |
+| Store listings — **Complete** | `en-US` and `en` each have the [approved English copy](../releases/store/en-US/README.md), five desktop screenshots with captions, the Glide logo and checklist hero. The server export matched 20 text/settings fields and contained seven distinct hosted images per locale. The five thumbnails were checked against the originals in both reopened editors. | Recheck artwork against the final build if its UI changes. |
+| Pricing and availability — **Incomplete** | **Private audience**, no tester group selected; **Make this product public on** is off. No valid base price is configured. | Set the owner's Store price and choose the named tester group. Until a group is selected, no customers can acquire the private release. |
+| Properties — **Incomplete** | Primary category **Productivity**. The declared capabilities require a privacy policy; the URL field is empty. | Supply the approved policy. The [local privacy text](../releases/PRIVACY.md) is still a review draft. |
+| Age ratings — **Not started** | The portal offers the IARC questionnaire or an existing IARC certificate/global rating ID. | Obtain the publisher's approved answers or an applicable existing rating. |
+| Submission options and testing notes | **Don't publish this submission until I select Publish now** was selected after reopening. **Additional Testing Information** returned the exact 497-character English reviewer note after reload. | The owner controls submission for certification and subsequent publication. |
+
+The uploads used an authenticated Partner Center browser session. No `pcenter` credentials or account permissions were changed. The portal statuses describe this draft only. The eight background-image rights, first-party licence, reviewed release artifacts and signed customer install/update checks remain separate release gates.
+
 ## Artwork evidence from the current repository
 
 | Area | Observed evidence | Disposition |
@@ -137,4 +151,4 @@ backgrounds shipped in the app. Their redistribution rights remain open.
 For exact Glide package hashes and the earlier hosted restore evidence, see the
 [deployment register](deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery).
 The unsigned candidates do not establish customer installation, licensing or
-Store certification. No submission or public release has taken place.
+Store certification. The saved draft has not been submitted for certification or published.
