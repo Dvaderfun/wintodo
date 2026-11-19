@@ -96,6 +96,29 @@ For the first submission of Store ID `9PF4DX2BSF0X`:
 2. Compare the final reviewed source, upload hashes, manifest and dependency reports. Check the [English listing and certification notes](../releases/store/en-US/README.md), saved [privacy policy](../releases/PRIVACY.md), and saved age ratings against those packages. The owner separately submits the reviewed app for certification and decides when to publish.
 3. When the certified packages are available, record their versions, PFN, signatures and hashes on clean x64 and native ARM64 systems. Test a higher-version update against this baseline. A public draft or a certified submission held for publication cannot by itself prove installation from the customer Store.
 
+## Reviewed main packages — 20 November 2026
+
+[PR #5](https://github.com/Dvaderfun/wintodo/pull/5) merged as
+`98476b1be027637a50e404143f2c2611c84bf9f6` after its [final CI check](https://github.com/Dvaderfun/wintodo/actions/runs/44628952053).
+The reviewed tree and merge tree are identical. Local Debug and Release x64 builds
+were clean; CI confirmed 707/707 unit tests, 206 script tests, zero NuGet
+advisories across nine projects and no source/history secret-scan findings.
+
+The [manual main run](https://github.com/Dvaderfun/wintodo/actions/runs/44630077895)
+is the source of the final unsigned x64 and ARM64 candidates. Each architecture's
+`SafeTestResults/release-package.json` binds its package SHA-256; its dependency
+and toolchain reports bind the source and target. The [PR handoff](https://github.com/Dvaderfun/wintodo/pull/5)
+records the comparison with the uploaded candidates and the portal disposition.
+The code, binary assets, lockfiles and packaging inputs match the earlier
+`aa59ff4` build, so the English gallery does not need new captures.
+
+If the final bytes differ, replace only the two MSIX in the existing
+**Submission 1 → Packages**. Use the filenames containing `98476b1` to
+distinguish the uploads, verify x64 and ARM64 at `1.0.0.0`, and save the
+Desktop selection. Preserve the listings, IARC ratings and manual publication
+hold. An Actions result or a local hash is not a readback from Partner Center.
+The owner controls **Submit for certification** and subsequent publication.
+
 ## Partner Center draft — 20 November 2026
 
 [Submission 1](https://partner.microsoft.com/en-us/dashboard/products/9PF4DX2BSF0X/overview) (`1152921505702452815`) remains **In draft**. The owner chose a free public launch without a private pilot. No certification or publication action was taken.
@@ -110,7 +133,7 @@ For the first submission of Store ID `9PF4DX2BSF0X`:
 
 This version has no native chat, published user feed, promoted content catalogue or in-app purchases. Imported tasks, private attachments and sync through the user's own provider are distinct from those features. Revisit the relevant questionnaire answers and privacy text if a later version adds paid digital goods or changes these data flows.
 
-The enabled **Submit for certification** button establishes that Partner Center can accept this draft for review. It does not establish redistribution rights or a final `main` build. Both local upload hashes still match the original handoff, and both MSIX contain the exact eight JPEGs listed below. Remote `main` (`44a4ef6`) still has the test-family manifest at `1.0.0.5`. The production identity/version is in the `aa59ff4` candidates on [PR #5](https://github.com/Dvaderfun/wintodo/pull/5); changes from there to the PR head (`6c9f8c4`) are confined to documentation and Store artwork. The PR check passed, but release packaging was skipped on the PR.
+At this pre-merge readback, **Submit for certification** was enabled. Both local upload hashes matched the original handoff, and both MSIX contained the exact eight JPEGs listed below. Remote `main` (`44a4ef6`) still used the old test-family manifest. The uploaded production candidates were from `aa59ff4`; PR checks passed and skipped release packaging by design. See the [later main build and upload handoff](#reviewed-main-packages--20-november-2026).
 
 ## Partner Center draft — 19 November 2026
 
