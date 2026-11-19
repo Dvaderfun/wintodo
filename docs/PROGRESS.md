@@ -15,8 +15,10 @@ a fresh production installation with data-preserving future updates, first
 `v1.0.0` / `1.0.0.0`, and support@univera.app are selected. Source-available terms
 will permit free self-builds and reserve commercial redistribution. The
 [reserved Store identity](plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
-and version `1.0.0.0` are now in the manifest. Copyright/licence text, asset
-rights, certification/signing, customer tests and effective ref protection remain open.
+and version `1.0.0.0` are now in the manifest. The nine package icons are
+[attributed MIT template assets](plans/dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons).
+Rights for eight background JPEGs, first-party licence text, Store certification,
+customer tests and effective ref protection remain open.
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -25,22 +27,23 @@ rights, certification/signing, customer tests and effective ref protection remai
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | IN PROGRESS | Reserved Store family and English gallery prepared; outstanding rights, protection, certification and final signed install/update/uninstall on x64 and native ARM64 |
+| M10 Packaging and release | IN PROGRESS | Reserved family verified in both unsigned MSIX; English listing artwork ready. Rights, protection, native dependency review, certification and installed x64/native ARM64 checks remain open. |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
-- **Latest scheduled main run before the fix — FAIL:** [16 November scheduled run](https://github.com/Dvaderfun/wintodo/actions/runs/43878071848)
-  at `44a4ef6` failed locked restore after the runner moved to SDK `10.0.404`.
-  All 204 script tests passed; build, unit tests and both package targets were
-  skipped. The same source passed those stages on 9 November with SDK `10.0.403`.
-  See the [readiness audit](plans/deployment-readiness.md#2026-11-19-hosted-restore-failure).
+- **Hosted CI — PASS on the release PR:** [19 November build-and-test at package source `c2c8919`](https://github.com/Dvaderfun/wintodo/actions/runs/44593397992)
+  passed the locked restore, audited dependencies, build and tests on SDK
+  `10.0.404`. The [16 November scheduled failure](plans/deployment-readiness.md#2026-11-19-hosted-restore-failure)
+  preceded the fix. PRs skip the release matrix; a main maintenance run is due after merge.
 - **Last passing builds:** Debug and Release x64 passed with zero warnings/errors on
-  2026-11-09. All four MTP suites passed 707/707, zero failed/skipped
-  (Core 257, Data 133, Import 155, Sync 162). The launch-policy/ref-gate
-  integration passes all 204 script regressions on Python 3.13. Current-helper x64/ARM64 AOT
-  publishes pass with ML 2.5.96; runtime and final candidate checks remain pending.
+  2026-11-19. All four MTP suites passed 707/707, zero failed/skipped
+  (Core 257, Data 133, Import 155, Sync 162); 206 script regressions passed on
+  Python 3.13. [Unsigned x64 and ARM64 MSIX](plans/deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates)
+  at `c2c8919` use .NET 10.0.15 and ML 2.5.96; structure, identity, privacy
+  and both zero-advisory NuGet audits passed. Store-signed packages and
+  customer/runtime checks remain pending.
   Earlier DEP-04 x64/ARM64 AOT outputs used compiler/
   runtime 10.0.14; both layouts and their relative summary pass the privacy scan
   (649 files, zero findings). Final signed packages/install gates remain pending.
@@ -211,7 +214,7 @@ rights, certification/signing, customer tests and effective ref protection remai
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
   strengthened list stability passes 3/3 twice, with 10 px drift on immediate
   and settled completion/uncompletion against the unchanged 54 px limit.
-  Wintodo is selected; the exact MSIX publisher remains undecided. UX-01 display culture and the M4 step-drag
+  UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **Header alignment:** Fixed-category and user-list display title text now use tight line bounds
   (user-list title button stretched to 44 px on 2026-10-20 so descenders are not clipped);
@@ -296,17 +299,16 @@ rights, certification/signing, customer tests and effective ref protection remai
   11/11; ARM64 runtime remains unclaimed.
   UX-10 expanded undo gate passes 12/12, M3 + restart and M4 + restart pass;
   M13 passes 11/11 and M8 17/17; UX-10 is complete. M9 remains owner-deferred;
-  final publisher, signing and M10 clean-VM gates remain pending.
+  Store signing and M10 clean-machine gates remain pending.
 
-- **Release readiness:** Viewport repair committed as `23881eb`; Debug/Release
+- **Historical development packages (October):** Viewport repair committed as `23881eb`; Debug/Release
   builds and 307/307 tests rechecked. UX-20 owner-run procedures and M10 acceptance
   are in [the release checklist](guides/release-checklist.md). Fresh unsigned
   x64/ARM64 MSIX and existing-certificate test-signed copies are in `publish/msix`;
   package inspection and SHA-256 hashes are in `inspection.json`. Host signature
   verification stops at the untrusted development certificate; no trust was added.
   The regular VM checkpoint has Developer Mode and certificate trust already,
-  so a separate clean-install baseline remains necessary. Final publisher,
-  distribution route, production signing/assets and owner-run gates remain open.
+  so a separate clean-install baseline remains necessary for the Store family.
 
 - **Completion viewport repair:** Panel updates keep their scroll offset rather
   than competing with the view's anchor correction. Transition-free updates
@@ -4697,3 +4699,16 @@ captioned screenshots and five separate promo designs. Scoped WinUI review
 found no new binding, accessibility or capability issue; no UI code changed.
 Customer installation, real ARM64 execution, effective GitHub enforcement,
 legal/vendor closure and Store publication remain pending.
+
+### 2026-11-19 — M10: passing PR, inspected Store family and listing handoff
+
+The hosted PR passed locked restore, build, 707 unit and 206 script tests.
+Both local unsigned MSIX files passed identity, structure, privacy and NuGet
+audit checks. The [register](plans/deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates)
+records their exact hashes and the limits of this evidence. Both packages
+contain the nine verified Microsoft template icons and their MIT attribution.
+The release guide separates the initial private Store audience from the
+higher-version flight used to test updates. The
+[English gallery](releases/store/en-US/README.md) now also contains original
+text-free hero artwork for the Store banner. The signed deployment and manual
+checks remain open; no release tag, submission or publication took place.

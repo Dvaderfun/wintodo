@@ -2,7 +2,7 @@
 
 > **Audience:** any implementing agent (see `AGENTS.md`) and the human owner.
 > **Status:** approved plan, in progress. M0–M9 and M13 implemented (some gate rows
-> still open); M10–M12 not started.
+> still open); M10 release preparation is in progress. M11–M12 are outside this release.
 > Current state: top of `docs/PROGRESS.md`. Code as built: `ARCHITECTURE.md`.
 > Restructured by [ADR-010](docs/adr/ADR-010-ai-friendly-repo-docs.md): section
 > numbers are stable; moved sections are now pointers.
@@ -759,8 +759,9 @@ reminders become untestable.
 | Recurrence semantics differ per client | ADR-006 documents our choice; verify against live servers at M13, revisit only with evidence. |
 | Per-list background images blow the memory budget | Decode at display size (`BitmapImage.DecodePixelWidth`), cap dimensions, one cached image at a time. |
 
-**Open — needs the human:** final app name and MSIX identity/publisher.
-Everything else is decided.
+**Open — needs the owner:** source/asset rights, effective repository protection,
+controlled Store submission and customer acceptance. Wintodo's Store name and
+[package family](docs/plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff) are reserved.
 
 ---
 
