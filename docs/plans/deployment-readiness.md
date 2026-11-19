@@ -734,7 +734,9 @@ app assets/resources and Microsoft To Do deployment documentation.
 - [x] Identify and attribute the retained package icons at all shipped scales
       and target sizes. The [nine source files match the MIT WinUI template](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons).
 - [ ] Validate final title/tile/splash appearance and the rights to the eight
-      in-app background JPEGs.
+      in-app background JPEGs. The current package still uses default template
+      icons; [ADR-021](../adr/ADR-021-store-package-icon-proposal.md) documents
+      the branding risk and the proposed replacement.
 - [x] Prepare English screenshots and captions with synthetic tasks, a text-free
       Store hero, listing and certification copy, and a support/security contact.
 - [ ] Compare the listing assets with the certified private build before public availability.
@@ -1763,7 +1765,8 @@ Store artwork ZIP and evidence ZIP are under `artifacts/store-1.0.0-rc/`.
 A clean NuGet audit does not settle the
 [remaining native component and licence questions](dep02-vendor-provenance-resolution.md#remaining-actions-and-evidence).
 
-Next: establish effective protection of `main` and release tags, finalize
+Next: establish effective protection of `main` and release tags, settle the
+[default package icons](../adr/ADR-021-store-package-icon-proposal.md),
 rights for the eight background JPEGs, licensing and the public privacy URL,
 then prepare the [first private-audience submission](deployment-store-first-preparation.md#controlled-handoff).
 Record the signed results before testing clean install,

@@ -118,7 +118,7 @@ For the first submission of Store ID `9PF4DX2BSF0X`:
 | Area | Observed evidence | Disposition |
 |---|---|---|
 | In-app icons | Existing `ShellPage.xaml` / `TaskListView.xaml` use `FontIcon` and `SymbolIcon`; Windows font rendering is supported by Microsoft's guidance | Keep OS/font control use. No tracked `.ttf`, `.otf`, `.woff` or `.woff2` files found. Do not copy/redistribute a Windows font file without its own rights. |
-| Package logos | All eight PNGs and the ICO match the [Microsoft WinUI template](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons) byte for byte | Template licence is MIT; its Microsoft copyright and permission notice are in the app. Final Store presentation still needs review. |
+| Package logos | All eight PNGs and the ICO match the [Microsoft WinUI template](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons) byte for byte. The required MIT notice is included. | Microsoft checks for default template artwork. The [original icon proposal](../adr/ADR-021-store-package-icon-proposal.md) is ready for an owner decision before submission. |
 | Backgrounds | [Coast, Field, Forest, Graphite, Indigo, Mist, Petals and Sunrise](../../src/Wintodo.App/Assets/ListBackgrounds) entered in `1813855` without a source or licence record | Supply their origin and commercial redistribution terms, or select replacements before submission. |
 
 The existing [asset privacy review](dep13-source-privacy-review.md) remains
