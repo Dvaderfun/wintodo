@@ -85,7 +85,7 @@ jobs:
         if: ${{ !cancelled() && (steps.unit_tests.outcome == 'success' || steps.unit_tests.outcome == 'failure') }}
         run: ./scripts/Export-SafeTestResults.ps1
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: test-results
@@ -232,7 +232,7 @@ jobs:
             --private-root "$PWD" --output SafeTestResults/release-sbom-privacy.json
           if ($LASTEXITCODE -ne 0) { throw 'Package dependency evidence privacy check failed.' }
 
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: M10-unsigned-${{ matrix.arch }}
           path: |
