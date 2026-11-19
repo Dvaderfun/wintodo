@@ -158,7 +158,8 @@ not evidence for the new Store family.
 - [ ] Confirm redistribution rights for the eight background JPEGs and review final logo/tile/splash presentation.
 - [x] Prepare [English screenshots, captions, hero art, listing copy and certification notes](../releases/store/en-US/README.md).
 - [x] Save the approved privacy text in Partner Center. Confirm Free, public audience and Store discoverability for the first launch.
-- [ ] Compare the gallery with the final UI, have the publisher accept and save the IARC preview, and confirm the manual publication hold before submission.
+- [x] Verify the publisher's saved IARC ratings and the manual publication hold. All five required sections are Complete; the draft has not been submitted.
+- [ ] Compare the gallery with the final UI before submitting the reviewed packages.
 - [x] Build and inspect local unsigned self-contained Native AOT x64 and ARM64
       packages: manifests, executable architecture, assets, extensions and
       the single `runFullTrust` capability. [Source and SHA-256 for each target](../plans/deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery).
