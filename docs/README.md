@@ -20,6 +20,10 @@ All new planning documents belong under `docs/plans/`.
 | Plan | Scope |
 |---|---|
 | [Deployment readiness and GitHub release](plans/deployment-readiness.md) | Audit remediation, data/API security, privacy, CI/CD, signing and final deployment gates (`DEP-01`–`DEP-20`) |
+| [Owner release decisions](plans/deployment-owner-decisions.md) | Selected name/artwork, future public source, fresh first release/version and remaining signer/publisher/licence values |
+| [Signing and licensing research](plans/deployment-signing-licensing-recommendation.md) | Selected Store signing and source-available policy, with researched alternatives and unresolved exact terms |
+| [Store-first preparation](plans/deployment-store-first-preparation.md) | Exact Univera LLC Partner Center identity handoff, rights evidence and Store-signed deployment requirements |
+| [Source-available licence draft](plans/wintodo-source-available-license-draft.md) | Free self-builds with commercial redistribution reserved; copyright and free-sharing scope await finalization |
 | [Recoverable synced moves implementation plan](plans/dep04-synced-moves.md) | DEP-04 baseline reproduction and accepted durable recovery under ADR-017 |
 | [Downloaded attachment provenance](plans/dep10-attachment-provenance.md) | DEP-10 Internet-zone metadata, Windows opening policy and verification limits |
 | [Production override policy proposal](plans/dep12-production-overrides.md) | DEP-12 launch/storage/clock inventory, affected AOT gates and concrete owner policy choices |
@@ -36,7 +40,7 @@ All new planning documents belong under `docs/plans/`.
 
 Release review drafts: [privacy](releases/PRIVACY.md) and
 [installation, update and recovery](releases/INSTALLATION.md). These are
-unpublished; final identity, signing and deployment evidence remain pending.
+unpublished; the Store family is reserved, while signing and deployment evidence remain pending.
 
 ## Records
 
@@ -54,7 +58,8 @@ unpublished; final identity, signing and deployment evidence remain pending.
 - [guides/network-limits.md](guides/network-limits.md) — response, attachment and import byte budgets, deadlines and staging cleanup
 - [guides/migrations.md](guides/migrations.md) — adding a SQLite schema migration
 - [guides/performance.md](guides/performance.md) — measuring, recording, and the budget rules
-- [guides/packaging.md](guides/packaging.md) — unsigned tag artifacts, placeholder identity, local test signatures and open release gates
+- [guides/packaging.md](guides/packaging.md) — unsigned tag artifacts, reserved identity and Store handoff
+- [English Store gallery](releases/store/en-US/README.md) — five desktop screenshots, captions, listing copy and promotional renders
 - [guides/ci.md](guides/ci.md) — pinned Actions, redacted scanner/audit gates, trusted AOT cadence and remaining enforcement decisions
 - [guides/release-checklist.md](guides/release-checklist.md) — UX-20 owner-run checks, M10 decisions and clean-install acceptance
 - [guides/ai-tooling.md](guides/ai-tooling.md) — instruction files, vendored skills, WinApp CLI, MCP servers

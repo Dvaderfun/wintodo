@@ -2,8 +2,11 @@
 
 **DRAFT — no production release is available from this document.** Prepared
 2026-11-08 from source `4fa223d`; updated 2026-11-09 against `db6c448` for the
-selected direct-MSIX-first route and production override policy. Final download links, app name,
-publisher, signing instructions and supported update versions are pending.
+production override policy; now aligned with selected Store-first delivery under
+ADR-019. Wintodo is published by Univera LLC; contact support@univera.app.
+Wintodo is reserved as [9PF4DX2BSF0X](https://apps.microsoft.com/detail/9PF4DX2BSF0X).
+Version `1.0.0.0` uses `47371DermenzhyStudio.Wintodo_rg7xtn0gdgdnp`;
+certification and installed update tests are pending.
 The steps below must be checked against the exact final signed packages.
 
 ## Windows and architecture
@@ -20,42 +23,20 @@ not be part of the customer installation instructions. Clean-machine dependency
 acceptance is still pending; any separately required component must be listed
 after that check, rather than assumed from a development machine.
 
-## Obtain and verify the package
+## Obtain the app
 
-Direct MSIX is the selected first release route. Use the approved release download and select your
-architecture. Download the signed MSIX and its published SHA-256 checksum.
+After publication, open [Wintodo in Microsoft Store](https://apps.microsoft.com/detail/9PF4DX2BSF0X)
+and confirm **Univera LLC** as publisher. A reserved link does not mean the app is available.
+Microsoft Store handles package delivery and signing and selects a compatible
+architecture from the published packages.
+
 Unsigned Actions artifacts and development test signatures are preparation
-outputs, not production installation choices.
-
-Before installation, compare the downloaded bytes with the published checksum:
-
-```powershell
-Get-FileHash -Algorithm SHA256 -LiteralPath '.\downloaded-package.msix'
-Get-AuthenticodeSignature -LiteralPath '.\downloaded-package.msix' |
-    Select-Object Status, StatusMessage, SignerCertificate
-```
-
-Confirm the exact SHA-256, a valid signature and the final publisher stated in
-the approved release. A matching checksum establishes that the bytes match the
-release record; it does not replace signature/publisher verification. If Windows
-reports an invalid or untrusted signature, stop and use the approved support
-instructions. The signing provider and any distribution-specific trust steps
-have not been selected; this draft does not instruct you to trust a development
-certificate.
-
-Microsoft Store delivery is deferred to a separate approved release work package.
-If it is added later, use the approved Store listing and its installation/update
-path; Store submission acceptance is separate from direct MSIX package checks.
+outputs. A Store release does not require installing a development certificate.
+Direct production downloads are deferred to a separately reviewed route.
 
 ## Install and start
 
-For a verified direct package, open the MSIX with Windows App Installer, check
-the name and publisher, and choose Install. A PowerShell installation alternative
-is:
-
-```powershell
-Add-AppxPackage -Path '.\downloaded-package.msix'
-```
+On the approved Microsoft Store listing, choose Install and wait for completion.
 
 Start the installed app from the Start menu. On a fresh profile, onboarding lets
 you begin with local tasks or start a one-way Microsoft To Do import. CalDAV is
@@ -69,9 +50,9 @@ it does not make Microsoft To Do an ongoing synchronization provider.
 
 ## Update and preserve data
 
-Back up before installing an update. Use a verified higher-version package with
-the supported identity and publisher, then install through the same approved
-distribution path. Windows updates with a retained compatible package identity
+Back up before an update. Use Microsoft Store's update path for the approved
+Wintodo listing; updates retain the production identity and increase its version.
+Windows updates with a retained compatible package identity
 are intended to preserve app data. The release must name the prior versions
 actually tested; that update matrix is currently pending.
 
@@ -159,7 +140,7 @@ draft does not guarantee a clean reinstall or complete erasure after uninstall.
 
 ## Current release limits
 
-Final identity/version/signing, clean install/update/uninstall, native ARM64
+Store certification/signing, clean install/update/uninstall, native ARM64
 execution, live provider/consent checks and affected guest gates remain open.
 The existing development VM checkpoint cannot establish clean-machine
 installation. M9 performance measurement remains owner-deferred.
