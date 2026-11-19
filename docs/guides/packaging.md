@@ -1,8 +1,18 @@
 # Packaging groundwork (M10)
 
-The app name and publisher remain the placeholders in `Package.appxmanifest`:
-`5826186B-4750-4C22-BC50-B5DD1EED9CA5`, `CN=AppPublisher`, version `1.0.0.5`.
-Final identity and production signing require the owner's decision (PLAN §10).
+The manifest uses Wintodo's [reserved Partner Center identity](../plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff).
+First production version `1.0.0.0` belongs to a different family from the
+historical development package `1.0.0.5`; it does not update or migrate that
+installation. Preserve the old profile. Its notification COM class also stays
+separate: the new family's toast extension and COM server share a new CLSID.
+Use the disposable guest for development registration of the new family.
+Store signing/certification and
+data-preserving updates of the production family remain to be tested.
+[ADR-019](../adr/ADR-019-store-first-source-available-release.md)
+selects Store-first under Univera LLC; no purchased CA certificate or direct
+production-signing job is needed for that route. See
+[Store preparation](../plans/deployment-store-first-preparation.md) and the
+[signing/licensing recommendation](../plans/deployment-signing-licensing-recommendation.md).
 The remaining decisions, owner-run checks and clean-install premise are tracked
 in [release-checklist.md](release-checklist.md). The standard `WintodoTest`
 checkpoint is provisioned for development and cannot prove a clean M10 install.
@@ -95,7 +105,9 @@ and AOT size summary, plus safe dependency/toolchain/privacy evidence. Actions
 are pinned to reviewed commits; checkout credentials are not persisted, and
 exact unsigned package bytes pass the privacy gate before upload. There is no
 signing material, certificate installation, GitHub Release creation or Store
-publishing in CI. Ordinary main pushes and PRs run build/test and security
+publishing in CI. The selected first route is now Store-first; existing unsigned
+jobs remain preparation, not Store-upload or certification acceptance.
+Ordinary main pushes and PRs run build/test and security
 checks. Tag names do not change the placeholder manifest version. See
 [CI policy and remaining enforcement gates](ci.md).
 

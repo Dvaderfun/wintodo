@@ -1,9 +1,10 @@
 # Privacy policy — unpublished review draft
 
 **DRAFT — not approved for publication.** Prepared 2026-11-08 from source
-`4fa223d`; updated 2026-11-09 against `db6c448` for selected production overrides
-and direct-MSIX-first delivery. Wintodo is a placeholder name. The final publisher,
-privacy/security contact and effective date must be supplied before release.
+`4fa223d`; updated for the selected production overrides and Store-first under ADR-019.
+Wintodo is the selected name; **Univera LLC** is the publisher, with
+**support@univera.app** as the support/security/privacy contact. The effective
+date and final review must be completed before release.
 Final-package network and uninstall checks remain pending.
 
 Wintodo stores tasks on your Windows device. You can use local lists without
@@ -93,8 +94,9 @@ App diagnostic traces use fixed operation labels, allowlisted error categories,
 HTTP statuses, counts and timings. They exclude raw exception messages, task
 text, account names, credentials and URLs. The durable `--trace-file` listener
 exists only in Debug builds. External debugger output, crash dumps and tool logs
-can contain private information; review them before sharing. Support reporting
-instructions and the organizational security contact remain undecided.
+can contain private information; review them before sharing. Contact
+support@univera.app for support, security or privacy questions. Provide a concise
+description; share task/account contents only when necessary and agreed.
 
 ## Deletion, retention and your choices
 

@@ -5,12 +5,18 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-11-09:
+As of 2026-11-19:
 
-Direct MSIX is selected for the first release under
-[ADR-018](adr/ADR-018-direct-msix-first-release.md), and DEP-12 policy A retains
-documented production launch controls. Exact identity/version, signing,
-licensing/assets and source visibility/protection values remain pending.
+Store-first under **Univera LLC** is selected in
+[ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
+ADR-018's first distribution route. DEP-12 policy A retains documented launch
+controls. Wintodo/current artwork subject to rights, public source after review,
+a fresh production installation with data-preserving future updates, first
+`v1.0.0` / `1.0.0.0`, and support@univera.app are selected. Source-available terms
+will permit free self-builds and reserve commercial redistribution. The
+[reserved Store identity](plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
+and version `1.0.0.0` are now in the manifest. Copyright/licence text, asset
+rights, certification/signing, customer tests and effective ref protection remain open.
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -19,13 +25,18 @@ licensing/assets and source visibility/protection values remain pending.
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | GROUNDWORK | Fresh x64/ARM64 AOT MSIX and local test signatures prepared; unsigned tag CI added; final identity/signing, Store assets and clean-VM install/uninstall gates pending |
+| M10 Packaging and release | IN PROGRESS | Reserved Store family and English gallery prepared; outstanding rights, protection, certification and final signed install/update/uninstall on x64 and native ARM64 |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
-- **Build:** Debug and Release x64 passed with zero warnings/errors on
+- **Latest scheduled main run before the fix — FAIL:** [16 November scheduled run](https://github.com/Dvaderfun/wintodo/actions/runs/43878071848)
+  at `44a4ef6` failed locked restore after the runner moved to SDK `10.0.404`.
+  All 204 script tests passed; build, unit tests and both package targets were
+  skipped. The same source passed those stages on 9 November with SDK `10.0.403`.
+  See the [readiness audit](plans/deployment-readiness.md#2026-11-19-hosted-restore-failure).
+- **Last passing builds:** Debug and Release x64 passed with zero warnings/errors on
   2026-11-09. All four MTP suites passed 707/707, zero failed/skipped
   (Core 257, Data 133, Import 155, Sync 162). The launch-policy/ref-gate
   integration passes all 204 script regressions on Python 3.13. Current-helper x64/ARM64 AOT
@@ -36,7 +47,7 @@ licensing/assets and source visibility/protection values remain pending.
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
   tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
   455/455 and zero failures/skips verified from the four uploaded TRX files.
-- **Toolchain:** .NET SDK minimum 10.0.403 (runtime/AOT compiler 10.0.14), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
+- **Toolchain:** exact .NET SDK 10.0.404 (runtime/AOT compiler 10.0.15; [ADR-020](adr/ADR-020-pin-sdk-with-lockfiles.md)), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
   Windows ML 2.5.96 explicitly selected within the SDK's range;
   win-dev-skills v0.7.1 vendored (ADR-010).
 - **ML servicing and SQLite test isolation (2026-11-09):** the declared-compatible
@@ -58,8 +69,8 @@ licensing/assets and source visibility/protection values remain pending.
   [42537269138](https://github.com/Dvaderfun/wintodo/actions/runs/42537269138)
   passes build/security, 204 script tests, all 707 unit tests and both AOT/MSIX
   jobs against `c5610bb`. Downloaded x64/ARM64 input handoff and official qualified
-  BOM schemas pass; source/target audits agree. This closes current-code hosted
-  maintenance proof, while protected tag/signing, owner identity/legal/asset
+  BOM schemas pass; source/target audits agree. This established hosted
+  maintenance proof for that run, while protected tag/signing, owner identity/legal/asset
   values, full vendor/linked-code closure and final installed runtime remain
   pending. Exact hashes and limits are in
   [the hosted candidate record](plans/dep16-hosted-candidate-validation.md).
@@ -200,7 +211,7 @@ licensing/assets and source visibility/protection values remain pending.
 - **Known gaps:** Completion viewport drift is fixed separately from UX-14:
   strengthened list stability passes 3/3 twice, with 10 px drift on immediate
   and settled completion/uncompletion against the unchanged 54 px limit.
-  Final app name and MSIX publisher are still undecided. UX-01 display culture and the M4 step-drag
+  Wintodo is selected; the exact MSIX publisher remains undecided. UX-01 display culture and the M4 step-drag
   blocker are fixed; M4 passes all 9 phase-one checks and restart persistence.
 - **Header alignment:** Fixed-category and user-list display title text now use tight line bounds
   (user-list title button stretched to 44 px on 2026-10-20 so descenders are not clipped);
@@ -285,7 +296,7 @@ licensing/assets and source visibility/protection values remain pending.
   11/11; ARM64 runtime remains unclaimed.
   UX-10 expanded undo gate passes 12/12, M3 + restart and M4 + restart pass;
   M13 passes 11/11 and M8 17/17; UX-10 is complete. M9 remains owner-deferred;
-  final name/publisher, signing and M10 clean-VM gates remain pending.
+  final publisher, signing and M10 clean-VM gates remain pending.
 
 - **Release readiness:** Viewport repair committed as `23881eb`; Debug/Release
   builds and 307/307 tests rechecked. UX-20 owner-run procedures and M10 acceptance
@@ -294,7 +305,7 @@ licensing/assets and source visibility/protection values remain pending.
   package inspection and SHA-256 hashes are in `inspection.json`. Host signature
   verification stops at the untrusted development certificate; no trust was added.
   The regular VM checkpoint has Developer Mode and certificate trust already,
-  so a separate clean-install baseline remains necessary. Final name, publisher,
+  so a separate clean-install baseline remains necessary. Final publisher,
   distribution route, production signing/assets and owner-run gates remain open.
 
 - **Completion viewport repair:** Panel updates keep their scroll offset rather
@@ -4619,3 +4630,70 @@ pending. M9 is owner-deferred. Source commits are pushed to existing private
 main; no visibility, signing/protection setting, guest/UI/trust/install or public
 release changed. Private artifacts are in
 artifacts/dep-production-next-integration/hosted-42537269138/.
+
+### 2026-11-09 — M10 DEP-13/16/17/18: owner choices and release research
+
+Owner selected Wintodo, retained icons/backgrounds, public source after review,
+a fresh production install with data-preserving future updates, and stable
+tags starting at `v1.0.0` / `1.0.0.0`. A new production package family is needed;
+no downgrade or removal of the owner's test installation is authorized.
+The owner wants freemium official releases with free personal source builds.
+
+[The signing/licensing recommendation](plans/deployment-signing-licensing-recommendation.md)
+compares Store-managed MSIX signing, eligible Artifact Signing and commercial
+CA signing, plus GPLv3/MIT/source-available commercial rights. Store-first and
+the exact licence remain proposals; accepted ADR-018 is unchanged. Exact legal
+publisher spelling, source/artwork rights, public contact and signer/identity
+remain pending. The decision packet, deployment plan and release checklist
+record these choices without closing runtime or final-package gates.
+
+Gate: documentation PASS for seven files, 173 local links, code fences and
+whitespace; builds, unit/UI/signing/deployment gates not rerun for documentation-only changes. Baseline
+`44a4ef6`; no manifest, artwork, licence, machine/trust, billing, remote setting,
+Store reservation or publication changed. M9 stays owner-deferred.
+
+### 2026-11-09 — M10 DEP-16/17/18: selected Store-first and source policy
+
+Owner explicitly selects Store-first under Univera LLC, reserves commercial
+redistribution while allowing free self-builds, and supplies support@univera.app.
+ADR-019 supersedes ADR-018's direct-first route; retained launch controls and
+blocking signed-runtime/deployment/privacy requirements remain. M10 and the
+deployment plan now describe reviewed Store uploads, actual signed delivery,
+controlled certification/publication and a source-release draft rather than
+first-release direct signing credentials/downloads.
+
+The Store preparation and source-available licence draft are ready for review.
+Exact Partner Center identity, copyright-owner authority, free community sharing,
+asset rights and final component/Store legal compatibility remain pending.
+Existing font-icon controls use Windows fonts without tracked font files;
+the eight JPEGs and generic package logos still need provenance/licensing proof.
+No asset, manifest or root licence was changed.
+
+Gate: documentation PASS for 14 files, 240 local links, code fences and
+whitespace; build/unit/UI, Store certification and installed-runtime gates not
+run for these doc changes.
+Baseline `44a4ef6`. No Store reservation/submission, machine/trust, signing,
+billing, remote visibility/protection or publication action ran. M9 stays
+owner-deferred.
+
+### 2026-11-19 — M10 DEP-15: hosted restore regression
+
+Read-only review of GitHub runs at `44a4ef6` confirmed the 16 November
+scheduled run failed `NU1004`: SDK `10.0.404` requests ILLink tasks `10.0.15`
+against locks for `10.0.14`. Local forced locked restore passed on `10.0.403`.
+The last full hosted pass was 9 November. No new package was produced or
+installed. The [deployment evidence register](plans/deployment-readiness.md#2026-11-19-hosted-restore-failure)
+records the skipped stages, protection status and remaining Store gates.
+
+### 2026-11-19 — M10: SDK servicing, production identity and English Store artwork
+
+The old locks reproduce `NU1004` on 10.0.404. The exact SDK pin, reviewed
+10.0.15 compiler/linker locks and unchanged supplier notice bodies resolve
+that mismatch. Debug and Release x64 builds passed without warnings; 707 unit
+and 206 script tests passed. The reserved family and version `1.0.0.0` are in
+package source `a567c88`. A protected-ref check runs before any tag candidate.
+The [English Store gallery](releases/store/en-US/README.md) contains five
+captioned screenshots and five separate promo designs. Scoped WinUI review
+found no new binding, accessibility or capability issue; no UI code changed.
+Customer installation, real ARM64 execution, effective GitHub enforcement,
+legal/vendor closure and Store publication remain pending.
