@@ -1,68 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1920" height="1080" viewBox="0 0 1920 1080">
-  <title>Done for today</title>
-  <desc>A folded apricot check mark floats above a fan of teal paper leaves.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <title>Out of harbour</title>
+  <desc>An original flat-colour illustration. A two-sailed dinghy passes a quiet harbour under an apricot sun.</desc>
   <defs>
-    <linearGradient id="sky" x2="1" y2=".9" gradientUnits="objectBoundingBox">
-      <stop stop-color="#111e32"/><stop offset=".5" stop-color="#153746"/><stop offset="1" stop-color="#0e575c"/>
-    </linearGradient>
-    <radialGradient id="light" cx=".61" cy=".34" r=".7">
-      <stop stop-color="#61c4ae" stop-opacity=".4"/><stop offset=".63" stop-color="#4fbbb0" stop-opacity=".07"/><stop offset="1" stop-color="#164651" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="leafBottom" x1=".1" y1=".75" x2=".9" y2=".15">
-      <stop stop-color="#18384d"/><stop offset=".48" stop-color="#206579"/><stop offset="1" stop-color="#388a93"/>
-    </linearGradient>
-    <linearGradient id="leafMiddle" x1=".05" y1=".7" x2=".85" y2=".15">
-      <stop stop-color="#286075"/><stop offset=".53" stop-color="#479a9d"/><stop offset="1" stop-color="#8aced0"/>
-    </linearGradient>
-    <linearGradient id="leafTop" x1=".02" y1=".8" x2=".87" y2=".12">
-      <stop stop-color="#408889"/><stop offset=".51" stop-color="#87c9b9"/><stop offset="1" stop-color="#d7ecce"/>
-    </linearGradient>
-    <linearGradient id="checkEdge" x1="0" y1="1" x2="1" y2="0">
-      <stop stop-color="#a45349"/><stop offset=".55" stop-color="#cd815e"/><stop offset="1" stop-color="#e7ad79"/>
-    </linearGradient>
-    <linearGradient id="longFold" x1=".08" y1=".97" x2=".91" y2=".04">
-      <stop stop-color="#dfa17a"/><stop offset=".22" stop-color="#f7c18e"/><stop offset=".69" stop-color="#ffdbab"/><stop offset="1" stop-color="#fff0c9"/>
-    </linearGradient>
-    <linearGradient id="shortFold" x1=".1" y1=".14" x2=".87" y2=".82">
-      <stop stop-color="#ffddb5"/><stop offset=".48" stop-color="#f3b18b"/><stop offset="1" stop-color="#cf8271"/>
-    </linearGradient>
-    <filter id="shade" x="-.4" y="-.65" width="1.9" height="2.5"><feGaussianBlur stdDeviation="26"/></filter>
-    <filter id="lift" x="-.3" y="-.5" width="1.7" height="2.3"><feGaussianBlur stdDeviation="14"/></filter>
-    <path id="leaf" d="M494 468 Q461 447 499 428 L1060 224 Q1091 213 1123 228 L1381 354 Q1411 369 1382 391 L854 656 Q818 673 787 655 Z"/>
-    <path id="mark" d="M632 383 Q618 371 634 360 L710 316 Q723 308 736 319 L888 443 L1166 161 Q1178 149 1197 148 L1305 150 Q1328 151 1314 168 L969 548 Q942 580 909 583 L885 584 Q853 584 824 561 Z"/>
-    <clipPath id="fold"><use xlink:href="#mark"/></clipPath>
-    <clipPath id="page"><use xlink:href="#leaf"/></clipPath>
-    <path id="orbit" d="M-280 826 C164 898 451 724 758 532 C1140 294 1352 158 2014 247"/>
+    <path id="jib" d="M1055 151c-15 96-46 191-111 286-28 40-60 72-105 101 65 2 154-11 223-40z"/>
+    <path id="sail" d="M1081 108c76 145 215 265 340 350-83 56-216 92-338 74z"/>
+    <clipPath id="jib-cloth"><use href="#jib"/></clipPath>
+    <clipPath id="sailcloth"><use href="#sail"/></clipPath>
   </defs>
-  <rect width="1920" height="1080" fill="url(#sky)"/>
-  <rect width="1920" height="1080" fill="url(#light)"/>
-  <g fill="none" stroke="#83c7bc" opacity=".15" stroke-width="1.5">
-    <use xlink:href="#orbit"/><use xlink:href="#orbit" transform="translate(0 20)"/>
-    <use xlink:href="#orbit" transform="translate(0 40)"/><use xlink:href="#orbit" transform="translate(0 60)"/>
-    <use xlink:href="#orbit" transform="translate(0 80)"/><use xlink:href="#orbit" transform="translate(0 100)"/>
-    <use xlink:href="#orbit" transform="translate(0 120)"/>
+  <rect width="1920" height="1080" fill="#EBEFF8"/>
+  <circle cx="841" cy="293" r="111" fill="#F7C89C"/>
+  <!-- Distant headlands and the few roofs on the quay. -->
+  <path fill="#D8E0EF" d="M0 473c134-31 230-29 361 17 104 35 198 43 316 37l230 41H0z"/>
+  <path fill="#CDD8EB" d="M1920 416c-102 5-178 24-283 59-98 33-164 41-289 49l-229 47h801z"/>
+  <g fill="#AFBED8">
+    <path d="M69 510h55v32H69zM138 501h52v41h-52zM204 519h80v24h-80zM306 514h24v29h-24z"/>
+    <path d="M62 510l32-18 36 18zm70-9l30-24 34 24zm67 18l39-16 53 16z"/>
+    <path d="M411 480h7v63h-7zm-8 0 11-22 11 22z"/>
   </g>
-  <g transform="translate(4 11)">
-    <use xlink:href="#leaf" transform="translate(16 173) rotate(-5 952 450)" fill="#061c2b" opacity=".64" filter="url(#shade)"/>
-    <use xlink:href="#leaf" transform="translate(17 139) rotate(-5 952 450)" fill="#153c50"/>
-    <use xlink:href="#leaf" transform="translate(17 129) rotate(-5 952 450)" fill="url(#leafBottom)" stroke="#659799" stroke-width="1.5"/>
-    <use xlink:href="#leaf" transform="translate(27 90) rotate(-2 952 450)" fill="#0b394c" opacity=".52" filter="url(#lift)"/>
-    <use xlink:href="#leaf" transform="translate(28 73) rotate(-2 952 450)" fill="#3a7d85"/>
-    <use xlink:href="#leaf" transform="translate(28 66) rotate(-2 952 450)" fill="url(#leafMiddle)" stroke="#9acac1" stroke-width="1.5"/>
-    <use xlink:href="#leaf" transform="translate(7 29)" fill="#124451" opacity=".47" filter="url(#lift)"/>
-    <use xlink:href="#leaf" transform="translate(0 7)" fill="#689c96"/>
-    <use xlink:href="#leaf" fill="url(#leafTop)" stroke="#b7daca" stroke-width="2"/>
-    <g clip-path="url(#page)" fill="none" stroke="#e6f2d8" opacity=".32">
-      <ellipse cx="1193" cy="292" rx="245" ry="92" transform="rotate(-18 1193 292)"/>
-      <ellipse cx="1193" cy="292" rx="270" ry="104" transform="rotate(-18 1193 292)"/>
-      <ellipse cx="1193" cy="292" rx="295" ry="116" transform="rotate(-18 1193 292)"/>
-    </g>
-    <use xlink:href="#mark" transform="translate(10 60)" fill="#325456" opacity=".5" filter="url(#lift)"/>
-    <use xlink:href="#mark" transform="translate(0 13)" fill="url(#checkEdge)"/>
-    <use xlink:href="#mark" fill="url(#longFold)" stroke="#f9d0a4" stroke-width="2"/>
-    <g clip-path="url(#fold)">
-      <path d="M583 315 L747 284 L888 443 C888 497 875 553 858 585 L591 444Z" fill="url(#shortFold)"/>
-      <path d="M888 444 Q884 527 858 582" fill="none" stroke="#fff0c8" stroke-opacity=".57" stroke-width="2"/>
-    </g>
+  <path fill="#BBC9DF" d="M0 532c153-5 282-1 395 3l209 13 129 17H0z"/>
+  <path fill="#B6CEE8" d="M0 554c373-9 643 9 972-2 383-12 674-18 948-12v540H0z"/>
+  <!-- Two separate fabric panels and a slim mast. The depth comes from flat overlapping faces. -->
+  <path fill="#737FB3" d="M1069 108l8-2 7 461-8 2z"/>
+  <use href="#jib" fill="#6E72DA"/>
+  <path clip-path="url(#jib-cloth)" fill="#9697ED" d="M1055 144 818 490c103-22 182-58 245-112z"/>
+  <use href="#sail" fill="#4359AD"/>
+  <g clip-path="url(#sailcloth)">
+    <path fill="#4387D7" d="M1081 108c22 172 69 287 149 386 101-6 181-24 249-66l-45-306z"/>
+    <path fill="#79B9F1" d="M1081 108c42 115 112 221 203 309 60-6 110-19 163-43l-25-250z"/>
+  </g>
+  <path fill="#F1E6D7" d="M844 561c168 8 362 6 542-8l-25 16c-153 19-328 24-480 15z"/>
+  <path fill="#334879" d="M861 574c141 8 340 4 509-14l-62 43c-101 24-237 29-344 15-40-5-74-20-103-44z"/>
+  <path fill="#5268A1" d="M1073 582c99-2 207-8 297-22l-62 43c-64 15-141 23-206 23z"/>
+  <!-- Broken reflections; the lower third stays quiet for Store overlays. -->
+  <path fill="#839FC8" d="M884 632c78-2 145-7 240-4 66 2 116 2 189-2-48 10-106 16-176 15l-233-4c-20 0-28-2-20-5z"/>
+  <path fill="#CBDEEC" d="M0 626c179-18 372-15 565-3 106 6 193 8 281 5-102 14-210 19-333 12C285 625 180 649 0 666z"/>
+  <path fill="#CFDDEC" d="M1496 601c144-13 259-16 424-5v15c-150-8-277-11-424-4-30 1-30-4 0-6z"/>
+  <path fill="#97B8DA" d="M0 847c193 1 322-23 492-60 222-48 440-63 693-45-282 5-432 25-657 82C349 870 177 909 0 903z"/>
+  <path fill="#A6C3DF" d="M1045 1080c266-116 533-168 875-142v142z"/>
+  <g fill="#E6EBF0">
+    <rect x="343" y="576" width="110" height="4" rx="2"/><rect x="473" y="576" width="34" height="4" rx="2"/>
+    <rect x="695" y="594" width="67" height="4" rx="2"/><rect x="1429" y="652" width="102" height="4" rx="2"/>
   </g>
 </svg>

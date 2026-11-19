@@ -1,6 +1,6 @@
 # ADR-021 — Original package icons for the Store
 
-- **Status:** proposed; owner acknowledgement pending
+- **Status:** proposed; owner rejected the first sketch. Selection of the new artwork is pending.
 - **Date:** 2026-11-19
 - **Scope:** the eight package PNGs and `AppIcon.ico` only.
 
@@ -9,12 +9,20 @@ documented, but Microsoft's [desktop branding validation](https://learn.microsof
 checks for default images and recommends replacing them. The certification
 test has not been run on these packages.
 
-**Proposal:** use the [folded-check artwork](../plans/assets/store-icon-proposal.svg)
-shown in the [light, dark and taskbar preview](../plans/assets/store-icon-proposal.png).
-All nine replacement files were prepared with the current dimensions and ICO
-frame sizes. The local review bundle is
-`artifacts/store-1.0.0-rc/Wintodo-package-icon-proposal.zip`; it is separate
-from the inspected MSIX candidates and from the English listing kit.
+The owner asked for a more open Fluent silhouette and Store images without
+decorative gradients. The earlier check on stacked tiles is retired.
+
+**Proposal:** [Lift](../plans/assets/store-icon-proposal.svg), an open W that
+folds into a check. [Glide](../plans/assets/store-icon-glide.svg) is a simpler
+green check with a split wingtip. Both are original transparent vectors built
+from solid faces. The [comparison](../plans/assets/store-icon-proposal.png)
+shows each on light and dark and at 16, 24, 32 and 48 pixels.
+
+Each design has its own complete set of eight correctly sized PNGs (including
+a white lock-screen silhouette) and one six-frame ICO. The local review kits
+are `artifacts/store-1.0.0-rc/Wintodo-package-icon-proposal.zip` (Lift) and
+`Wintodo-package-icon-Glide.zip` in the same directory. Neither changes the
+inspected MSIX candidates. The Store screenshot ZIP contains neither icon kit.
 
 If accepted, this permits the package-icon replacement under
 [ADR-019](ADR-019-store-first-source-available-release.md), keeping the family

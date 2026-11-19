@@ -59,7 +59,7 @@ unpublished; the Store family is reserved, while signing and deployment evidence
 - [guides/migrations.md](guides/migrations.md) — adding a SQLite schema migration
 - [guides/performance.md](guides/performance.md) — measuring, recording, and the budget rules
 - [guides/packaging.md](guides/packaging.md) — unsigned tag artifacts, reserved identity and Store handoff
-- [English Store gallery](releases/store/en-US/README.md) — five desktop screenshots, captions, listing copy and promotional renders
+- [English Store gallery](releases/store/en-US/README.md) — five desktop screenshots, captions, listing copy and promotional renders; [capture sources and rerender instructions](releases/store/artwork/README.md)
 - [guides/ci.md](guides/ci.md) — pinned Actions, redacted scanner/audit gates, trusted AOT cadence and remaining enforcement decisions
 - [guides/release-checklist.md](guides/release-checklist.md) — UX-20 owner-run checks, M10 decisions and clean-install acceptance
 - [guides/ai-tooling.md](guides/ai-tooling.md) — instruction files, vendored skills, WinApp CLI, MCP servers
