@@ -30,6 +30,7 @@ owner's acknowledgement first (`AGENTS.md`, Working style).
 | [019](ADR-019-store-first-source-available-release.md) | Store-first under Univera LLC; free self-builds with commercial redistribution reserved | accepted |
 | [020](ADR-020-pin-sdk-with-lockfiles.md) | Service the exact .NET SDK and its reviewed lockfiles together | accepted |
 | [021](ADR-021-store-package-icon-proposal.md) | Use Glide for the Wintodo package icons | accepted |
+| [022](ADR-022-public-free-store-launch.md) | Launch free in the public Store without a tester group; retain manual publication | accepted |
 
 ADR-001…007 were written inline in `PLAN.md` §2 and moved here verbatim by ADR-010.
 

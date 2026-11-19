@@ -1789,9 +1789,11 @@ NuGet archives and the paired report check passed. Private outputs:
 The [English listing](../releases/store/en-US/README.md) has five plain
 desktop screenshots, five promos and a text-free checklist illustration.
 
-Next: verify effective main/tag protection and native vendor evidence, settle
-the eight background rights, licence terms and public privacy URL, then prepare
-the [private-audience submission](deployment-store-first-preparation.md#controlled-handoff).
+20 November follow-up: the owner chose a free public launch without a tester
+group. The [Store draft](deployment-store-first-preparation.md#partner-center-draft--20-november-2026)
+contains the approved privacy text and the IARC preview. The publisher's IARC
+acceptance, effective main/tag protection, native vendor evidence, the eight
+background rights, licence terms and final artifact review remain open.
 The [owner's Store-signed install/update/uninstall checks](../guides/release-checklist.md)
 on x64 and native ARM64 and the hosted main packaging run remain open.
 

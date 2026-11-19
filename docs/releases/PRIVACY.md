@@ -1,129 +1,33 @@
-# Privacy policy — unpublished review draft
+# Wintodo privacy policy
 
-**DRAFT — not approved for publication.** Prepared 2026-11-08 from source
-`4fa223d`; updated for the selected production overrides and Store-first under ADR-019.
-Wintodo is the selected name; **Univera LLC** is the publisher, with
-**support@univera.app** as the support/security/privacy contact. The effective
-date and final review must be completed before release.
-Final-package network and uninstall checks remain pending.
+Publisher: Univera LLC. Contact: support@univera.app. This policy applies to Wintodo 1.0 for Windows.
 
-Wintodo stores tasks on your Windows device. You can use local lists without
-connecting a task account. Optional CalDAV sync exchanges tasks with a server
-you choose; Microsoft To Do import copies information from your Microsoft
-account into the app. There is no Wintodo-operated task server or account service
-in the reviewed implementation.
+You can use Wintodo without an account. Your tasks and lists stay on your Windows device unless you choose to sync, export or share them. Univera LLC does not operate a task server or account service for Wintodo.
 
-## Information stored on your device
+## What stays on your device
 
-The local SQLite database contains task titles, notes, dates, recurrence, steps,
-list membership, completion information, preferences and synchronization state.
-The app preserves supported iCalendar fields and properties it does not
-understand when tasks are imported or synchronized. These properties can also
-contain information supplied by you or another calendar client.
+Wintodo stores task titles, notes, dates, reminders, steps, list membership, completion history, settings and sync records in a local database. It also preserves extra calendar properties from imported iCalendar files. Attachments are copied to local app storage, with their filenames, paths relative to that storage, sizes and content types. Downloaded Microsoft attachments are staged locally before being saved. Where supported, Windows marks those downloads as coming from the Internet without storing the source URL or account identity in the marker.
 
-CalDAV account records contain the display name, username, server and discovered
-calendar addresses, synchronization information and a credential lookup key.
-Passwords and app passwords are stored separately in Windows PasswordVault;
-they are not stored in the SQLite database.
+If you connect a CalDAV account, Wintodo records its display name, username, server and calendar addresses. Passwords and app passwords are kept separately in Windows PasswordVault. If you import from Microsoft To Do, the app records the source account identifier, display name or email, last import time and item links so it can recognize a repeat import. Closing the import wizard does not remove imported items or this history.
 
-Microsoft import history contains the source account identifier and display
-email/name, last-import time and links between source and local items. Source
-item identifiers and matching fingerprints support repeat imports. Completing
-or dismissing sign-in does not remove information already imported or its
-persisted import history.
+The default database and attachments are in the app’s local storage. If you start Wintodo with a custom database location, attachments, import staging and credentials keep their usual locations. A local clock override can affect dates and reminders for that launch. Text or links sent to Wintodo through Windows Share use the default local database and the real clock.
 
-Attached files are copied into the app's local storage. Their filenames, relative
-paths, sizes and content types are recorded with the task. Microsoft downloads
-use temporary import staging before final copies are saved. Completed downloads
-and imported copies receive an Internet-zone marker where the filesystem
-supports it. The marker does not contain the source URL or account identity.
+## When information leaves your device
 
-By default, the database and attachments are in the installed package's
-LocalState folder. The selected production policy supports advanced local
-database overrides in Release, including Native AOT. A custom database location
-changes SQLite and its database-backed preferences/history, while attachments,
-import staging and credentials retain their existing locations. Local clock-file
-inputs can affect task timestamps and date/reminder behavior without changing
-Windows' timezone. These launch inputs do not create a portable profile or a
-persisted preference for later launches. Windows Share saves received text or
-web links to the normal package-local database and uses the real clock, even
-when local launch overrides select another database/time for the main shell.
+CalDAV sync: When you connect a server and sync a list, the server you select receives your credentials and the task data in that list, including changes to tasks you imported. Wintodo also reads tasks and changes from that server. Use a trusted HTTPS server. Its access, retention and privacy rules apply.
 
-## Optional connections and disclosure
+Microsoft To Do import: Microsoft handles sign-in in your browser. Wintodo reads profile details, lists, tasks, steps, linked resources and the attachments chosen for import. It requests the Microsoft permissions Tasks.ReadWrite and User.Read because the list-changes endpoint requires the broader permission. The import sends read requests only; it does not change your tasks in Microsoft To Do. The access token stays in memory for the import session. Closing the wizard does not sign you out of your browser or revoke consent previously given to Microsoft.
 
-| Action you choose | Recipient and information |
-|---|---|
-| Connect a CalDAV account and sync a list | Your selected server receives authentication and task information represented in iCalendar `VTODO` resources. Local changes, including imported tasks in a synchronized list, can be uploaded. The server also supplies remote tasks and changes to the app. |
-| Import Microsoft To Do | Microsoft handles browser sign-in and receives authorized Graph requests. The app reads profile information, lists, tasks, steps, linked resources and selected attachment content into local storage. |
-| Export a list | An iCalendar file is written to the location you select. Anyone you share that file with can read the exported task content and retained calendar properties. |
-| Open an attachment or external link | Windows opens the selected file or link using its registered application. That application's and service's privacy practices apply. |
-
-Microsoft sign-in uses the system browser, authorization code with PKCE and a
-local loopback redirect. The requested delegated permissions are
-`Tasks.ReadWrite` and `User.Read`. The broader task permission is required by
-the list-delta endpoint used to read lists; the reviewed Graph client sends
-GET requests only. Import does not write changes back to Microsoft To Do.
-Imported tasks subsequently edited locally remain independent of their
-Microsoft source, apart from an explicitly requested repeat import.
-
-The Microsoft access token is kept in memory for the import session and is not
-persisted. Success and expired sign-in release the authenticated connection;
-final dismissal, reset and app shutdown clear session state after in-flight
-work finishes. Browser sign-in and Microsoft consent can remain active outside
-the app; dismissing the wizard does not sign you out of your browser or revoke
-Microsoft's consent record.
-
-Use a trusted HTTPS CalDAV endpoint. Your chosen server and Microsoft process
-connection data under their own privacy policies. This draft does not establish
-their retention, location or security practices.
+Export, attachments and links: Wintodo writes exported tasks and retained calendar properties to the file location you choose. People you give the file to can read it. Opening an attachment or a link hands it to the application registered with Windows; that application or service has its own privacy practices.
 
 ## Notifications and diagnostics
 
-Windows integration uses local reminder notifications, the taskbar badge, jump
-lists and optional launch at login. Notifications can display task information
-through Windows; consider your Windows notification and lock-screen settings
-when tasks contain private content.
+Windows reminders and taskbar features can show task information on your device. Your Windows notification and lock-screen settings control who can see reminder text. Wintodo has no publisher-operated advertising, analytics or crash-upload service. Its diagnostic traces use operation names, error categories, HTTP status codes, counts and timings; they exclude task text, account names, credentials and URLs. Persistent diagnostic trace files are a Debug-build feature. Windows, connected providers and other applications can have their own diagnostics. Review any crash dump or log before sharing it for support.
 
-The reviewed application source and declared dependencies contain no configured
-publisher-operated analytics, advertising or crash-upload service. This is a
-source-review finding, not a completed network-capture verification of the final
-package. Windows, Microsoft sign-in, your CalDAV provider and applications you
-open can have their own diagnostics or network behavior.
+## Your choices and deletion
 
-App diagnostic traces use fixed operation labels, allowlisted error categories,
-HTTP statuses, counts and timings. They exclude raw exception messages, task
-text, account names, credentials and URLs. The durable `--trace-file` listener
-exists only in Debug builds. External debugger output, crash dumps and tool logs
-can contain private information; review them before sharing. Contact
-support@univera.app for support, security or privacy questions. Provide a concise
-description; share task/account contents only when necessary and agreed.
+You choose which accounts to connect, which lists to sync or import, and where to export. Disconnecting a CalDAV account removes its saved credential; you may first need to resolve pending task moves. Disconnecting does not erase information on the server.
 
-## Deletion, retention and your choices
+Deleting a task, list or import marks records as deleted so undo and synchronization can work. It does not immediately erase every copy. Removing an attachment deletes its managed local copy when accessible; your original file, exports, migration backups and copies held by a provider may remain. Exported files and custom databases may be outside the app’s storage. Do not rely on uninstalling to erase all data or credentials. Back up anything you want to keep before resetting or removing the app.
 
-You control which accounts to connect, which lists to sync or import, and where
-to export files. A successful CalDAV disconnect removes the stored account's
-credential from PasswordVault; disconnect is blocked while unresolved task
-moves need that account. Disconnect is not a request to erase the server's data.
-
-Deleting tasks or lists uses soft deletion and a change log to support undo and
-synchronization. It is not immediate secure erasure of database rows, attachment
-content, migration backups or provider copies. Removing an import run also uses
-soft deletion for the items it created. Removing an attachment through its
-detail-pane action updates the task and deletes its managed local file when
-accessible; independently retained originals and exports remain yours to manage.
-
-Migration backups can retain older task information. Exported files and custom
-database locations can exist outside the package's storage. Uninstall/reinstall
-cleanup, PasswordVault retention and Windows integration cleanup require final
-deployment verification. This draft therefore makes no complete-erasure promise
-for uninstall. Back up anything you want to keep before reset or removal.
-
-## Review basis
-
-The evidence and outstanding publication requirements are recorded in
-[DEP-17 release documentation](../plans/dep17-release-docs.md). The
-[data model](../DATA-MODEL.md), [diagnostic policy](../guides/diagnostics.md),
-[import decision](../adr/ADR-016-microsoft-todo-import.md) and
-[attachment provenance policy](../plans/dep10-attachment-provenance.md) provide
-the current technical descriptions. Replace this review section and unresolved
-draft fields with the approved customer-facing policy before publication.
+For privacy, security or support questions, contact support@univera.app. A description of the issue is usually enough; share task or account contents only if needed and agreed.
