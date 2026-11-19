@@ -1,10 +1,11 @@
 """Render Store review artwork on Windows (Pillow, resvg-py and system Segoe UI)."""
 
+from argparse import ArgumentParser
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 from resvg_py import svg_to_bytes
 
 
@@ -15,7 +16,7 @@ DESIGNS = REPO / "docs/plans/assets"
 RC = REPO / "artifacts/store-1.0.0-rc"
 FONTS = Path("C:/Windows/Fonts")
 LANCZOS = Image.Resampling.LANCZOS
-MARKS = {"Lift": "store-icon-proposal.svg", "Glide": "store-icon-glide.svg"}
+GLIDE = DESIGNS / "store-icon-glide.svg"
 FRAMES = (16, 32, 48, 64, 128, 256)
 TILES = {
     "StoreLogo.png": (50, 50, 50), "Square44x44Logo.scale-200.png": (88, 88, 88),
@@ -45,59 +46,22 @@ def archive(path, files):
             bundle.write(source, name)
 
 
-def icons():
-    marks = {name: svg(DESIGNS / filename, 1024, 1024) for name, filename in MARKS.items()}
-    sheet = Image.new("RGB", (1168, 580), "#FBFBFD")
-    draw = ImageDraw.Draw(sheet)
-    label(sheet, (42, 28), "Wintodo", 36, bold=True)
-    label(sheet, (1126, 48), "Windows app icon", 21, "#576070", anchor="rm")
-    draw.line((42, 91, 1126, 91), fill="#CFD3DB")
-    for i, (name, mark) in enumerate(marks.items()):
-        x = 42 + i * 557
-        label(sheet, (x, 113), name, 29, bold=True)
-        label(sheet, (x, 158), ("A W that folds into a check.", "A check with a split wingtip.")[i], 19, "#566071")
-        for offset, paper in ((0, "#EDF0F5"), (262, "#222631")):
-            draw.rectangle((x+offset, 207, x+offset+261, 407), fill=paper)
-            icon = mark.resize((157, 157), LANCZOS)
-            sheet.paste(icon, (x+offset+52, 229), icon)
-        label(sheet, (x, 433), "At Windows sizes", 16, "#566071")
-        for j, n in enumerate((16, 24, 32, 48)):
-            slot = x+j*134
-            icon = mark.resize((n, n), LANCZOS)
-            for offset, bg in ((0,"#EDF0F5"), (58,"#222631")):
-                draw.rectangle((slot+offset,472,slot+offset+57,529), fill=bg)
-                sheet.paste(icon, (slot+offset+29-n//2,501-n//2), icon)
-            label(sheet, (slot+58, 545), f"{n} px", 14, "#566071", anchor="mt")
-    preview = DESIGNS / "store-icon-proposal.png"
-    sheet.save(preview, optimize=True)
-    for name, mark in marks.items():
-        folder = RC / ("icon-proposal" if name == "Lift" else "icon-glide") / "Assets"
-        folder.mkdir(parents=True, exist_ok=True)
-        files = []
-        for filename, (w, h, extent) in TILES.items():
-            logo = mark.resize((extent, extent), LANCZOS)
-            if filename.startswith("LockScreen"):
-                monochrome = Image.new("RGBA", logo.size, "white")
-                monochrome.putalpha(logo.getchannel("A"))
-                logo = monochrome
-            tile = Image.new("RGBA", (w, h))
-            tile.alpha_composite(logo, ((w-extent)//2, (h-extent)//2))
-            tile.save(folder / filename, optimize=True)
-            files.append(filename)
-        sizes = [(n, n) for n in FRAMES]
-        layers = [mark.resize(size, LANCZOS) for size in sizes]
-        layers[-1].save(folder / "AppIcon.ico", sizes=sizes, append_images=layers[:-1])
-        files.append("AppIcon.ico")
-        assert set(files) == {p.name for p in (REPO/"src/Wintodo.App/Assets").iterdir()
-                              if p.suffix.lower() in {".png", ".ico"}}
-        for filename in files:
-            with Image.open(folder/filename) as icon, Image.open(REPO/"src/Wintodo.App/Assets"/filename) as shipped:
-                assert icon.size == shipped.size
-                if filename.endswith(".ico"):
-                    assert icon.ico.sizes() == shipped.ico.sizes() == set(sizes)
-        bundle = "Wintodo-package-icon-proposal.zip" if name == "Lift" else "Wintodo-package-icon-Glide.zip"
-        archive(RC/bundle, [(folder/f, "Assets/"+f) for f in files] +
-                [(DESIGNS/MARKS[name], name+".svg"), (preview, "preview.png")])
+def export_icon(folder):
+    """Optional: reproduce the approved nine Glide assets in a scratch directory."""
+    folder.mkdir(parents=True, exist_ok=True)
+    mark = svg(GLIDE, 1024, 1024)
+    for filename, (w, h, extent) in TILES.items():
+        logo = mark.resize((extent, extent), LANCZOS)
+        if filename.startswith("LockScreen"):
+            white = Image.new("RGBA", logo.size, "white")
+            white.putalpha(logo.getchannel("A"))
+            logo = white
+        tile = Image.new("RGBA", (w, h))
+        tile.alpha_composite(logo, ((w-extent)//2, (h-extent)//2))
+        tile.save(folder / filename, optimize=True)
+    sizes = [(n, n) for n in FRAMES]
+    layers = [mark.resize(size, LANCZOS) for size in sizes]
+    layers[-1].save(folder / "AppIcon.ico", sizes=sizes, append_images=layers[:-1])
 
 
 # Filename, capture, matte, headline, supporting copy. The listing images
@@ -117,17 +81,32 @@ SCENES = (
 CANVAS = (1920, 1080)
 
 
-def frame(paper, shot, center_y, max_h, dark=False):
-    """Fit the whole native window; only the outer frame receives an edge."""
-    window = ImageOps.contain(shot, (1784, max_h), LANCZOS)
-    w, h = window.size
-    x, y = (CANVAS[0]-w)//2, center_y-h//2
-    draw = ImageDraw.Draw(paper)
-    draw.rounded_rectangle((x-1, y+3, x+w, y+h+3), radius=10, fill="#1B202A" if dark else "#C3CAD0")
-    draw.rounded_rectangle((x-1, y-1, x+w, y+h), radius=10, fill="#505660" if dark else "#B7BFC8")
-    mask = Image.new("L", (w, h))
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, w-1, h-1), radius=9, fill=255)
-    paper.paste(window.convert("RGB"), (x,y), ImageChops.darker(mask, window.getchannel("A")))
+# The same two vertical guides carry a promo's type and both sides of its window.
+PROMO_TOP, PROMO_BOTTOM = 184, 1024
+TITLE_BASELINE, SUB_BASELINE = 103, 149
+
+
+def curved_mask(size, radius):
+    # Area averaging provides symmetric, fractional coverage at the four corners.
+    scale = 4
+    mask = Image.new("L", (size[0]*scale, size[1]*scale))
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, mask.width-1, mask.height-1),
+                                           radius=radius*scale, fill=255)
+    return mask.resize(size, Image.Resampling.BOX)
+
+
+def frame(paper, shot, top, bottom, dark=False):
+    """Replace only the captured square DWM edge with one smooth 1 px hairline."""
+    scale = min(1784/shot.width, (bottom-top)/shot.height)
+    w, h = round(shot.width*scale), round(shot.height*scale)
+    x, y = (paper.width-w)//2, top+(bottom-top-h)//2
+    radius = round(9*w/shot.width)
+    paper.paste("#53606C" if dark else "#A8B6C1", (x, y, x+w, y+h), curved_mask((w,h), radius))
+    # The VM's first and last rows/columns are the OS border, outside the UI.
+    window = shot.crop((1, 1, shot.width-1, shot.height-1)).resize((w-2, h-2), LANCZOS)
+    mask = ImageChops.multiply(curved_mask(window.size, radius-1), window.getchannel("A"))
+    paper.paste(window.convert("RGB"), (x+1, y+1), mask)
+    return x, x+w
 
 
 def gallery():
@@ -146,27 +125,30 @@ def gallery():
             shot = image.convert("RGBA")
         dark = name == "keys"
         screenshot = Image.new("RGB", CANVAS, paper)
-        frame(screenshot, shot, 536, 990, dark)
+        frame(screenshot, shot, 48, CANVAS[1]-48, dark)
         screenshot.save(EN/"screenshots"/(stem+".png"), optimize=True)
         promo = Image.new("RGB", CANVAS, paper)
-        frame(promo, shot, 593, 898, dark)
+        left, right_edge = frame(promo, shot, PROMO_TOP, PROMO_BOTTOM, dark)
         ink = "#F3F5F9" if dark else "#1D2633"
         quiet = "#C8D3DF" if dark else "#485461"
         if i == 0:
             if night.size != shot.size:
                 raise ValueError("A theme split needs two captures with matching window geometry")
             right = Image.new("RGB", CANVAS, "#26313F")
-            frame(right, night, 593, 898, True)
+            frame(right, night, PROMO_TOP, PROMO_BOTTOM, True)
             promo.paste(right, (0,0), seam)
-        label(promo, (88, 32), title, 54, ink, bold=True)
-        label(promo, (91, 99), sub, 23, quiet)
-        label(promo, (1830, 51), "Wintodo", 25, "#EDF2F8" if i == 0 else ink, True, "rt")
-        label(promo, (1830, 92), f"0{i+1} / 05", 17, "#C6D3E2" if i == 0 else quiet, anchor="rt")
+        label(promo, (left, TITLE_BASELINE), title, 58, ink, bold=True, anchor="ls")
+        label(promo, (left, SUB_BASELINE), sub, 26, quiet, anchor="ls")
+        label(promo, (right_edge, TITLE_BASELINE), "Wintodo", 28, "#EDF2F8" if i == 0 else ink, True, "rs")
+        label(promo, (right_edge, SUB_BASELINE), f"{i+1:02d} / {len(SCENES):02d}", 18,
+              "#C6D3E2" if i == 0 else quiet, anchor="rs")
         promo.save(EN/"promos"/(stem+".png"), optimize=True)
     hero = svg(ART/"hero.svg", *CANVAS).convert("RGB")
     hero.save(EN/"store-hero.png", optimize=True)
     overview = Image.new("RGB", (1464,1346), "#FAFAFC")
-    label(overview, (36,20), "Wintodo", 33, bold=True)
+    mark = svg(GLIDE, 46, 46)
+    overview.paste(mark, (34, 16), mark)
+    label(overview, (90,23), "Wintodo", 33, bold=True)
     label(overview, (1428,39), "Windows 11    /    English gallery", 18, "#566071", anchor="rm")
     thumbs = [EN/"promos"/(s[0]+".png") for s in SCENES] + [EN/"store-hero.png"]
     for i,path in enumerate(thumbs):
@@ -180,5 +162,10 @@ def gallery():
 
 
 if __name__ == "__main__":
-    icons()
-    gallery()
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument("--export-icon", type=Path, metavar="DIR", help="export Glide only")
+    args = parser.parse_args()
+    if args.export_icon:
+        export_icon(args.export_icon)
+    else:
+        gallery()

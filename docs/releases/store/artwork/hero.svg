@@ -1,44 +1,73 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
-  <title>Out of harbour</title>
-  <desc>An original flat-colour illustration. A two-sailed dinghy passes a quiet harbour under an apricot sun.</desc>
+  <title>One more thing, done</title>
+  <desc>A spiral-bound paper list with two teal check marks, an open box and a sharpened yellow pencil. The lower third is an empty mint tabletop.</desc>
   <defs>
-    <path id="jib" d="M1055 151c-15 96-46 191-111 286-28 40-60 72-105 101 65 2 154-11 223-40z"/>
-    <path id="sail" d="M1081 108c76 145 215 265 340 350-83 56-216 92-338 74z"/>
-    <clipPath id="jib-cloth"><use href="#jib"/></clipPath>
-    <clipPath id="sailcloth"><use href="#sail"/></clipPath>
+    <!-- The open back and the highlight on each wire suggest a real binding. -->
+    <g id="wire">
+      <ellipse cx="0" cy="45" rx="14" ry="10" fill="#BABEB4"/>
+      <ellipse cx="0" cy="44" rx="9" ry="6" fill="#46635D"/>
+      <path d="M-12-9c-5-21-4-33 6-35 13-3 21 11 19 31L7 34c-1 7-3 11-7 11"
+            fill="none" stroke="#365852" stroke-width="11" stroke-linecap="round"/>
+      <path d="M-7-35c5-11 15-3 16 10" fill="none" stroke="#A8C0AE" stroke-width="3.5" stroke-linecap="round"/>
+    </g>
+    <rect id="cover" width="632" height="548" rx="22"/>
+    <rect id="leaf" width="598" height="511" rx="14"/>
+    <rect id="box" x="0" y="0" width="63" height="63" rx="12" fill="none" stroke-width="7"/>
   </defs>
-  <rect width="1920" height="1080" fill="#EBEFF8"/>
-  <circle cx="841" cy="293" r="111" fill="#F7C89C"/>
-  <!-- Distant headlands and the few roofs on the quay. -->
-  <path fill="#D8E0EF" d="M0 473c134-31 230-29 361 17 104 35 198 43 316 37l230 41H0z"/>
-  <path fill="#CDD8EB" d="M1920 416c-102 5-178 24-283 59-98 33-164 41-289 49l-229 47h801z"/>
-  <g fill="#AFBED8">
-    <path d="M69 510h55v32H69zM138 501h52v41h-52zM204 519h80v24h-80zM306 514h24v29h-24z"/>
-    <path d="M62 510l32-18 36 18zm70-9l30-24 34 24zm67 18l39-16 53 16z"/>
-    <path d="M411 480h7v63h-7zm-8 0 11-22 11 22z"/>
+
+  <rect width="1920" height="1080" fill="#DCEDE7"/>
+
+  <!-- Foreshortened paper, cut edges and a hard cast shadow; no lighting filters. -->
+  <g transform="matrix(1.08 -.116 -.205 .916 773 178)">
+    <use href="#cover" transform="translate(42 43)" fill="#C3D9CE"/>
+    <use href="#cover" transform="translate(9 20)" fill="#176461"/>
+    <use href="#cover" transform="translate(5 12)" fill="#24877D"/>
+    <use href="#cover" transform="translate(0 5)" fill="#35AA97"/>
+
+    <!-- Two dividers tuck between the leaves. -->
+    <path d="M592 99h51q11 0 11 10v52q0 11-11 11h-51z" fill="#A9A1D5"/>
+    <path d="M592 185h51q11 0 11 10v53q0 10-11 10h-51z" fill="#E3AB76"/>
+    <use href="#leaf" transform="translate(16 22)" fill="#C4CCC0"/>
+    <use href="#leaf" transform="translate(15 16)" fill="#F0ECDA"/>
+    <use href="#leaf" transform="translate(14 10)" fill="#DCDCCB"/>
+    <use href="#leaf" transform="translate(13 3)" fill="#FFFBEB"/>
+    <path d="M31 81H594" fill="none" stroke="#E1DFCD" stroke-width="2"/>
+
+    <g>
+      <use href="#wire" x="89"/><use href="#wire" x="176"/><use href="#wire" x="263"/>
+      <use href="#wire" x="350"/><use href="#wire" x="437"/><use href="#wire" x="524"/>
+    </g>
+
+    <!-- Three ruled tasks. Two expressive ticks cross the printed outlines. -->
+    <g transform="translate(85 122)">
+      <use href="#box" stroke="#98B0A6"/>
+      <path d="M9 27q10 7 18 19C43 24 59 9 81-10" fill="none" stroke="#087E77" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M123 29h299m-299 19h189" fill="none" stroke="#BBC6B7" stroke-width="8" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(85 246)">
+      <use href="#box" stroke="#98B0A6"/>
+      <path d="M10 31q9 4 16 15C39 30 56 12 72-1" fill="none" stroke="#087E77" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M123 29h218m-218 19h125" fill="none" stroke="#BBC6B7" stroke-width="8" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(85 370)">
+      <use href="#box" stroke="#506D67"/>
+      <path d="M123 30h245" fill="none" stroke="#779085" stroke-width="9" stroke-linecap="round"/>
+    </g>
   </g>
-  <path fill="#BBC9DF" d="M0 532c153-5 282-1 395 3l209 13 129 17H0z"/>
-  <path fill="#B6CEE8" d="M0 554c373-9 643 9 972-2 383-12 674-18 948-12v540H0z"/>
-  <!-- Two separate fabric panels and a slim mast. The depth comes from flat overlapping faces. -->
-  <path fill="#737FB3" d="M1069 108l8-2 7 461-8 2z"/>
-  <use href="#jib" fill="#6E72DA"/>
-  <path clip-path="url(#jib-cloth)" fill="#9697ED" d="M1055 144 818 490c103-22 182-58 245-112z"/>
-  <use href="#sail" fill="#4359AD"/>
-  <g clip-path="url(#sailcloth)">
-    <path fill="#4387D7" d="M1081 108c22 172 69 287 149 386 101-6 181-24 249-66l-45-306z"/>
-    <path fill="#79B9F1" d="M1081 108c42 115 112 221 203 309 60-6 110-19 163-43l-25-250z"/>
-  </g>
-  <path fill="#F1E6D7" d="M844 561c168 8 362 6 542-8l-25 16c-153 19-328 24-480 15z"/>
-  <path fill="#334879" d="M861 574c141 8 340 4 509-14l-62 43c-101 24-237 29-344 15-40-5-74-20-103-44z"/>
-  <path fill="#5268A1" d="M1073 582c99-2 207-8 297-22l-62 43c-64 15-141 23-206 23z"/>
-  <!-- Broken reflections; the lower third stays quiet for Store overlays. -->
-  <path fill="#839FC8" d="M884 632c78-2 145-7 240-4 66 2 116 2 189-2-48 10-106 16-176 15l-233-4c-20 0-28-2-20-5z"/>
-  <path fill="#CBDEEC" d="M0 626c179-18 372-15 565-3 106 6 193 8 281 5-102 14-210 19-333 12C285 625 180 649 0 666z"/>
-  <path fill="#CFDDEC" d="M1496 601c144-13 259-16 424-5v15c-150-8-277-11-424-4-30 1-30-4 0-6z"/>
-  <path fill="#97B8DA" d="M0 847c193 1 322-23 492-60 222-48 440-63 693-45-282 5-432 25-657 82C349 870 177 909 0 903z"/>
-  <path fill="#A6C3DF" d="M1045 1080c266-116 533-168 875-142v142z"/>
-  <g fill="#E6EBF0">
-    <rect x="343" y="576" width="110" height="4" rx="2"/><rect x="473" y="576" width="34" height="4" rx="2"/>
-    <rect x="695" y="594" width="67" height="4" rx="2"/><rect x="1429" y="652" width="102" height="4" rx="2"/>
+
+  <!-- A hexagonal pencil points back to the freshly made second tick. -->
+  <g transform="translate(899 402) rotate(-18)">
+    <path d="m25 15 83-21h501q14 0 14 13v13q0 12-14 12H108z" fill="#244D46" opacity=".12"/>
+    <path d="m0 0 87-20 12 19-12 21z" fill="#E9BA88"/>
+    <path d="m0 0 87 2v18z" fill="#C99163"/>
+    <path d="m0 0 22-5 5 5-5 5z" fill="#344C49"/>
+    <path d="M85-20h469v40H85l9-10-8-9 8-10z" fill="#F0B14A"/>
+    <path d="M85-20h469v11H94z" fill="#FFD77B"/>
+    <path d="M94 10h460v10H85z" fill="#CB8736"/>
+    <path d="M552-20h26v40h-26z" fill="#81978F"/>
+    <path d="M552-20h26v10h-26z" fill="#BECDC1"/>
+    <path d="M552 10h26v10h-26z" fill="#617F77"/>
+    <path d="M577-20h26q13 0 13 13V7q0 13-13 13h-26z" fill="#CA806A"/>
+    <path d="M577-20h26q10 0 13 11h-39z" fill="#E8A18A"/>
   </g>
 </svg>

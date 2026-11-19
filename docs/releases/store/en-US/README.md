@@ -24,11 +24,11 @@ Upload the **Screenshot** column in order to the English (United States) desktop
 | 4 | [Choose lists to import](screenshots/04-import.png) | Choose which Microsoft To Do lists to copy and see how many tasks each contains. Your originals stay in Microsoft To Do. | [Bring your lists along.](promos/04-import.png) |
 | 5 | [An iCalendar list after export](screenshots/05-open-formats.png) | Sunday kitchen came from an iCalendar file with due dates, stars and weekly repeats. The confirmation shows the list was exported again. | [Keep your Sunday routine.](promos/05-open-formats.png) |
 
-[Preview all five promo designs and the hero](preview.jpg). The first promo combines two real captures of the same My Day list, one in light mode and one in dark mode.
+[Preview all five promo designs and the hero](preview.jpg). The first promo pairs light and dark captures of the same My Day list. The headlines and supporting lines sit above the windows; only the five images in `screenshots/` go in the desktop screenshot slots.
 
 ## Store hero art
 
-Upload [store-hero.png](store-hero.png) to **Trailers and additional assets → 16:9 Super hero art**. *Out of harbour* is an original illustration of a sailboat, drawn in solid colours. Its sails sit in the upper two-thirds, with open water below for Store overlays. The 1920 × 1080 PNG contains no text, logo, app UI or device frame. The [editable artwork](../artwork/hero.svg) is included.
+Upload [store-hero.png](store-hero.png) to **Trailers and additional assets → 16:9 Super hero art**. *One more thing, done* shows a paper checklist and a pencil: two tasks checked off, one still to do. The lower third is a solid mint surface for the Store overlay. The 1920 × 1080 illustration contains no text, logo, app UI or device frame. The [editable artwork](../artwork/hero.svg) is included.
 
 ## Notes for certification
 

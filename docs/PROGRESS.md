@@ -15,14 +15,13 @@ a fresh production installation with data-preserving future updates, first
 `v1.0.0` / `1.0.0.0`, and support@univera.app are selected. Source-available terms
 will permit free self-builds and reserve commercial redistribution. The
 [reserved Store identity](plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
-and version `1.0.0.0` are now in the manifest. The nine package icons are
-[attributed MIT template assets](plans/dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons).
-Rights for eight background JPEGs, first-party licence text, Store certification,
-customer tests and effective ref protection remain open. The template icons
-are also a branding risk: the owner declined the first replacement sketch.
-[Lift and Glide are ready to compare](adr/ADR-021-store-package-icon-proposal.md).
-The [English Store gallery](releases/store/en-US/README.md) now shows whole
-Wintodo windows on solid backgrounds.
+and version `1.0.0.0` are in both unsigned packages. Each contains the nine
+approved [Glide icon files](adr/ADR-021-store-package-icon-proposal.md).
+The [English Store gallery](releases/store/en-US/README.md) pairs complete
+Windows captures with separate promos and a text-free checklist illustration.
+Rights for eight background JPEGs, first-party licence text, the public privacy
+URL, native dependency review, ref protection, certification and customer
+tests remain open.
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -37,15 +36,15 @@ Wintodo windows on solid backgrounds.
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
-- **Hosted CI — PASS on the release PR:** [19 November build-and-test at package source `c2c8919`](https://github.com/Dvaderfun/wintodo/actions/runs/44593397992)
+- **Hosted CI — restore fix verified on an earlier PR revision:** [19 November build-and-test at `c2c8919`](https://github.com/Dvaderfun/wintodo/actions/runs/44593397992)
   passed the locked restore, audited dependencies, build and tests on SDK
   `10.0.404`. The [16 November scheduled failure](plans/deployment-readiness.md#2026-11-19-hosted-restore-failure)
   preceded the fix. PRs skip the release matrix; a main maintenance run is due after merge.
 - **Last passing builds:** Debug and Release x64 passed with zero warnings/errors on
   2026-11-19. All four MTP suites passed 707/707, zero failed/skipped
   (Core 257, Data 133, Import 155, Sync 162); 206 script regressions passed on
-  Python 3.13. [Unsigned x64 and ARM64 MSIX](plans/deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates)
-  at `c2c8919` use .NET 10.0.15 and ML 2.5.96; structure, identity, privacy
+  Python 3.13. [Unsigned Glide x64 and ARM64 MSIX](plans/deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery)
+  at `aa59ff4` use .NET 10.0.15 and ML 2.5.96; structure, identity, privacy
   and both zero-advisory NuGet audits passed. Store-signed packages and
   customer/runtime checks remain pending.
   Earlier DEP-04 x64/ARM64 AOT outputs used compiler/
@@ -4739,3 +4738,28 @@ recover the file from the requested directory; the repeat verified the actual
 export. All eleven images are RGB PNGs at 1920 × 1080. Visual and OCR review
 of the Store screenshots, caption lengths and ZIP contents passed. Store
 certification and the installed appearance of the selected icon remain pending.
+
+### 2026-11-19 — M10: Glide and final gallery framing
+
+The owner selected [Glide](adr/ADR-021-store-package-icon-proposal.md). Both
+local unsigned x64/ARM64 MSIX from clean source `aa59ff4` contain the eight
+approved PNGs, the six-frame ICO and the retained supplier notice. No other
+package inputs changed. [Exact hashes and handoff](plans/deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery):
+structure, identity, privacy, SBOM schema, archive signatures and paired input
+checks passed. Debug and Release x64 builds had zero warnings/errors; 707/707
+unit and 206/206 script tests passed.
+
+Six new English guest captures use the real Glide title-bar icon. The
+[gallery](releases/store/en-US/README.md) replaces the square OS edge and
+stacked outlines with one antialiased hairline. Promo type shares the window
+edges, with 60 px above the title and 29–30 px clear below the supporting
+line. A paper checklist with two ticks replaces the sailboat; its lower third
+is clear for the Store overlay. All four screenshot corners, 320 px previews,
+OCR, captions, the 14 ZIP entries and the five-task iCalendar export passed
+review. [Capture evidence and reproduction](releases/store/artwork/README.md).
+
+The old local Debug AppX folder belonged to a previous build. Its icon and
+identity failed preflight; the guest used the current SDK-generated recipe
+instead. This was a Debug capture, not a signed installation. Eight background
+rights, the remaining legal/native/protection work, Store certification and
+the owner's installed x64/native ARM64 tests are still open.

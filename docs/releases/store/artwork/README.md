@@ -1,39 +1,50 @@
 # Store artwork sources
 
-The six PNGs in `captures/` are whole Wintodo windows, in English, from
-the x64 Debug app in the WintodoTest VM. Their contents are unchanged.
-Where WinApp returned a labelled multi-window sheet, only its Wintodo
-rectangle was kept. No UI, demo text, task row or date was painted in.
-The two My Day captures use the same data, date and window geometry.
+The six English PNGs in `captures/` show complete Wintodo windows from the
+WintodoTest VM. They use the x64 Debug build of `aa59ff4`. The guest layout
+came from that build's MSBuild package recipe; all nine icon files matched
+the approved Glide set before launch. The title-bar mark is part of the
+capture. The two My Day windows use the same tasks, date and geometry.
 
 The gallery is set on Thursday, 19 November 2026. The three fictional lists
-were ingested through Wintodo's `IcalReader` and `SqliteTaskStore.ImportIcalAsync`
-into fresh disposable databases, one per appearance setting. The Microsoft To Do
+were imported through Wintodo's `IcalReader` and `SqliteTaskStore.ImportIcalAsync`
+into disposable databases, one per appearance setting. The Microsoft To Do
 chooser uses the Debug Graph fixture with the display name “Demo account” and
-no email address. List background photos were disabled for these captures.
+no email address. List background photos were disabled.
 
-Local capture evidence under `tests/ui/artifacts/store-gallery/`:
+Private capture evidence: `tests/ui/artifacts/store-glide-gallery/`.
+The run log is `tests/ui/artifacts/vm/run-store-glide-capture-20261119-202215.log`.
 
-| Master | Guest run and file | Region of the WinApp image |
+| Master | Guest file | Region retained |
 |---|---|---|
-| `day-light`, `day-dark`, `bag-light` | `20261014-000456/<name>.png` | Main window: left 0, top 28, width 1426, height 873; excludes the harness labels and shortcut tooltip panel. |
-| `keys` | `20261014-000456/keys.png` | Full window, including the shortcut dialog. |
-| `choose` | `20261119-194944/choose.png` | Full window, including the sample account label. |
-| `kitchen-export` | `20261119-195533/exported.png` | Full window, including Wintodo's export confirmation. The same run returned `Sunday kitchen.ics` with five tasks and their weekly repeat rules. |
+| `day-light`, `day-dark`, `bag-light` | `gallery/<name>.png` | Main window at (0, 28), 1426 × 873. This excludes the harness labels and shortcut tooltip panel. |
+| `keys` | `gallery/keys.png` | Full window, including the shortcut dialog. |
+| `choose` | `import/choose.png` | Full window, including the demo account label. |
+| `kitchen-export` | `export/exported.png` | Full window, including the export confirmation. The returned iCalendar file contained five tasks and two weekly repeat rules. |
 
-The first directory name reflects the restored guest's clock. Its host
-capture log is `tests/ui/artifacts/vm/run-store-gallery-capture-20261119-194346.log`.
+The captures preserve those pixels. When framing a window, the renderer
+replaces only the captured square one-pixel OS border with a single
+antialiased hairline. Desktop screenshots have 48 px above and below the
+window and no added lettering. Each promo aligns the left edges of its two
+lines and the right edge of its wordmark to the window below. The original
+[paper checklist illustration](hero.svg) leaves the bottom third clear for
+Store overlays.
 
-From the repository root, with Pillow and resvg-py available to a Windows
-Python interpreter and the standard Segoe UI fonts installed:
+From the repository root on Windows, with Pillow 12.3.0, resvg-py 0.5.0
+and the standard Segoe UI fonts:
 
 ```powershell
 py -3.13 docs/releases/store/artwork/render.py
 ```
 
-The renderer reads `captures/`, [the harbour illustration](hero.svg) and
-[the two icon masters](../../../plans/assets/). It writes the English
-gallery, the icon comparison, and the three review ZIPs under
-`artifacts/store-1.0.0-rc/`. It does not write to the project's
-`Assets` directory or rebuild packages. Fonts, databases, fixture responses
-and raw guest captures are not included in the handoff ZIPs.
+This regenerates `en-US/` artwork and
+`artifacts/store-1.0.0-rc/Wintodo-Store-en-US.zip`. The ZIP contains listing
+copy, the preview, five screenshots, five promos and the hero PNG/SVG.
+Raw guest captures, fonts, databases and fixture responses stay out of the ZIP.
+
+To reproduce the eight package PNGs and six-frame ICO from the approved
+[Glide SVG](../../../plans/assets/store-icon-glide.svg) in a scratch folder:
+
+```powershell
+py -3.13 docs/releases/store/artwork/render.py --export-icon artifacts/icon-repro
+```

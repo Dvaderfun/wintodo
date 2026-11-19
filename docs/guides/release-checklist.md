@@ -9,7 +9,7 @@ M9 performance remains owner-deferred.
 
 | Decision | Current value | Needed before |
 |---|---|---|
-| App display name | Wintodo selected; package icons attributed; rights to eight retained backgrounds pending | Final listing and artwork acceptance |
+| App display name | Wintodo and the Glide icon selected; rights to eight retained backgrounds pending | Final listing and artwork acceptance |
 | Package identity / publisher | Partner Center reservation for Wintodo / Univera LLC is in the manifest | Verify actual Store-delivered package family |
 | Distribution | Store-first selected (ADR-019); public source after review selected; actual protection/visibility/submission pending | Store certification and release CI |
 | Release version | Manifest `1.0.0.0` on the reserved family; first tag is `v1.0.0` when authorized | Keep the test family separate and verify a staged higher-version update |
@@ -154,14 +154,14 @@ The reserved identity is applied. Older packages with the test identity are
 not evidence for the new Store family.
 
 - [x] Apply the reserved name, publisher, publisher display name and first version.
-- [x] Identify and attribute all nine [MIT template package icons](../plans/dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons).
+- [x] Verify the nine [approved Glide icons](../adr/ADR-021-store-package-icon-proposal.md) in both unsigned MSIX files.
 - [ ] Confirm redistribution rights for the eight background JPEGs and review final logo/tile/splash presentation.
 - [x] Prepare [English screenshots, captions, hero art, listing copy and certification notes](../releases/store/en-US/README.md).
 - [ ] Compare the gallery with the final UI, publish the approved privacy URL and
       confirm Store fields, age ratings and private-audience publication settings.
 - [x] Build and inspect local unsigned self-contained Native AOT x64 and ARM64
       packages: manifests, executable architecture, assets, extensions and
-      the single `runFullTrust` capability. [Source and SHA-256 for each target](../plans/deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates).
+      the single `runFullTrust` capability. [Source and SHA-256 for each target](../plans/deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery).
 - [ ] After merging the reviewed source, run the hosted main packaging workflow
       and retain its exact upload hashes and reports.
 - [ ] Verify effective GitHub protection and the tag/source/hash handoff. Submit
