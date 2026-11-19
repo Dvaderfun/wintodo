@@ -4,7 +4,7 @@
 
 | Tool | Version | Check | Install / upgrade |
 |---|---|---|---|
-| .NET SDK | 10.0.4xx (pinned in `global.json`, `latestFeature` roll-forward) | `dotnet --list-sdks` | `winget upgrade Microsoft.DotNet.SDK.10` |
+| .NET SDK | Exact stable version in `global.json` (currently 10.0.404) | `dotnet --version` from the repo | Use that SDK side by side; a newer SDK alone does not satisfy the pin |
 | WinApp CLI | **0.7+** | `winapp --version` | `winget upgrade --id Microsoft.WinAppCli` |
 | Developer Mode | on | Settings → System → For developers | **ask the owner** — it needs UAC |
 | Git | any recent | `git --version` | `winget install Git.Git` |

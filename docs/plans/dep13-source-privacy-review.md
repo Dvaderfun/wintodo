@@ -94,3 +94,20 @@ choices, background redistribution proof, future screenshot review and final
 signed-package privacy checks remain open. No author/committer, history,
 repository visibility, accepted ADR, machine configuration or remote setting
 changed.
+
+## 2026-11-19 — Source of the nine package icons
+
+At package source `c2c8919`, all eight PNGs at the root of
+`src/Wintodo.App/Assets` and `AppIcon.ico` matched, byte for byte,
+the files under `content/winui.blankapp/Assets/` in
+[Microsoft.WindowsAppSDK.WinUI.CSharp.Templates 0.0.6-alpha](https://www.nuget.org/packages/Microsoft.WindowsAppSDK.WinUI.CSharp.Templates/0.0.6-alpha).
+The original NuGet archive's SHA-256 is
+`f2f0b9bb172863c39c37ec948029e0367b0b42cc4b1d4831f4b7a08be104a9a8`;
+its SHA-512 matches the NuGet catalog and `dotnet nuget verify --all` passed.
+The package metadata names Microsoft as author and declares MIT. The
+[licence at the package's source commit](https://github.com/microsoft/WindowsAppSDK/blob/912dbdf3dfcc02657002f6dc8b702c96e8b4f414/LICENSE)
+was included with an explicit [attribution in those packages](https://github.com/Dvaderfun/wintodo/blob/c2c8919985517b6349fb9972078cca3b3e36640a/src/Wintodo.App/Assets/ThirdPartyNotices.txt).
+[ADR-021](../adr/ADR-021-store-package-icon-proposal.md) replaces all nine
+with original Glide artwork. The notice for the removed images was dropped;
+other supplier bodies stay byte-identical. The source and terms for the eight JPEGs
+under `ListBackgrounds/` are still unknown.
