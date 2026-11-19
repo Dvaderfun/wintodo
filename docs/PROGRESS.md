@@ -29,16 +29,17 @@ All five required sections in the [Partner Center draft](plans/deployment-store-
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | IN PROGRESS | All five Store draft sections complete; not submitted. Rights, protection, native dependency review, final artifacts, certification and installed x64/native ARM64 checks remain open. |
+| M10 Packaging and release | IN PROGRESS | All five Store draft sections complete; not submitted. Compare the [main package handoff](plans/deployment-store-first-preparation.md#reviewed-main-packages--20-november-2026) with the draft. Artwork rights, ref protection, native provenance, certification and installed x64/native ARM64 checks remain open. |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
 | IMP Onboarding + Microsoft To Do import | AUTOMATED PASS; personal-account manual PASS | Work/school account |
 
-- **Hosted CI — restore fix verified on an earlier PR revision:** [19 November build-and-test at `c2c8919`](https://github.com/Dvaderfun/wintodo/actions/runs/44593397992)
-  passed the locked restore, audited dependencies, build and tests on SDK
-  `10.0.404`. The [16 November scheduled failure](plans/deployment-readiness.md#2026-11-19-hosted-restore-failure)
-  preceded the fix. PRs skip the release matrix; a main maintenance run is due after merge.
+- **Hosted CI:** [PR #5's final check](https://github.com/Dvaderfun/wintodo/actions/runs/44628952053)
+  passed locked restore, build, all 707 unit tests and 206 script tests on SDK
+  `10.0.404`. [Main run 44630077895](https://github.com/Dvaderfun/wintodo/actions/runs/44630077895)
+  targets merge commit `98476b1`; its unsigned artifacts and the saved Store
+  packages have separate [handoff records](plans/deployment-store-first-preparation.md#reviewed-main-packages--20-november-2026).
 - **Last passing builds:** Debug and Release x64 passed with zero warnings/errors on
   2026-11-19. All four MTP suites passed 707/707, zero failed/skipped
   (Core 257, Data 133, Import 155, Sync 162); 206 script regressions passed on
@@ -4786,3 +4787,12 @@ builds and reserves official branding and monetization. The pre-merge x64 Debug
 build completed with zero warnings/errors; all four suites passed 707/707 with
 zero skips. This change does not alter any package input. No Store
 certification, publication or repository visibility change is part of this step.
+
+### 2026-11-20 — M10: merge reviewed Store source and start the main build
+
+[PR #5](https://github.com/Dvaderfun/wintodo/pull/5) merged after hosted CI
+passed. Local Debug and Release x64 had zero warnings/errors. The final PR
+reports show four complete suites, zero NuGet advisories across all nine
+projects and zero source/history secret-scan findings. The
+[main package handoff](plans/deployment-store-first-preparation.md#reviewed-main-packages--20-november-2026)
+identifies the run, immutable source and the separate Partner Center readback.
