@@ -94,3 +94,17 @@ choices, background redistribution proof, future screenshot review and final
 signed-package privacy checks remain open. No author/committer, history,
 repository visibility, accepted ADR, machine configuration or remote setting
 changed.
+
+## 2026-11-19 — Source of the nine package icons
+
+All eight PNGs at the root of `src/Wintodo.App/Assets` and `AppIcon.ico`
+match, byte for byte, the files under `content/winui.blankapp/Assets/` in
+[Microsoft.WindowsAppSDK.WinUI.CSharp.Templates 0.0.6-alpha](https://www.nuget.org/packages/Microsoft.WindowsAppSDK.WinUI.CSharp.Templates/0.0.6-alpha).
+The original NuGet archive's SHA-256 is
+`f2f0b9bb172863c39c37ec948029e0367b0b42cc4b1d4831f4b7a08be104a9a8`;
+its SHA-512 matches the NuGet catalog and `dotnet nuget verify --all` passed.
+The package metadata names Microsoft as author and declares MIT. The
+[licence at the package's source commit](https://github.com/microsoft/WindowsAppSDK/blob/912dbdf3dfcc02657002f6dc8b702c96e8b4f414/LICENSE)
+is included with an explicit attribution in [the app's notices](../../src/Wintodo.App/Assets/ThirdPartyNotices.txt).
+This accounts for the package icons. The source and terms for the eight JPEGs
+under `ListBackgrounds/` are still unknown.
