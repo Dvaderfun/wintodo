@@ -42,6 +42,18 @@ jobs:
         with:
           python-version: '3.13'
 
+      - name: Check for .NET 10 servicing updates
+        if: github.event_name == 'schedule'
+        run: |
+          $pin = (Get-Content global.json -Raw | ConvertFrom-Json).sdk.version
+          try {
+            $latest = (Invoke-RestMethod 'https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/10.0/releases.json' -TimeoutSec 15).'latest-sdk'
+            if ($latest -notmatch '^10\.0\.\d+$') { throw 'Invalid SDK metadata' }
+            if ([version]$latest -gt [version]$pin) {
+              Write-Output "::warning::.NET SDK $latest is available. Review the SDK and its lockfiles together (docs/guides/ci.md)."
+            }
+          } catch { Write-Output '::warning::SDK update notification unavailable. The locked build and security audits still run.' }
+
       - name: Verify safe scanner and release-privacy reports
         run: python -m unittest discover -s tests/scripts -p 'test_*.py'
 
@@ -64,12 +76,13 @@ jobs:
         run: ./tests/scripts/Test-SafeTestResults.ps1
 
       - name: Unit tests (Core, Data, Sync, Import — xunit v3 on Microsoft Testing Platform)
+        id: unit_tests
         run: >
           dotnet test --solution Wintodo.sln -p:Platform=x64 --no-build
           --report-trx --coverage --results-directory TestResults
 
       - name: Export diagnostic-safe test summary
-        if: always()
+        if: ${{ !cancelled() && (steps.unit_tests.outcome == 'success' || steps.unit_tests.outcome == 'failure') }}
         run: ./scripts/Export-SafeTestResults.ps1
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -122,9 +135,11 @@ jobs:
       - name: Validate release tag, reviewed main ancestry and manifest version
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         env:
+          GH_TOKEN: ${{ github.token }}
           RELEASE_REVIEWED_MAIN_SHA: ${{ vars.RELEASE_REVIEWED_MAIN_SHA }}
           RELEASE_PREVIOUS_MSIX_VERSION: ${{ vars.RELEASE_PREVIOUS_MSIX_VERSION }}
         run: |
+          ./scripts/Assert-StoreRefProtection.ps1
           if ($env:RELEASE_REVIEWED_MAIN_SHA -cnotmatch '^[0-9a-f]{40}$') {
             throw 'A full reviewed-main commit pin is required for release tags.'
           }
