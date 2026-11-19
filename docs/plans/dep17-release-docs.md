@@ -1,9 +1,7 @@
 # DEP-17 — Release documentation preparation
 
 Prepared: 2026-11-08. Source baseline: `4fa223d0210bdf744b28ccb1a2eba7c45e9866cb`.
-Status: **REVIEW DRAFTS PREPARED; owner choices and final-package acceptance
-pending.** No identity, licence, distribution route, signing policy or accepted
-ADR changes are made by this work.
+Status on 2026-11-20: the owner accepted the privacy policy for the Store draft. The complete text was read back from Partner Center. Installation guidance, final-package acceptance and the other release gates remain open.
 
 ## Delivered scope
 
@@ -11,7 +9,7 @@ ADR changes are made by this work.
 connections, Graph token lifetime, attachments, diagnostics and retention.
 [INSTALLATION.md](../releases/INSTALLATION.md) prepares Windows/architecture
 selection, direct-package verification, conditional Store delivery, update,
-backup/recovery and removal guidance. Both are visibly unpublished review drafts.
+backup/recovery and removal guidance. The installation guide remains an unpublished review draft.
 
 This stream owns these two drafts and this evidence record only. It leaves
 shared tracking, existing operational guides, application files and legal/brand

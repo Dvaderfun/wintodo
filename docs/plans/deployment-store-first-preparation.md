@@ -1,9 +1,8 @@
 # Store-first release preparation
 
 Prepared: 2026-11-09 against source `44a4ef6` plus recorded owner decisions.
-Updated 2026-11-19: **Both package candidates and the English Store listings are saved in the [Partner Center draft](#partner-center-draft--19-november-2026).**
-The first submission is private, has no tester group yet, and is held for manual publication. It has not been sent for certification.
-Authority: [ADR-019](../adr/ADR-019-store-first-source-available-release.md).
+Updated 2026-11-20: **The [Partner Center draft](#partner-center-draft--20-november-2026) is set to Free, public and discoverable.** All required sections except the publisher's final IARC acceptance show Complete. Publication is manual; nothing has been submitted for certification.
+Authority: [ADR-019](../adr/ADR-019-store-first-source-available-release.md) and the owner's [public launch decision](../adr/ADR-022-public-free-store-launch.md).
 
 ## Selected inputs
 
@@ -12,6 +11,7 @@ Authority: [ADR-019](../adr/ADR-019-store-first-source-available-release.md).
 | Product display name | Wintodo |
 | Official publisher | Univera LLC |
 | First distribution route | Microsoft Store MSIX; Microsoft supplies Store signing |
+| Store pricing and audience | Free for version 1.0; public and discoverable, without a tester group. No in-app purchases. |
 | Support / security / privacy contact | support@univera.app |
 | First release tag / MSIX version | `v1.0.0` / `1.0.0.0` on the new reserved production family |
 | Updates | Stable production family and increasing versions; actual data-preservation tests required |
@@ -42,8 +42,8 @@ separate Entra client used for the optional Microsoft To Do import.
 ## Preparation and acceptance order
 
 1. Confirm first-party ownership/licence text, retained asset
-   rights and public attribution. Finalize the privacy/install/support drafts
-   using the selected contact. Keep unknown artwork rights as blocking evidence.
+   rights and public attribution. Keep the approved privacy text accurate for
+   the final build and finish the installation guidance. Keep unknown artwork rights as blocking evidence.
 2. Inspect the generated packages against the identity above, desktop version
    and existing Windows integrations. Leave the old development family installed.
 3. Build the clean reviewed source for x64 and ARM64 using SDK-native packaging.
@@ -57,7 +57,7 @@ separate Entra client used for the optional Microsoft To Do import.
    separately review any optional private symbol submission.
 4. Prepare the Store listing, permitted logos/screenshots with synthetic tasks,
    age ratings, privacy/customer licence text, support information and review
-   notes. Prepare the first private-audience submission for owner approval
+   notes. Prepare the public, free submission for owner approval
    as described below. An unsigned handoff PASS does not certify
    the Store upload or grant submission/publication authority.
 5. Use an approved staged/certified Store path to obtain and inspect the actual
@@ -92,29 +92,27 @@ The read-only CI workflow has no Partner Center credential or upload step.
 
 For the first submission of Store ID `9PF4DX2BSF0X`:
 
-1. In **Pricing and availability → Visibility → Audience**, choose
-   [**Private audience**](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/visibility-options#private-audience)
-   and the known user group for the x64/ARM64 testers' personal Microsoft
-   accounts. Leave **Make this product public on** unset and select manual
-   publication. A public listing with **Direct link only** still permits others
-   with the link to acquire the app.
-2. Check the source SHA, both upload hashes, manifest and dependency reports.
-   Attach the [English listing and certification notes](../releases/store/en-US/README.md),
-   approved privacy URL and age ratings. Record the submission ID. After
-   certification and approval for this private session, publish **to that
-   group** so the testers can install the Store-signed `1.0.0.0` baseline.
-   A submission merely held for publication cannot provide that installation.
-3. Record the delivered versions, PFN, signatures and hashes on clean x64
-   and native ARM64 systems. Microsoft makes [package flights](https://learn.microsoft.com/en-us/windows/apps/publish/package-flights#create-a-new-package-flight)
-   available **after** the first published submission. Use a higher-version
-   flight for a subset of the private audience to test update continuity;
-   keep the non-flighted `1.0.0.0` available for clean-install checks.
-   Move the listing to a public audience only after the remaining gates
-   pass and the public submission is approved.
+1. Keep **Public audience**, **available and discoverable**, retail price `0`, and manual publication. There is no first-release tester group.
+2. Compare the final reviewed source, upload hashes, manifest and dependency reports. Check the [English listing and certification notes](../releases/store/en-US/README.md), saved [privacy policy](../releases/PRIVACY.md), and age ratings. The publisher completes the personal IARC declaration. The owner separately submits the reviewed app for certification and decides when to publish.
+3. When the certified packages are available, record their versions, PFN, signatures and hashes on clean x64 and native ARM64 systems. Test a higher-version update against this baseline. A public draft or a certified submission held for publication cannot by itself prove installation from the customer Store.
+
+## Partner Center draft — 20 November 2026
+
+[Submission 1](https://partner.microsoft.com/en-us/dashboard/products/9PF4DX2BSF0X/overview) (`1152921505702452815`) remains **In draft**. The owner chose a free public launch without a private pilot. No certification or publication action was taken.
+
+| Section | Readback after saving |
+|---|---|
+| Pricing and availability — **Complete** | Retail price `0`, **Public audience**, **available and discoverable in the Microsoft Store**. |
+| Properties — **Complete** | Productivity. The portal's **Provide privacy policy text** option contains the [approved English policy](../releases/PRIVACY.md). All 4,556 characters matched after reopening. No external policy URL is needed for this draft. |
+| Packages and Store listings — **Complete** | Desktop x64/ARM64 `1.0.0.0` candidates and both verified English galleries; see the [package and listing readbacks](#partner-center-draft--19-november-2026). |
+| Age ratings — **In Progress** | All Other App Types; nine factual responses completed, with no physical distribution or separate board ratings. Preview: **PEGI 3**, **ESRB E (Everyone)** and **IARC 3**. The publisher must personally accept the IARC Terms of Use and confirm they are of the age of majority, then select **Save**. The preview alone is not a final rating. |
+| Submission options | Reopened after changing the audience and price: **Don't publish this submission until I select Publish now** is on; automatic publication is off. |
+
+This version has no native chat, published user feed, promoted content catalogue or in-app purchases. Imported tasks, private attachments and sync through the user's own provider are distinct from those features. Revisit the relevant questionnaire answers and privacy text if a later version adds paid digital goods or changes these data flows.
 
 ## Partner Center draft — 19 November 2026
 
-[Wintodo in Partner Center](https://partner.microsoft.com/en-us/dashboard/products/9PF4DX2BSF0X/overview) shows **Submission 1** (`1152921505702452815`) **In draft**. The following settings were read back after saving:
+On 19 November, [Wintodo in Partner Center](https://partner.microsoft.com/en-us/dashboard/products/9PF4DX2BSF0X/overview) showed **Submission 1** (`1152921505702452815`) **In draft**. The following is the historical snapshot before the owner chose a free public launch:
 
 | Portal section | Saved state | Needed before certification |
 |---|---|---|

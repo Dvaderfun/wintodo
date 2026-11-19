@@ -157,8 +157,8 @@ not evidence for the new Store family.
 - [x] Verify the nine [approved Glide icons](../adr/ADR-021-store-package-icon-proposal.md) in both unsigned MSIX files.
 - [ ] Confirm redistribution rights for the eight background JPEGs and review final logo/tile/splash presentation.
 - [x] Prepare [English screenshots, captions, hero art, listing copy and certification notes](../releases/store/en-US/README.md).
-- [ ] Compare the gallery with the final UI, publish the approved privacy URL and
-      confirm Store fields, age ratings and private-audience publication settings.
+- [x] Save the approved privacy text in Partner Center. Confirm Free, public audience and Store discoverability for the first launch.
+- [ ] Compare the gallery with the final UI, have the publisher accept and save the IARC preview, and confirm the manual publication hold before submission.
 - [x] Build and inspect local unsigned self-contained Native AOT x64 and ARM64
       packages: manifests, executable architecture, assets, extensions and
       the single `runFullTrust` capability. [Source and SHA-256 for each target](../plans/deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery).
@@ -181,10 +181,7 @@ certificate already trusted. Record installed runtime dependencies so a
 preinstalled development runtime cannot mask a missing package dependency.
 Preserve the normal `clean` checkpoint used by UI gates.
 
-For the Store route, follow the [private-audience handoff](../plans/deployment-store-first-preparation.md#controlled-handoff):
-install the certified baseline through the Store using an included tester
-account, then test a higher-version private flight on that installation before
-uninstalling. Keep Developer Mode off and use the ordinary Windows trust store.
+For the [public Store launch](../plans/deployment-store-first-preparation.md#controlled-handoff), install the certified baseline on clean x64 and native ARM64 systems when Microsoft makes it available. Test a higher-version update on that installation before uninstalling. Keep Developer Mode off and use the ordinary Windows trust store. The first launch has no tester group or private flight.
 
 For separate direct MSIX testing, first verify installation rejects the untrusted test
 certificate. Then, with owner approval for that guest session, trust the public

@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-11-19:
+As of 2026-11-20:
 
 Store-first under **Univera LLC** is selected in
 [ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
@@ -19,7 +19,7 @@ and version `1.0.0.0` are in both unsigned packages. Each contains the nine
 approved [Glide icon files](adr/ADR-021-store-package-icon-proposal.md).
 The [English Store gallery](releases/store/en-US/README.md) pairs complete
 Windows captures with separate promos and a text-free checklist illustration.
-In the [Partner Center draft](plans/deployment-store-first-preparation.md#partner-center-draft--19-november-2026), **Packages** and **Store listings** are complete for the desktop x64/ARM64 candidates and both English listings. Publication is manual; the private audience has no tester group yet. The Store price, approved privacy policy and IARC rating are still missing. Rights for eight background JPEGs, first-party licence text, native dependency review, ref protection, final reviewed packages, certification and customer tests remain open.
+In the [Partner Center draft](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026), **Pricing and availability, Properties, Packages and Store listings** are complete. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is saved. IARC is **In Progress**: the completed questionnaire previews PEGI 3 / ESRB Everyone; the publisher's personal declaration and Save remain. Rights for eight background JPEGs, first-party licence text, native dependency review, ref protection, final reviewed packages, certification and customer tests remain open.
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -28,7 +28,7 @@ In the [Partner Center draft](plans/deployment-store-first-preparation.md#partne
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | IN PROGRESS | Store draft has packages and listings; tester group, price, privacy policy and age rating pending. Rights, protection, native dependency review, final artifacts, certification and installed x64/native ARM64 checks remain open. |
+| M10 Packaging and release | IN PROGRESS | Public/free draft has four complete sections; personal IARC acceptance pending. Rights, protection, native dependency review, final artifacts, certification and installed x64/native ARM64 checks remain open. |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
@@ -4767,3 +4767,7 @@ the owner's installed x64/native ARM64 tests are still open.
 [Submission 1](plans/deployment-store-first-preparation.md#partner-center-draft--19-november-2026) remains **In draft**. Partner Center shows both `1.0.0.0` architectures and both English listings as complete. The package form was reopened to verify that only Desktop is selected. The `en` import placed screenshots 4 and 5 out of order; the listing editor was used to set the import and iCalendar screenshots and their captions in the intended slots. The final server CSV contained all 27 prepared fields for each locale, and both reopened galleries matched the five source screenshots in order.
 
 The saved audience is private, with no automatic public date or selected tester group. The manual publication hold, Productivity category and English certification notes were read back. Pricing and Properties are incomplete; age ratings have not been started. No certification, publication, signed installation or runtime gate was run. The uploaded candidates are from `aa59ff4`, not a final reviewed `main` build.
+
+### 2026-11-20 — M10: free public launch settings and IARC preview
+
+The owner selected a free public launch without a tester group and approved the Store privacy text. [Submission 1](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) returned retail price `0`, Public audience, public discoverability and the full 4,556-character privacy text after reopening. Manual publication remains selected. The refreshed overview shows four sections Complete and Age ratings In Progress. The nine factual IARC answers were checked before preview; the service showed PEGI 3 and ESRB Everyone. The publisher-only Terms of Use and age-of-majority declaration was left unchecked. No app code or package was changed, submitted or published.
