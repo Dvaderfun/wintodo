@@ -1,7 +1,7 @@
 # Store-first release preparation
 
 Prepared: 2026-11-09 against source `44a4ef6` plus recorded owner decisions.
-Updated 2026-11-19: **Store reservation confirmed and applied.** The English
+Updated 2026-11-19: **Store reservation confirmed in both unsigned MSIX files.** The English
 [gallery and listing copy](../releases/store/en-US/README.md) are prepared.
 Asset rights, legal text, controlled submission and customer tests remain open.
 Authority: [ADR-019](../adr/ADR-019-store-first-source-available-release.md).
@@ -30,9 +30,12 @@ The owner supplied these values from Wintodo's **Product identity** page:
 | Package/Identity/Publisher | `CN=03D194EC-2260-464A-80F9-EF22C07F62D0` |
 | Package/Properties/PublisherDisplayName | Univera LLC |
 | Package family name | `47371DermenzhyStudio.Wintodo_rg7xtn0gdgdnp` |
+| Package SID (Store/WNS reference) | `S-1-15-2-1435222867-471200497-1038821137-3538736367-1189327619-1405212333-575449426` |
 | Store ID / destination | [9PF4DX2BSF0X](https://apps.microsoft.com/detail/9PF4DX2BSF0X) |
+| Windows Store link | `ms-windows-store://pdp/?productid=9PF4DX2BSF0X` |
+| MSA app ID (Store registration) | `992a758a-6a5a-4c8b-9a10-db62233a7eb4` |
 
-The desktop manifest carries the three identity fields and `1.0.0.0`. The
+Both [inspected packages](deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates) carry the three identity fields and `1.0.0.0`. The
 assigned Store URL does not establish public availability. The package SID and
 MSA app ID are not manifest fields; the Store association does not replace the
 separate Entra client used for the optional Microsoft To Do import.
@@ -55,8 +58,8 @@ separate Entra client used for the optional Microsoft To Do import.
    separately review any optional private symbol submission.
 4. Prepare the Store listing, permitted logos/screenshots with synthetic tasks,
    age ratings, privacy/customer licence text, support information and review
-   notes. Select controlled publication and prepare the precise submission or
-   flight session for owner approval. An unsigned handoff PASS does not certify
+   notes. Prepare the first private-audience submission for owner approval
+   as described below. An unsigned handoff PASS does not certify
    the Store upload or grant submission/publication authority.
 5. Use an approved staged/certified Store path to obtain and inspect the actual
    signed packages. Record submission/certification IDs, delivered version/PFN,
@@ -88,24 +91,40 @@ rules before setting the reviewed main SHA. The private repository's ruleset
 API returned HTTP 403 on 19 November; the tag job rejects unprotected refs.
 The read-only CI workflow has no Partner Center credential or upload step.
 
-The release operator uses Partner Center's controlled submission/flight for
-Store ID `9PF4DX2BSF0X`. Check the source SHA, both upload hashes, manifest
-and dependency reports against the reviewed candidate; attach the approved
-listing and privacy URL, choose **manual publication**, and record the
-submission ID. After certification, retain the delivered identity, version
-and hashes for the owner's install/update checks before public availability.
+For the first submission of Store ID `9PF4DX2BSF0X`:
+
+1. In **Pricing and availability → Visibility → Audience**, choose
+   [**Private audience**](https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/visibility-options#private-audience)
+   and the known user group for the x64/ARM64 testers' personal Microsoft
+   accounts. Leave **Make this product public on** unset and select manual
+   publication. A public listing with **Direct link only** still permits others
+   with the link to acquire the app.
+2. Check the source SHA, both upload hashes, manifest and dependency reports.
+   Attach the [English listing and certification notes](../releases/store/en-US/README.md),
+   approved privacy URL and age ratings. Record the submission ID. After
+   certification and approval for this private session, publish **to that
+   group** so the testers can install the Store-signed `1.0.0.0` baseline.
+   A submission merely held for publication cannot provide that installation.
+3. Record the delivered versions, PFN, signatures and hashes on clean x64
+   and native ARM64 systems. Microsoft makes [package flights](https://learn.microsoft.com/en-us/windows/apps/publish/package-flights#create-a-new-package-flight)
+   available **after** the first published submission. Use a higher-version
+   flight for a subset of the private audience to test update continuity;
+   keep the non-flighted `1.0.0.0` available for clean-install checks.
+   Move the listing to a public audience only after the remaining gates
+   pass and the public submission is approved.
 
 ## Artwork evidence from the current repository
 
 | Area | Observed evidence | Disposition |
 |---|---|---|
 | In-app icons | Existing `ShellPage.xaml` / `TaskListView.xaml` use `FontIcon` and `SymbolIcon`; Windows font rendering is supported by Microsoft's guidance | Keep OS/font control use. No tracked `.ttf`, `.otf`, `.woff` or `.woff2` files found. Do not copy/redistribute a Windows font file without its own rights. |
-| Package logos | Eight PNGs and one ICO entered with scaffold commit `1b3d846`; reviewed contact sheet shows generic template placeholders, not proof of Segoe origin | Keep files during preparation; establish the actual template distribution licence and final Store asset acceptance. No logo redesign selected. |
-| Backgrounds | Eight JPEGs entered in `1813855`; reviewed archive/metadata inventory has no source/licence record; owner does not know their source | Redistribution rights PENDING. Free availability or a clean privacy scan does not establish commercial redistribution permission. |
+| Package logos | All eight PNGs and the ICO match the [Microsoft WinUI template](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons) byte for byte | Template licence is MIT; its Microsoft copyright and permission notice are in the app. Final Store presentation still needs review. |
+| Backgrounds | [Coast, Field, Forest, Graphite, Indigo, Mist, Petals and Sunrise](../../src/Wintodo.App/Assets/ListBackgrounds) entered in `1813855` without a source or licence record | Supply their origin and commercial redistribution terms, or select replacements before submission. |
 
 The existing [asset privacy review](dep13-source-privacy-review.md) remains
-privacy evidence, not licensing proof. No image was altered, removed, copied
-from another application or newly published in this preparation.
+privacy evidence, not licensing proof. The Store screenshots use synthetic
+test captures; the hero illustration is new. Neither relies on the eight
+backgrounds shipped in the app. Their redistribution rights remain open.
 
 ## Sources and evidence limits
 
@@ -115,9 +134,7 @@ from another application or newly published in this preparation.
 - [Windows font use and redistribution FAQ](https://learn.microsoft.com/en-us/typography/fonts/font-faq)
 - [Segoe MDL2 icon control use](https://learn.microsoft.com/en-us/windows/apps/design/iconography/segoe-ui-symbol-font)
 
-Read-only code inspection used CodeGraph first; XAML/manifest and binary asset
-inventory followed where the graph did not return the requested content. The
-existing private asset contact sheet was reviewed. Documentation verification
-does not close source ownership, asset rights, Store certification or runtime
-acceptance. No build, gate, installation, trust, reservation, remote visibility,
-submission, purchase or publication occurred.
+For the hosted test results and exact local package hashes, see the
+[deployment register](deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates).
+The unsigned candidates do not establish customer installation, licensing or
+Store certification. No submission or public release has taken place.

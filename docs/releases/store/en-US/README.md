@@ -6,13 +6,15 @@
 
 Give a task a due date, a reminder or a repeat schedule. Add steps, notes and files so the details stay with the work. Keyboard shortcuts let you add, find and complete tasks without leaving the list.
 
-Already using Microsoft To Do? Choose which lists to copy in a one-time import. You can also import and export tasks as iCalendar files.
+Already using Microsoft To Do? Choose which lists to copy in a one-time import. Your originals stay where they are. You can also import and export tasks as iCalendar files.
+
+Requires Windows 11 24H2 or later.
 
 **Publisher:** Univera LLC · **Support:** support@univera.app · **Store ID:** [9PF4DX2BSF0X](https://apps.microsoft.com/detail/9PF4DX2BSF0X)
 
 ## Desktop screenshots and captions
 
-Upload the **Screenshot** column in order to the English (United States) desktop listing. Paste the caption into Partner Center's caption field. Each PNG is 1920 × 1080, RGB, and contains real app pixels without added text or logos. The separate **Promo** renders add English headlines for the product page, press or social promotion.
+Upload the **Screenshot** column in order to the English (United States) desktop listing. Paste each caption into Partner Center's caption field. Each PNG is 1920 × 1080, RGB, and shows the real app without added text or logos. The **Promo** column is for the website, press or social posts; the headlines are not part of the Store screenshots.
 
 | # | Screenshot | English caption | Promo |
 |---|---|---|---|
@@ -23,6 +25,21 @@ Upload the **Screenshot** column in order to the English (United States) desktop
 | 5 | [An imported iCalendar list](screenshots/05-open-formats.png) | An imported iCalendar list in Wintodo, with the task's priority and recurrence retained. | [Take your lists with you.](promos/05-open-formats.png) |
 
 [See all five promo designs together](preview.jpg).
+
+## Store hero art
+
+Upload [store-hero.png](store-hero.png) to **Trailers and additional assets → 16:9 Super hero art**. The 1920 × 1080 PNG shows a folded check mark above paper leaves. It has no text, app UI or device frame. The check stays in the upper two-thirds so it remains visible under a Store overlay. The [editable artwork](../artwork/hero.svg) contains only original vector shapes.
+
+## Notes for certification
+
+On Windows 11 24H2 or later, choose **Start fresh** on the welcome screen.
+Create a task in **Tasks**, open its details, add a step, and add the task to
+**My Day**. Reopen the app to see the saved task. This path works without an
+account. Microsoft To Do import and CalDAV sync are optional.
+
+Wintodo is a packaged WinUI 3 desktop application. Its manifest declares
+`runFullTrust` for the desktop process and its Windows integrations, including
+toast activation. File import and export use Windows file pickers.
 
 ## Image sources
 

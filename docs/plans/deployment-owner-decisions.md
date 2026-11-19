@@ -27,7 +27,7 @@ it is not yet the repository's active licence.
 | ID | Required answer | Concrete proposal and constraints | Unblocks |
 |---|---|---|---|
 | D1 — Release route | **Store-first under Univera LLC selected (ADR-019); public source after review selected**; actual protection pending | The owner acknowledged Store-first explicitly. Microsoft supplies Store MSIX signing; direct production downloads/CA purchase are outside this first route. The repository remains private until final review and the concrete transition. The reservation is confirmed. Submission and the visibility transition are pending. | DEP-15/16/18/20 |
-| D2 — Name and assets | **Wintodo and retaining current icons/backgrounds selected**; source/redistribution evidence pending | Owner describes the name as native Windows to-do. [Asset review](dep13-source-privacy-review.md) found no identifying content but did not establish redistribution rights. Keeping the artwork does not supply its licence; establish the icon/background sources before public redistribution. No replacement is selected. | DEP-13/16/17 |
+| D2 — Name and assets | **Wintodo and retaining current icons/backgrounds selected**; background rights pending | All nine package icons are [attributed MIT template assets](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons). The eight background JPEGs still need a source and redistribution terms. No replacement is selected. | DEP-13/16/17 |
 | D3 — Identity and installed-data continuity | **Reserved identity supplied and applied** | [Partner Center fields and PFN](deployment-store-first-preparation.md#owner-supplied-identity-handoff) match the production manifest. The old test family stays separate. Future updates must preserve tasks, attachments, settings and credential access. | DEP-16/18/19 |
 | D4 — Version policy | **Stable tags `vMAJOR.MINOR.PATCH` → `MAJOR.MINOR.PATCH.0`; first release `v1.0.0` / `1.0.0.0` selected** | Use the new production identity from D3 and monotonic subsequent versions. Existing `1.0.0.5` test installations are outside this first production update line. Tags do not modify the manifest; the production manifest already uses `1.0.0.0`. Prerelease mapping remains a separate policy. | DEP-16/18/19 |
 | D5 — Signing ownership | **Store-managed MSIX signing selected**; actual certification/signed-runtime evidence pending | No purchased Windows certificate or direct-signing secret is required for the first Store route. Bind actual Store-delivered signed packages to the reviewed uploads. Future direct-download signing is a separate decision. No purchase, submission or signing action ran. | DEP-18/19 |
@@ -44,7 +44,7 @@ Remaining answers can be supplied together:
 
 ```text
 D1 Store-first; reservation confirmed. Protection/submission pending:
-D2 source and redistribution licence for retained icons/backgrounds:
+D2 source and redistribution licence for the eight retained background JPEGs:
 D3 exact reserved identity applied; final installed-family test pending:
 D4 accepted v1.0.0 -> 1.0.0.0 on a new family; future updates preserve data:
 D5 Store signing selected; actual certified/signed-package evidence pending:

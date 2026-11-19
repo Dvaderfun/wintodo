@@ -9,7 +9,7 @@ M9 performance remains owner-deferred.
 
 | Decision | Current value | Needed before |
 |---|---|---|
-| App display name | Wintodo selected; keep current icons/backgrounds, source/redistribution rights pending | Final screenshots, listing copy and artwork-rights acceptance |
+| App display name | Wintodo selected; package icons attributed; rights to eight retained backgrounds pending | Final listing and artwork acceptance |
 | Package identity / publisher | Partner Center reservation for Wintodo / Univera LLC is in the manifest | Verify actual Store-delivered package family |
 | Distribution | Store-first selected (ADR-019); public source after review selected; actual protection/visibility/submission pending | Store certification and release CI |
 | Release version | Manifest `1.0.0.0` on the reserved family; first tag is `v1.0.0` when authorized | Keep the test family separate and verify a staged higher-version update |
@@ -154,14 +154,16 @@ The reserved identity is applied. Older packages with the test identity are
 not evidence for the new Store family.
 
 - [x] Apply the reserved name, publisher, publisher display name and first version.
-- [ ] Confirm rights and Store suitability for logos, tile/splash and backgrounds.
-- [x] Prepare [English screenshots, captions, listing copy and separate promo renders](../releases/store/en-US/README.md).
+- [x] Identify and attribute all nine [MIT template package icons](../plans/dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons).
+- [ ] Confirm redistribution rights for the eight background JPEGs and review final logo/tile/splash presentation.
+- [x] Prepare [English screenshots, captions, hero art, listing copy and certification notes](../releases/store/en-US/README.md).
 - [ ] Compare the gallery with the final UI, publish the approved privacy URL and
-      finish Store fields, review notes, age ratings and controlled publication settings.
-- [ ] Build unsigned self-contained Native AOT x64 and ARM64 packages. Inspect
-      the packaged manifests, executable architecture, assets and extensions;
-      confirm only the reviewed `runFullTrust` capability is present. Retain
-      artifact hashes and the source commit used to build them.
+      confirm Store fields, age ratings and private-audience publication settings.
+- [x] Build and inspect local unsigned self-contained Native AOT x64 and ARM64
+      packages: manifests, executable architecture, assets, extensions and
+      the single `runFullTrust` capability. [Source and SHA-256 for each target](../plans/deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates).
+- [ ] After merging the reviewed source, run the hosted main packaging workflow
+      and retain its exact upload hashes and reports.
 - [ ] Verify effective GitHub protection and the tag/source/hash handoff. Submit
       the reviewed uploads through the controlled Partner Center session and
       verify the resulting Microsoft signatures. Keep GitHub CI read-only.
@@ -179,7 +181,12 @@ certificate already trusted. Record installed runtime dependencies so a
 preinstalled development runtime cannot mask a missing package dependency.
 Preserve the normal `clean` checkpoint used by UI gates.
 
-For direct MSIX testing, first verify installation rejects the untrusted test
+For the Store route, follow the [private-audience handoff](../plans/deployment-store-first-preparation.md#controlled-handoff):
+install the certified baseline through the Store using an included tester
+account, then test a higher-version private flight on that installation before
+uninstalling. Keep Developer Mode off and use the ordinary Windows trust store.
+
+For separate direct MSIX testing, first verify installation rejects the untrusted test
 certificate. Then, with owner approval for that guest session, trust the public
 certificate in `LocalMachine\TrustedPeople`, install the signed package, and
 launch the installed app from the guest's Start menu using packaged activation.

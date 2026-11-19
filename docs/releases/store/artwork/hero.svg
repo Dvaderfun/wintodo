@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <title>Done for today</title>
+  <desc>A folded apricot check mark floats above a fan of teal paper leaves.</desc>
+  <defs>
+    <linearGradient id="sky" x2="1" y2=".9" gradientUnits="objectBoundingBox">
+      <stop stop-color="#111e32"/><stop offset=".5" stop-color="#153746"/><stop offset="1" stop-color="#0e575c"/>
+    </linearGradient>
+    <radialGradient id="light" cx=".61" cy=".34" r=".7">
+      <stop stop-color="#61c4ae" stop-opacity=".4"/><stop offset=".63" stop-color="#4fbbb0" stop-opacity=".07"/><stop offset="1" stop-color="#164651" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="leafBottom" x1=".1" y1=".75" x2=".9" y2=".15">
+      <stop stop-color="#18384d"/><stop offset=".48" stop-color="#206579"/><stop offset="1" stop-color="#388a93"/>
+    </linearGradient>
+    <linearGradient id="leafMiddle" x1=".05" y1=".7" x2=".85" y2=".15">
+      <stop stop-color="#286075"/><stop offset=".53" stop-color="#479a9d"/><stop offset="1" stop-color="#8aced0"/>
+    </linearGradient>
+    <linearGradient id="leafTop" x1=".02" y1=".8" x2=".87" y2=".12">
+      <stop stop-color="#408889"/><stop offset=".51" stop-color="#87c9b9"/><stop offset="1" stop-color="#d7ecce"/>
+    </linearGradient>
+    <linearGradient id="checkEdge" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#a45349"/><stop offset=".55" stop-color="#cd815e"/><stop offset="1" stop-color="#e7ad79"/>
+    </linearGradient>
+    <linearGradient id="longFold" x1=".08" y1=".97" x2=".91" y2=".04">
+      <stop stop-color="#dfa17a"/><stop offset=".22" stop-color="#f7c18e"/><stop offset=".69" stop-color="#ffdbab"/><stop offset="1" stop-color="#fff0c9"/>
+    </linearGradient>
+    <linearGradient id="shortFold" x1=".1" y1=".14" x2=".87" y2=".82">
+      <stop stop-color="#ffddb5"/><stop offset=".48" stop-color="#f3b18b"/><stop offset="1" stop-color="#cf8271"/>
+    </linearGradient>
+    <filter id="shade" x="-.4" y="-.65" width="1.9" height="2.5"><feGaussianBlur stdDeviation="26"/></filter>
+    <filter id="lift" x="-.3" y="-.5" width="1.7" height="2.3"><feGaussianBlur stdDeviation="14"/></filter>
+    <path id="leaf" d="M494 468 Q461 447 499 428 L1060 224 Q1091 213 1123 228 L1381 354 Q1411 369 1382 391 L854 656 Q818 673 787 655 Z"/>
+    <path id="mark" d="M632 383 Q618 371 634 360 L710 316 Q723 308 736 319 L888 443 L1166 161 Q1178 149 1197 148 L1305 150 Q1328 151 1314 168 L969 548 Q942 580 909 583 L885 584 Q853 584 824 561 Z"/>
+    <clipPath id="fold"><use xlink:href="#mark"/></clipPath>
+    <clipPath id="page"><use xlink:href="#leaf"/></clipPath>
+    <path id="orbit" d="M-280 826 C164 898 451 724 758 532 C1140 294 1352 158 2014 247"/>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <rect width="1920" height="1080" fill="url(#light)"/>
+  <g fill="none" stroke="#83c7bc" opacity=".15" stroke-width="1.5">
+    <use xlink:href="#orbit"/><use xlink:href="#orbit" transform="translate(0 20)"/>
+    <use xlink:href="#orbit" transform="translate(0 40)"/><use xlink:href="#orbit" transform="translate(0 60)"/>
+    <use xlink:href="#orbit" transform="translate(0 80)"/><use xlink:href="#orbit" transform="translate(0 100)"/>
+    <use xlink:href="#orbit" transform="translate(0 120)"/>
+  </g>
+  <g transform="translate(4 11)">
+    <use xlink:href="#leaf" transform="translate(16 173) rotate(-5 952 450)" fill="#061c2b" opacity=".64" filter="url(#shade)"/>
+    <use xlink:href="#leaf" transform="translate(17 139) rotate(-5 952 450)" fill="#153c50"/>
+    <use xlink:href="#leaf" transform="translate(17 129) rotate(-5 952 450)" fill="url(#leafBottom)" stroke="#659799" stroke-width="1.5"/>
+    <use xlink:href="#leaf" transform="translate(27 90) rotate(-2 952 450)" fill="#0b394c" opacity=".52" filter="url(#lift)"/>
+    <use xlink:href="#leaf" transform="translate(28 73) rotate(-2 952 450)" fill="#3a7d85"/>
+    <use xlink:href="#leaf" transform="translate(28 66) rotate(-2 952 450)" fill="url(#leafMiddle)" stroke="#9acac1" stroke-width="1.5"/>
+    <use xlink:href="#leaf" transform="translate(7 29)" fill="#124451" opacity=".47" filter="url(#lift)"/>
+    <use xlink:href="#leaf" transform="translate(0 7)" fill="#689c96"/>
+    <use xlink:href="#leaf" fill="url(#leafTop)" stroke="#b7daca" stroke-width="2"/>
+    <g clip-path="url(#page)" fill="none" stroke="#e6f2d8" opacity=".32">
+      <ellipse cx="1193" cy="292" rx="245" ry="92" transform="rotate(-18 1193 292)"/>
+      <ellipse cx="1193" cy="292" rx="270" ry="104" transform="rotate(-18 1193 292)"/>
+      <ellipse cx="1193" cy="292" rx="295" ry="116" transform="rotate(-18 1193 292)"/>
+    </g>
+    <use xlink:href="#mark" transform="translate(10 60)" fill="#325456" opacity=".5" filter="url(#lift)"/>
+    <use xlink:href="#mark" transform="translate(0 13)" fill="url(#checkEdge)"/>
+    <use xlink:href="#mark" fill="url(#longFold)" stroke="#f9d0a4" stroke-width="2"/>
+    <g clip-path="url(#fold)">
+      <path d="M583 315 L747 284 L888 443 C888 497 875 553 858 585 L591 444Z" fill="url(#shortFold)"/>
+      <path d="M888 444 Q884 527 858 582" fill="none" stroke="#fff0c8" stroke-opacity=".57" stroke-width="2"/>
+    </g>
+  </g>
+</svg>
