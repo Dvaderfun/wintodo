@@ -14,7 +14,7 @@ M9 performance remains owner-deferred.
 | Distribution | Store-first selected (ADR-019); public source after review selected; actual protection/visibility/submission pending | Store certification and release CI |
 | Release version | Manifest `1.0.0.0` on the reserved family; first tag is `v1.0.0` when authorized | Keep the test family separate and verify a staged higher-version update |
 | Production overrides | DEP-12 A selected: retain/document established local database/clock controls | Default-storage/time, precedence and final installed-package gates |
-| Source licence / contact | Commercial redistribution reserved with free self-builds; exact source-available text pending; support@univera.app | Copyright/rights/Store licence review and publication |
+| Source licence / contact | [First-party source licence](../../LICENSE.md); individual rights holder, official publisher Univera LLC; support@univera.app | Preserve third-party rights and separate Store customer terms |
 
 For Store distribution, use the exact reserved Partner Center identity and
 publisher. For direct distribution, the signing certificate subject must match

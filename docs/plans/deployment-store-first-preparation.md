@@ -15,9 +15,9 @@ Authority: [ADR-019](../adr/ADR-019-store-first-source-available-release.md) and
 | Support / security / privacy contact | support@univera.app |
 | First release tag / MSIX version | `v1.0.0` / `1.0.0.0` on the new reserved production family |
 | Updates | Stable production family and increasing versions; actual data-preservation tests required |
-| First-party source policy | Source-available: free self-builds, commercial redistribution reserved; legal text not yet applied |
+| First-party source policy | [Source-available](../../LICENSE.md): the individual author retains the official brand and monetization; free self-builds and free unbranded community copies permitted. Univera LLC is the authorized publisher. |
 | Repository visibility | Public after final privacy, attribution and licence review |
-| Artwork | Original Glide package icons selected; eight background sources unknown |
+| Artwork | Original Glide icons; [owner authorized keeping eight backgrounds in the draft](../adr/ADR-023-first-party-rights-and-draft-artwork.md). Their origins and redistribution terms are unverified. |
 
 ## Owner-supplied identity handoff
 
@@ -41,9 +41,9 @@ separate Entra client used for the optional Microsoft To Do import.
 
 ## Preparation and acceptance order
 
-1. Confirm first-party ownership/licence text, retained asset
-   rights and public attribution. Keep the approved privacy text accurate for
-   the final build and finish the installation guidance. Keep unknown artwork rights as blocking evidence.
+1. Apply the first-party source licence and preserve supplier notices. The
+   owner's draft-upload decision does not supply missing artwork rights for
+   public distribution. Keep the privacy text accurate for the final build.
 2. Inspect the generated packages against the identity above, desktop version
    and existing Windows integrations. Leave the old development family installed.
 3. Build the clean reviewed source for x64 and ARM64 using SDK-native packaging.
@@ -133,7 +133,7 @@ The uploads used an authenticated Partner Center browser session. No `pcenter` c
 |---|---|---|
 | In-app icons | Existing `ShellPage.xaml` / `TaskListView.xaml` use `FontIcon` and `SymbolIcon`; Windows font rendering is supported by Microsoft's guidance | Keep OS/font control use. No tracked `.ttf`, `.otf`, `.woff` or `.woff2` files found. Do not copy/redistribute a Windows font file without its own rights. |
 | Package logos | Both unsigned MSIX contain the eight approved PNGs and six-frame ICO for [Glide](../adr/ADR-021-store-package-icon-proposal.md). The previous template icons and their notice are retired; other supplier notices are preserved. | Check actual Start, taskbar and splash presentation with the Store-delivered packages. |
-| Backgrounds | [Coast, Field, Forest, Graphite, Indigo, Mist, Petals and Sunrise](../../src/Wintodo.App/Assets/ListBackgrounds) entered in `1813855` without a source or licence record | Supply their origin and commercial redistribution terms, or select replacements before submission. |
+| Backgrounds | [Coast, Field, Forest, Graphite, Indigo, Mist, Petals and Sunrise](../../src/Wintodo.App/Assets/ListBackgrounds) entered in `1813855` without a source or licence record | Keep in the private draft by owner instruction. No licence or origin has been established. Handle complaints through support@univera.app; see [ADR-023](../adr/ADR-023-first-party-rights-and-draft-artwork.md). |
 
 The existing [asset privacy review](dep13-source-privacy-review.md) remains
 privacy evidence, not licensing proof. The Store screenshots use synthetic
