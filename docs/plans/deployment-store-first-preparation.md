@@ -1,7 +1,7 @@
 # Store-first release preparation
 
 Prepared: 2026-11-09 against source `44a4ef6` plus recorded owner decisions.
-Updated 2026-11-19: **Store reservation confirmed in both unsigned MSIX files.** The English
+Updated 2026-11-19: **Reserved identity and approved Glide icons verified in both unsigned MSIX files.** The English
 [gallery and listing copy](../releases/store/en-US/README.md) are prepared.
 Asset rights, legal text, controlled submission and customer tests remain open.
 Authority: [ADR-019](../adr/ADR-019-store-first-source-available-release.md).
@@ -18,7 +18,7 @@ Authority: [ADR-019](../adr/ADR-019-store-first-source-available-release.md).
 | Updates | Stable production family and increasing versions; actual data-preservation tests required |
 | First-party source policy | Source-available: free self-builds, commercial redistribution reserved; legal text not yet applied |
 | Repository visibility | Public after final privacy, attribution and licence review |
-| Artwork | Retain only with established rights; current background sources unknown |
+| Artwork | Original Glide package icons selected; eight background sources unknown |
 
 ## Owner-supplied identity handoff
 
@@ -35,7 +35,7 @@ The owner supplied these values from Wintodo's **Product identity** page:
 | Windows Store link | `ms-windows-store://pdp/?productid=9PF4DX2BSF0X` |
 | MSA app ID (Store registration) | `992a758a-6a5a-4c8b-9a10-db62233a7eb4` |
 
-Both [inspected packages](deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates) carry the three identity fields and `1.0.0.0`. The
+Both [inspected packages](deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery) carry the three identity fields and `1.0.0.0`. The
 assigned Store URL does not establish public availability. The package SID and
 MSA app ID are not manifest fields; the Store association does not replace the
 separate Entra client used for the optional Microsoft To Do import.
@@ -118,7 +118,7 @@ For the first submission of Store ID `9PF4DX2BSF0X`:
 | Area | Observed evidence | Disposition |
 |---|---|---|
 | In-app icons | Existing `ShellPage.xaml` / `TaskListView.xaml` use `FontIcon` and `SymbolIcon`; Windows font rendering is supported by Microsoft's guidance | Keep OS/font control use. No tracked `.ttf`, `.otf`, `.woff` or `.woff2` files found. Do not copy/redistribute a Windows font file without its own rights. |
-| Package logos | All eight PNGs and the ICO match the [Microsoft WinUI template](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons) byte for byte. The required MIT notice is included. | Microsoft checks for default template artwork. The owner declined the first proposal; [Lift and Glide](../adr/ADR-021-store-package-icon-proposal.md) are available as complete review sets. Select the exact mark before the next package build. |
+| Package logos | Both unsigned MSIX contain the eight approved PNGs and six-frame ICO for [Glide](../adr/ADR-021-store-package-icon-proposal.md). The previous template icons and their notice are retired; other supplier notices are preserved. | Check actual Start, taskbar and splash presentation with the Store-delivered packages. |
 | Backgrounds | [Coast, Field, Forest, Graphite, Indigo, Mist, Petals and Sunrise](../../src/Wintodo.App/Assets/ListBackgrounds) entered in `1813855` without a source or licence record | Supply their origin and commercial redistribution terms, or select replacements before submission. |
 
 The existing [asset privacy review](dep13-source-privacy-review.md) remains
@@ -134,7 +134,7 @@ backgrounds shipped in the app. Their redistribution rights remain open.
 - [Windows font use and redistribution FAQ](https://learn.microsoft.com/en-us/typography/fonts/font-faq)
 - [Segoe MDL2 icon control use](https://learn.microsoft.com/en-us/windows/apps/design/iconography/segoe-ui-symbol-font)
 
-For the hosted test results and exact local package hashes, see the
-[deployment register](deployment-readiness.md#2026-11-19--pr-ci-and-local-store-candidates).
+For exact Glide package hashes and the earlier hosted restore evidence, see the
+[deployment register](deployment-readiness.md#2026-11-19--glide-packages-and-store-gallery).
 The unsigned candidates do not establish customer installation, licensing or
 Store certification. No submission or public release has taken place.

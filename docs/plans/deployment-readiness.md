@@ -4,7 +4,7 @@ Prepared: 2026-11-08. Audit baseline: `d8c2ac3`.
 
 Status: **IN PROGRESS — DEP-01, DEP-03, DEP-04, DEP-05, DEP-06, DEP-07, DEP-08, DEP-09 and DEP-11 automated acceptance passed. DEP-04 guest UI/live checks and DEP-14 final signed-package acceptance remain pending with the remaining release work.**
 
-**Release check, 2026-11-19: ready for review; NOT READY for publication.** The [package source passed CI on GitHub](https://github.com/Dvaderfun/wintodo/actions/runs/44593397992). Both [locally built unsigned MSIX files](#2026-11-19--pr-ci-and-local-store-candidates) match the reserved Store identity. The [English screenshots, captions and hero art](../releases/store/en-US/README.md) are ready for listing review. Effective ref protection, rights, native dependency evidence, Store certification and installed customer tests remain open.
+**Release check, 2026-11-19: ready for review; NOT READY for publication.** Both [locally built unsigned Glide MSIX files](#2026-11-19--glide-packages-and-store-gallery) match the reserved Store identity. The [hosted restore fix](#2026-11-19--pr-ci-and-local-store-candidates) was verified on an earlier PR revision. The [English screenshots, captions and hero art](../releases/store/en-US/README.md) are ready for listing review. Effective ref protection, rights, native dependency evidence, Store certification and installed customer tests remain open.
 
 This plan turns the deployment-readiness audit into work packages for a safe
 GitHub release and GitHub Actions CI/CD. It covers data integrity, API security,
@@ -124,11 +124,11 @@ complete only when its acceptance criteria pass and its evidence is recorded.
 | DEP-10 | Preserve untrusted attachment provenance | Security | DEP-07; API/policy review | Codex / dep10_provenance | IMPLEMENTED; host/AOT PASS; guest preflight FAIL, UI acceptance PENDING |
 | DEP-11 | Reject unsupported database schemas | Data safety | DEP-01 | Codex / dep11_schema_guard | COMPLETE; automated acceptance PASS |
 | DEP-12 | Resolve production test/storage overrides | Policy | Policy A selected | Codex / dep12_overrides + production_override_policy | A SELECTED/DOCUMENTED; 26 host launch-policy tests PASS; actual guest/Release/AOT/default/broker/final-package acceptance PENDING |
-| DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | Archive/fixture/asset checks PASS; nine package icons mapped to the MIT template. Background rights, public attribution and final-source acceptance PENDING. |
+| DEP-13 | Verify repository/history and source privacy | Privacy blocker | Attribution decision | Codex / dep13_archive_review | Archive/fixture/asset checks PASS; the nine previous template icons were replaced with original Glide artwork. Background rights, public attribution and final-source acceptance PENDING. |
 | DEP-14 | Remove identifying binary and metadata paths | Privacy blocker | DEP-02 | Codex / dep14_binary_privacy | PRE-SIGNING PASS; final signed-package acceptance PENDING DEP-16/18/19 |
 | DEP-15 | Harden and reproduce CI builds | Blocker | DEP-01, DEP-02 | Codex / dep15_locked_restore + exact_toolchain_evidence + audit_graph_binding + production_override_policy | 19 Nov hosted PR locked restore, build, 707 unit and 206 script tests PASS; [16 Nov failure retained](#2026-11-19-hosted-restore-failure). New main packaging run, ref protection and native advisory review PENDING. |
-| DEP-16 | Finalize identity, version and package contents | Blocker | Reserved Store identity; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export + vendor_provenance_resolution | Both local `c2c8919` unsigned packages PASS identity, version, structure, audit, notice inclusion and privacy checks; final payload/vendor review and Store-signed acceptance PENDING. |
-| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Rights/licence finalization | Codex / release_documentation + shipped_notices_review + notice_integration + owner_decision_followup | Nine supplier texts integrated; five English screenshots, captions, text-free Store hero and five separate promo renders prepared. Copyright/free-sharing terms, shipped artwork rights, final privacy URL and live work/school sign-in PENDING. |
+| DEP-16 | Finalize identity, version and package contents | Blocker | Reserved Store identity; DEP-14 | Codex / package_inspection + unsigned_candidate_validation + package_sbom + bound_candidate_pair + retained_code_export + vendor_provenance_resolution | Both local [`aa59ff4` Glide packages](#2026-11-19--glide-packages-and-store-gallery) PASS identity, version, icon/notice inclusion, structure, audit and privacy checks; final payload/vendor review and Store-signed acceptance PENDING. |
+| DEP-17 | Complete licensing, privacy, branding and sign-in docs | Release | Rights/licence finalization | Codex / release_documentation + shipped_notices_review + notice_integration + owner_decision_followup | Supplier texts retained; original Glide icons, five English screenshots and captions, checklist hero and five promotional renders prepared. Copyright/free-sharing terms, shipped artwork rights, final privacy URL and live work/school sign-in PENDING. |
 | DEP-18 | Add protected Store submission and release stages | Blocker | DEP-13–17; ADR-019 | Codex / candidate_handoff + audit_graph_binding + bound_candidate_pair + deployment_next + release_ref_policy | Read-only tag job rejects unprotected tags/main and unavailable API; Store-managed signing selected; direct production signing deferred; release authorization false; actual protected Store upload/certification/signed-result/release acceptance PENDING |
 | DEP-19 | Verify final deployment and functional gates | Blocker | DEP-03–12, DEP-16–18 | Codex / deployment_gate_inventory + installed_package_smoke | Guest-only installed-smoke runner PREPARED; 12 mocked/static checks PASS; actual guest/API/runtime/visual, signed install/update/uninstall and final deployment acceptance PENDING |
 | DEP-20 | Publish approved assets and maintain releases | Release | DEP-19; explicit publication authorization | Unassigned | PENDING |
@@ -731,12 +731,11 @@ app assets/resources and Microsoft To Do deployment documentation.
 - [ ] Add the selected first-party licence and verify third-party notices
       against the actual shipped transitive/native closure. Check image/icon
       provenance; preserve required attribution and permitted redistribution.
-- [x] Identify and attribute the retained package icons at all shipped scales
-      and target sizes. The [nine source files match the MIT WinUI template](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons).
-- [ ] Validate final title/tile/splash appearance and the rights to the eight
-      in-app background JPEGs. The current package still uses default template
-      icons; [ADR-021](../adr/ADR-021-store-package-icon-proposal.md) documents
-      the branding risk and the two original designs awaiting selection.
+- [x] Replace the [previous template artwork](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons)
+      with the nine approved [Glide files](../adr/ADR-021-store-package-icon-proposal.md).
+      Both unsigned MSIX contain the exact reviewed icons and the retained supplier notices.
+- [ ] Validate title/tile/splash appearance on the installed Store builds and
+      establish rights for all eight in-app background JPEGs.
 - [x] Prepare English screenshots and captions with synthetic tasks, a text-free
       Store hero, listing and certification copy, and a support/security contact.
 - [ ] Compare the listing assets with the certified private build before public availability.
@@ -1680,7 +1679,7 @@ Clean-source candidate/toolchain/notices batch evidence (2026-11-08):
 
 ### 2026-11-19 hosted restore failure
 
-This records the pre-fix state at `44a4ef6`. See the [post-fix checks](#2026-11-19--pr-ci-and-local-store-candidates) for current results.
+This records the pre-fix state at `44a4ef6`. See the [current candidate checks](#2026-11-19--glide-packages-and-store-gallery).
 
 - **DEP-15 — hosted FAIL.** The [16 November scheduled run](https://github.com/Dvaderfun/wintodo/actions/runs/43878071848)
   on `windows-2025` at `44a4ef6` installed SDK `10.0.404`. All 204 script tests
@@ -1759,20 +1758,42 @@ and carry version `1.0.0.0`. Neither MSIX contains a signature.
 Both package inspections and CycloneDX 1.6 schema checks passed. The 45
 original NuGet archives have verified repository signatures and matching hashes.
 On the earlier pair an initial descriptor used the wrong ARM64 label and was
-rejected; the corrected descriptor passed. The current handoff matched both
-packages to their reports: `PASS`, `release_authorized: false`. The two MSIX,
-Store artwork ZIP and evidence ZIP are under `artifacts/store-1.0.0-rc/`.
-A clean NuGet audit does not settle the
+rejected; the corrected descriptor passed. That handoff matched both template
+packages to their reports: `PASS`, `release_authorized: false`. The pair and its private
+evidence are archived under
+`artifacts/store-template-c2c8919/`. A clean NuGet audit does not settle the
 [remaining native component and licence questions](dep02-vendor-provenance-resolution.md#remaining-actions-and-evidence).
 
-Next: establish effective protection of `main` and release tags, settle the
-[default package icons](../adr/ADR-021-store-package-icon-proposal.md),
-rights for the eight background JPEGs, licensing and the public privacy URL,
-then prepare the [first private-audience submission](deployment-store-first-preparation.md#controlled-handoff).
-Record the signed results before testing clean install,
-higher-version update with data preserved, uninstall and actual native ARM64
-execution. The [manual checklist](../guides/release-checklist.md) covers the
-remaining functional and live-account checks. No tag or submission was created.
+### 2026-11-19 — Glide packages and Store gallery
+
+The [accepted Glide mark](../adr/ADR-021-store-package-icon-proposal.md) is in both
+unsigned self-contained Native AOT packages, built from clean source
+`aa59ff4e4a9a9b8d8f16b65186865721b9cbaade` with SDK 10.0.404. Each package
+contains the eight approved PNGs and six-frame ICO, byte for byte, and the
+remaining supplier notice (SHA-256
+`9bee8e92a0fdb6abe95901774c09ad2ec95b74e73430a8ba55119c71b1c92886`).
+The only payload changes from the preceding pair are those ten files, the
+rebuilt native executable and the block map. The manifest in each architecture
+is unchanged: reserved PFN `47371DermenzhyStudio.Wintodo_rg7xtn0gdgdnp`,
+publisher display name Univera LLC, version `1.0.0.0`.
+
+| Architecture | Unsigned MSIX SHA-256 | Files / native binaries | Privacy scan | NuGet advisories |
+|---|---|---:|---|---:|
+| x64 | `fe330ffb2edd7fe1dff454c57bf10bb016d5f72df1fc5be8afbd5541a002043f` | 321 / 54 | 650 files, 0 findings | 0 |
+| ARM64 | `ed7eb5d66828b91d5990f1e7f45d2042d1c227c03def8d56e2e622af391e0906` | 317 / 53 | 642 files, 0 findings | 0 |
+
+Package structure, CycloneDX 1.6 schema, original signatures/hashes for 45
+NuGet archives and the paired report check passed. Private outputs:
+`artifacts/store-1.0.0-rc/{x64,arm64}/`, `Wintodo-1.0.0-evidence.zip` and
+`Wintodo-Store-en-US.zip`. Handoff: `PASS`, `release_authorized: false`.
+The [English listing](../releases/store/en-US/README.md) has five plain
+desktop screenshots, five promos and a text-free checklist illustration.
+
+Next: verify effective main/tag protection and native vendor evidence, settle
+the eight background rights, licence terms and public privacy URL, then prepare
+the [private-audience submission](deployment-store-first-preparation.md#controlled-handoff).
+The [owner's Store-signed install/update/uninstall checks](../guides/release-checklist.md)
+on x64 and native ARM64 and the hosted main packaging run remain open.
 
 Record each result with work ID, PASS/FAIL/PENDING/SKIPPED/DEFERRED status,
 source commit, candidate hash where relevant, environment, evidence location and

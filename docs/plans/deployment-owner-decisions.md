@@ -1,8 +1,8 @@
 # Deployment owner decision packet
 
 Prepared: 2026-11-09 against source `0b7272f`.
-Updated 2026-11-19 after the owner supplied the reserved Partner Center identity.
-Status: **PARTIALLY DECIDED — Wintodo and current artwork retained; public
+Updated 2026-11-19 after the owner supplied the reserved Partner Center identity and chose Glide.
+Status: **PARTIALLY DECIDED — Wintodo and the Glide package icon selected; public
 source after review; fresh production installation with future data-preserving
 updates; stable tag mapping and first release 1.0.0 selected; Store-first under
 Univera LLC, commercial redistribution reserved, support@univera.app selected.**
@@ -27,7 +27,7 @@ it is not yet the repository's active licence.
 | ID | Required answer | Concrete proposal and constraints | Unblocks |
 |---|---|---|---|
 | D1 — Release route | **Store-first under Univera LLC selected (ADR-019); public source after review selected**; actual protection pending | The owner acknowledged Store-first explicitly. Microsoft supplies Store MSIX signing; direct production downloads/CA purchase are outside this first route. The repository remains private until final review and the concrete transition. The reservation is confirmed. Submission and the visibility transition are pending. | DEP-15/16/18/20 |
-| D2 — Name and assets | **Wintodo and retaining current icons/backgrounds selected**; background rights pending | All nine package icons are [attributed MIT template assets](dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons). The eight background JPEGs still need a source and redistribution terms. No replacement is selected. | DEP-13/16/17 |
+| D2 — Name and assets | **Wintodo and Glide selected**; background rights pending | [ADR-021](../adr/ADR-021-store-package-icon-proposal.md) replaces all nine template icons. The eight retained background JPEGs still need a source and commercial redistribution terms. | DEP-13/16/17 |
 | D3 — Identity and installed-data continuity | **Reserved identity supplied and applied** | [Partner Center fields and PFN](deployment-store-first-preparation.md#owner-supplied-identity-handoff) match the production manifest. The old test family stays separate. Future updates must preserve tasks, attachments, settings and credential access. | DEP-16/18/19 |
 | D4 — Version policy | **Stable tags `vMAJOR.MINOR.PATCH` → `MAJOR.MINOR.PATCH.0`; first release `v1.0.0` / `1.0.0.0` selected** | Use the new production identity from D3 and monotonic subsequent versions. Existing `1.0.0.5` test installations are outside this first production update line. Tags do not modify the manifest; the production manifest already uses `1.0.0.0`. Prerelease mapping remains a separate policy. | DEP-16/18/19 |
 | D5 — Signing ownership | **Store-managed MSIX signing selected**; actual certification/signed-runtime evidence pending | No purchased Windows certificate or direct-signing secret is required for the first Store route. Bind actual Store-delivered signed packages to the reviewed uploads. Future direct-download signing is a separate decision. No purchase, submission or signing action ran. | DEP-18/19 |
