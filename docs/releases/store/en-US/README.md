@@ -14,21 +14,21 @@ Requires Windows 11 24H2 or later.
 
 ## Desktop screenshots and captions
 
-Upload the **Screenshot** column in order to the English (United States) desktop listing. Paste each caption into Partner Center's caption field. Each PNG is 1920 × 1080, RGB, and shows the real app without added text or logos. The **Promo** column is for the website, press or social posts; the headlines are not part of the Store screenshots.
+Upload the **Screenshot** column in order to the English (United States) desktop listing. Paste each caption into Partner Center's caption field. Each PNG is 1920 × 1080, RGB, and shows a complete Wintodo window on a solid backdrop. All lettering inside the window comes from the app. The separate **Promo** files have English headlines for the website, press or social posts.
 
 | # | Screenshot | English caption | Promo |
 |---|---|---|---|
-| 1 | [Native Windows task list](screenshots/01-windows.png) | A native WinUI 3 task list for Windows 11. Move between My Day, Important and Planned, or open a list of your own. | [At home on Windows.](promos/01-windows.png) |
-| 2 | [Task details](screenshots/02-task-details.png) | Break work into steps. Set a reminder, due date and repeat schedule in the task's detail pane. | [Give each task a next step.](promos/02-task-details.png) |
-| 3 | [Keyboard shortcuts](screenshots/03-keyboard.png) | Press Ctrl+N to add a task, Ctrl+F to search, or Space to mark the selected task complete. | [Stay on the keys.](promos/03-keyboard.png) |
-| 4 | [Choose lists to import](screenshots/04-import.png) | Choose which Microsoft To Do lists to copy. Your originals stay in Microsoft To Do. | [Bring your lists along.](promos/04-import.png) |
-| 5 | [An imported iCalendar list](screenshots/05-open-formats.png) | An imported iCalendar list in Wintodo, with the task's priority and recurrence retained. | [Take your lists with you.](promos/05-open-formats.png) |
+| 1 | [My Day on Windows](screenshots/01-windows.png) | Bring today's tasks from different lists together in My Day, a native WinUI 3 view for Windows 11. | [Your day, on Windows.](promos/01-windows.png) |
+| 2 | [A weekend packing checklist](screenshots/02-task-details.png) | Pack for a weekend away: check off steps and keep the reminder, due date and packing note in the same pane. | [One bag. Three small steps.](promos/02-task-details.png) |
+| 3 | [Keyboard shortcuts in dark mode](screenshots/03-keyboard.png) | Press Ctrl+N to add a task, Ctrl+F to search or Space to mark the selected task complete. Open the shortcut list for more. | [Stay on the keys.](promos/03-keyboard.png) |
+| 4 | [Choose lists to import](screenshots/04-import.png) | Choose which Microsoft To Do lists to copy and see how many tasks each contains. Your originals stay in Microsoft To Do. | [Bring your lists along.](promos/04-import.png) |
+| 5 | [An iCalendar list after export](screenshots/05-open-formats.png) | Sunday kitchen came from an iCalendar file with due dates, stars and weekly repeats. The confirmation shows the list was exported again. | [Keep your Sunday routine.](promos/05-open-formats.png) |
 
-[See all five promo designs together](preview.jpg).
+[Preview all five promo designs and the hero](preview.jpg). The first promo combines two real captures of the same My Day list, one in light mode and one in dark mode.
 
 ## Store hero art
 
-Upload [store-hero.png](store-hero.png) to **Trailers and additional assets → 16:9 Super hero art**. The 1920 × 1080 PNG shows a folded check mark above paper leaves. It has no text, app UI or device frame. The check stays in the upper two-thirds so it remains visible under a Store overlay. The [editable artwork](../artwork/hero.svg) contains only original vector shapes.
+Upload [store-hero.png](store-hero.png) to **Trailers and additional assets → 16:9 Super hero art**. *Out of harbour* is an original illustration of a sailboat, drawn in solid colours. Its sails sit in the upper two-thirds, with open water below for Store overlays. The 1920 × 1080 PNG contains no text, logo, app UI or device frame. The [editable artwork](../artwork/hero.svg) is included.
 
 ## Notes for certification
 
@@ -43,21 +43,13 @@ toast activation. File import and export use Windows file pickers.
 
 ## Image sources
 
-The screenshots are from existing Wintodo test captures with synthetic data.
-The native window and the imported iCalendar list are shown in full. The
-detail pane, shortcut dialog and import selection are crops of the real UI.
-The crops exclude the automation harness, fixture sign-in address and test
-filenames. No credentials, customer records, stock photography, app background
-JPEGs or third-party marketing artwork are used. The coloured backgrounds and
-line work were drawn for these renders. No font files are distributed.
-
-| Image | Local capture under `tests/ui/artifacts/` | Source rectangle (left, top, right, bottom) |
-|---|---|---|
-| 1 | `import/run-20261108-161801/06-tasks.png` | Full window |
-| 2 | `m4/run-20261018-170055/01-detail-complete.png` | 814, 170, 1155, 496 |
-| 3 | `m8/run-20261108-111455/04-shortcuts-dialog.png` | 350, 60, 830, 752 |
-| 4 | `import/run-20261108-161801/03-choose.png` | 312, 188, 1145, 733 |
-| 5 | `m6/run-20261014-002015/03-imported-list.png` | Full window |
+The gallery uses real Wintodo windows from the Windows test VM. Three fictional
+lists were read by Wintodo's iCalendar importer: *Weekend in Copenhagen*,
+*Sunday kitchen* and *In the studio*. The optional Microsoft To Do wizard
+uses a sample account. No customer data, live sign-in, stock photography,
+app background JPEGs or third-party marketing images are used. No font
+files are distributed. Source captures and rerender instructions live under
+`docs/releases/store/artwork/` in the repository.
 
 Before submission, compare these views with the final Store build. They
 document the interface, not a live account, certified installation or

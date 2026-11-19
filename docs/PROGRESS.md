@@ -19,7 +19,10 @@ and version `1.0.0.0` are now in the manifest. The nine package icons are
 [attributed MIT template assets](plans/dep13-source-privacy-review.md#2026-11-19--source-of-the-nine-package-icons).
 Rights for eight background JPEGs, first-party licence text, Store certification,
 customer tests and effective ref protection remain open. The template icons
-are also a branding risk: [an original alternative is ready for review](adr/ADR-021-store-package-icon-proposal.md).
+are also a branding risk: the owner declined the first replacement sketch.
+[Lift and Glide are ready to compare](adr/ADR-021-store-package-icon-proposal.md).
+The [English Store gallery](releases/store/en-US/README.md) now shows whole
+Wintodo windows on solid backgrounds.
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -4718,3 +4721,21 @@ checks remain open; no release tag, submission or publication took place.
 default template images. The proposed icon family matches all nine existing
 file dimensions and ICO frame sizes; the light/dark/16–48 px preview is
 in ADR-021. It has not been applied to the packages or certified.
+
+### 2026-11-19 — M10: Fluent icon review and Store gallery
+
+The owner rejected the stacked-tile icon and decorative gradients. [Lift and
+Glide](adr/ADR-021-store-package-icon-proposal.md) now have transparent SVG
+masters, eight PNGs and a six-frame ICO each. Review covered light and dark
+and actual 16–48 px sizes. Both sets match the shipped asset dimensions.
+Neither has been selected or applied; the inspected MSIX hashes are unchanged.
+
+The [English listing](releases/store/en-US/README.md) now has five full-window
+WintodoTest captures on solid backgrounds, five separate promos and an original
+harbour illustration. The cover pairs two real My Day captures. The Microsoft
+To Do chooser uses a demo identity; the iCalendar export returned five tasks
+with recurrence. An earlier capture showed the success banner but did not
+recover the file from the requested directory; the repeat verified the actual
+export. All eleven images are RGB PNGs at 1920 × 1080. Visual and OCR review
+of the Store screenshots, caption lengths and ZIP contents passed. Store
+certification and the installed appearance of the selected icon remain pending.

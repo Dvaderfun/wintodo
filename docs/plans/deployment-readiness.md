@@ -736,7 +736,7 @@ app assets/resources and Microsoft To Do deployment documentation.
 - [ ] Validate final title/tile/splash appearance and the rights to the eight
       in-app background JPEGs. The current package still uses default template
       icons; [ADR-021](../adr/ADR-021-store-package-icon-proposal.md) documents
-      the branding risk and the proposed replacement.
+      the branding risk and the two original designs awaiting selection.
 - [x] Prepare English screenshots and captions with synthetic tasks, a text-free
       Store hero, listing and certification copy, and a support/security contact.
 - [ ] Compare the listing assets with the certified private build before public availability.
