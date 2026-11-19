@@ -1,26 +1,25 @@
 # Deployment owner decision packet
 
 Prepared: 2026-11-09 against source `0b7272f`.
-Updated 2026-11-19 after the owner supplied the reserved Partner Center identity and chose Glide.
+Updated 2026-11-20 after the owner confirmed personal ownership, publisher authority and draft artwork.
 Status: **PARTIALLY DECIDED — Wintodo and the Glide package icon selected; public
 source after review; fresh production installation with future data-preserving
 updates; stable tag mapping and first release 1.0.0 selected; Store-first under
 Univera LLC, commercial redistribution reserved, support@univera.app selected.**
-DEP-12 policy A remains selected. The reserved identity and first version are applied. Copyright ownership/licence text, artwork rights and effective protection remain pending.
+DEP-12 policy A remains selected. The reserved identity, first version and [first-party source licence](../../LICENSE.md) are applied. External artwork rights and effective protection remain pending.
 
 [ADR-019](../adr/ADR-019-store-first-source-available-release.md) supersedes
 ADR-018's first distribution route with the owner's explicit Store-first answer.
 ADR-018's preserved launch-control policy continues unchanged.
 
-The next owner steps are to finalize source ownership/licence text and asset rights while
+The next rights step is to document the eight background sources or replace them before public distribution, while
 native provenance and deployment tooling progress independently. The
 [latest hosted unsigned pair](dep16-hosted-candidate-validation.md) already
 passes bounded checks; protected execution, full vendor/advisory closure,
 Store certification/signing and final installed-package acceptance remain pending.
 [Store preparation](deployment-store-first-preparation.md) provides the exact
-identity handoff and selected-route gates. [The source-available draft](wintodo-source-available-license-draft.md)
-implements the selected free-build/commercial-redistribution policy for review;
-it is not yet the repository's active licence.
+identity handoff and selected-route gates. [ADR-023](../adr/ADR-023-first-party-rights-and-draft-artwork.md)
+records the owner's authorization to retain the backgrounds in the draft.
 
 ## Decisions that can be answered together now
 
@@ -31,7 +30,7 @@ it is not yet the repository's active licence.
 | D3 — Identity and installed-data continuity | **Reserved identity supplied and applied** | [Partner Center fields and PFN](deployment-store-first-preparation.md#owner-supplied-identity-handoff) match the production manifest. The old test family stays separate. Future updates must preserve tasks, attachments, settings and credential access. | DEP-16/18/19 |
 | D4 — Version policy | **Stable tags `vMAJOR.MINOR.PATCH` → `MAJOR.MINOR.PATCH.0`; first release `v1.0.0` / `1.0.0.0` selected** | Use the new production identity from D3 and monotonic subsequent versions. Existing `1.0.0.5` test installations are outside this first production update line. Tags do not modify the manifest; the production manifest already uses `1.0.0.0`. Prerelease mapping remains a separate policy. | DEP-16/18/19 |
 | D5 — Signing ownership | **Store-managed MSIX signing selected**; actual certification/signed-runtime evidence pending | No purchased Windows certificate or direct-signing secret is required for the first Store route. Bind actual Store-delivered signed packages to the reviewed uploads. Future direct-download signing is a separate decision. No purchase, submission or signing action ran. | DEP-18/19 |
-| D6 — Public legal identity | **Commercial redistribution reserved; free personal builds; public publisher Univera LLC and contact support@univera.app selected** | Use source-available terms. The draft awaits copyright-owner authority, free community redistribution scope and complete dependency/Store compatibility review; GPL/MIT were not selected. Public Git attribution still needs review. Supplier notices/asset rights remain separate. Any history rewrite needs its own authorization. | DEP-13/17/20 |
+| D6 — Public legal identity | **The individual author is the first-party rights holder; Univera LLC is the authorized publisher. Contact support@univera.app.** | The [licence](../../LICENSE.md) allows free self-builds and free unbranded redistribution; it reserves the official name and commercial rights. Third-party and Store terms remain separate. Public Git attribution still needs review. | DEP-13/17/20 |
 | D7 — Production local overrides | [DEP-12](dep12-production-overrides.md) policy A selected | **Selected A: retain and document established Release/AOT local overrides.** A custom database path moves SQLite only; fixtures and durable trace output remain Debug-only; broker shares use package LocalState and real time. Executable startup-policy tests and documented runtime gates accompany the supported behavior. Whole-profile isolation still requires the disposable package/guest. | DEP-12/17/19 |
 
 Unselected recommended options remain review proposals. Exact
@@ -48,7 +47,7 @@ D2 source and redistribution licence for the eight retained background JPEGs:
 D3 exact reserved identity applied; final installed-family test pending:
 D4 accepted v1.0.0 -> 1.0.0.0 on a new family; future updates preserve data:
 D5 Store signing selected; actual certified/signed-package evidence pending:
-D6 commercial redistribution reserved; copyright owner / free sharing scope:
+D6 individual rights holder; free unbranded community copies; official branding and monetization reserved:
 D6 support@univera.app selected; public Git attribution review pending:
 D7 selected A retained; runtime acceptance pending:
 ```

@@ -6,6 +6,10 @@ Status: **IN PROGRESS — DEP-01, DEP-03, DEP-04, DEP-05, DEP-06, DEP-07, DEP-08
 
 **Release check, 2026-11-19: ready for review; NOT READY for publication.** Both [locally built unsigned Glide MSIX files](#2026-11-19--glide-packages-and-store-gallery) match the reserved Store identity. The [hosted restore fix](#2026-11-19--pr-ci-and-local-store-candidates) was verified on an earlier PR revision. The [English screenshots, captions and hero art](../releases/store/en-US/README.md) are ready for listing review. Effective ref protection, rights, native dependency evidence, Store certification and installed customer tests remain open.
 
+20 November: all five Store sections are complete. The [first-party licence](../../LICENSE.md)
+is active; the individual author approved keeping the eight backgrounds in the
+private draft, without claiming third-party rights. See [ADR-023](../adr/ADR-023-first-party-rights-and-draft-artwork.md).
+
 This plan turns the deployment-readiness audit into work packages for a safe
 GitHub release and GitHub Actions CI/CD. It covers data integrity, API security,
 credentials, personal-data exclusion, packaging, signing, documentation and

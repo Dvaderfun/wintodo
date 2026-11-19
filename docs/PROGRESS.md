@@ -12,14 +12,15 @@ Store-first under **Univera LLC** is selected in
 ADR-018's first distribution route. DEP-12 policy A retains documented launch
 controls. Wintodo/current artwork subject to rights, public source after review,
 a fresh production installation with data-preserving future updates, first
-`v1.0.0` / `1.0.0.0`, and support@univera.app are selected. Source-available terms
-will permit free self-builds and reserve commercial redistribution. The
+`v1.0.0` / `1.0.0.0`, and support@univera.app are selected. The active
+[source licence](../LICENSE.md) allows free self-builds and unbranded community
+copies; the individual author retains the official brand and monetization. The
 [reserved Store identity](plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
 and version `1.0.0.0` are in both unsigned packages. Each contains the nine
 approved [Glide icon files](adr/ADR-021-store-package-icon-proposal.md).
 The [English Store gallery](releases/store/en-US/README.md) pairs complete
 Windows captures with separate promos and a text-free checklist illustration.
-All five required sections in the [Partner Center draft](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) are **Complete**, including Age ratings (PEGI 3 / ESRB Everyone). **Submit for certification** is enabled; the submission is still **In draft**. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is saved. Rights for eight background JPEGs, first-party licence text, native dependency review, ref protection, final reviewed packages, certification and customer tests remain open.
+All five required sections in the [Partner Center draft](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) are **Complete**, including Age ratings (PEGI 3 / ESRB Everyone). **Submit for certification** is enabled; the submission is still **In draft**. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is saved. The owner accepted the eight backgrounds for staging; their redistribution rights remain unverified. Native dependency review, ref protection, the final package handoff, certification and customer tests remain open.
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -4775,3 +4776,13 @@ The owner selected a free public launch without a tester group and approved the 
 ### 2026-11-20 — M10: publisher saved the age ratings
 
 After the owner's Save, the refreshed Wintodo overview returned **Complete** for all five required sections and enabled **Submit for certification**. The saved ratings include PEGI 3 and ESRB E. No submission was sent; manual publication remains selected. The two local upload files still match the recorded candidate hashes. Each contains all eight background JPEGs with the same bytes as the source tree. [PR #5](https://github.com/Dvaderfun/wintodo/pull/5) is still a draft: `build-and-test` passed at `6c9f8c4`, and the release matrix was skipped. Remote `main` remains at `44a4ef6` with the old test identity/version; the uploaded production-family candidates are from `aa59ff4`.
+
+### 2026-11-20 — M10: first-party rights and PR #5 review
+
+[ADR-023](adr/ADR-023-first-party-rights-and-draft-artwork.md) records the
+individual rights holder, official publisher and the owner's draft-only artwork
+instruction. The root licence permits free, distinctly branded community
+builds and reserves official branding and monetization. The pre-merge x64 Debug
+build completed with zero warnings/errors; all four suites passed 707/707 with
+zero skips. This change does not alter any package input. No Store
+certification, publication or repository visibility change is part of this step.
