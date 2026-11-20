@@ -37,4 +37,6 @@ Omit **-Apply** for an inventory only. Remove the schedule with **Unregister-Sch
 - With Codex CLI 0.171.0, reinstalling a disabled plugin is **not** an inactive update: a disposable local plugin changed from v1.0.0/disabled to v1.0.1/**enabled** when re-added. The job refreshes those catalogs but does not re-add disabled plugins. The user's real disabled plugins were left in their original state.
 - **Standalone skills:** if the workstation has a registered skill publisher, use its tracked source revisions, local-edit checks and backups. The local report inventories skill locations without an owning updater in **manual-skills.txt**; no remote source is inferred from a matching name. No removed extensions are installed. For this project's six WinUI skills, use the separate [pinned, mirrored update](ai-tooling.md).
 
+The first nonempty manual skill inventory, and later additions or removals, request review. An unchanged set stays listed without repeated notifications. A check-only run previews changes and does not advance the last applied inventory. If the registered publisher manager is missing, each eligible run requests review until it is restored.
+
 The workstation job services Wintodo and its agent tools. It does not install unrelated products, enable disabled components, upgrade the OS or Visual Studio, or auto-merge a dependency update into a release.

@@ -28,6 +28,22 @@ if ($IfDue -and (Test-Path -LiteralPath $latest)) {
 
 $rows = [Collections.Generic.List[object]]::new()
 function Add-Result($name, $state, $detail) { $rows.Add([ordered]@{name=$name; state=$state; detail=$detail}) }
+function Get-ManualSkillState([string]$Directory, [string[]]$Entries, [bool]$RecordApplied) {
+    $sorted = [string[]]@($Entries | Sort-Object -Unique)
+    [IO.File]::WriteAllLines((Join-Path $Directory 'manual-skills.txt'), $sorted)
+    $marker = Join-Path $Directory 'manual-skills.applied.sha256'
+    $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($sorted -join "`n"))))
+    $changed = if (Test-Path -LiteralPath $marker -PathType Leaf) {
+        [IO.File]::ReadAllText($marker).Trim() -cne $hash
+    } else { $sorted.Count -gt 0 }
+    if ($RecordApplied) {
+        [IO.File]::WriteAllText("$marker.new", $hash)
+        [IO.File]::Move("$marker.new", $marker, $true)
+    }
+    if ($changed) { return 'review' }
+    if ($sorted.Count) { return 'manual' }
+    return 'checked'
+}
 function Invoke-Component($name, [scriptblock]$action) {
     try { & $action } catch { Add-Result $name 'incomplete' $_.Exception.Message }
 }
@@ -128,7 +144,7 @@ Invoke-Component '.NET 10 LTS SDK' {
 }
 Invoke-Component 'Installed skill sources' {
     $publisher = Join-Path $env:USERPROFILE '.codex/skills/skill-discovery/scripts/Update-Skills.ps1'
-    if (!(Test-Path -LiteralPath $publisher)) { Add-Result 'Installed skill sources' 'manual' 'No registered local publisher manager; project skills are checked separately.'; return }
+    if (!(Test-Path -LiteralPath $publisher -PathType Leaf)) { Add-Result 'Installed skill sources' 'review' 'The registered publisher manager is missing; restore it or review local skill ownership. Project skills are checked separately.'; return }
     $log = Join-Path $ReportDirectory 'skill-publishers.log'
     & pwsh -NoProfile -NonInteractive -File $publisher *> $log
     $code = $LASTEXITCODE
@@ -155,9 +171,10 @@ Invoke-Component 'Other local skills' {
             }
         }
     })
-    $entries=@($manual | Sort-Object -Unique)
-    [IO.File]::WriteAllLines((Join-Path $ReportDirectory 'manual-skills.txt'),[string[]]$entries)
-    Add-Result 'Other local skills' $(if ($entries.Count) {'manual'} else {'checked'}) "$($entries.Count) local skill locations without an owning updater; see manual-skills.txt. Their upstream versions are not asserted."
+    $state = Get-ManualSkillState $ReportDirectory $manual ([bool]$Apply)
+    $detail = "$($manual.Count) local skill locations without an owning updater; see manual-skills.txt. Their upstream versions are not asserted."
+    if ($state -eq 'review') { $detail = "Manual skill inventory is new or changed. " + $detail }
+    Add-Result 'Other local skills' $state $detail
 }
 Invoke-Component 'Codex plugins' {
     $pArgs = @('-NoProfile','-NonInteractive','-File',(Join-Path $PSScriptRoot 'Update-CodexPlugins.ps1'),'-Json')
