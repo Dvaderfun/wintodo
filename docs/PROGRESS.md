@@ -4837,3 +4837,16 @@ its SDK cannot build the seeder at the repository's current SDK pin.
 The fixed build passed the visual spacing, star and reorder checks (3/4).
 The completion scroll-position check still failed: the reference row moved
 356 px after completion (baseline: −360 px). The full gate remains open.
+
+## 2026-11-21 — M10 dependency fallback and packaged Settings notice
+
+Both [final x64/ARM64 unsigned AOT fallback packages](plans/2026-11-21-dependency-servicing.md)
+pass structural and checkout-root privacy checks with zero findings/advisories;
+the packaged English Settings licence resource matches all 14 central pins
+and labels. Updated the SQLite engine/provider, Windows SDK build tools,
+WinApp CLI and analyzer, xUnit and TRX; kept Windows App SDK 2.5.1 because
+2.7.0 vendor DLLs failed the unchanged privacy gate. Stable 2.6.4 and 2.6.5
+supplier inputs also contain the blocked marker. Clean Debug build passes;
+one full four-project run is 706/707, no skips: all smart lists met 5 ms, but
+10k FTS worst warm was 428.653 ms against 60 ms. No waived or retried gate,
+host UI automation, sign, install or deployment.
