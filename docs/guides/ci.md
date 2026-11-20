@@ -49,10 +49,30 @@ installations, Store apps or the host's Windows SDK. Check those on the
 developer machine. A matching package version does not prove the absence of
 a security issue; security audit and release gates still run independently.
 
+A second job in the same workflow prepares the two updates that Dependabot
+does not manage: the six vendored WinUI skills and the Gitleaks scanner.
+When there is a verified stable update the run includes one
+`vendor-update-<source-commit>` artifact containing only a source patch.
+No branch, PR, or release is created. A clean run creates no artifact;
+a moved tag, changed historical checksum, divergent mirror, unexpected skill
+file type or failed download prevents upload and needs investigation.
+
+The preparer checks the full old and new WinUI tag commits, reads Markdown
+only from bare Git objects, requires both repo mirrors to match the old
+public tree, and updates both mirrors, provenance and updater defaults
+together. A proposed scanner ZIP is hashed against its publisher's checksum
+without executing or packaging the binary. The script verifies the patch
+against the original committed tree using a temporary index. Inspect
+release notes and patch contents; on a clean checkout at the artifact's
+source commit, run `git apply --check path/to/wintodo-vendor-update.patch`
+before applying it on a review branch and running CI. The same read-only
+preparer runs with `python scripts/Prepare-VendorUpdates.py --output candidate.patch`
+where the output file does not already exist.
+
 ## Build and release gates
 
-The build job runs synthetic scanner/privacy regressions, pinned Gitleaks
-8.30.1 against fetched reachable history and the current source archive, a
+The build job runs synthetic scanner/privacy regressions, the pinned Gitleaks
+scanner against fetched reachable history and the current source archive, a
 warnings-as-errors restore with all direct/transitive NuGet advisories enabled,
 explicit dependency auditing, toolchain verification, the x64 Debug solution
 build and all four Microsoft Testing Platform suites. A failed, incomplete or
@@ -62,8 +82,8 @@ is valid only with a successful command and all nine expected projects present.
 An explicit malformed collection or command/report error is rejected.
 
 Gitleaks is downloaded into ignored repo-local `artifacts/ci-security`, with
-the reviewed Windows x64 ZIP SHA-256 checked before extraction:
-`d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e`.
+the reviewed Windows x64 ZIP SHA-256 from
+[`gitleaks-pin.json`](../../scripts/gitleaks-pin.json) checked before extraction.
 Each invocation uses a fresh source extraction directory. Its history/tree
 reports are fully redacted but still contain attribution and filenames, so
 they and the private logs are never uploaded. The uploaded summaries contain
