@@ -104,9 +104,48 @@ class MaintenanceTests(unittest.TestCase):
             with self.subTest(mode=mode):
                 self.mode = mode
                 snap = deepcopy(self.plugins)
-                with self.assertRaisesRegex(RuntimeError, "Unexpected plugin state change"):
+                with self.assertRaisesRegex(adapter.Incomplete, "/verify-state: state-changed"):
                     self.service()
                 self.plugins = snap
+
+    def test_only_verified_reads_retry_once_and_stdin_is_closed(self):
+        timeout = subprocess.TimeoutExpired(["private-command"], 90)
+        ok = subprocess.CompletedProcess([], 0, "[]", "")
+        with mock.patch.object(adapter.subprocess, "run", side_effect=[timeout, ok]) as call:
+            self.assertIs(adapter.native("binary", ("--bare", "plugin", "list", "--json"), self.profile), ok)
+            self.assertEqual(call.call_count, 2)
+            self.assertTrue(all(x.kwargs["timeout"] == 90 and x.kwargs["stdin"] == subprocess.DEVNULL
+                                and x.kwargs["cwd"] == self.profile for x in call.call_args_list))
+        with mock.patch.object(adapter.subprocess, "run", side_effect=timeout) as call:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                adapter.native("binary", ("--bare", "plugin", "marketplace", "list", "--json"), self.profile)
+            self.assertEqual(call.call_count, 2)
+        with mock.patch.object(adapter.subprocess, "run", side_effect=timeout) as call:
+            with self.assertRaises(subprocess.TimeoutExpired):
+                adapter.native("binary", ("--bare", "plugin", "update", "--scope", "user", "--json", PLUGIN),
+                               self.profile)
+            self.assertEqual(call.call_count, 1)
+            self.assertEqual(call.call_args.kwargs["timeout"], 300)
+
+    def test_catalog_timeout_reports_only_safe_stage_and_still_checks_state(self):
+        calls = []
+        def cli(*args):
+            calls.append(args[2:])
+            if args[2:] == ("marketplace", "update", "--json", MARKET):
+                raise subprocess.TimeoutExpired(["private-command"], 300, output="private-output", stderr="private-error")
+            return self.cli(*args)
+        with self.assertRaises(adapter.Incomplete) as caught:
+            adapter.service_plugins(cli, self.profile, True, lambda *row: None)
+        self.assertEqual(str(caught.exception), MARKET + "/refresh: timeout.")
+        self.assertEqual(calls[-1], ("list", "--json"))
+        self.assertFalse(any(PLUGIN in call for call in calls))
+
+    def test_rejects_nonzero_or_malformed_inventory_without_echoing_output(self):
+        for result, reason in ((subprocess.CompletedProcess([], 1, "private-output", "private-error"), "publisher-error"),
+                               (subprocess.CompletedProcess([], 0, "private-output", ""), "invalid-json")):
+            with self.subTest(reason=reason), self.assertRaises(adapter.Incomplete) as caught:
+                adapter.service_plugins(lambda *args: result, self.profile, True, lambda *row: None)
+            self.assertEqual(str(caught.exception), "inventory/initial: " + reason + ".")
 
     def test_unknown_enabled_plugin_and_inactive_only_catalog_are_not_serviced(self):
         self.plugins[0]["enabled"] = False

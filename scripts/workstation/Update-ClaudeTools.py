@@ -22,10 +22,56 @@ class Review(Exception):
     """A known condition that needs a person's decision. Only constant text is exposed."""
 
 
-def run(argv, cwd=None):
-    return subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                          text=True, encoding="utf-8", errors="replace", timeout=150, cwd=cwd,
-                          env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
+class StateChanged(RuntimeError):
+    pass
+
+
+class PublisherFailed(RuntimeError):
+    pass
+
+
+class Incomplete(RuntimeError):
+    """Only reviewed stage identifiers and fixed reason codes reach the report."""
+
+
+def step(stage, action, *args):
+    try:
+        return action(*args)
+    except (Review, Incomplete):
+        raise
+    except (OSError, ValueError, KeyError, IndexError, TypeError, RuntimeError, subprocess.SubprocessError) as exc:
+        if isinstance(exc, subprocess.TimeoutExpired):
+            reason = "timeout"
+        elif isinstance(exc, StateChanged):
+            reason = "state-changed"
+        elif isinstance(exc, PublisherFailed):
+            reason = "publisher-error"
+        elif isinstance(exc, OSError):
+            reason = "io-error"
+        elif isinstance(exc, json.JSONDecodeError):
+            reason = "invalid-json"
+        else:
+            reason = "invalid-response"
+        raise Incomplete(f"{stage}: {reason}.") from None
+
+
+def run(argv, cwd=None, *, read_only=False):
+    # Retry a read at most once on a timeout. A timed-out write can have already
+    # changed the cache: give it a longer first attempt and never replay it.
+    for attempt in range(2 if read_only else 1):
+        try:
+            return subprocess.run(argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                  text=True, encoding="utf-8", errors="replace", timeout=90 if read_only else 300,
+                                  cwd=cwd, env={**os.environ, "GIT_TERMINAL_PROMPT": "0"})
+        except subprocess.TimeoutExpired:
+            if not read_only or attempt:
+                raise
+
+
+def native(binary, args, repo):
+    read_only = args in (("--version",), ("--bare", "plugin", "list", "--json"),
+                         ("--bare", "plugin", "marketplace", "list", "--json"))
+    return run([binary, *args], repo, read_only=read_only)
 
 
 def read_json(path):
@@ -67,8 +113,10 @@ def service_cli(cli, profile, apply):
 
 def listing(cli, *args):
     result = cli("--bare", "plugin", *args, "list", "--json")
+    if result.returncode:
+        raise PublisherFailed()
     values = json.loads(result.stdout)
-    if result.returncode or not isinstance(values, list) or not all(isinstance(x, dict) for x in values):
+    if not isinstance(values, list) or not all(isinstance(x, dict) for x in values):
         raise ValueError("Invalid CLI inventory")
     return values
 
@@ -86,7 +134,7 @@ def inventory(cli):
 def preserve(before, after, selected=None):
     if (before.keys() != after.keys()
             or any(v[:2] != after[k][:2] or k != selected and v[2] != after[k][2] for k, v in before.items())):
-        raise RuntimeError("Unexpected plugin state change")
+        raise StateChanged("Unexpected plugin state change")
 
 
 def trusted_market(profile, cli, name):
@@ -97,8 +145,8 @@ def trusted_market(profile, cli, name):
             or Path(matches[0]["installLocation"]) != folder or folder.resolve(strict=True) != folder):
         raise Review("Marketplace identity or installation path requires review.")
     if (folder / ".git").exists():
-        origin = run(["git", "remote", "get-url", "origin"], folder)
-        clean = run(["git", "-c", "core.fsmonitor=false", "status", "--porcelain"], folder)
+        origin = run(["git", "remote", "get-url", "origin"], folder, read_only=True)
+        clean = run(["git", "-c", "core.fsmonitor=false", "status", "--porcelain"], folder, read_only=True)
         if origin.returncode or origin.stdout.strip() != f"https://github.com/{repo}.git" or clean.returncode or clean.stdout.strip():
             raise Review("Marketplace origin or local changes require review.")
     elif name != "claude-plugins-official":
@@ -127,18 +175,21 @@ def approved_source(folder, plugin):
 def update(cli, *args):
     # Neither -y nor --accept-command is used, including on a retry. Never log command text.
     res = cli("--bare", "plugin", *args)
-    obj = json.loads(res.stdout.strip().splitlines()[-1])
+    rows = res.stdout.strip().splitlines()
+    if not rows and res.returncode:
+        raise PublisherFailed()
+    obj = json.loads(rows[-1]) if rows else None
     if not isinstance(obj, dict):
         raise ValueError("Invalid update result")
     if obj.get("shownCommand"):
         raise Review("Publisher command requires a person's review; no command was accepted.")
     if res.returncode or obj.get("success") is False or obj.get("error"):
-        raise RuntimeError("Publisher update did not complete")
+        raise PublisherFailed()
     return obj
 
 
 def service_plugins(cli, profile, apply, add):
-    before = inventory(cli)
+    before = step("inventory/initial", inventory, cli)
     add("Claude plugin inventory", "checked", f"{len(set(k[0] for k in before))} IDs; "
         f"{len(before)} scoped installations; {sum(not v[0] for v in before.values())} disabled. "
         "Disabled and non-user installations are inventory only.")
@@ -148,13 +199,13 @@ def service_plugins(cli, profile, apply, add):
     previous = before
     for market in sorted({k[0].split("@")[1] for k, _ in selected if k[0] in SOURCES}):
         try:
-            folder = trusted_market(profile, cli, market)
+            folder = step(f"{market}/identity", trusted_market, profile, cli, market)
             if apply:
                 try:
-                    update(cli, "marketplace", "update", "--json", market)
+                    step(f"{market}/refresh", update, cli, "marketplace", "update", "--json", market)
                 finally:
-                    preserve(previous, inventory(cli))
-                folder = trusted_market(profile, cli, market)
+                    step(f"{market}/verify-state", lambda: preserve(previous, inventory(cli)))
+                folder = step(f"{market}/refreshed-identity", trusted_market, profile, cli, market)
         except Review as exc:
             add(market, "review", str(exc))
             continue
@@ -163,21 +214,21 @@ def service_plugins(cli, profile, apply, add):
             if plugin not in SOURCES or plugin.split("@")[1] != market:
                 continue
             try:
-                approved_source(folder, plugin)
+                step(f"{plugin}/source", approved_source, folder, plugin)
                 if not apply:
                     add(plugin, "cached", "Installed " + display(initial[2]) + "; remote freshness not checked.")
                     continue
                 try:
-                    update(cli, "update", "--scope", "user", "--json", plugin)
+                    step(f"{plugin}/refresh", update, cli, "update", "--scope", "user", "--json", plugin)
                 finally:
-                    after = inventory(cli)
-                    preserve(previous, after, key)
+                    after = step(f"{plugin}/readback", inventory, cli)
+                    step(f"{plugin}/verify-state", preserve, previous, after, key)
                     previous = after
                 old, new = display(initial[2]), display(after[key][2])
                 add(plugin, "checked" if old == new else "updated", old if old == new else f"{old} -> {new}")
             except Review as exc:
                 add(plugin, "review", str(exc))
-    preserve(previous, inventory(cli))
+    step("inventory/final", lambda: preserve(previous, inventory(cli)))
 
 
 def display(value):
@@ -201,7 +252,7 @@ def main():
                 or Path(os.environ.get("CLAUDE_CONFIG_DIR") or profile) != profile):
             raise Review("The selected CLI or profile does not match the reviewed native installation.")
         def cli(*argv):
-            return run([binary, *argv], args.repo)
+            return native(binary, argv, args.repo)
         try:
             add("Claude Code CLI", *service_cli(cli, profile, args.apply))
         except Review as exc:
@@ -211,6 +262,8 @@ def main():
         service_plugins(cli, profile, args.apply, add)
     except Review as exc:
         add("Claude Code", "review", str(exc))
+    except Incomplete as exc:
+        add("Claude plugins", "incomplete", str(exc))
     except (OSError, ValueError, KeyError, IndexError, TypeError, RuntimeError, subprocess.SubprocessError):
         add("Claude plugins", "incomplete", "Could not verify the publisher operation or unchanged install/enable states.")
     states = {r["state"] for r in rows}
