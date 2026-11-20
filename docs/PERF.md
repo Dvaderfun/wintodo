@@ -407,3 +407,30 @@ Production reader compared at one and four list workers; attachment downloads re
 |---|---|---|---|
 | production serial (1 list) | 1434.7 ms | 530.4 ms | 2929.2 ms |
 | production bounded (4 lists) | 455.4 ms | 335.6 ms | 2264.2 ms |
+
+### Store v1.0.0.0 live idle snapshot & Release SQLite/FTS5 benchmark — 2026-11-20
+
+Measured on host (11th Gen Intel Core i7-11370H @ 3.30GHz, 32 GB RAM, Windows 11 Pro x64 10.0.28020) without UI automation or synthetic desktop input. This is a side-by-side observational snapshot of the Store-signed x64 package (47371DermenzhyStudio.Wintodo 1.0.0.0, SignatureKind: Store) against Microsoft To Do (Microsoft.Todos 2.179.8901.0) plus a headless Release x64 SmartListPerformanceTests run. It does not replace the deferred M9 +10-minute idle matrix or ARM64 runtime measurements.
+
+**Installed Store package & binary footprint (1.0.0.0):**
+- Self-contained MSIX package size: 59,368,447 bytes (56.62 MiB, x64) / 57,700,215 bytes (55.03 MiB, ARM64).
+- Store-installed x64 folder size: 149,346,098 bytes (142.43 MiB; includes self-contained Windows App SDK runtime); Wintodo.exe: 21.28 MiB Native AOT binary (vs. Microsoft.Todos installed folder 74.47 MiB).
+
+**Live idle memory & thread snapshot (Win32_PerfFormattedData_PerfProc_Process, same host):**
+
+| Process | Processes | Threads | Task Manager Memory (WorkingSetPrivate) | Total Working Set (WorkingSet) | Private Bytes |
+|---|---:|---:|---:|---:|---:|
+| Wintodo (1.0.0.0, Store WinUI 3 + Native AOT) | 1 | 18 | 86.80 MB | 182.16 MB | 112.33 MB |
+| Todo (2.179.8901.0, Store UWP Microsoft To Do) | 1 | 32 | 83.30 MB | 199.95 MB | 113.52 MB |
+
+**Headless Release x64 store benchmark (SmartListPerformanceTests, 10,000 tasks):**
+Command: dotnet test --project tests/Wintodo.Data.Tests -c Release -p:Platform=x64 --filter-class "*SmartListPerformanceTests" --output Detailed --show-live-output on (PASS, 2/2).
+
+| Query (10,000 tasks) | Measured warm time | Budget | Result |
+|---|---:|---:|---|
+| My Day | 1.749 ms | 5 ms | PASS |
+| Important | 2.506 ms | 5 ms | PASS |
+| Planned | 1.695 ms | 5 ms | PASS |
+| All | 1.519 ms | 5 ms | PASS |
+| Completed | 2.652 ms | 5 ms | PASS |
+| FTS5 (worst warm query) | 6.694 ms | 60 ms | PASS |

@@ -38,8 +38,8 @@ All new planning documents belong under `docs/plans/`.
 | [Release documentation preparation](plans/dep17-release-docs.md) | DEP-17 source-backed privacy/installation drafts and remaining owner/publication decisions |
 | [Shipped dependency notices review](plans/dep17-third-party-notices-review.md) | DEP-17 exact inherited notice additions, runtime/tool distinctions and unresolved redistribution/ownership proof |
 
-The [privacy policy](releases/PRIVACY.md) is saved in the Store draft. The
-[installation, update and recovery guide](releases/INSTALLATION.md) is still a review draft. Store signing and deployment evidence remain pending.
+The [privacy policy](releases/PRIVACY.md) is published with Wintodo 1.0 in the Microsoft Store. The
+[installation, update and recovery guide](releases/INSTALLATION.md) is also included under `docs/releases/`.
 
 ## Records
 

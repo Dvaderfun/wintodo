@@ -72,6 +72,7 @@ Generated Files/
 .codegraph/.dirty
 .codegraph/daemon.pid
 
-# Personal agent settings (shared ones are committed)
+# Personal agent settings and local marketing notes (shared ones are committed)
 .claude/settings.local.json
 CLAUDE.local.md
+/docs/plans/launch-marketing-plan.md
