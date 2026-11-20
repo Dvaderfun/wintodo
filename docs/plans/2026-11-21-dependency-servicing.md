@@ -78,6 +78,8 @@ Other package updates remain independent of that exception.
 
 [Microsoft support and release channels](https://learn.microsoft.com/windows/apps/windows-app-sdk/release-channels) · [Windows App SDK 2.7.0 release notes](https://github.com/microsoft/WindowsAppSDK/releases/tag/v2.7.0). The open search timing failure is a separate acceptance issue; changing SDKs does not establish that it is fixed.
 
+**Draft for Microsoft (not sent):** On Windows App SDK 2.7.0, our x64 and ARM64 self-contained MSIX builds each include 16 runtime DLLs with an embedded generic build-container profile path outside CodeView. Their bytes match the published inputs: 15 files in the architecture-specific nested MSIX from `Microsoft.WindowsAppSDK.Runtime`, and `FrameworkUdk` from `Microsoft.WindowsAppSDK.InteractiveExperiences`. We verified the NuGet catalog hashes and package signatures. Is there a supported path-clean redistribution or a planned servicing fix? We can supply the exact vendor artifact hashes; we are not reporting exposure of a customer profile.
+
 Installed-client, OEM/native ARM64, Store and full native provenance
 acceptance are separate from these checks. Historical release evidence
 remains tied to the package and source revision it originally examined.
