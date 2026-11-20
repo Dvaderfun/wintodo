@@ -76,16 +76,22 @@
                                     <VisualState x:Name="Selected">
                                         <VisualState.Setters>
                                             <Setter Target="StateOverlay.Background" Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
+                                            <Setter Target="SelectionIndicator.Visibility" Value="Visible" />
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="PointerOverSelected">
                                         <VisualState.Setters>
                                             <Setter Target="StateOverlay.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
+                                            <Setter Target="SelectionIndicator.Visibility" Value="Visible" />
+                                            <Setter Target="SelectionIndicator.Background" Value="{ThemeResource ListViewItemSelectionIndicatorPointerOverBrush}" />
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="PressedSelected">
                                         <VisualState.Setters>
                                             <Setter Target="StateOverlay.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
+                                            <Setter Target="SelectionIndicator.Visibility" Value="Visible" />
+                                            <Setter Target="SelectionIndicator.Height" Value="10" />
+                                            <Setter Target="SelectionIndicator.Background" Value="{ThemeResource ListViewItemSelectionIndicatorPressedBrush}" />
                                         </VisualState.Setters>
                                     </VisualState>
                                 </VisualStateGroup>
@@ -94,6 +100,7 @@
                                     <VisualState x:Name="Disabled">
                                         <VisualState.Setters>
                                             <Setter Target="ItemCard.Opacity" Value="{ThemeResource ListViewItemDisabledThemeOpacity}" />
+                                            <Setter Target="SelectionIndicator.Background" Value="{ThemeResource ListViewItemSelectionIndicatorDisabledBrush}" />
                                         </VisualState.Setters>
                                     </VisualState>
                                 </VisualStateGroup>
@@ -118,6 +125,20 @@
                                     Content="{TemplateBinding Content}"
                                     ContentTemplate="{TemplateBinding ContentTemplate}"
                                     ContentTransitions="{TemplateBinding ContentTransitions}" />
+                                <!-- The Gallery ListViewItemPresenter's resting and pressed pill sizes.
+                                     The custom card owns the backplate and keeps its existing hit targets. -->
+                                <Border
+                                    x:Name="SelectionIndicator"
+                                    Width="3"
+                                    Height="16"
+                                    Margin="4,0,0,0"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Background="{ThemeResource ListViewItemSelectionIndicatorBrush}"
+                                    CornerRadius="{ThemeResource ListViewItemSelectionIndicatorCornerRadius}"
+                                    IsHitTestVisible="False"
+                                    Visibility="Collapsed" />
                             </Grid>
                         </Border>
                     </ControlTemplate>
@@ -364,6 +385,7 @@
                         Style="{StaticResource SubtleButtonStyle}"
                         Visibility="{x:Bind local:TaskListView.TitleButtonVisibility(ViewModel.CanEditSelectedList, ViewModel.IsRenamingList), Mode=OneWay}">
                         <TextBlock
+                            x:Name="DisplayedListTitle"
                             Foreground="{ThemeResource ListAccentBrush}"
                             Style="{StaticResource TitleTextBlockStyle}"
                             Text="{x:Bind ViewModel.Title, Mode=OneWay}"
@@ -381,8 +403,8 @@
                         Padding="8,4"
                         VerticalAlignment="Center"
                         AutomationProperties.AutomationId="Todo.List.RenameBox"
-                        FontSize="28"
-                        FontWeight="SemiBold"
+                        FontSize="{x:Bind DisplayedListTitle.FontSize, Mode=OneWay}"
+                        FontWeight="{x:Bind DisplayedListTitle.FontWeight, Mode=OneWay}"
                         Foreground="{ThemeResource ListAccentBrush}"
                         KeyDown="OnRenameListBoxKeyDown"
                         LostFocus="OnRenameListBoxLostFocus"

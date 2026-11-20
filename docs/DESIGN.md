@@ -138,7 +138,10 @@ Width `*`, horizontal padding **24**, top padding **16**, bottom padding **0**
   lowering its visible center 2 px for owner-requested optical alignment.
   Emoji and the hover affordance keep their existing placement.
 - Editable in place on click for user lists (turns into a borderless `TextBox`,
-  commits on `Enter` / focus loss, `Esc` cancels).
+  commits on `Enter` / focus loss, `Esc` cancels). In the hybrid DEV preview,
+  the editor reads the displayed title's effective font size and weight. The
+  pinned WinUI styles already use the same `XamlAutoFontFamily` for both;
+  optical margin trimming remains on the displayed TextBlock.
 - A 44 px icon button precedes an editable user-list title. It shows the
   selected emoji; when unset, a 16 px theme-colour dot matches navigation and
   the button has no idle border. Hover or keyboard focus reveals the Fluent
@@ -275,9 +278,17 @@ fill) + `ContentPresenter`, with `CommonStates`, `DisabledStates`, and
 | Metadata | `CaptionTextBlockStyle`, `TextFillColorSecondaryBrush`, single line, ellipsised, 2 px above baseline gap |
 | Hover | Background → `CardBackgroundFillColorSecondaryBrush` |
 | Pressed | Background → `SubtleFillColorTertiaryBrush` |
-| Selected | Background → `SubtleFillColorSecondaryBrush` + a 3 px × 20 px rounded accent bar at the left edge in the list theme colour |
+| Selected (hybrid DEV preview) | Keep the card and its existing fill; add the Gallery's system-accent pill, 4 DIPs from the inside left edge, 3 × 16 DIPs at rest and 3 × 10 while pressed. Use WinUI's `ListViewItemSelectionIndicator*` brushes and radius, including the contrast theme. |
 | Activation | Clicking a row selects it and opens detail; Ctrl+click toggles membership and Esc clears selection |
 | Drag-over | 2 px accent insertion line, 4 px inset |
+
+The marker dimensions come from Microsoft's
+[`ListViewBaseItemChrome`](https://github.com/microsoft/microsoft-ui-xaml/blob/main/dxaml/xcp/core/core/elements/ListViewBaseItemChrome.cpp)
+(`s_selectionIndicatorSize`, `s_selectionIndicatorMargin` and
+`s_selectionIndicatorHeightShrinkage`); 3 and 10 describe the glyph, not
+layout spacing. Wintodo retains its own card template with one decorative
+marker in its selected states. It uses the normal-row pill size even on
+taller, wrapped rows; it does not replace the card with the full presenter.
 
 Task rows use a grouped `CollectionViewSource`; WinUI's built-in
 `CanReorderItems` does not support grouped sources. The custom row containers
