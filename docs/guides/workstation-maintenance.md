@@ -30,6 +30,7 @@ Omit **-Apply** for an inventory only. Remove the schedule with **Unregister-Sch
 
 ## What can be updated unattended?
 
+- **Node and npm for Codex:** compare the installed Node major with its supported LTS releases and check npm's stable version. On this workstation the versioned prefix belongs to the user and contains only npm and Codex. Stage a new Node beside its predecessor, verify the official ZIP checksum, OpenJS executable signature, npm engine requirements and the existing Codex version before switching the developer manifest. Old versions and a manifest backup are retained. A different manager, unsupported LTS line or other global packages request review.
 - **Codex CLI:** official npm stable, only if the active npm prefix owns the CLI. **WinApp:** Microsoft's existing MSIX via WinGet. **Gallery:** the existing Microsoft Store package. A package-manager failure is an incomplete update, not success.
 - **.NET:** the latest stable SDK on the accepted .NET 10 LTS line, side by side in the existing user-owned dotnet installation. The Microsoft installer must have a valid Microsoft Authenticode signature; existing host files and SDKs are kept. A machine-wide installation remains with its administrator. The checkout's global.json is never changed by this job.
 - **CodeGraph:** stable Windows x64 standalone archive, checked against the release checksum and executed for a version check before switching the installation. Older active MCP processes reload when their client next restarts; the task does not terminate them.

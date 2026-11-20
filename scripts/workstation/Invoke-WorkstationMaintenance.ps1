@@ -75,6 +75,11 @@ function Compare-Install($name, $wanted, [scriptblock]$read, [scriptblock]$insta
     Add-Result $name 'updated' "$before -> $after"
 }
 
+Invoke-Component 'Node and npm' {
+    $nodeResult = & (Join-Path $PSScriptRoot 'Update-AgentNode.ps1') -Apply:$Apply
+    if ($nodeResult.state -notin @('current','review','updated')) { throw 'Invalid Node maintenance result' }
+    Add-Result 'Node and npm' $nodeResult.state $nodeResult.detail
+}
 Invoke-Component 'Codex CLI' {
     $wanted = (Invoke-RestMethod 'https://registry.npmjs.org/@openai%2fcodex/latest' -TimeoutSec 30).version
     $read = {

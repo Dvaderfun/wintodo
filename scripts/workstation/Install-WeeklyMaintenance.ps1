@@ -7,7 +7,7 @@ if (!(Test-Path -LiteralPath (Join-Path $checkout 'Wintodo.sln'))) { throw 'Expe
 $parent = Join-Path $env:LOCALAPPDATA 'WintodoMaintenance'
 $null = New-Item -ItemType Directory -Force -Path $parent
 $scriptSource = Split-Path $PSScriptRoot -Parent
-$sources = @('Invoke-WorkstationMaintenance.ps1','Update-CodexPlugins.ps1','Update-ClaudeTools.py','Update-CodeGraph.py','Show-MaintenanceNotice.ps1') |
+$sources = @('Invoke-WorkstationMaintenance.ps1','Update-AgentNode.ps1','Update-CodexPlugins.ps1','Update-ClaudeTools.py','Update-CodeGraph.py','Show-MaintenanceNotice.ps1') |
     ForEach-Object { Join-Path $PSScriptRoot $_ }
 $sources += Join-Path $scriptSource 'Check-ProjectHealth.py'
 $sha = [Security.Cryptography.SHA256]::Create()
