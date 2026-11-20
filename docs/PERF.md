@@ -460,3 +460,26 @@ This rules out a different chosen index in that check, not a runtime regression.
 These are existing store tests, not measurements of the packaged UI,
 process memory or a controlled engine-to-engine speed comparison. No
 threshold, query, schema, or performance claim changed.
+
+## 2026-11-21 — release-fallback dependency test measurements
+
+Single full fallback run (source `c12e5e6`), x64 Debug, .NET SDK 10.0.404,
+Microsoft.Data.Sqlite 10.0.15, native SQLite 3.54.1. The clean solution build
+finished before the four MTP modules ran serially. This was a headless store
+test run, not an app/UI or idle-system measurement.
+
+| Query (10,000 tasks) | Warm time from the full test | Budget | Result |
+|---|---:|---:|---|
+| My Day | 3.952 ms | 5 ms | PASS |
+| Important | 3.526 ms | 5 ms | PASS |
+| Planned | 4.135 ms | 5 ms | PASS |
+| All | 3.991 ms | 5 ms | PASS |
+| Completed | 3.052 ms | 5 ms | PASS |
+| FTS5 (worst warm query) | 428.653 ms | 60 ms | FAIL |
+
+The full suite was 706/707, zero skipped. These values came from the same
+run's TRX; the timing assertion was not retried or weakened. On the 2.7.0
+candidate the identical Data/test graphs gave a focused FTS measurement of
+13.707 ms; its two full suites missed My Day instead. The observed timing
+variation does not establish the cause, steady-state query performance, a
+memory regression, or a fix.

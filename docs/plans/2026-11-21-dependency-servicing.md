@@ -57,10 +57,14 @@ checkout path was not found in those files. Do not patch these DLLs, omit
 required runtime components, or weaken the gate.
 
 NuGet lists exactly two intermediate stable versions, 2.6.4 and 2.6.5.
-Their locked-by-the-SDK InteractiveExperiences sources already contain the
+Their SDK-selected InteractiveExperiences archives contain the
 same failing category in the architecture-specific FrameworkUdk DLL for both
-x64 and ARM64. These are supplier-input screening results, not claims to
-have built full packages with either intermediate SDK. Keep the known-good
+x64 and ARM64. Their nested official Runtime MSIX also contain the marker
+in Microsoft.UI, Windowing and DWM DLLs on both architectures. All six
+Runtime/InteractiveExperiences archives for 2.6.4, 2.6.5 and 2.7.0 matched the
+official NuGet catalog SHA-512 and passed NuGet signature verification under
+existing host trust. These are supplier-input screening results for the
+intermediate versions; only 2.7.0 and this fallback received app-package builds. Keep the
 2.5.1 graph until a supported newer vendor build passes both architecture
 gates, or until a separately approved policy decision changes the criterion.
 This older SDK does not meet Microsoft's latest-patch support condition.
@@ -112,3 +116,50 @@ The release fallback retains the prior 2.5.1 SDK graph and every
 other dependency update. The newer SDK remains available on the separate evaluation branch for
 vendor-servicing evaluation. Native compilation does not itself prove runtime
 acceptance, privacy compliance or release authorization.
+
+## Fallback validation
+
+At `c12e5e6`, a clean x64 Debug build finished with zero warnings/errors.
+The four MTP modules ran once, serially, after compilation: 706/707 passed,
+zero skipped. The smart-list queries all passed; 10k FTS worst warm was
+428.653 ms against 60 ms. The [recorded times](../PERF.md#2026-11-21--release-fallback-dependency-test-measurements)
+are from that run's TRX; no retry, relaxed budget or speed claim. The four
+App locks are the only lock-graph differences from the 2.7.0 candidate.
+The two candidates have identical library and test dependency graphs.
+
+Before the Settings resource correction, both clean native AOT packages
+passed exact manifest/architecture/structural and standalone checkout-root
+privacy checks, plus a bound app-only NuGet audit with zero advisories.
+Both contained byte-identical reviewed SQLite, Microsoft.UI and FrameworkUdk
+supplier DLLs, and the 912,876-byte source notice. The historical x64 package
+(333 entries, 59,436,390 bytes) has SHA-256
+`2b2817db77b14b10864d4d61d37632c968c33570c1624318d40471156e747bde`;
+ARM64 (329 entries, 57,758,948 bytes) has SHA-256
+`d69027389a6dd4123e712fa7597114b1fd79277135ee5cff5b770938518058cd`.
+These historical packages still display the older Settings package list.
+
+The subsequent source-only correction (`d0c8f0f`) synchronizes
+`SettingsLicencesText.Text` with the central versions and supplier labels;
+the focused consistency test passed for all 14 entries.
+
+
+Final, **unsigned**, Native AOT MSIX from corrected source `d0c8f0f`:
+
+| Target | MSIX bytes | Files | MSIX SHA-256 | Structure, checkout-root privacy, AOT graph audit, Settings PRI |
+|---|---:|---:|---|---|
+| x64 | 59,436,449 | 333 | `265e3d1b8128af96d49943094f4b01e497fd34c7a7c94452f8a1f79e58b263b8` | PASS |
+| arm64 | 57,759,025 | 329 | `686a3d2c4f93772dc0987828bd3bc6de8e90845d3ba39db0437f6d7302d44409` | PASS |
+
+Both bound AOT NuGet audits reported zero advisories. Both exact packages
+passed the source manifest, first-party native architecture and privacy checks,
+with no identifying profile or checkout-root findings. MakePri dumped
+`resources.pri` from each final MSIX; its actual English
+`SettingsLicencesText.Text` matches the source string for all 14 central
+packages. Against each prior fallback package, the only entries whose contents
+changed were `resources.pri`, the rebuilt `Wintodo.exe` and `AppxBlockMap.xml`
+(330/333 x64 and 326/329 ARM64 entries stayed byte-identical). Both packages
+preserve the exact reviewed SDK, SQLite and supplier notice bytes.
+
+These package checks do not close the failed store timing gate or test
+installation, Store certification, user data migration, UI behavior, or
+ARM64 runtime behavior. No package was signed, installed or published.
