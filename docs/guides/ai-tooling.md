@@ -50,7 +50,7 @@ Code, each skill appears twice. Prefer the project copy; it matches the repo.
 
 ## WinApp CLI (`winapp`)
 
-Microsoft's CLI for Windows apps. The current vendored skills target 0.8+.
+Microsoft's CLI for Windows apps. This checkout uses WinApp 0.8.0; the six skills are from Microsoft's v0.8.0 release. The design and build skills declare CLI 0.7+ as their minimum.
 
 ```powershell
 winapp run src\Wintodo.App\Wintodo.csproj --detach --json   # build + register + launch
