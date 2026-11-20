@@ -1087,20 +1087,22 @@
   <data name="SettingsLicencesExpander.Header" xml:space="preserve"><value>Third-party licences</value></data>
   <data name="SettingsLicencesExpander.Description" xml:space="preserve"><value>Packages and licence notices bundled with this app.</value></data>
   <data name="SettingsLicencesExpander.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Third-party licences</value></data>
-  <data name="SettingsLicencesText.Text" xml:space="preserve"><value>Packages declared in Directory.Packages.props (including build and test tools).
+  <data name="SettingsLicencesText.Text" xml:space="preserve"><value>These packages include the libraries Wintodo uses and its build and test tools. Choose “Read licence notices” for the full terms.
 
 CommunityToolkit.Mvvm 8.4.2 — MIT
 CommunityToolkit.WinUI.Controls.SettingsControls 8.2.251219 — MIT
 CommunityToolkit.WinUI.Controls.Sizers 8.2.251219 — MIT
-Microsoft.Data.Sqlite 10.0.12 — MIT
+Microsoft.Data.Sqlite 10.0.15 — MIT
 Microsoft.Testing.Extensions.CodeCoverage 18.12.0 — Microsoft software licence terms
-Microsoft.Testing.Extensions.TrxReport 2.5.1 — MIT
-Microsoft.Windows.SDK.BuildTools 10.0.28000.2705 — Microsoft Windows SDK licence terms
-Microsoft.Windows.SDK.BuildTools.WinApp 0.7.1 — MIT
-Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer 0.7.1 — MIT
+Microsoft.Testing.Extensions.TrxReport 2.5.3 — MIT
+Microsoft.Windows.SDK.BuildTools 10.0.28000.2957 — Microsoft Windows SDK licence terms
+Microsoft.Windows.SDK.BuildTools.WinApp 0.8.0 — MIT
+Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer 0.8.0 — MIT
 Microsoft.WindowsAppSDK 2.5.1 — Microsoft software licence terms
+Microsoft.Windows.AI.MachineLearning 2.5.96 — Windows ML licence terms
+SQLite 3.54.1 — public domain
 SQLitePCLRaw.bundle_e_sqlite3 3.0.5 — Apache-2.0
-xunit.v3 4.0.2 — Apache-2.0</value></data>
+xunit.v3 4.0.3 — Apache-2.0</value></data>
   <data name="SettingsReadLicencesButton.Content" xml:space="preserve"><value>Read licence notices</value></data>
   <data name="Settings_LicencesOpenFailed" xml:space="preserve"><value>Couldn’t open licence notices.</value></data>
   <data name="SettingsLicenceNoticesCard.Header" xml:space="preserve"><value>Licence notices</value></data>
