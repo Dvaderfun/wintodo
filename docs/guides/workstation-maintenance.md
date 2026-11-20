@@ -44,4 +44,4 @@ The first nonempty manual skill inventory, and later additions or removals, requ
 
 The workstation job services Wintodo and its agent tools. It does not install unrelated products, enable disabled components, upgrade the OS or Visual Studio, or auto-merge a dependency update into a release.
 
-For the broader workstation inventory (including Go, Azure, other .NET runtimes and unrelated applications), this machine also has a separate Sunday developer-tools check. Its last report is at `%USERPROFILE%\.codex\maintenance\reports\latest.json`. That job is an inventory; a green Wintodo run does not imply every program on the PC is current.
+The separate Sunday 10:00 task, `Codex-DeveloperTools-WeeklyCheck`, updates only this user's existing portable Git for Windows and GitHub CLI. It verifies each release archive's SHA-256 and the executable's publisher signature, and keeps the previous installation. Its other tools, including Go, Azure and other .NET runtimes, are inventory only. Read the per-tool results in `%USERPROFILE%\.codex\maintenance\reports\latest.json`.
