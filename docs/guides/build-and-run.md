@@ -10,7 +10,7 @@
 | Git | any recent | `git --version` | `winget install Git.Git` |
 
 Visual Studio is optional. The XAML compiler diagnostics gap that once made it
-necessary was fixed in Windows App SDK 2.1.3; we are on 2.7.0.
+necessary was fixed in Windows App SDK 2.1.3; we are on 2.5.1.
 
 `/winui-setup` verifies and repairs all of the above. Run it only when the owner
 asks for setup; otherwise report what is missing.
