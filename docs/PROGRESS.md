@@ -18,9 +18,12 @@ copies; the individual author retains the official brand and monetization. The
 [reserved Store identity](plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
 and version `1.0.0.0` are in both unsigned packages. Each contains the nine
 approved [Glide icon files](adr/ADR-021-store-package-icon-proposal.md).
+Microsoft Store now offers Wintodo publicly, and the installed app reports
+Store signature and version `1.0.0.0`. The `1.0.1.0` update is in
+preparation with [larger small-size Glide artwork](adr/ADR-024-glide-taskbar-sizing.md).
 The [English Store gallery](releases/store/en-US/README.md) pairs complete
 Windows captures with separate promos and a text-free checklist illustration.
-All five required sections in the [Partner Center draft](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) are **Complete**, including Age ratings (PEGI 3 / ESRB Everyone). **Submit for certification** is enabled; the submission is still **In draft**. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is saved. The owner accepted the eight backgrounds for staging; their redistribution rights remain unverified. Native dependency review, ref protection, the final package handoff, certification and customer tests remain open.
+The [first submission readback](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) records the completed draft sections and PEGI 3 / ESRB Everyone ratings. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is published. The owner accepted the eight backgrounds for staging; their redistribution rights remain unverified. Native dependency review, ref protection and customer update tests remain open.
 
 | Milestone | Status | Open gate rows |
 |---|---|---|
@@ -29,7 +32,7 @@ All five required sections in the [Partner Center draft](plans/deployment-store-
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | IN PROGRESS | All five Store draft sections complete; not submitted. Compare the [main package handoff](plans/deployment-store-first-preparation.md#reviewed-main-packages--20-november-2026) with the draft. Artwork rights, ref protection, native provenance, certification and installed x64/native ARM64 checks remain open. |
+| M10 Packaging and release | IN PROGRESS | Store `1.0.0.0` is live; `1.0.1.0` update in preparation. Artwork rights, ref protection, native provenance and installed x64/native ARM64 update checks remain open. |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
@@ -4796,3 +4799,18 @@ reports show four complete suites, zero NuGet advisories across all nine
 projects and zero source/history secret-scan findings. The
 [main package handoff](plans/deployment-store-first-preparation.md#reviewed-main-packages--20-november-2026)
 identifies the run, immutable source and the separate Partner Center readback.
+
+### 2026-11-20 — M10: enlarge Glide at taskbar sizes
+
+[ADR-024](adr/ADR-024-glide-taskbar-sizing.md) tightens the crop around the
+existing Glide mark. At 24 px the silhouette covers 22 × 18 px, up from
+20 × 15 px at the same alpha threshold. The dark and light shell variants
+cover 24–96 px, and the small window ICO frames use the same crop. The six
+other package PNGs are byte-identical; the 64, 128 and 256 px ICO frames
+retain identical pixels.
+
+Debug x64 built with zero warnings/errors, and all 707 unit tests passed.
+The generated package recipe and Windows resource index contain all 14
+taskbar variants. The WintodoTest VM verified the installed debug assets by
+hash and captured the enlarged Glide mark on the Windows taskbar. The
+already installed host app and Store draft packages were not replaced.

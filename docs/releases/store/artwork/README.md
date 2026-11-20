@@ -42,9 +42,13 @@ This regenerates `en-US/` artwork and
 copy, the preview, five screenshots, five promos and the hero PNG/SVG.
 Raw guest captures, fonts, databases and fixture responses stay out of the ZIP.
 
-To reproduce the eight package PNGs and six-frame ICO from the approved
+To reproduce the package PNGs and seven-frame ICO from the approved
 [Glide SVG](../../../plans/assets/store-icon-glide.svg) in a scratch folder:
 
 ```powershell
 py -3.13 docs/releases/store/artwork/render.py --export-icon artifacts/icon-repro
 ```
+
+The unplated taskbar assets in both themes and the small ICO frames use
+[a tighter crop](../../../adr/ADR-024-glide-taskbar-sizing.md). The Store
+logo, larger ICO frames, tiles, splash and lock screen retain the original crop.

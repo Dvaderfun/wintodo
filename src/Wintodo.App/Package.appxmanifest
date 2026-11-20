@@ -11,7 +11,7 @@
   <Identity
     Name="47371DermenzhyStudio.Wintodo"
     Publisher="CN=03D194EC-2260-464A-80F9-EF22C07F62D0"
-    Version="1.0.0.0" />
+    Version="1.0.1.0" />
 
   <Properties>
     <DisplayName>ms-resource:AppDisplayName</DisplayName>
