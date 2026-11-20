@@ -4845,3 +4845,12 @@ twice; the focused 10k performance class passed 2/2 and both full runs missed
 My Day's unchanged 5 ms budget. The structural/privacy gate rejected each
 unsigned MSIX on 16 byte-identical Microsoft supplier DLLs. No gate was
 waived. A separate 2.5.1 fallback preserves the other servicing updates.
+
+### 2026-11-21 — M10: verify the native Claude CLI and scoped plugin updates
+
+The [workstation runner](guides/workstation-maintenance.md) now checks the native
+Claude Code installation's chosen channel and services four known enabled user
+plugins through their publishers. A live run verified CLI 2.1.330, Figma
+2.2.157 → 2.2.211 and Security Guidance 2.0.16 → 2.0.21; the other two stayed
+at 1.0.0. All ten scoped installation identities and their enabled states
+were preserved, including six disabled records. Eight isolated tests passed.

@@ -184,6 +184,16 @@ Invoke-Component 'Codex plugins' {
     if ($code -notin @(0,1)) { throw 'Plugin inventory/refresh incomplete; see plugins.log' }
     Add-Result 'Codex plugins' $(if ($code) {'review'} else {'checked'}) 'See plugins.log for publisher-managed, enabled and disabled components.'
 }
+Invoke-Component 'Claude Code' {
+    $adapter = @((Join-Path $PSScriptRoot 'Update-ClaudeTools.py'), '--repo', $RepoPath)
+    if ($Apply) { $adapter += '--apply' }
+    $result = (& python @adapter | Out-String)
+    $code = $LASTEXITCODE
+    $verified = $result | ConvertFrom-Json
+    if ($code -notin @(0,1,2) -or $verified.exitCode -ne $code -or !$verified.components) { throw 'Invalid Claude maintenance result' }
+    $result | Set-Content -LiteralPath (Join-Path $ReportDirectory 'claude.json') -Encoding utf8
+    foreach ($row in $verified.components) { Add-Result $row.name $row.state $row.detail }
+}
 Invoke-Component 'Repository pins' {
     $checker = Join-Path $PSScriptRoot 'Check-ProjectHealth.py'
     if (!(Test-Path -LiteralPath $checker)) { $checker = Join-Path (Split-Path $PSScriptRoot -Parent) 'Check-ProjectHealth.py' }
