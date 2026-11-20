@@ -1,5 +1,7 @@
 # November 2026 release fallback for dependency servicing
 
+Two local branches preserve different outcomes. `maintenance/nov21-review` keeps Windows App SDK 2.5.1 and takes the other updates: 21 of 22 tracked checks match their stable targets. `maintenance/nov21-sdk27-evaluation` preserves the exact 2.7.0 evaluation: 22 of 22 current, but both actual packages failed the privacy gate. “Current” is a version comparison; it does not certify an update for release.
+
 This update keeps the [.NET 10 LTS and Windows 11 26100 contract](../../Directory.Build.props).
 The SDK is still exactly 10.0.404 (runtime 10.0.15). .NET 11.0.100 and
 Microsoft.Data.Sqlite 11.0.0 are a separate major-version migration, not a
@@ -69,7 +71,7 @@ acceptance are separate from these checks. Historical release evidence
 remains tied to the package and source revision it originally examined.
 
 
-## Actual build and release-gate result: blocked
+## Windows App SDK 2.7.0 evaluation: both packages blocked
 
 Source `ba29487` builds x64 Debug and Release with zero warnings/errors. The
 four-suite unit run passed 706/707: only the existing timed My Day gate missed
@@ -106,7 +108,7 @@ of InteractiveExperiences contain the prefix in FrameworkUdk. These were
 supplier-input checks, not app-package builds on intermediate SDKs.
 NuGet lists no other stable SDK between 2.5.1 and 2.7.0.
 
-The separate release fallback retains the prior 2.5.1 SDK graph and every
-other dependency update. The newer SDK remains available on this branch for
+The release fallback retains the prior 2.5.1 SDK graph and every
+other dependency update. The newer SDK remains available on the separate evaluation branch for
 vendor-servicing evaluation. Native compilation does not itself prove runtime
 acceptance, privacy compliance or release authorization.

@@ -56,7 +56,7 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
   tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
   455/455 and zero failures/skips verified from the four uploaded TRX files.
-- **Maintenance candidate:** exact .NET SDK 10.0.404 (runtime/AOT compiler 10.0.15; [ADR-020](adr/ADR-020-pin-sdk-with-lockfiles.md)), Windows App SDK 2.7.0, WinApp CLI/analyzer 0.8.0, Windows ML 2.5.96 and SQLite 3.54.1. Six WinUI skills are mirrored from the WinAppCli v0.8.0 release. See the [dependency evidence](plans/2026-11-21-dependency-servicing.md), [prioritized audit](plans/2026-11-project-health-and-release.md) and [maintenance schedule](guides/workstation-maintenance.md). These changes are separate from the installed Store package.
+- **Maintenance review:** 21 of 22 tracked versions are current on the supported .NET 10 LTS line: exact SDK 10.0.404, WinApp CLI/analyzer 0.8.0, Windows ML 2.5.96, SQLite 3.54.1 and six WinUI skills from Microsoft's v0.8.0 release. Windows App SDK stays at 2.5.1 because actual x64 and ARM64 packages on 2.7.0 failed the existing privacy gate on unchanged Microsoft DLLs. The 2.7.0 experiment is preserved separately. See the [package evidence](plans/2026-11-21-dependency-servicing.md), [prioritized audit](plans/2026-11-project-health-and-release.md) and [weekly servicing schedule](guides/workstation-maintenance.md). These changes have not shipped.
 - **ML servicing and SQLite test isolation (2026-11-09):** the declared-compatible
   ML 2.5.96 update passes both isolated AOT/MSIX structure/privacy/audit targets,
   then current-helper Debug/Release builds and x64/ARM64 AOT publishing. Four app
