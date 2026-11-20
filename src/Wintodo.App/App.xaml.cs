@@ -76,10 +76,17 @@ public partial class App : Application
             RegisterAppNotifications();
             TraceStartupStage("notifications", launchStartTimestamp);
             IClock clock = ResolveClock();
+#if WINTODO_PRIVATE_PREVIEW
+            // The side-by-side appearance preview must never open a Store or scratch database
+            // through an inherited environment variable, launch argument, or notification.
+            string? commandLineDatabasePath = null;
+            string databasePath = Path.Combine(ApplicationData.Current.LocalFolder.Path, "wintodo.db");
+#else
             string? commandLineDatabasePath = GetCommandLineOption("--database-path");
             string databasePath = ResolveDatabasePath(
                 activation,
                 commandLineDatabasePath);
+#endif
             var store = new SqliteTaskStore(databasePath, clock);
             launchingStore = store;
             var windowsIntegration = new WindowsIntegrationService(

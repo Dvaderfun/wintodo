@@ -15,7 +15,11 @@ internal interface IStartupTaskService
 
 internal sealed class StartupTaskService : IStartupTaskService
 {
+#if WINTODO_PRIVATE_PREVIEW
+    private const string TaskId = "WintodoDevStartup";
+#else
     private const string TaskId = "WintodoStartup";
+#endif
 
     public async Task<StartupTaskSettingState> GetStateAsync()
     {
