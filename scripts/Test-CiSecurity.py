@@ -17,7 +17,8 @@ def secret_summary(report, exit_code):
         raise ValueError("invalid report")
     if exit_code not in (0, 1) or (exit_code == 0) != (len(report) == 0):
         raise ValueError("incomplete scan")
-    return {"scanner": "gitleaks", "version": "8.30.1", "findings": len(report),
+    pin = json.loads(Path(__file__).with_name("gitleaks-pin.json").read_text(encoding="utf-8"))
+    return {"scanner": "gitleaks", "version": pin["version"], "findings": len(report),
             "status": "FAIL" if report else "PASS"}
 
 
