@@ -5,7 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-from PIL import Image, ImageChops, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFont, ImageOps
 from resvg_py import svg_to_bytes
 
 
@@ -17,11 +17,10 @@ RC = REPO / "artifacts/store-1.0.0-rc"
 FONTS = Path("C:/Windows/Fonts")
 LANCZOS = Image.Resampling.LANCZOS
 GLIDE = DESIGNS / "store-icon-glide.svg"
-FRAMES = (16, 32, 48, 64, 128, 256)
+FRAMES = (16, 24, 32, 48, 64, 128, 256)
+TASKBAR_SIZES = (24, 30, 36, 48, 60, 72, 96)
 TILES = {
     "StoreLogo.png": (50, 50, 50), "Square44x44Logo.scale-200.png": (88, 88, 88),
-    "Square44x44Logo.targetsize-24_altform-unplated.png": (24, 24, 24),
-    "Square44x44Logo.targetsize-48_altform-lightunplated.png": (48, 48, 48),
     "Square150x150Logo.scale-200.png": (300, 300, 263),
     "Wide310x150Logo.scale-200.png": (620, 300, 246),
     "SplashScreen.scale-200.png": (1240, 600, 272),
@@ -47,7 +46,7 @@ def archive(path, files):
 
 
 def export_icon(folder):
-    """Optional: reproduce the approved nine Glide assets in a scratch directory."""
+    """Optional: reproduce the Glide package assets in a scratch directory."""
     folder.mkdir(parents=True, exist_ok=True)
     mark = svg(GLIDE, 1024, 1024)
     for filename, (w, h, extent) in TILES.items():
@@ -59,8 +58,22 @@ def export_icon(folder):
         tile = Image.new("RGBA", (w, h))
         tile.alpha_composite(logo, ((w-extent)//2, (h-extent)//2))
         tile.save(folder / filename, optimize=True)
+
+    # Fit the silhouette to 95% of the canvas width, with a little room for
+    # antialiasing. Center it before reducing it to the shell's pixel sizes.
+    edge = round(mark.width * 0.95)
+    logo = ImageOps.contain(mark.crop(mark.getbbox()), (edge, edge), LANCZOS)
+    small = Image.new("RGBA", mark.size)
+    small.alpha_composite(logo, ((small.width-logo.width)//2, (small.height-logo.height)//2))
+    for n in TASKBAR_SIZES:
+        tile = small.resize((n, n), LANCZOS)
+        for form in ("unplated", "lightunplated"):
+            tile.save(folder / f"Square44x44Logo.targetsize-{n}_altform-{form}.png", optimize=True)
+
     sizes = [(n, n) for n in FRAMES]
-    layers = [mark.resize(size, LANCZOS) for size in sizes]
+    layers = [(small if n <= 48 else mark).resize((n, n), LANCZOS) for n in FRAMES]
+    # At 16 px, keep a little more room between the silhouette and the edge.
+    layers[0] = ImageOps.expand(small, border=32).resize(sizes[0], LANCZOS)
     layers[-1].save(folder / "AppIcon.ico", sizes=sizes, append_images=layers[:-1])
 
 
