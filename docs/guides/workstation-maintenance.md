@@ -43,3 +43,5 @@ Omit **-Apply** for an inventory only. Remove the schedule with **Unregister-Sch
 The first nonempty manual skill inventory, and later additions or removals, request review. An unchanged set stays listed without repeated notifications. A check-only run previews changes and does not advance the last applied inventory. If the registered publisher manager is missing, each eligible run requests review until it is restored.
 
 The workstation job services Wintodo and its agent tools. It does not install unrelated products, enable disabled components, upgrade the OS or Visual Studio, or auto-merge a dependency update into a release.
+
+For the broader workstation inventory (including Go, Azure, other .NET runtimes and unrelated applications), this machine also has a separate Sunday developer-tools check. Its last report is at `%USERPROFILE%\.codex\maintenance\reports\latest.json`. That job is an inventory; a green Wintodo run does not imply every program on the PC is current.
