@@ -7,11 +7,12 @@ Humans: start with [README.md](README.md).
 
 **Wintodo** — a native, packaged WinUI 3 task manager for Windows. v1 is a faithful
 Microsoft To Do clone built on open standards (iCalendar `VTODO`, CalDAV) instead of
-Microsoft Graph. Native AOT, x64 + ARM64, MSIX. Implemented: M0–M9 and M13 (CalDAV
-sync), with some manual gate rows still open. Onboarding with a one-way Microsoft
+Microsoft Graph. Native AOT, x64 + ARM64, MSIX. M0–M8 and M13 (CalDAV sync)
+have automated evidence; M9's idle matrix and some manual gates remain open. Onboarding with a one-way Microsoft
 To Do import (ADR-016) is implemented; work/school sign-in awaits the owner's
-manual gate. M10 packaging is in progress: Wintodo is reserved in the Microsoft
-Store under Univera LLC. M11 deep subtasks and M12 tags are outside this release.
+manual gate. Wintodo ships in the Microsoft Store under Univera LLC; remaining
+M10 evidence is tracked in [Current state](docs/PROGRESS.md#current-state).
+M11 deep subtasks and M12 tags are outside this release.
 
 ## Read before changing code
 

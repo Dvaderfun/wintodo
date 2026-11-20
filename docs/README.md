@@ -19,6 +19,8 @@ All new planning documents belong under `docs/plans/`.
 
 The [November project review and prioritized checklist](plans/2026-11-project-health-and-release.md)
 tracks the data-integrity findings, WinUI comparison, dependency servicing and performance work.
+The [workstation maintenance guide](guides/workstation-maintenance.md) explains the local weekly
+job and the separate update PRs and reports on GitHub.
 
 | Plan | Scope |
 |---|---|

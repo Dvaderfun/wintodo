@@ -5,7 +5,7 @@ manual dispatch. It uses the explicit `windows-2025` runner family and reviewed
 commit revisions of checkout, setup-dotnet, setup-python and upload-artifact.
 Checkouts do not persist credentials. Permissions are read-only; there is no
 `pull_request_target`, signing secret, certificate trust or deployment step.
-Dependabot proposes weekly Actions and centrally managed NuGet updates; each
+Dependabot proposes weekly Actions, centrally managed NuGet and .NET SDK updates; each
 update needs review and the usual analyzer/test/AOT compatibility evidence.
 Do not enable automatic merging to bypass that review.
 
@@ -38,7 +38,7 @@ failure. Checks read public metadata anonymously and never install anything.
 
 | Component | Comparison and follow-up |
 |---|---|
-| Central NuGet packages | Compare every declared direct pin with stable versions on NuGet.org. Major releases are review candidates, not automatic framework migrations. Keep the usual locked restore and transitive advisory checks. |
+| Central NuGet packages | Compare every declared direct pin with listed stable versions on NuGet.org. For Microsoft.Data.Sqlite, alert on servicing within the selected SDK major and display the newest overall release for migration planning. Other majors are review candidates. Keep the usual locked restore and transitive advisory checks. |
 | .NET SDK | Read Microsoft's official [release metadata](https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json) for the LTS channel selected by `global.json`. Preserve the exact pin and regenerate affected locks together under ADR-020. |
 | Native SQLite | Compare the resolved `SQLite` package in all four app locks with [SQLite's canonical source release](https://www.sqlite.org/download.html). Review the vendor advisories and shipped x64/ARM64 binaries before accepting a change; the managed provider and bundle version numbers are separate. |
 | Actions and Gitleaks | Compare the four build actions with their stable GitHub release commits (peel annotated tags). Check [Gitleaks](https://github.com/gitleaks/gitleaks/releases/latest) and the publisher's Windows x64 archive SHA-256 against `scripts/gitleaks-pin.json`. Review an unexpected digest or retag; never trust the new value automatically. |

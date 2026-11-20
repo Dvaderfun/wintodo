@@ -36,6 +36,15 @@ class HealthTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 health.check_nuget("Example.part_1-x", "1.0.2")
 
+    def test_new_provider_major_does_not_mask_a_patch_on_selected_sdk_line(self):
+        source = {"totalHits": 1, "data": [{"id": "Microsoft.Data.Sqlite", "version": "11.0.0",
+                  "versions": [{"version": s} for s in ["10.0.12", "10.0.15", "10.0.16-preview.1", "11.0.0"]]}]}
+        with patch.object(health, "data", return_value=source):
+            check = lambda pin: health.check_nuget("Microsoft.Data.Sqlite", pin, 10)
+            self.assertTrue(check("10.0.15")[2])
+            self.assertEqual(("10.0.12", "10.0.15 on LTS; 11.0.0 overall", False), check("10.0.12"))
+            self.assertFalse(check("11.0.0")[2])
+
     def test_incomplete_release_never_masks_other_findings_or_discloses_errors(self):
         def offline():
             raise OSError("private user path")
@@ -89,6 +98,19 @@ class HealthTests(unittest.TestCase):
                 ("refs/tags/v1.0.0", "3"), ("refs/tags/v1.0.0^{}", "4")))
         with patch.object(health, "fetch", return_value=refs):
             self.assertEqual("4" * 40, health.tag_commit("actions/checkout", "v1.0.0"))
+
+    def test_workstation_can_read_old_scanner_pin_without_running_checkout_code(self):
+        script = ("$expectedHash = '" + "A" * 64 + "'\n    Invoke-WebRequest -Uri "
+                  "'https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/"
+                  "gitleaks_8.30.1_windows_x64.zip' -OutFile $archive\n")
+        name = "scripts/Invoke-CiSecretScan.ps1"
+        self.put(name, script)
+        sums = "a" * 64 + "  gitleaks_8.30.1_windows_x64.zip\n"
+        with patch.object(health, "release", return_value="v8.30.1"), patch.object(health, "fetch", return_value=sums):
+            self.assertTrue(health.check_scanner(self.root)[2])
+            self.put(name, script.replace("/v8.30.1/", "/v8.30.0/"))
+            with self.assertRaises(ValueError):
+                health.check_scanner(self.root)
 
     def test_pins_cover_repeated_action_use_and_reject_floating_tags(self):
         repo = "actions/checkout"

@@ -5,7 +5,7 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
-As of 2026-11-20:
+As of 2026-11-21:
 
 Store-first under **Univera LLC** is selected in
 [ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
@@ -18,9 +18,9 @@ copies; the individual author retains the official brand and monetization. The
 [reserved Store identity](plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
 and version `1.0.0.0` are in both unsigned packages. Each contains the nine
 approved [Glide icon files](adr/ADR-021-store-package-icon-proposal.md).
-Microsoft Store now offers Wintodo publicly, and the installed app reports
-Store signature and version `1.0.0.0`. The `1.0.1.0` update is in
-preparation with [larger small-size Glide artwork](adr/ADR-024-glide-taskbar-sizing.md).
+Microsoft Store offers Wintodo publicly. The audited workstation reports
+Store signature and installed version `1.0.1.0` with
+[larger small-size Glide artwork](adr/ADR-024-glide-taskbar-sizing.md).
 The [English Store gallery](releases/store/en-US/README.md) pairs complete
 Windows captures with separate promos and a text-free checklist illustration.
 The [first submission readback](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) records the completed draft sections and PEGI 3 / ESRB Everyone ratings. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is published. The owner accepted the eight backgrounds for staging; their redistribution rights remain unverified. Native dependency review, ref protection and customer update tests remain open.
@@ -32,7 +32,7 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | IN PROGRESS | Store `1.0.0.0` is live; `1.0.1.0` update in preparation. Artwork rights, ref protection, native provenance and installed x64/native ARM64 update checks remain open. |
+| M10 Packaging and release | IN PROGRESS | Store-signed `1.0.1.0` verified installed. Artwork rights, ref protection, native provenance and data-preserving x64/native ARM64 update checks remain open. |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
@@ -56,9 +56,7 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
   tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
   455/455 and zero failures/skips verified from the four uploaded TRX files.
-- **Toolchain:** exact .NET SDK 10.0.404 (runtime/AOT compiler 10.0.15; [ADR-020](adr/ADR-020-pin-sdk-with-lockfiles.md)), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
-  Windows ML 2.5.96 explicitly selected within the SDK's range;
-  win-dev-skills v0.7.1 vendored (ADR-010).
+- **Maintenance candidate:** exact .NET SDK 10.0.404 (runtime/AOT compiler 10.0.15; [ADR-020](adr/ADR-020-pin-sdk-with-lockfiles.md)), Windows App SDK 2.7.0, WinApp CLI/analyzer 0.8.0, Windows ML 2.5.96 and SQLite 3.54.1. Six WinUI skills are mirrored from the WinAppCli v0.8.0 release. See the [dependency evidence](plans/2026-11-21-dependency-servicing.md), [prioritized audit](plans/2026-11-project-health-and-release.md) and [maintenance schedule](guides/workstation-maintenance.md). These changes are separate from the installed Store package.
 - **ML servicing and SQLite test isolation (2026-11-09):** the declared-compatible
   ML 2.5.96 update passes both isolated AOT/MSIX structure/privacy/audit targets,
   then current-helper Debug/Release builds and x64/ARM64 AOT publishing. Four app

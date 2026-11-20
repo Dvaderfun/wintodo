@@ -112,7 +112,19 @@ def check_sqlite(root):
 
 
 def check_scanner(root):
-    pin = local(root / "scripts/gitleaks-pin.json")
+    pin_file = root / "scripts/gitleaks-pin.json"
+    if pin_file.exists():
+        pin = local(pin_file)
+    else:
+        # The already-shipped baseline keeps its exact URL and hash in PowerShell.
+        # A workstation can monitor that checkout before these changes are merged.
+        # Read literal data only; modern scripts without the JSON fail closed.
+        legacy = (root / "scripts/Invoke-CiSecretScan.ps1").read_text(encoding="utf-8-sig")
+        urls = re.findall(r"(?m)^\s*Invoke-WebRequest -Uri 'https://github\.com/gitleaks/gitleaks/releases/download/v("
+                          + STAMP + r")/gitleaks_\1_windows_x64\.zip' -OutFile \$archive\s*$", legacy)
+        hashes = re.findall(r"(?m)^\$expectedHash = '([A-Fa-f0-9]{64})'\s*$", legacy)
+        require(len(urls) == len(hashes) == 1)
+        pin = {"version": urls[0], "sha256": hashes[0].lower()}
     tag = release("gitleaks/gitleaks")
     current = exact(STAMP, pin["version"])
     sha = exact(r"[a-f0-9]{64}", pin["sha256"])
@@ -135,7 +147,7 @@ def check_action(root, repo):
     return current[:12], f"{tag} {wanted[:12]}", current == wanted
 
 
-def check_nuget(name, current):
+def check_nuget(name, current, sdk_major=None):
     exact(PACKAGE_ID, name)
     version(current)
     # The flat-container version index includes unlisted/withdrawn releases.
@@ -145,6 +157,13 @@ def check_nuget(name, current):
     package = source["data"][0]
     require(package["id"].lower() == name.lower())
     latest = exact(STAMP, package["version"])
+    if name.lower() == "microsoft.data.sqlite" and sdk_major is not None:
+        # Stay on the selected .NET LTS provider line. Show a newer major without
+        # permanently failing the weekly job or hiding servicing updates on LTS.
+        listed = [item["version"] for item in package["versions"] if re.fullmatch(STAMP, item["version"])]
+        compatible = max((s for s in listed if version(s)[0] == sdk_major), key=version)
+        label = compatible if latest == compatible else f"{compatible} on LTS; {latest} overall"
+        return current, label, version(current) == version(compatible)
     return current, latest, version(current) == version(latest)
 
 
@@ -173,12 +192,13 @@ def checks(root):
         entries = props.findall(".//PackageVersion")
         require(len(entries) > 0)
         seen = set()
+        sdk_major = version(local(root / "global.json")["sdk"]["version"])[0]
         for entry in entries:
             name = exact(PACKAGE_ID, entry.attrib["Include"])
             require(name.lower() not in seen)
             seen.add(name.lower())
             pending.append((name, "Review the NuGet PR, framework compatibility and all affected locks.",
-                            check_nuget, name, entry.attrib["Version"]))
+                            check_nuget, name, entry.attrib["Version"], sdk_major))
     except (ElementTree.ParseError, OSError, KeyError, ValueError):
         pending.append(("NuGet manifest", "Check central package declarations.", require, False))
     with ThreadPoolExecutor(max_workers=5) as pool:
@@ -203,10 +223,11 @@ def markdown(rows):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--repo", type=Path, default=ROOT, help="read version pins from this checkout; never execute its code")
     parser.add_argument("--json", type=Path, help="write a version-only JSON report")
     parser.add_argument("--markdown", type=Path, help="write the human-readable table")
     args = parser.parse_args()
-    rows = checks(ROOT)
+    rows = checks(args.repo.resolve())
     report = markdown(rows)
     print(report, end="")
     if args.markdown:
