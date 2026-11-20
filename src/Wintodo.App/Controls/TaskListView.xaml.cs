@@ -506,6 +506,7 @@ public sealed partial class TaskListView : UserControl
 
     private void OnVisibleItemsUpdated()
     {
+        if (TasksList.ItemsPanelRoot is ItemsStackPanel panel) UpdateStickyGroupHeaders(panel);
         int version = ++_updateVersion;
         string? focusedUid = _savedFocusedTaskUid;
         TaskItemViewModel? anchor = _viewportAnchor;
@@ -539,6 +540,17 @@ public sealed partial class TaskListView : UserControl
             }
             finally { _isSynchronizingSelection = false; }
         });
+    }
+
+    private void OnTaskPanelLoaded(object sender, RoutedEventArgs args) =>
+        UpdateStickyGroupHeaders((ItemsStackPanel)sender);
+
+    private void UpdateStickyGroupHeaders(ItemsStackPanel panel)
+    {
+        // With a hidden active header WinUI can clip the top rows to the height
+        // of the upcoming Completed header. Only pin groups that start with a heading.
+        panel.AreStickyGroupHeadersEnabled = ViewModel?.TaskGroups is [var first, ..]
+            && GroupMetadata(first).Kind != TaskListGroupKind.Hidden;
     }
 
     private async Task RestoreViewportAfterTransitionAsync(int version, TaskItemViewModel? anchor, double anchorY)

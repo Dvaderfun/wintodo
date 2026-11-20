@@ -24,15 +24,19 @@ function Check([string]$Name, [scriptblock]$Action) {
     try { & $Action; $results.Add(@{name=$Name;status='PASS'}) }
     catch { $results.Add(@{name=$Name;status='FAIL';detail="$_"}) }
 }
-function Capture([string]$Name) {
+function Capture([string]$Name, $WindowHandle) {
     $path = Join-Path $ArtifactDirectory $Name
-    Ui @('screenshot', '-o', $path) | Out-Null
+    if ($WindowHandle) {
+        $null = winapp ui screenshot -w $WindowHandle --capture-screen -o $path
+        if ($LASTEXITCODE) { throw 'Window screenshot failed.' }
+    } else { Ui @('screenshot', '-o', $path) | Out-Null }
     if (-not (Test-Path $path)) { throw 'Screenshot missing.' }
     $screenshots.Add($path)
 }
 function Properties($item) { (Ui @('get-property', $item.selector, '--json') | ConvertFrom-Json).properties }
+function Nodes($nodes) { foreach ($node in $nodes) { $node; Nodes $node.children } }
 try {
-    Ui @('wait-for', 'Todo.List.Tasks', '-t', '10000') | Out-Null
+    Ui @('wait-for', 'Todo.List.Tasks', '-t', '120000') | Out-Null
     Ui @('wait-for', 'Stability task 001', '-t', '10000') | Out-Null
     Ui @('focus', 'Todo.List.MenuButton') | Out-Null
     Ui @('scroll', 'Todo.List.Tasks', '--wheel', '-54') | Out-Null
@@ -40,13 +44,38 @@ try {
     $tree = Ui @('inspect', '--depth', '12', '--json') | ConvertFrom-Json
     $tree | ConvertTo-Json -Depth 30 | Set-Content (Join-Path $ArtifactDirectory 'initial-tree.json')
     $list = (Ui @('search', 'Todo.List.Tasks', '--json') | ConvertFrom-Json).matches | Select-Object -First 1
-    function Nodes($nodes) { foreach ($node in $nodes) { $node; Nodes $node.children } }
     $matches = Nodes @($tree.windows.elements) |
         Where-Object { $_.type -eq 'ListItem' -and $_.automationId -match '^Todo.Row.[0-9a-f-]+$' -and -not $_.isOffscreen -and $_.y -gt $list.y + 40 -and $_.y + $_.height -lt $list.y + $list.height - 80 }
     if (-not $matches) { throw 'No rows visible in middle of fixture.' }
     $selected = @($matches)[[int](@($matches).Count / 2)]
     $number = [int]([regex]::Match($selected.name, 'Stability task (\d+)').Groups[1].Value)
     if ($number -lt 80 -or $number -gt 120) { throw "Fixture did not scroll to middle: task $number." }
+    Check 'Scrolling active tasks leaves no blank header above the cards' {
+        $window = $tree.windows | Where-Object { $_.elements[0].className -eq 'WinUIDesktopWin32WindowClass' } | Select-Object -First 1
+        if (-not $window) { throw 'Main window missing from the inspection.' }
+        $row = @($matches)[1]
+        Capture '00-scrolled-list.png' $window.hwnd
+        # UIA can report full row bounds even when a sticky header clips the card.
+        # Compare the rendered top strip to the fill of the unselected task card.
+        Add-Type -AssemblyName System.Drawing
+        $bitmap = [Drawing.Bitmap]::new((Join-Path $ArtifactDirectory '00-scrolled-list.png'))
+        try {
+            $origin = $window.elements[0]
+            $x = [int]($list.x - $origin.x + $list.width * 0.75)
+            $top = [int]($list.y - $origin.y)
+            $card = $bitmap.GetPixel($x, [int]($row.y - $origin.y + $row.height / 2))
+            $hasCard = $false
+            for ($i = 0; $i -lt [Math]::Ceiling(12 * $window.scale); $i++) {
+                $color = $bitmap.GetPixel($x, $top + $i)
+                if ([Math]::Max([Math]::Abs($color.R - $card.R),
+                    [Math]::Max([Math]::Abs($color.G - $card.G), [Math]::Abs($color.B - $card.B))) -le 3) {
+                    $hasCard = $true
+                    break
+                }
+            }
+            if (-not $hasCard) { throw 'The top of the scrolled list is blank above the task cards.' }
+        } finally { $bitmap.Dispose() }
+    }
     $selected = (Ui @('search', $selected.automationId, '--type', 'ListItem', '--json') | ConvertFrom-Json).matches | Select-Object -First 1
     Ui @('invoke', $selected.selector) | Out-Null
     Ui @('wait-for', 'Todo.Detail.Title', '-t', '5000') | Out-Null

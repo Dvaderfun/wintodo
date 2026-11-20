@@ -768,8 +768,9 @@
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <ItemsStackPanel
-                            AreStickyGroupHeadersEnabled="True"
-                            ItemsUpdatingScrollMode="KeepScrollOffset" />
+                            AreStickyGroupHeadersEnabled="False"
+                            ItemsUpdatingScrollMode="KeepScrollOffset"
+                            Loaded="OnTaskPanelLoaded" />
                     </ItemsPanelTemplate>
                 </ListView.ItemsPanel>
                 <ListView.GroupStyle>

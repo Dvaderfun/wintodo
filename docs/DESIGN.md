@@ -228,7 +228,8 @@ never on a second line:
   Clear actions. The input and Add button stay on the same 48 px row. Inline
   chips return at wider sizes; selected-value labels are capped at 72 DIPs
   so they cannot consume the text field. Drafts and options survive resizing.
-- Composer to first row spacing: **12**.
+- Composer to list spacing: **12**, including while scrolling. An untitled group
+  of active tasks reserves no header space, even near the Completed section.
 
 Smart lists prefill the new task so it lands where it was typed:
 

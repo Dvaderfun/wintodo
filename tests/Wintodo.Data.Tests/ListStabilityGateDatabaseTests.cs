@@ -24,5 +24,10 @@ public sealed class ListStabilityGateDatabaseTests
                 ListId = list.Id, Summary = $"Stability task {i:000}",
             }, token);
         }
+        TodoTask completed = await store.CreateTaskAsync(new TodoTask
+        {
+            ListId = list.Id, Summary = "Finished stability task",
+        }, token);
+        await store.CompleteTaskAsync(completed.Uid, token);
     }
 }

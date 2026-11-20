@@ -316,6 +316,11 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
   The regular VM checkpoint has Developer Mode and certificate trust already,
   so a separate clean-install baseline remains necessary for the Store family.
 
+- **Task-list scrolling:** Untitled active tasks keep the 12 DIP gap below
+  the composer when scrolled. The VM spacing check passes. In the fixture with
+  an existing Completed section, the separate completion scroll-position check
+  failed before and after the fix.
+
 - **Completion viewport repair:** Panel updates keep their scroll offset rather
   than competing with the view's anchor correction. Transition-free updates
   restore immediately; recycled anchors are realized before correction resumes.
@@ -4814,3 +4819,21 @@ The generated package recipe and Windows resource index contain all 14
 taskbar variants. The WintodoTest VM verified the installed debug assets by
 hash and captured the enlarged Glide mark on the Windows taskbar. The
 already installed host app and Store draft packages were not replaced.
+
+### 2026-11-20 — Gap below the task composer when scrolling
+
+Lists that start with untitled active tasks no longer pin an invisible group
+header. This prevents WinUI from clipping the first visible cards by the height
+of the upcoming Completed header. Planned date buckets and named search groups
+still pin their headings. The composer keeps its 12 DIP gap to the list.
+
+The list stability fixture now includes a completed task. The gate scrolls to
+the middle and checks the rendered cards at the top of the viewport. Debug x64
+built with zero warnings or errors. All 707 unit tests passed sequentially;
+the initial parallel run missed the 5 ms smart-list query budget (5.519 ms).
+At 100% scaling the VM captures show the composer gap shrinking from 76 px
+to the specified 12 px. The VM used the host-seeded synthetic database because
+its SDK cannot build the seeder at the repository's current SDK pin.
+The fixed build passed the visual spacing, star and reorder checks (3/4).
+The completion scroll-position check still failed: the reference row moved
+356 px after completion (baseline: −360 px). The full gate remains open.
