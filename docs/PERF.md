@@ -434,3 +434,29 @@ Command: dotnet test --project tests/Wintodo.Data.Tests -c Release -p:Platform=x
 | All | 1.519 ms | 5 ms | PASS |
 | Completed | 2.652 ms | 5 ms | PASS |
 | FTS5 (worst warm query) | 6.694 ms | 60 ms | PASS |
+
+## 2026-11-21 — dependency servicing, headless 10,000-task checks
+
+Debug x64, .NET 10.0.404, Microsoft.Data.Sqlite 10.0.15 and native SQLite
+3.54.1. The first full unit run missed My Day (6.483 ms; 5 ms budget).
+A second full run with its test modules serialized also missed My Day (5.881 ms).
+The focused performance class, with no build running in this checkout,
+passed both tests. Results below use the existing budgets and measurement
+methods in `SmartListPerformanceTests`.
+
+| Query | Focused warm time | Budget |
+|---|---:|---:|
+| My Day | 4.034 ms | 5 ms |
+| Important | 3.107 ms | 5 ms |
+| Planned | 2.969 ms | 5 ms |
+| All | 2.876 ms | 5 ms |
+| Completed | 3.286 ms | 5 ms |
+| FTS5 (worst warm query) | 13.707 ms | 60 ms |
+
+On an empty database initialized by all five migrations, both engines report
+the same My Day plan: `SEARCH t USING INDEX ix_tasks_myday (my_day_date=?)`.
+This rules out a different chosen index in that check, not a runtime regression.
+
+These are existing store tests, not measurements of the packaged UI,
+process memory or a controlled engine-to-engine speed comparison. No
+threshold, query, schema, or performance claim changed.

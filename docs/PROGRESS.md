@@ -4837,3 +4837,13 @@ its SDK cannot build the seeder at the repository's current SDK pin.
 The fixed build passed the visual spacing, star and reorder checks (3/4).
 The completion scroll-position check still failed: the reference row moved
 356 px after completion (baseline: −360 px). The full gate remains open.
+
+## 2026-11-21 — M10 dependency servicing candidate: native SDK privacy blocked
+
+The [2.7.0 SDK, SQLite and tooling candidate](plans/2026-11-21-dependency-servicing.md)
+builds cleanly in x64 Debug/Release and publishes native x64 and ARM64. The
+nine-project NuGet audit found no advisories. The full suite passed 706/707
+twice; the focused 10k performance class passed 2/2 and both full runs missed
+My Day's unchanged 5 ms budget. The structural/privacy gate rejected each
+unsigned MSIX on 16 byte-identical Microsoft supplier DLLs. No gate was
+waived. A separate 2.5.1 fallback preserves the other servicing updates.
