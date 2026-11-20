@@ -1,17 +1,20 @@
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $privateRoot = Join-Path $repositoryRoot ('artifacts/ci-security/' + [Guid]::NewGuid().ToString('N'))
-$toolsRoot = Join-Path $privateRoot 'gitleaks-8.30.1'
 $archive = Join-Path $privateRoot 'gitleaks.zip'
-$expectedHash = 'D29144DEFF3A68AA93CED33DDDF84B7FDC26070ADD4AA0F4513094C8332AFC4E'
 New-Item -ItemType Directory -Force -Path $privateRoot | Out-Null
 try {
     foreach ($scope in @('history', 'tree')) {
         $summary = Join-Path $repositoryRoot "SafeTestResults/secrets-$scope.json"
         if (Test-Path -LiteralPath $summary) { Remove-Item -LiteralPath $summary }
     }
-    Invoke-WebRequest -Uri 'https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_windows_x64.zip' -OutFile $archive
-    if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $expectedHash) {
+    $pin = Get-Content -Raw -LiteralPath (Join-Path $PSScriptRoot 'gitleaks-pin.json') | ConvertFrom-Json
+    if ($pin.version -notmatch '^\d+\.\d+\.\d+$' -or $pin.sha256 -cnotmatch '^[0-9a-f]{64}$') {
+        throw 'Invalid scanner pin.'
+    }
+    $toolsRoot = Join-Path $privateRoot "gitleaks-$($pin.version)"
+    Invoke-WebRequest -Uri "https://github.com/gitleaks/gitleaks/releases/download/v$($pin.version)/gitleaks_$($pin.version)_windows_x64.zip" -OutFile $archive
+    if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $pin.sha256) {
         throw 'Scanner checksum mismatch.'
     }
     Expand-Archive -LiteralPath $archive -DestinationPath $toolsRoot -Force
