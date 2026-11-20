@@ -1,6 +1,6 @@
 # Architecture
 
-Packaged WinUI 3 desktop app (Windows App SDK 2.7.0, .NET 10 LTS, C# 14), shipped
+Packaged WinUI 3 desktop app (Windows App SDK 2.5.1, .NET 10 LTS, C# 14), shipped
 as Native AOT, self-contained MSIX for x64 and ARM64. Plain MVVM with
 `CommunityToolkit.Mvvm`, a hand-written SQLite store, and iCalendar `VTODO` as
 the canonical task format. No server, no account system of our own.
@@ -13,7 +13,7 @@ under [Known divergences](#known-divergences-from-planmd).
 
 | Concern | Choice | Decision |
 |---|---|---|
-| UI | WinUI 3, Windows App SDK 2.7.0, Mica, `TitleBar`, `NavigationView` | `PLAN.md` §3 |
+| UI | WinUI 3, Windows App SDK 2.5.1, Mica, `TitleBar`, `NavigationView` | `PLAN.md` §3 |
 | Runtime | `net10.0-windows10.0.26100.0` (app), `net10.0` (libraries); SDK pinned in `global.json` | `PLAN.md` §3 |
 | Packaging | Packaged MSIX, x64 + ARM64, Native AOT + self-contained in Release | `PLAN.md` §3, M9 |
 | MVVM | `CommunityToolkit.Mvvm` 8.4, `[ObservableProperty]` on partial properties | `PLAN.md` §3 |
@@ -101,7 +101,7 @@ UI types     ──X──► below Wintodo.App
 Core, Data, Sync and Import set `IsAotCompatible`. A new library project must too.
 
 The App explicitly selects `Microsoft.Windows.AI.MachineLearning 2.5.96`,
-the minimum requested by Windows App SDK 2.7.0's ML module. The Data project
+within the range requested by Windows App SDK 2.5.1's ML module. The Data project
 also pins the native SQLite engine independently of the managed SQLitePCLRaw
 bundle. Review both architecture locks and supplier notices when servicing
 these components. See the [November dependency update](docs/plans/2026-11-21-dependency-servicing.md)
