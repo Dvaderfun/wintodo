@@ -141,6 +141,24 @@ Invoke-Component 'Installed skill sources' {
         Add-Result 'Installed skill sources' $(if ($code -eq 2) {'review'} else {'current'}) 'Registered publishers checked. Private skills without a publisher are not overwritten.'
     }
 }
+Invoke-Component 'Other local skills' {
+    $statePath = Join-Path $env:USERPROFILE '.agents/skill-sources/upstream-state.json'
+    $managed = if (Test-Path -LiteralPath $statePath) { (Get-Content -Raw -LiteralPath $statePath | ConvertFrom-Json -AsHashtable).files } else { @{} }
+    $manual = @(foreach ($relative in @('.agents/skills','.codex/skills')) {
+        $dir = Join-Path $env:USERPROFILE $relative
+        if (Test-Path -LiteralPath $dir) {
+            foreach ($item in Get-ChildItem -LiteralPath $dir -Directory) {
+                if ($item.Name -match '^(?:\.|codex-primary-runtime$|caveman|cavecrew|cavemem|ultracave|megacave)') { continue }
+                if (!(Test-Path -LiteralPath (Join-Path $item.FullName 'SKILL.md') -PathType Leaf)) { continue }
+                if ($relative -eq '.agents/skills' -and $managed.Contains(($item.Name+'/SKILL.md'))) { continue }
+                "$relative/$($item.Name)"
+            }
+        }
+    })
+    $entries=@($manual | Sort-Object -Unique)
+    [IO.File]::WriteAllLines((Join-Path $ReportDirectory 'manual-skills.txt'),[string[]]$entries)
+    Add-Result 'Other local skills' $(if ($entries.Count) {'manual'} else {'checked'}) "$($entries.Count) local skill locations without an owning updater; see manual-skills.txt. Their upstream versions are not asserted."
+}
 Invoke-Component 'Codex plugins' {
     $pArgs = @('-NoProfile','-NonInteractive','-File',(Join-Path $PSScriptRoot 'Update-CodexPlugins.ps1'),'-Json')
     if ($Apply) { $pArgs += '-Apply' }
