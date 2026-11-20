@@ -6,6 +6,8 @@ Wintodo is in the Store. The workstation has the Store-signed 1.0.1.0, and the [
 
 ## 1. Prevent loss of user data
 
+These four fixes are the next implementation assignment. [GPT 6.1 Sol handoff, acceptance cases and starting prompt](2026-11-sol-integrity-handoff.md). The separate DEV appearance preview does not implement them.
+
 - [ ] **P1 — Preserve alarms, category links and attachment references on inline rename and star.** List queries return scalar projections. The [row commands](../../src/Wintodo.App/ViewModels/TaskListViewModel.Tasks.cs) send them through [whole-task collection replacement](../../src/Wintodo.Data/SqliteTaskStore.Tasks.cs). Use narrow transactional updates. Verify both commands on a freshly queried row with all three collections and reopen the database to check the result.
 - [ ] **P1 — Save pending edits when switching tasks or closing.** The [detail loader](../../src/Wintodo.App/ViewModels/TaskDetailViewModel.Persistence.cs) cancels title/note debounce before replacing the model. Drain edits against their original UID; exercise fast selection and window close at both debounce boundaries.
 - [ ] **P1 — Bind attachment cleanup to its owning database.** [Startup](../../src/Wintodo.App/App.xaml.cs) can select an environment-overridden database while passing the package's real attachment root to [cleanup](../../src/Wintodo.Data/SqliteTaskStore.ImportCleanup.cs). Validate the effective database/root pair. Test separate real and scratch fixture roots; never test deletion with customer files.

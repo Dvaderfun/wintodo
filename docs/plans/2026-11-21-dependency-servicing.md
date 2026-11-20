@@ -70,6 +70,14 @@ gates, or until a separately approved policy decision changes the criterion.
 This older SDK does not meet Microsoft's latest-patch support condition.
 Other package updates remain independent of that exception.
 
+### Recommendation for the next production decision (21 November)
+
+1. Use 2.5.1 for the isolated DEV UI preview. Do not publish an SDK-only Store update from either candidate. Microsoft lists 2.7.0 as the current stable patch and requires the latest patch for support; 2.5.1 is a temporary hold, not an LTS channel.
+2. Prepare a supplier report using the package hashes, generic marker classification and byte comparisons below. It can be sent to Microsoft after owner review; no case has been filed. Retest the next stable SDK in the evaluation branch on **actual x64 and ARM64 MSIX files**. Switch when the unchanged gates and runtime checks pass.
+3. Revisit by **21 December 2026**, or sooner on an applicable security advisory. If vendor builds still contain the same generic markers, bring the owner a **separate ADR proposal**: distinguish independently verified supplier build metadata from paths that identify a user or our checkout. It would need exact supplier package version, architecture, binary hashes and marker evidence; all new findings would still fail. Do not patch vendor binaries, suppress all vendor path findings, or silently change the scanner. No exception is approved.
+
+[Microsoft support and release channels](https://learn.microsoft.com/windows/apps/windows-app-sdk/release-channels) · [Windows App SDK 2.7.0 release notes](https://github.com/microsoft/WindowsAppSDK/releases/tag/v2.7.0). The open search timing failure is a separate acceptance issue; changing SDKs does not establish that it is fixed.
+
 Installed-client, OEM/native ARM64, Store and full native provenance
 acceptance are separate from these checks. Historical release evidence
 remains tied to the package and source revision it originally examined.
