@@ -1,0 +1,40 @@
+# Wintodo: November review and prioritized work
+
+Review: 20–21 November 2026. Audit baseline: `2a836a0`; implementation branches start at `5c61a66`, which preserves the subsequent scroll-gap fix. A checked box means there is evidence for that specific action. A fix is not complete merely because a branch exists.
+
+## 1. Prevent loss of user data
+
+- [ ] **P1 — Preserve alarms, category links and attachment references on inline rename and star.** List queries return scalar projections. The [row commands](../../src/Wintodo.App/ViewModels/TaskListViewModel.Tasks.cs) send them through [whole-task collection replacement](../../src/Wintodo.Data/SqliteTaskStore.Tasks.cs). Use narrow transactional updates. Verify both commands on a freshly queried row with all three collections and reopen the database to check the result.
+- [ ] **P1 — Save pending edits when switching tasks or closing.** The [detail loader](../../src/Wintodo.App/ViewModels/TaskDetailViewModel.Persistence.cs) cancels title/note debounce before replacing the model. Drain edits against their original UID; exercise fast selection and window close at both debounce boundaries.
+- [ ] **P1 — Bind attachment cleanup to its owning database.** [Startup](../../src/Wintodo.App/App.xaml.cs) can select an environment-overridden database while passing the package's real attachment root to [cleanup](../../src/Wintodo.Data/SqliteTaskStore.ImportCleanup.cs). Validate the effective database/root pair. Test separate real and scratch fixture roots; never test deletion with customer files.
+- [ ] **P2 — Preserve attachment ownership across awaits.** [Attachment copy](../../src/Wintodo.App/ViewModels/TaskDetailViewModel.Attachments.cs) reads the active model before and after I/O. Capture the original task through selection, copy, persist and rollback. Change selection during a deliberately delayed fixture copy; both tasks must reopen correctly.
+
+## 2. Protect releases and keep tools serviced
+
+- [ ] **Require passing CI for changes to main and enforce release-tag protection.** At audit time GitHub returned `protected: false` on main and listed no repository rulesets. Verify effective enforcement after configuring it; a passing workflow is not enforcement.
+- [ ] **Review and adopt the dependency servicing branch.** Stay on the accepted .NET 10 LTS line and keep Windows build 26100 as the app minimum. Update Windows App SDK, native SQLite, the managed provider, BuildTools, WinApp CLI/analyzer and test tools. Review lock changes for x64/ARM64, vendor notices and native advisories; run analyzers, unit tests and both AOT targets. Check guest and installed-package behavior before a Store submission.
+- [ ] **Adopt recurring maintenance.** Keep immutable Action pins, weekly dependency PRs and a separate drift check for versions no package manager owns. Keep the WinUI skill mirrors identical at a reviewed upstream commit. On the workstation, check tool owners and update through their native managers. Treat a failed feed, disabled component or unknown source as such, never as “current.” See the maintenance guide in this branch.
+- [ ] **Resolve remaining release evidence.** Establish redistribution rights for the eight bundled backgrounds and complete native dependency provenance. Verify update-with-existing-data on installed x64 and native ARM64; finish live CalDAV convergence, work/school import, reminder-reboot/badge and external iCalendar checks. Keep M9's idle matrix and the human Narrator check open until actually performed.
+- [ ] **Make exported attachment paths an informed choice.** The [iCalendar writer](../../src/Wintodo.Core/Ical/IcalWriter.cs) exports local attachments as absolute file URIs. Shared calendars can reveal a Windows profile folder without transferring the file. Decide on portable attachment handling or disclosure, preserving unknown properties and remote URIs.
+
+## 3. Compare WinUI treatments before adopting one
+
+- [ ] **Compare the current UI with the Gallery/resource treatment on the same data.** Use the separate `design/nov21-gallery-comparison` branch. Compare header typography, navigation glyphs and settings spacing at the same window size and DPI in Light, Dark and High Contrast. Include long titles and narrow widths; record exactly which alternative you prefer. No comparison styling belongs on main until selected.
+- [ ] **Check real accessibility.** Retain automation IDs, focus order, keyboard commands, fully specified x:Bind modes and the three theme dictionaries. Repeat the affected guest gate and perform the outstanding human Narrator listening check.
+- [ ] **Correct stale My Day labels.** Detail/metadata treat any stored date as membership; the query compares against today. Cover yesterday, today and midnight rollover with a fake clock.
+
+## 4. Improve measured performance before considering Rust
+
+- [ ] **Measure full-list retention first.** At 10,000 tasks the [recorded](../PERF.md) best warm smart-list queries took 1.519–2.652 ms; worst warm FTS5 search took 6.694 ms. The [smart-list benchmark](../../tests/Wintodo.Data.Tests/SmartListPerformanceTests.cs) caps results at 100. Measure opening All with 20,000 tasks, switching back and repeating. Record p50/p95 first render, retained row count, private working set and 10-minute idle; separate x64 and ARM64 evidence.
+- [ ] **Bound rows retained after navigation.** The [list cache](../../src/Wintodo.App/ViewModels/TaskListViewModel.Loading.cs) retains visited row models for the life of the shell. Preserve active edits, selection and viewport; compare the measurements above before and after.
+- [ ] **Reduce reorder and export I/O.** A manual move rewrites visible active rows in separate transactions. Use existing sort-key gaps and rebalance atomically when necessary. Export hydrates each task's tags, alarms and attachments with separate queries; measure a large export and batch by list within a consistent read snapshot if it is material.
+- [ ] **Only prototype Rust when profiling identifies a CPU bottleneck.** The app already uses Native AOT and native SQLite/FTS5. Rust does not shorten a retained object's lifetime or reduce transactions. Require a representative workload, an end-to-end improvement on both architectures and a packaging/maintenance cost comparison before adding an FFI boundary.
+
+## Evidence and scope
+
+- [x] Baseline local x64 Debug build passed with zero warnings/errors; all 707 tests passed with none skipped. NuGet returned zero advisories across nine projects. [Committed-head CI](https://github.com/Dvaderfun/wintodo/actions/runs/44779605602) passed its redacted history/source scan. These checks do not prove an absence of incidents or prove native advisory reachability.
+- [x] The workstation reported Store-signed **1.0.1.0**. The older progress entry describing it as only in preparation was stale; an installed version alone does not prove a customer update preserved every record.
+- [x] The observed Store **1.0.0.0** private working set was 86.80 MB versus Microsoft To Do's 83.30 MB in one snapshot. It is not a leak test. The recorded M8 accessibility gate was 17/17; the audit did not run Narrator.
+- [x] Gallery 3.0.4.0 was current at review. The inspected 456 x:Bind declarations had explicit modes; all 179 inspected interactive declarations carried automation IDs. Known visual exceptions included literal title typography and 2-DIP spacing. Gallery examples are references, not a certificate of conformance.
+
+The audit found no evidence of a breach in the reviewed material. The integrity findings above are source findings, not experiments on user data.

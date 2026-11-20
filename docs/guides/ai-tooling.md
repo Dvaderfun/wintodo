@@ -16,7 +16,7 @@ area belongs in that area's doc or guide.
 
 ## Vendored skills
 
-The WinUI skills from [microsoft/win-dev-skills](https://github.com/microsoft/win-dev-skills)
+The WinUI skills from the [Microsoft WinApp CLI plugin](https://github.com/microsoft/WinAppCli/tree/v0.8.0/plugins/winui)
 are committed at a pinned release tag:
 
 - `.agents/skills/winui-*` — Agent Skills location read by Codex, Copilot,
@@ -36,9 +36,12 @@ are committed at a pinned release tag:
 Not vendored: `winui-wpf-migration` (no WPF here) and `winui-session-report`
 (user-invoked agent-session diagnostics; available from the user-level plugin).
 
-**Updating:** `.\scripts\Update-AgentSkills.ps1 -Tag vX.Y.Z`, read the upstream
-`CHANGELOG.md` for that range, update `AGENTS.md` and these guides if commands
-changed, then commit. win-dev-skills is v0.x: minor releases can break things
+**Updating:** after checking the stable release and its full commit on the Microsoft repository, use
+`.\scripts\Update-AgentSkills.ps1 -Tag vX.Y.Z -ExpectedCommit <full-commit>`.
+Update the two defaults in the script in the same change. Review the upstream
+release notes, update these guides if commands changed, then commit. The former
+`microsoft/win-dev-skills` repository is now a catalog, not the source of these files.
+Minor releases can break things
 (0.7 removed `BuildAndRun.ps1` and the bundled analyzer). Never hand-edit the
 vendored folders.
 
@@ -47,7 +50,7 @@ Code, each skill appears twice. Prefer the project copy; it matches the repo.
 
 ## WinApp CLI (`winapp`)
 
-Microsoft's agent-first CLI for Windows apps. Requires 0.7+.
+Microsoft's CLI for Windows apps. The current vendored skills target 0.8+.
 
 ```powershell
 winapp run src\Wintodo.App\Wintodo.csproj --detach --json   # build + register + launch
