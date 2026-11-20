@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" />
+    <!-- Service the native engine independently of the SQLitePCLRaw wrapper. -->
+    <PackageReference Include="SQLite" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
   </ItemGroup>
 
