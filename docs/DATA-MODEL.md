@@ -631,7 +631,8 @@ Lists:  GetListsAsync · GetIncompleteTaskCountsAsync · GetSmartListTaskCountsA
         · ReorderListAsync · MoveListToGroupAsync · DeleteListAsync · RestoreListAsync
 Groups: GetGroupsAsync · CreateGroupAsync · RenameGroupAsync · DeleteGroupAsync
 Tasks:  GetTasksAsync(ListQuery) · GetTaskAsync(uid) · CreateTaskAsync
-        · UpdateTaskAsync · CompleteTaskAsync · UncompleteTaskAsync
+        · UpdateTaskAsync · RenameTaskAsync · SetTaskTextAsync · SetTaskImportanceAsync
+        · TryAddTaskAttachmentAsync · CompleteTaskAsync · UncompleteTaskAsync
         · DeleteTaskAsync · RestoreTaskAsync · ReorderTaskAsync · MoveTaskAsync
         · ApplyTaskBatchAsync(uids, action)
         · CaptureTaskUndoAsync(uids, fields) · RestoreTaskFieldsAsync(states)
@@ -644,7 +645,12 @@ Maint:  VacuumAsync · GetStatsAsync
 `GetTasksAsync` takes a `ListQuery` descriptor (list id or smart-list kind, sort
 mode, include-completed, optional filter) rather than a set of boolean
 parameters. M12's query language compiles into the same descriptor, so the
-filter path is built once.
+filter path is built once. List results do not include owned collections.
+Row rename, importance and detail text edits read the current row in the writer
+transaction and leave the owned collections in place. Adding a local attachment
+checks the task's remaining space in that same transaction and inserts only the
+new reference. These writes preserve unknown properties and use the normal
+sequence, dirty flag and change log for sync.
 
 `ApplyTaskBatchAsync` reads and mutates each selected UID inside one writer
 transaction. It supports completion (including recurrence), importance, My Day,

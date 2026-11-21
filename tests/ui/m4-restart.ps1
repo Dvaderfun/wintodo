@@ -63,8 +63,9 @@ winapp ui wait-for "Todo.Detail.Title" `
     -t 5000
 winapp ui wait-for "Todo.Detail.Note" `
     -a $AppPid `
-    --value "M4 note survives restart" `
+    --value "M4 note saved on close" `
     -t 5000
+if ($LASTEXITCODE -ne 0) { throw "The note typed immediately before closing was not saved." }
 winapp ui wait-for "Todo.Detail.Importance" `
     -a $AppPid `
     --value "On" `

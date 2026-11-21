@@ -28,7 +28,10 @@ function Start-GateApp {
         throw "Wintodo gate launch failed."
     }
 
-    return [int]$launch.ProcessId
+    $gatePid = [int]$launch.ProcessId
+    winapp ui wait-for "Todo.Nav.DefaultList" -a $gatePid -t 15000 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "The task shell did not become ready." }
+    return $gatePid
 }
 
 $firstPid = Start-GateApp
@@ -38,6 +41,22 @@ try {
         -ArtifactDirectory $artifactDirectory
     if ($LASTEXITCODE -ne 0) {
         throw "M4 phase-one UI gate failed."
+    }
+
+    $row = (winapp ui search "M4 recurring task edited" -a $firstPid --json |
+        ConvertFrom-Json).matches | Where-Object {
+            $_.type -eq "ListItem" -and $_.automationId -match "^Todo\.Row\.[0-9a-f-]+$"
+        } | Select-Object -First 1
+    if ($LASTEXITCODE -ne 0 -or -not $row) { throw "Could not find the task for the close check." }
+    winapp ui invoke $row.automationId -a $firstPid | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Could not reopen the detail pane." }
+    winapp ui wait-for "Todo.Detail.Note" -a $firstPid -t 5000 | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "The detail note did not appear." }
+    $process = Get-Process -Id $firstPid
+    winapp ui send-keys 'ctrl+a text=M4\snote\ssaved\son\sclose alt+f4' --target "Todo.Detail.Note" `
+        -a $firstPid --via send-input --allow-system-keys | Out-Null
+    if ($LASTEXITCODE -ne 0 -or -not $process.WaitForExit(10000)) {
+        throw "The window did not exit after editing the note and closing."
     }
 } finally {
     Stop-Process -Id $firstPid -ErrorAction SilentlyContinue

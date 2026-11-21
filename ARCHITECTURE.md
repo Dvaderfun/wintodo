@@ -145,7 +145,10 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
 - ShellViewModel owns a shared 20-entry UndoService for list/detail destructive
   actions. Snackbar expiry hides the message; Ctrl+Z retains history across lists.
   Undo flushes pending detail edits, restores only captured fields atomically,
-  then refreshes navigation and the open detail pane. Remote StoreChanged events
+  then refreshes navigation and the open detail pane. The detail editor also
+  drains pending title and note edits before replacing its model or closing the
+  main window; a write already in progress finishes before newer text is saved.
+  Remote StoreChanged events
   invalidate affected entries; local writes and push acknowledgements retain them.
   List deletion records task membership in migration 003; restore retains earlier
   task deletions and queues CalDAV collection creation before task uploads when
@@ -263,6 +266,11 @@ Settings → Data.
   `MicrosoftTodoExport`. `GraphTodoMapper` turns it into an `ImportSnapshot`
   for the lists the person selected. Attachments download to `import-staging\`
   and are copied under `attachments\<uid>\` inside the import transaction.
+  Startup cleanup operates only when the effective database is the
+  `wintodo.db` in that attachment root. An unrelated database override
+  cannot use its attachment index to clean the package root. The detail picker
+  captures its task before opening and inserts the reference for that task
+  after copying. Failure removes the unique output reserved for that copy.
 - **Saving.** `IImportStore` (implemented by `SqliteTaskStore.Import.cs`,
   DATA-MODEL §3.6) previews in a rolled-back transaction and applies in one
   writer transaction. Completed Graph downloads and final attachment copies
