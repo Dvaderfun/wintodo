@@ -483,3 +483,19 @@ candidate the identical Data/test graphs gave a focused FTS measurement of
 13.707 ms; its two full suites missed My Day instead. The observed timing
 variation does not establish the cause, steady-state query performance, a
 memory regression, or a fix.
+
+### 2026-11-21 — hybrid DEV preview, full x64 suite
+
+The first full Debug run for the hybrid appearance change passed 707/707
+(Core 257, Data 133, Import 155, Sync 162; no skips). The build finished
+before the four test modules ran serially. At 10,000 tasks, the Data TRX
+recorded **2.841 ms** for My Day and **2.929 ms** for the worst warm FTS
+query. No store code or threshold changed. These results belong to that
+run; they do not explain the fallback's earlier 428.653 ms FTS result or
+measure packaged UI startup, RAM, or native ARM64 performance.
+
+After correcting the High Contrast marker at `7fa57e1`, an incremental x64
+Debug build again had zero warnings/errors. A separate full serial run passed
+707/707 (zero skipped) in 17.871 s before Native AOT packaging started. On
+this run My Day took **3.053 ms** and the worst warm FTS query **1.192 ms**.
+These are two observations of the same unchanged store, not a speedup claim.

@@ -7,6 +7,8 @@ under "History" is append-only._
 
 As of 2026-11-21:
 
+**Private appearance preview (this branch only):** [Wintodo DEV 1.0.1.180](design/hybrid-preview.md) keeps the outlined task cards, uses WinUI’s selected-task marker and derives the list-title editor size and weight from its displayed title. It supersedes .179, whose marker nearly disappeared on High Contrast cards. The x64 package has a distinct developer identity and DEV badge; it installs beside Store Wintodo. The corrected Debug solution built without warnings and passed all 707 tests. The four data-integrity fixes remain open on the separate review plan.
+
 Store-first under **Univera LLC** is selected in
 [ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
 ADR-018's first distribution route. DEP-12 policy A retains documented launch
@@ -4867,3 +4869,11 @@ supplier inputs also contain the blocked marker. Clean Debug build passes;
 one full four-project run is 706/707, no skips: all smart lists met 5 ms, but
 10k FTS worst warm was 428.653 ms against 60 ms. No waived or retried gate,
 host UI automation, sign, install or deployment.
+
+## 2026-11-21 — M8 / M10: signed side-by-side Wintodo DEV appearance preview
+
+The owner chose Wintodo's task cards, the Gallery-style selected marker and the WinUI title typography for a private trial. Package source: `4817007237892ae97d6760a07f35f5d17304de6a`. The signed x64 MSIX `Wintodo-DEV-1.0.1.179-x64.msix` has SHA-256 `643068a84160f8aa976901188dde78cc3026950a27331a00a21d7674aee43e7f`. Artwork readback covered 20 PNGs and the seven-frame window ICO. The separate package family, DEV title resources, activation and startup registrations were checked. Structure and privacy passed on the signed package (335 entries; no findings). The host retained only Store Wintodo 1.0.1.0; no host launch, registration or certificate trust change was part of the build. The [recorded unit timing](PERF.md#2026-11-21--hybrid-dev-preview-full-x64-suite) is from a full 707/707 run, not a change to the unrelated fallback search budget.
+
+The original .179 passed its standard guest interaction smoke but was superseded after its enabled marker was found to have only 1.04–1.48:1 contrast on the retained cards across the four built-in palettes. `Wintodo-DEV-1.0.1.180-x64.msix` from `7fa57e14b257658b89309e308a9f365bf769fb8e` (SHA-256 `61fb3d464956a9d8e9c40c820e0ef5896602f48674a791788f34ae2499f35d8b`) uses the system’s ButtonText on ButtonFace in High Contrast. The corrected x64 Native AOT package passed signature, structure, DEV identity/activation, badge assets and privacy checks (335 entries; zero findings); the corrected resource keys were present in the signed package. No host app or certificate was installed.
+
+The corrected MSIX also passed all six assertion groups in the clean `WintodoTest` VM: install/registration, Start/onboarding, five clickable cards and detail navigation, title edit (Escape, Enter and focus loss), selected marker in Desert, and keyboard single/multiselect/clear. The measured light-theme row pitch remained 54 px and the editor measured 250 × 47 px. At 96 DPI the Desert marker had a verified 14-pixel solid run against the adjacent card; its measured foreground/background colours yield 15.65:1 contrast. The original guest theme was restored and the VM shut down. The other three contrast palettes were calculated, not rendered. Owner hands-on acceptance, Dark and narrow-window visual checks remain open. See the [preview notes and captures](design/hybrid-preview.md).
