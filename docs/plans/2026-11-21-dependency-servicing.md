@@ -1,6 +1,8 @@
 # November 2026 release fallback for dependency servicing
 
-Two local branches preserve different outcomes. `maintenance/nov21-review` keeps Windows App SDK 2.5.1 and takes the other updates: 21 of 22 tracked checks match their stable targets. `maintenance/nov21-sdk27-evaluation` preserves the exact 2.7.0 evaluation: 22 of 22 current, but both actual packages failed the privacy gate. “Current” is a version comparison; it does not certify an update for release.
+Two local refs preserve different outcomes. `maintenance/nov21-review` keeps Windows App SDK 2.5.1 and takes the other updates: 21 of 22 tracked checks match their stable targets. `refs/archive/branches/maintenance/nov21-sdk27-evaluation` preserves the exact 2.7.0 evaluation: 22 of 22 current, but both actual packages failed the privacy gate. “Current” is a version comparison; it does not certify an update for release.
+
+**Priority:** The four [data-integrity fixes](2026-11-sol-integrity-handoff.md) are in DEV 1.0.1.188. Treat the Windows App SDK update as routine work for the next dependency PR. The finding is a generic Microsoft build-account path in unmodified Microsoft DLLs; the evidence does not indicate exposure of a Wintodo user or developer path.
 
 This update keeps the [.NET 10 LTS and Windows 11 26100 contract](../../Directory.Build.props).
 The SDK is still exactly 10.0.404 (runtime 10.0.15). .NET 11.0.100 and
@@ -64,11 +66,20 @@ in Microsoft.UI, Windowing and DWM DLLs on both architectures. All six
 Runtime/InteractiveExperiences archives for 2.6.4, 2.6.5 and 2.7.0 matched the
 official NuGet catalog SHA-512 and passed NuGet signature verification under
 existing host trust. These are supplier-input screening results for the
-intermediate versions; only 2.7.0 and this fallback received app-package builds. Keep the
-2.5.1 graph until a supported newer vendor build passes both architecture
-gates, or until a separately approved policy decision changes the criterion.
-This older SDK does not meet Microsoft's latest-patch support condition.
-Other package updates remain independent of that exception.
+intermediate versions; only 2.7.0 and this fallback received app-package builds.
+The fallback and the private appearance preview still use 2.5.1. That older
+patch does not meet Microsoft's latest-patch support condition.
+
+### Recommendation for the next production decision (21 November)
+
+Use **2.7.0** (or the then-current supported stable patch) in the next routine dependency PR. The DEV appearance result still stands on 2.5.1. There is no need for a separate SDK-only release, a Microsoft support case or a vendor deadline.
+
+[DEP-14](deployment-readiness.md#dep-14--remove-identifying-binary-and-metadata-paths) protects against identifying build paths. The [packaging guide](../guides/packaging.md#release-artifact-privacy-dep-14) already distinguishes nonidentifying vendor metadata. Its current scanner makes that distinction for vendor CodeView records; it still reports the profile prefix in the body of these DLLs as a failure. Recognizing the verified generic marker applies the existing privacy rule; it does not require an architectural decision or a blanket exception for Microsoft files.
+
+- [ ] In the dependency PR, report this exact marker as **informational** only for the reviewed DLL bytes from the signed, catalog-hash-verified SDK archives, matched by package version, architecture, archive entry and DLL hash. Keep scanning the same files for private roots and all other findings. Cover a matching input, different bytes and a separate identifying marker in regression tests.
+- [ ] Run the normal build, tests, package scans on both x64 and ARM64, and the normal release checks on the final artifacts before shipping. The historical packages below still **failed** their actual gate; this documentation does not turn that result into a pass.
+
+[Microsoft support and release channels](https://learn.microsoft.com/windows/apps/windows-app-sdk/release-channels) · [Windows App SDK 2.7.0 release notes](https://github.com/microsoft/WindowsAppSDK/releases/tag/v2.7.0). The open search timing failure is a separate acceptance issue; changing SDKs does not establish that it is fixed.
 
 Installed-client, OEM/native ARM64, Store and full native provenance
 acceptance are separate from these checks. Historical release evidence
@@ -98,8 +109,8 @@ in `Microsoft.WindowsAppSDK.Runtime/2.7.0`; the remaining FrameworkUdk DLL
 matched `runtimes-framework/win-{arch}/native` inside
 `Microsoft.WindowsAppSDK.InteractiveExperiences/2.7.0`. The flagged profile
 prefix identifies a generic vendor container build account in binary content,
-not a first-party CodeView path or a path from this checkout. The existing
-release policy rejects it nonetheless. No scanner rule, vendor binary, or
+not a first-party CodeView path or a path from this checkout. The current
+scanner rejects it nonetheless. No scanner rule, vendor binary, or
 mandatory payload was changed to obtain a pass. These archives must not be
 distributed under that gate.
 
@@ -113,8 +124,8 @@ supplier-input checks, not app-package builds on intermediate SDKs.
 NuGet lists no other stable SDK between 2.5.1 and 2.7.0.
 
 The release fallback retains the prior 2.5.1 SDK graph and every
-other dependency update. The newer SDK remains available on the separate evaluation branch for
-vendor-servicing evaluation. Native compilation does not itself prove runtime
+other dependency update. The separate 2.7.0 evaluation branch is the starting
+point for the next SDK update. Native compilation does not itself prove runtime
 acceptance, privacy compliance or release authorization.
 
 ## Fallback validation

@@ -14,6 +14,11 @@ the four November data integrity fixes. WintodoTest verified an in-place update
 from .180 with a synthetic task and note, and verified that a note typed just
 before closing survives restart. See the [installer guide](guides/design-dev-preview.md).
 
+The two local maintenance jobs have a shared [owner control menu](guides/workstation-maintenance.md)
+for status, report history, manual inventory, check-only mode and pause/resume.
+Windows App SDK remains at 2.5.1 on DEV. Revisit the newer SDK in the next
+dependency PR as described in the [prioritized checklist](plans/2026-11-project-health-and-release.md).
+
 Store-first under **Univera LLC** is selected in
 [ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
 ADR-018's first distribution route. DEP-12 policy A retains documented launch
@@ -4951,3 +4956,26 @@ Remote branches were not changed.
 proposal adds automatic due-today membership and same-day dismissal. A
 synthetic regression verified that accepting a server-side rename currently
 makes the dismissed task reappear. The PR is open and was not merged.
+
+## 2026-11-21 — owner controls and observable workstation checks
+
+The owner can open Maintenance.cmd for both actual jobs, run a manual Wintodo inventory, switch registrations to inventory only, or pause/resume future triggers. Opening the menu performs no update. Wintodo keeps dated JSON/Markdown summaries and distinguishes review, incomplete checks, alias publication and a notification request from actual delivery. The two registrations retained their previous enabled states, update permissions and schedules. Readback of exported task definitions matched both jobs' original triggers, settings and principals; only Saturday’s registered action changed, to the revised runner. No third job, administrator permission, machine-wide event history change or tool update was required.
+
+A real manual inventory at 02:39 local completed the component checks, but replacing the previous latest Markdown returned access denied. The previous file and the dated result survived. Subsequent rights probes succeeded: the exact cause of the original denial is not established. The corrected publisher replaces existing files while retaining permissions, tries each current alias independently, and records incomplete publication separately. Windows fixtures covered open files, the original ACL and retry timing. The live owner “Check Wintodo now” command at 02:44 local ran the corrected snapshot 6969DA7328B36225 in check-only mode: the dated receipt and both latest files agreed, result 1 for repository pins only, zero incomplete checks and zero reported updates. This was a manual check, not evidence that the next scheduled trigger has fired. The prior legacy and failed-publication summaries were retained.
+
+## Maintenance controls merged into DEV (2026-11-21)
+
+Merged `maintenance/nov21-review` at `cb362c6` into `dev/preview`. Kept
+the verified .188 status and the original workstation history when resolving
+`PROGRESS.md`. The merge adds the owner controls and dated report handling
+without changing app source, dependencies, build configuration or workflows.
+No new installer is needed. The live schedules and installed runner were not
+changed.
+
+All 242 script tests passed, including the temporary scheduler-control and
+workstation-runner fixtures, and all four changed PowerShell scripts parsed
+cleanly. This was verification of the workstation changes, with no new app
+or UI gate run.
+
+[PR #8 received a Codex-assisted Request changes review](https://github.com/Dvaderfun/wintodo/pull/8#pullrequestreview-6006242546)
+on its exact `6a67c4a` revision. The PR was not merged.

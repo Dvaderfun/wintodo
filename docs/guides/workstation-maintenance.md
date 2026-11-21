@@ -2,11 +2,29 @@
 
 There are two different jobs. A dependency update changes the build that could reach customers; a local tool update changes the developer's machine.
 
+**Open the controls:** double-click `%LOCALAPPDATA%\WintodoMaintenance\Maintenance.cmd` (or [Maintenance.cmd](../../scripts/workstation/Maintenance.cmd) in this checkout). Opening it only reads local status. For each job, compare **what the registered action may do**, **Windows' last start/result and next trigger**, and **when, how and with what result the tool inventory completed**. These are separate facts. A manual inventory or a skipped trigger is not evidence of a successful scheduled check.
+
+For Wintodo, the dated report is the evidence. If the `latest.md` or `latest.json` shortcut could not be replaced, the menu opens the dated report and flags the stale shortcut. A corrupt newest report is reported as such. Windows does not have to allow overwriting an open file for you to see how the check went.
+
+| In the menu | Effect |
+|---|---|
+| **1 / 2**, **H** | Open the Wintodo or developer-tools report, or the history folder. |
+| **N — Check Wintodo now** | Run the current registered Wintodo runner once in inventory mode. This button never passes update flags, even when automatic updates are scheduled. The Sunday inventory has its own command below. |
+| **C — Checks only** | Keep the triggers, remove unattended installation flags from the selected registrations and retain a backup of the prior task definitions. Checking writes local reports and can query publisher feeds; it does not install the listed updates. |
+| **P — Pause**, **R — Resume** | Disable or enable future triggers. Pausing does not interrupt a running process. Resuming an update-enabled task calls this out explicitly. |
+| **S — Refresh**, **Enter — Close** | Read the current state again, or exit. Closing does not change either job. |
+
+From PowerShell, `.\scripts\workstation\Maintenance.ps1 -Json` is read-only. Use `-Action Pause -Job Wintodo -WhatIf` to preview pausing just Saturday’s job. `-Action CheckOnly -WhatIf` previews removing unattended updates from both. Task Scheduler itself remains available at **Task Scheduler Library → task name → Triggers / Actions**.
+
+**What actually runs on this PC.** Windows Task Scheduler is the alarm clock. When the Saturday trigger fires, it starts a hidden PowerShell process as the signed-in user. The runner is a snapshot in the user's local app data. It compares installed versions with configured publisher sources, applies eligible updates only if its registered mode permits them, checks the results, writes a report and exits. It does not need Wintodo or an AI chat open. It checks repository pins from the real checkout but does not edit or push them. Signing in can catch up on a missed run: the same runner/checkout skips a successful or review-needed check less than 6½ days old; an incomplete check is eligible again at the next trigger after one day. A second copy will not run at the same time. There is no always-running Wintodo maintenance service.
+
+The job has ordinary user privileges, not a sandbox: it can change files and developer tools belonging to that user. Some standalone skill publishers track the tip of their default branch. An expected publisher and a backup make an update traceable and recoverable; they do not mean each new instruction or script was reviewed. The Windows scheduler supplies the timing and permissions, **not** an endorsement of the code it runs.
+
 | Owner | What happens without asking |
 |---|---|
 | GitHub Dependabot | Weekly review PRs for Actions, direct NuGet dependencies (including native SQLite) and the exact .NET SDK in global.json. SDK/provider major migrations are deliberate decisions. Immutable Actions pins, reviewed locks, AOT, notices and guest checks still apply. |
 | Scheduled project-health workflow | Compares official stable versions, release commits and scanner checksums. A failed feed is reported separately from a newer version. A job summary identifies the pin that needs attention. Schedules and Dependabot configuration run from the default branch after the change is merged. [CI guide](ci.md) · [Dependabot ecosystem reference](https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference) |
-| Windows Task Scheduler, current user | Each Saturday at 10:00 local, and at sign-in if due, service existing user tools, check configured plugins, run the registered skill publisher, and check the chosen checkout. No elevation, pushes, task-data access or Store releases. Reports persist even if an individual service fails. |
+| Windows Task Scheduler, current user | Each Saturday at 10:00 local, and at sign-in if due, check existing user tools (or service them in update mode), check configured plugins, run the registered skill publisher, and check the chosen checkout. No elevation, pushes, task-data access or Store releases. Reports persist even if an individual service fails. |
 
 ## Install or inspect the local job
 
@@ -14,19 +32,24 @@ Use PowerShell 7 and Python 3.12 or later. In the **reviewed maintenance checkou
 
 ~~~powershell
 .\scripts\workstation\Install-WeeklyMaintenance.ps1 -RepoPath C:\path\to\wintodo
-Get-ScheduledTaskInfo -TaskName Wintodo-Weekly-Maintenance
-Start-ScheduledTask -TaskName Wintodo-Weekly-Maintenance
+.\scripts\workstation\Maintenance.ps1
 ~~~
 
 The installer stores a snapshot of the scripts under **%LOCALAPPDATA%\WintodoMaintenance\runners**, saves the selected Codex profile, and registers a limited, interactive-user task. The snapshot can read pins from a different checkout without executing that checkout's scripts. Reinstall from a subsequently reviewed revision to change the runner. The previous general developer-tools inventory is independent. If the machine is asleep or the user is logged out, the weekly job catches up on an eligible sign-in. A failed check is eligible to retry at a subsequent sign-in after a day.
 
-Open **%LOCALAPPDATA%\WintodoMaintenance\reports\latest.md** for the component results, **project.md** for every repository pin and **plugins.log** for installed plugin states. An outstanding review or error also requests a Windows notification; Focus Assist and Windows notification preferences can suppress it. Exit code 0 means checked, 1 means review is needed, 2 means at least one check was incomplete. To force an immediate run instead of the schedule's due-date guard:
+Open **%LOCALAPPDATA%\WintodoMaintenance\reports\latest.md** for the component results, **project.md** for every repository pin and **plugins.log** for plugin results. A scheduled run that makes changes, needs review or encounters an error requests a Windows notification; Windows notification preferences can suppress display. Exit code 0 means completed, 1 means review is needed, 2 means a check or notification request was incomplete. To explicitly run the Wintodo checks now **without installing updates**:
 
 ~~~powershell
-.\scripts\workstation\Invoke-WorkstationMaintenance.ps1 -RepoPath C:\path\to\wintodo -Apply
+.\scripts\workstation\Invoke-WorkstationMaintenance.ps1 -RepoPath C:\path\to\wintodo
 ~~~
 
-Omit **-Apply** for an inventory only. Remove the schedule with **Unregister-ScheduledTask -TaskName Wintodo-Weekly-Maintenance**; this does not uninstall tools. Local reports stay on this machine. Its notification identity is the current-user registry key **HKCU:\Software\Classes\AppUserModelId\Wintodo.Workstation.Maintenance**.
+Running a scheduled task manually from Windows runs its **registered policy**, which may permit updates; use the runner directly without `-Apply` for an intentional inventory. For the separate Sunday tool inventory, run `& "$env:USERPROFILE\.codex\maintenance\Check-DeveloperUpdates.ps1"` without switches. Review a report before invoking a tool's updater. To explicitly apply all eligible Wintodo tool updates once, add `-Apply` to the direct command above; this does not change the schedule.
+
+A new Saturday registration defaults to check-only. Reinstalling preserves an existing task's update policy, customized triggers, enabled/paused state, and Codex profile. To explicitly choose a policy, the Saturday installer accepts `-ScheduleMode CheckOnly` or `-ScheduleMode Apply`; use `-WhatIf` to preview. The control menu can switch both known registrations to checks only. It does not install a new scheduled job. An explicit reinstallation from the separate Sunday tool's original installer may re-enable Git/CLI updates; the status display reads the actual flags each time.
+
+Each completed Wintodo run writes a dated Markdown and JSON summary under `reports\history\`, labeled **Manual** (direct command) or **Scheduled** (the registered action) when known. Trigger time and a human pressing **Run** on the registered action cannot be distinguished by that label. The summaries retain outcomes; per-component logs at the top level can be replaced on the next attempt. An overlapping run is refused before checking tools. A due-date skip reuses a prior completed report; a check-only report cannot suppress an update-enabled run. The notification field records whether Windows accepted a request, not whether you saw it. If a PC is off, a task never starts, or a process exits before writing a report, inspect the Windows last start/result and the report's age. Old reports cannot be retroactively attributed to a trigger.
+
+Remove the Saturday schedule with **Unregister-ScheduledTask -TaskName Wintodo-Weekly-Maintenance**; this does not uninstall tools. Local reports stay on this machine. Its notification identity is the current-user registry key **HKCU:\Software\Classes\AppUserModelId\Wintodo.Workstation.Maintenance**.
 
 ## What can be updated unattended?
 
@@ -44,4 +67,16 @@ The first nonempty manual skill inventory, and later additions or removals, requ
 
 The workstation job services Wintodo and its agent tools. It does not install unrelated products, enable disabled components, upgrade the OS or Visual Studio, or auto-merge a dependency update into a release.
 
-The separate Sunday 10:00 task, `Codex-DeveloperTools-WeeklyCheck`, updates only this user's existing portable Git for Windows and GitHub CLI. It verifies each release archive's SHA-256 and the executable's publisher signature, and keeps the previous installation. Its other tools, including Go, Azure and other .NET runtimes, are inventory only. Read the per-tool results in `%USERPROFILE%\.codex\maintenance\reports\latest.json`.
+When update-enabled, the separate Sunday 10:00 task, `Codex-DeveloperTools-WeeklyCheck`, updates only this user's existing portable Git for Windows and GitHub CLI. It verifies each release archive's SHA-256 and the executable's publisher signature, and keeps the previous installation. Its other tools, including Go, Azure and other .NET runtimes, are inventory only. Read the per-tool results in `%USERPROFILE%\.codex\maintenance\reports\latest.json`.
+
+## Recommended simpler arrangement (proposal only)
+
+| What is being maintained | Suggested owner |
+|---|---|
+| Versions that build or ship Wintodo | Dependabot PRs, immutable pins, and CI on the actual x64/ARM64 packages. NuGet and Actions are **already configured on main**; the maintenance branch adds the exact .NET SDK and the independent health/vendor-patch workflow. No automatic promotion to Store. |
+| Installed tools with a supported servicing route | Let Microsoft Store and the tool's existing package manager/native updater service their installations where appropriate. WinGet can perform selected upgrades when invoked; installing WinGet alone does not schedule upgrades for every tool. |
+| Agent plugins, skills and exceptional portable installations | Keep one user-level weekly inventory/notification for both tool lists. Prefer a reviewed update for agent instructions or executable plugin changes, particularly inputs that follow a branch tip. Keep only the unattended, publisher-verified tool updates the owner wants. |
+
+Task Scheduler is the normal local Windows mechanism. The bespoke part is having **two** scripts with overlapping inventories and numerous publisher-specific update paths. For one PC, one scheduled check and a short exception list are easier to support. A fleet service or installing another dependency bot would add infrastructure; neither replaces checks against the plugins and tools actually installed in this profile. This proposal does not alter the two current tasks.
+
+For a read-only look in Windows, open **Task Scheduler → Task Scheduler Library → Wintodo-Weekly-Maintenance → Triggers / Actions** or use `Get-ScheduledTaskInfo -TaskName Wintodo-Weekly-Maintenance`. The local Markdown report gives more context than the numeric task result. [Microsoft: Task Scheduler](https://learn.microsoft.com/windows/win32/taskschd/task-scheduler-start-page) · [WinGet upgrade](https://learn.microsoft.com/windows/package-manager/winget/upgrade) · [GitHub: Dependabot version updates](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/configure-version-updates).
