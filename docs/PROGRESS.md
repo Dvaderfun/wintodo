@@ -7,7 +7,12 @@ under "History" is append-only._
 
 As of 2026-11-21:
 
-**Private appearance preview (this branch only):** [Wintodo DEV 1.0.1.180](design/hybrid-preview.md) keeps the outlined task cards, uses WinUI’s selected-task marker and derives the list-title editor size and weight from its displayed title. It supersedes .179, whose marker nearly disappeared on High Contrast cards. The x64 package has a distinct developer identity and DEV badge; it installs beside Store Wintodo. The corrected Debug solution built without warnings and passed all 707 tests. The owner tested this DEV build and reported that the appearance looks normal. The four data-integrity fixes remain open on the separate review plan.
+**Private DEV build (this branch only):** Wintodo DEV 1.0.1.188 is the
+signed x64 update to the [owner-tested appearance preview](design/hybrid-preview.md).
+It keeps the chosen cards, selection marker and list-title editor, and includes
+the four November data integrity fixes. WintodoTest verified an in-place update
+from .180 with a synthetic task and note, and verified that a note typed just
+before closing survives restart. See the [installer guide](guides/design-dev-preview.md).
 
 Store-first under **Univera LLC** is selected in
 [ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
@@ -4879,3 +4884,31 @@ The original .179 passed its standard guest interaction smoke but was superseded
 The corrected MSIX also passed all six assertion groups in the clean `WintodoTest` VM: install/registration, Start/onboarding, five clickable cards and detail navigation, title edit (Escape, Enter and focus loss), selected marker in Desert, and keyboard single/multiselect/clear. The measured light-theme row pitch remained 54 px and the editor measured 250 × 47 px. At 96 DPI the Desert marker had a verified 14-pixel solid run against the adjacent card; its measured foreground/background colours yield 15.65:1 contrast. The original guest theme was restored and the VM shut down. The other three contrast palettes were calculated, not rendered. Owner hands-on acceptance, Dark and narrow-window visual checks remain open. See the [preview notes and captures](design/hybrid-preview.md).
 
 Owner follow-up (21 November): DEV .180 was checked in person and “looks normal for me.” This records acceptance of the combined appearance; it does not assert a specific theme, width or Narrator test, or a release to Store.
+
+## M10 — Signed DEV update with data integrity fixes (2026-11-21)
+
+**Source and package:** `dev/preview` at `5b857272` combines the accepted
+DEV appearance and the four fixes from `fix/nov21-integrity`. The signed
+x64 Native AOT MSIX is `Wintodo-DEV-1.0.1.188-x64.msix`, under
+`artifacts/dev-preview/1.0.1.188-5b857272/` in the main checkout. SHA-256:
+`1695963d55bf8def27786c6f1701194bb5df5f6f7a8dd4b149c300ce80fa8796`.
+It uses the existing DEV signer and package family. Locked restore, the
+signature and structural checks, all 21 DEV badge assets, all four compiled
+DEV labels and final privacy scan (335 files, zero findings) passed.
+
+**Host gates:** The Debug x64 build with warnings as errors passed cleanly.
+The first full run was 719/720: the unchanged loopback Graph deadline fixture
+cancelled before its fallback request was observed. All three cases passed
+in isolation. The full suite rerun after packaging and guest execution passed
+720/720 with none skipped. No code or timing threshold changed for that test.
+
+**Guest gate:** The exact signed package passed 7/7 in WintodoTest. Installing
+over .180 preserved its synthetic task, note and onboarding state. A new
+note typed immediately before closing persisted on restart. Cards, list
+title editing, multiple selection and the rendered Desert contrast marker
+also passed. All seven PNGs were reviewed. Log:
+`run-dev-preview-gate-20261121-124531.log`.
+
+**Delivery:** The installer is ready for the owner to update using App Installer.
+The host still has DEV .180. Store Wintodo and hosted CI were left unchanged;
+the guide records how to add a separate DEV packaging job if builds become routine.
