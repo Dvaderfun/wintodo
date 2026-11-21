@@ -24,37 +24,37 @@ public sealed partial class TaskDetailViewModel
     [RelayCommand]
     private async Task CloseAsync()
     {
-        CancelPendingSave();
-        if (_model is not null
-            && !string.IsNullOrWhiteSpace(Summary)
-            && !string.Equals(_model.Summary, Summary, StringComparison.Ordinal))
-        {
-            _model.Summary = Summary;
-        }
-
-        await PersistModelAsync();
+        if (!await FlushPendingEditsAsync()) return;
         CloseRequested?.Invoke();
     }
 
     [RelayCommand]
     private async Task ToggleCompletionAsync()
     {
-        if (_model is null)
-        {
-            return;
-        }
+        if (_model is not { } owner || !await FlushPendingEditsAsync()) return;
 
-        if (IsCompleted)
+        int editRevision = _textSaves.Revision;
+        if (owner.Status == Core.Models.TaskStatus.Completed)
         {
-            await _taskStore.UncompleteTaskAsync(_model.Uid);
+            await _taskStore.UncompleteTaskAsync(owner.Uid);
         }
         else
         {
-            await _taskStore.CompleteTaskAsync(_model.Uid);
+            await _taskStore.CompleteTaskAsync(owner.Uid);
         }
 
-        TodoTask updated = await _taskStore.GetTaskAsync(_model.Uid)
+        TodoTask updated = await _taskStore.GetTaskAsync(owner.Uid)
             ?? throw new InvalidOperationException("The edited task no longer exists.");
+        if (!ReferenceEquals(_model, owner))
+        {
+            TaskChanged?.Invoke(CloneTask(updated));
+            return;
+        }
+        if (editRevision != _textSaves.Revision)
+        {
+            updated.Summary = owner.Summary;
+            updated.Description = owner.Description;
+        }
         _model = updated;
         ApplyModelToEditor(updated);
         OnPropertyChanged(nameof(IsCompleted));
@@ -135,6 +135,7 @@ public sealed partial class TaskDetailViewModel
         }
 
         string uid = _model.Uid;
+        if (!await FlushPendingEditsAsync()) return;
         var states = await _taskStore.CaptureTaskUndoAsync([uid], Core.Services.TaskUndoFields.Deleted, cancellationToken);
         await _taskStore.DeleteTaskAsync(uid, cancellationToken);
         RecordUndo(states, "Undo_TaskDeleted");

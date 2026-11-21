@@ -7,8 +7,7 @@ public sealed partial class TaskDetailViewModel
 {
     internal async Task FlushUndoEditorAsync()
     {
-        CancelPendingSave();
-        if (!await PersistModelAsync()) throw new InvalidOperationException("Cannot undo while the editor has unsaved changes.");
+        if (!await FlushPendingEditsAsync()) throw new InvalidOperationException("Cannot undo while the editor has unsaved changes.");
     }
 
     private void RecordUndo(IReadOnlyList<TaskUndoState> states, string key)
@@ -21,8 +20,7 @@ public sealed partial class TaskDetailViewModel
     private async Task<IReadOnlyList<TaskUndoState>> CaptureUndoAsync(TaskUndoFields fields)
     {
         // Include pending title/note edits before capturing a destructive field change.
-        CancelPendingSave();
-        if (!await PersistModelAsync()) throw new InvalidOperationException("Cannot capture an unsaved task.");
+        if (!await FlushPendingEditsAsync()) throw new InvalidOperationException("Cannot capture an unsaved task.");
         return await _taskStore.CaptureTaskUndoAsync([_model!.Uid], fields);
     }
 }

@@ -154,6 +154,17 @@ public sealed partial class SqliteTaskStore
         return UpdateTaskFieldsAsync(uid, (_, _, task) => task.Summary = summary, cancellationToken);
     }
 
+    public Task SetTaskTextAsync(
+        string uid, string summary, string? description, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(summary);
+        return UpdateTaskFieldsAsync(uid, (_, _, task) =>
+        {
+            task.Summary = summary;
+            task.Description = description;
+        }, cancellationToken);
+    }
+
     public Task<double> SetTaskImportanceAsync(
         string uid, bool isImportant, bool moveStarredToTop, CancellationToken cancellationToken = default)
     {

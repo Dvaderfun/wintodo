@@ -9,18 +9,22 @@ namespace Wintodo.ViewModels;
 
 public sealed partial class TaskDetailViewModel
 {
-    internal async Task LoadAsync(string uid, CancellationToken cancellationToken = default)
+    internal async Task<bool> LoadAsync(string uid, CancellationToken cancellationToken = default)
     {
         int loadVersion = ++_loadVersion;
-        CancelPendingSave();
-        Task<TodoTask?> taskRequest = _taskStore.GetTaskAsync(uid, cancellationToken);
-        Task<IReadOnlyList<TodoTask>> stepsRequest =
-            _taskStore.GetChildrenAsync(uid, cancellationToken);
-        await Task.WhenAll(taskRequest, stepsRequest);
-        if (loadVersion != _loadVersion)
+        int revision;
+        Task<TodoTask?> taskRequest;
+        Task<IReadOnlyList<TodoTask>> stepsRequest;
+        do
         {
-            return;
-        }
+            if (!await FlushPendingEditsAsync() || loadVersion != _loadVersion) return false;
+            revision = _textSaves.Revision;
+            taskRequest = _taskStore.GetTaskAsync(uid, cancellationToken);
+            stepsRequest = _taskStore.GetChildrenAsync(uid, cancellationToken);
+            await Task.WhenAll(taskRequest, stepsRequest);
+            if (loadVersion != _loadVersion) return false;
+            // The old editor was still available while SQLite read the new selection.
+        } while (HasPendingEdits || (uid == _model?.Uid && revision != _textSaves.Revision));
 
         TodoTask task = await taskRequest
             ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
@@ -36,6 +40,7 @@ public sealed partial class TaskDetailViewModel
 
         RebuildAttachments();
         OnPropertyChanged(nameof(Uid));
+        return true;
     }
 
     private void ApplyModelToEditor(TodoTask task)
@@ -64,45 +69,45 @@ public sealed partial class TaskDetailViewModel
         _isLoading = false;
     }
 
-    private void ScheduleSave(TimeSpan delay)
-    {
-        _saveCancellation?.Cancel();
-        _saveCancellation?.Dispose();
-        _saveCancellation = new CancellationTokenSource();
-        _ = SaveAfterDelayAsync(delay, _saveCancellation.Token);
-    }
+    internal bool HasPendingEdits => _textSaves.HasPendingEdits;
 
-    private async Task SaveAfterDelayAsync(TimeSpan delay, CancellationToken cancellationToken)
+    internal Task<bool> FlushPendingEditsAsync() => _textSaves.FlushAsync();
+
+    private void ScheduleSave(TimeSpan delay, bool writesWholeTask = false)
     {
-        try
+        if (_model is { } owner)
         {
-            await Task.Delay(delay, cancellationToken);
-            await PersistModelAsync(cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
+            _textSaves.Schedule(delay, () => PersistModelAsync(owner, textOnly: !writesWholeTask), writesWholeTask);
         }
     }
 
-    private async Task<bool> PersistModelAsync(CancellationToken cancellationToken = default)
+    private Task<bool> PersistModelAsync(CancellationToken cancellationToken = default) =>
+        _model is { } current ? PersistModelAsync(current, cancellationToken) : Task.FromResult(false);
+
+    private async Task<bool> PersistModelAsync(
+        TodoTask current, CancellationToken cancellationToken = default, bool textOnly = false)
     {
-        TodoTask? current = _model;
-        if (current is null || string.IsNullOrWhiteSpace(current.Summary))
-        {
-            return false;
-        }
+        if (string.IsNullOrWhiteSpace(current.Summary)) return false;
 
         await _saveGate.WaitAsync(cancellationToken);
         try
         {
-            TodoTask snapshot = CloneTask(current);
-            snapshot.Summary = snapshot.Summary.Trim();
-            await _taskStore.UpdateTaskAsync(snapshot, cancellationToken, moveStarredToTop: _preferences.MoveStarredToTop);
-            current.SortOrder = snapshot.SortOrder;
-            current.Sequence = snapshot.Sequence;
-            current.LastModified = snapshot.LastModified;
-            CopyCollectionIdentities(snapshot, current);
-            TaskChanged?.Invoke(CloneTask(current));
+            if (textOnly)
+            {
+                await _taskStore.SetTaskTextAsync(current.Uid, current.Summary.Trim(), current.Description, cancellationToken);
+            }
+            else
+            {
+                TodoTask snapshot = CloneTask(current);
+                snapshot.Summary = snapshot.Summary.Trim();
+                await _taskStore.UpdateTaskAsync(snapshot, cancellationToken, moveStarredToTop: _preferences.MoveStarredToTop);
+                current.SortOrder = snapshot.SortOrder;
+                current.Sequence = snapshot.Sequence;
+                current.LastModified = snapshot.LastModified;
+                CopyCollectionIdentities(snapshot, current);
+            }
+            if (!textOnly || ReferenceEquals(_model, current))
+                TaskChanged?.Invoke(CloneTask(current));
             IsErrorOpen = false;
             return true;
         }
@@ -120,13 +125,6 @@ public sealed partial class TaskDetailViewModel
         {
             _saveGate.Release();
         }
-    }
-
-    private void CancelPendingSave()
-    {
-        _saveCancellation?.Cancel();
-        _saveCancellation?.Dispose();
-        _saveCancellation = null;
     }
 
     private void ShowError(string message)

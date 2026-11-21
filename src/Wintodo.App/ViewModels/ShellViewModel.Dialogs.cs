@@ -33,8 +33,8 @@ public sealed partial class ShellViewModel
         CancellationToken cancellationToken = default)
     {
         int version = ++_detailOpenVersion;
-        await Detail.LoadAsync(task.Uid, cancellationToken);
-        if (version != _detailOpenVersion || TaskList.SelectionCount != 1) return;
+        if (!await Detail.LoadAsync(task.Uid, cancellationToken)
+            || version != _detailOpenVersion || TaskList.SelectionCount != 1) return;
         IsDetailPaneLoaded = true;
         IsDetailPaneOpen = true;
     }

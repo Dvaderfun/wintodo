@@ -132,7 +132,7 @@ public sealed partial class TaskDetailViewModel
             _ => null,
         };
         UpdateActionLabels();
-        ScheduleSave(TimeSpan.FromMilliseconds(200));
+        ScheduleSave(TimeSpan.FromMilliseconds(200), writesWholeTask: true);
     }
 
     private string BuildCustomRepeatRule()

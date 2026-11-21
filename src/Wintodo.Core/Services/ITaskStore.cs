@@ -87,6 +87,8 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IImportStore, IAsyncDi
 
     Task RenameTaskAsync(string uid, string summary, CancellationToken cancellationToken = default);
 
+    Task SetTaskTextAsync(string uid, string summary, string? description, CancellationToken cancellationToken = default);
+
     Task<double> SetTaskImportanceAsync(
         string uid, bool isImportant, bool moveStarredToTop, CancellationToken cancellationToken = default);
 

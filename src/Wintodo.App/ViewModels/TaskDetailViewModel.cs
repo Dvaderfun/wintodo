@@ -26,7 +26,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private readonly UndoService _undo;
     private readonly ResourceLoader _resources = new();
     private readonly SemaphoreSlim _saveGate = new(1, 1);
-    private CancellationTokenSource? _saveCancellation;
+    private readonly DetailSaveQueue _textSaves = new();
     private TodoTask? _model;
     private bool _isLoading;
     private int _loadVersion;
