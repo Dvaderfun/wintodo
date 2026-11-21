@@ -7,6 +7,8 @@ under "History" is append-only._
 
 As of 2026-11-21:
 
+**Owner follow-up:** The owner tested the combined appearance in DEV 1.0.1.180 and reported it looks normal. The four data-integrity fixes stay assigned to a fresh Sol session. Windows App SDK 2.7.0 (or the then-current supported patch) is routine dependency work; the known nonidentifying supplier path does not warrant a vendor escalation. See the [prioritized checklist](plans/2026-11-project-health-and-release.md). The two local maintenance jobs have a shared [owner control menu](guides/workstation-maintenance.md) for status, history, manual inventory, check-only mode and pause/resume.
+
 Store-first under **Univera LLC** is selected in
 [ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
 ADR-018's first distribution route. DEP-12 policy A retains documented launch
@@ -4867,3 +4869,9 @@ supplier inputs also contain the blocked marker. Clean Debug build passes;
 one full four-project run is 706/707, no skips: all smart lists met 5 ms, but
 10k FTS worst warm was 428.653 ms against 60 ms. No waived or retried gate,
 host UI automation, sign, install or deployment.
+
+## 2026-11-21 — owner controls and observable workstation checks
+
+The owner can open Maintenance.cmd for both actual jobs, run a manual Wintodo inventory, switch registrations to inventory only, or pause/resume future triggers. Opening the menu performs no update. Wintodo keeps dated JSON/Markdown summaries and distinguishes review, incomplete checks, alias publication and a notification request from actual delivery. The two registrations retained their previous enabled states, update permissions and schedules. Readback of exported task definitions matched both jobs' original triggers, settings and principals; only Saturday’s registered action changed, to the revised runner. No third job, administrator permission, machine-wide event history change or tool update was required.
+
+A real manual inventory at 02:39 local completed the component checks, but replacing the previous latest Markdown returned access denied. The previous file and the dated result survived. Subsequent rights probes succeeded: the exact cause of the original denial is not established. The corrected publisher replaces existing files while retaining permissions, tries each current alias independently, and records incomplete publication separately. Windows fixtures covered open files, the original ACL and retry timing. The live owner “Check Wintodo now” command at 02:44 local ran the corrected snapshot 6969DA7328B36225 in check-only mode: the dated receipt and both latest files agreed, result 1 for repository pins only, zero incomplete checks and zero reported updates. This was a manual check, not evidence that the next scheduled trigger has fired. The prior legacy and failed-publication summaries were retained.
