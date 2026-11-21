@@ -3,7 +3,8 @@
 param(
     [Parameter(Mandatory)][string]$RepoPath,
     [string]$ReportDirectory = (Join-Path $env:LOCALAPPDATA 'WintodoMaintenance/reports'),
-    [switch]$Apply, [switch]$IfDue, [switch]$Notify
+    [switch]$Apply, [switch]$IfDue, [switch]$Notify,
+    [ValidateSet('Manual','Scheduled')][string]$RunSource
 )
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -15,15 +16,66 @@ if (Test-Path -LiteralPath $profileFile) {
     if ($selection.codexProfile) { [Environment]::SetEnvironmentVariable('CODEX_HOME',[string]$selection.codexProfile,'Process') }
 }
 $null = New-Item -ItemType Directory -Force -Path $ReportDirectory
+$ReportDirectory = (Get-Item -LiteralPath $ReportDirectory).FullName
+$RepoPath = [IO.Path]::TrimEndingDirectorySeparator((Resolve-Path -LiteralPath $RepoPath).ProviderPath)
 $latest = Join-Path $ReportDirectory 'latest.json'
 $runnerId = Split-Path $PSScriptRoot -Leaf
-if ($IfDue -and (Test-Path -LiteralPath $latest)) {
+function Get-ReusableMaintenanceReport($Path, $Repo, $Runner, [bool]$WantApply, [DateTimeOffset]$Now) {
     try {
-        $prior = Get-Content -Raw -LiteralPath $latest | ConvertFrom-Json
+        $prior = [IO.File]::ReadAllText($Path) | ConvertFrom-Json -ErrorAction Stop
+        if ($prior.completed -isnot [bool] -or !$prior.completed -or !$prior.components -or
+            $prior.applied -isnot [bool] -or ($WantApply -and !$prior.applied) -or
+            $prior.repo -ne $Repo -or $prior.runnerId -cne $Runner -or
+            ($prior.exitCode -isnot [long] -and $prior.exitCode -isnot [int]) -or $prior.exitCode -notin @(0,1,2)) { return }
+        $finished = [DateTimeOffset]$prior.checkedAt
         $retryDays = if ($prior.exitCode -eq 2) { 1 } else { 6.5 }
-        if ([DateTimeOffset]$prior.checkedAt -gt [DateTimeOffset]::UtcNow.AddDays(-$retryDays) -and
-            $prior.applied -and $prior.repo -eq $RepoPath -and $prior.runnerId -eq $runnerId) { exit $prior.exitCode }
-    } catch { } # A partial or obsolete report must not prevent a run.
+        if ($finished -le $Now -and $finished -gt $Now.AddDays(-$retryDays)) { return $prior }
+    } catch { } # Missing, partial and obsolete reports do not suppress a run.
+}
+function Open-MaintenanceReportLock($Directory) {
+    # FileShare.None covers manual and scheduled sessions; Windows releases it if the process dies.
+    [IO.File]::Open((Join-Path $Directory '.maintenance.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
+}
+function Get-MaintenanceNotification([bool]$Enabled, [int]$Code, [scriptblock]$Request) {
+    if (!$Enabled) { return @{state='not requested'; detail='Notifications were not enabled for this run.'} }
+    if (!$Code) { return @{state='not needed'; detail='No review or incomplete checks to report.'} }
+    try {
+        & $Request
+        return @{state='requested'; detail='Windows accepted the request; display and receipt are not confirmed.'}
+    } catch { return @{state='failed'; detail=$_.Exception.Message} }
+}
+function Write-MaintenanceReport($Directory, $Report) {
+    $id = ([DateTimeOffset]$Report.checkedAt).ToUniversalTime().ToString('yyyyMMddTHHmmssfffZ')+'-'+[guid]::NewGuid().ToString('N')
+    $Report.history = "history/$id/summary.md"
+    $mode = if ($Report.applied) {'Update eligible tools'} else {'Check only'}
+    $summary = @('# Wintodo weekly maintenance','',("Checked (UTC): "+$Report.checkedAt),
+        ("Mode: "+$mode),("Invocation: "+$Report.runSource),("Result code: "+$Report.exitCode),
+        ("Notification: "+$Report.notification.state+" — "+$Report.notification.detail),'') +
+        @($Report.components | ForEach-Object { '- **'+$_.name+'**: '+$_.state+' — '+$_.detail })
+    $historyDir = Join-Path $Directory 'history'
+    $stage = Join-Path $historyDir ('.writing-'+$id)
+    $null = [IO.Directory]::CreateDirectory($stage)
+    $json = $Report | ConvertTo-Json -Depth 5
+    $md = ($summary + @('','Component details that name log files refer to the live reports folder; those files can change on the next attempt.')) -join [Environment]::NewLine
+    # Publish both dated summaries together. If this fails the previous latest summary remains.
+    [IO.File]::WriteAllText((Join-Path $stage 'summary.json'), $json)
+    [IO.File]::WriteAllText((Join-Path $stage 'summary.md'), $md)
+    [IO.Directory]::Move($stage, (Join-Path $historyDir $id))
+    $currentMd = $md + [Environment]::NewLine + [Environment]::NewLine +
+        "[Dated summary]($($Report.history)) · Latest attempt: [project details](project.md) · [plugin inventory](plugins.log)."
+    foreach ($entry in @(@('latest.md',$currentMd),@('latest.json',$json))) {
+        $target = Join-Path $Directory $entry[0]
+        [IO.File]::WriteAllText("$target.new", $entry[1])
+        [IO.File]::Move("$target.new", $target, $true)
+    }
+}
+
+try { $reportLock = Open-MaintenanceReportLock $ReportDirectory }
+catch { Write-Warning "Cannot acquire the maintenance report lock; no checks started: $($_.Exception.Message)"; exit 2 }
+try {
+if ($IfDue) {
+    $prior = Get-ReusableMaintenanceReport $latest $RepoPath $runnerId ([bool]$Apply) ([DateTimeOffset]::UtcNow)
+    if ($prior) { Write-Output "Not due; reusing the completed report: $latest"; exit $prior.exitCode }
 }
 
 $rows = [Collections.Generic.List[object]]::new()
@@ -209,14 +261,16 @@ Invoke-Component 'Repository pins' {
 }
 $states=@($rows | ForEach-Object { $_.state })
 $statusCode=if ($states -contains 'incomplete') {2} elseif ($states -contains 'review') {1} else {0}
-$report=[ordered]@{checkedAt=[DateTimeOffset]::UtcNow.ToString('o'); runnerId=$runnerId; applied=[bool]$Apply; repo=$RepoPath; exitCode=$statusCode; components=$rows}
-$report | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath "$latest.new" -Encoding utf8
-Move-Item -LiteralPath "$latest.new" -Destination $latest -Force
-$md=@('# Wintodo weekly maintenance','',("Checked: "+$report.checkedAt),'') + @($rows | ForEach-Object { '- **'+$_.name+'**: '+$_.state+' — '+$_.detail }) + @('', 'For repository versions: [project report](project.md). For plugins: [plugin inventory](plugins.log).')
-$md | Set-Content -LiteralPath (Join-Path $ReportDirectory 'latest.md') -Encoding utf8
-if ($Notify -and $statusCode) {
+$notice = Get-MaintenanceNotification ([bool]$Notify) $statusCode {
     $notifyFile=Join-Path $PSScriptRoot 'Show-MaintenanceNotice.ps1'
-    try { & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -File $notifyFile } catch { }
+    & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -File $notifyFile *> $null
+    if ($LASTEXITCODE -ne 0) { throw "Windows notification helper exited with code $LASTEXITCODE; open the report directly." }
 }
+if ($notice.state -eq 'failed') { $statusCode = 2 }
+$sourceLabel = if ($RunSource) {$RunSource} elseif ($IfDue) {'Unspecified'} else {'Manual'}
+$report=[ordered]@{checkedAt=[DateTimeOffset]::UtcNow.ToString('o'); completed=$true; runnerId=$runnerId; applied=[bool]$Apply;
+    runSource=$sourceLabel; repo=$RepoPath; exitCode=$statusCode; notification=$notice; components=$rows}
+Write-MaintenanceReport $ReportDirectory $report
 Write-Output (Join-Path $ReportDirectory 'latest.md')
 exit $statusCode
+} finally { $reportLock.Dispose() }
