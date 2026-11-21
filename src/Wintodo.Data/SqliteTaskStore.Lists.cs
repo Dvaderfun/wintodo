@@ -96,10 +96,10 @@ public sealed partial class SqliteTaskStore
             connection =>
             {
                 using SqliteCommand command = connection.CreateCommand();
-                command.CommandText = """
+                command.CommandText = $"""
                     SELECT
                         COALESCE(SUM(CASE
-                            WHEN t.status <> 2 AND t.my_day_date = @today THEN 1
+                            WHEN t.status <> 2 AND {MyDayPredicate} THEN 1
                             ELSE 0
                         END), 0),
                         COALESCE(SUM(CASE
@@ -117,9 +117,7 @@ public sealed partial class SqliteTaskStore
                     WHERE t.parent_uid IS NULL
                       AND t.is_deleted = 0;
                     """;
-                command.Parameters.AddWithValue(
-                    "@today",
-                    SqliteMapper.FormatDateOnly(_clock.Today));
+                AddMyDayParameters(command);
                 using SqliteDataReader reader = command.ExecuteReader();
                 if (!reader.Read())
                 {

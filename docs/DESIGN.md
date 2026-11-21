@@ -235,7 +235,7 @@ Smart lists prefill the new task so it lands where it was typed:
 
 | List | Prefill |
 |---|---|
-| My Day | `MyDayDate = today` |
+| My Day | Tasks manually added today or due today in the local calendar. Removing a task hides it from My Day for the current day and keeps its due date. |
 | Important | `Priority = High` |
 | Planned | Due chip preset to **Today** |
 | All / user list | Nothing |

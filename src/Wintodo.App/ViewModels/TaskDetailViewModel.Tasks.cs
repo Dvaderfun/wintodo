@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using Wintodo.Core.Models;
+using Wintodo.Core.Presentation;
 
 namespace Wintodo.ViewModels;
 
@@ -85,8 +86,9 @@ public sealed partial class TaskDetailViewModel
             return;
         }
 
-        _model.MyDayDate = IsMyDay ? null : _clock.Today;
-        IsMyDay = _model.MyDayDate is not null;
+        bool remove = TaskDateLabels.IsInMyDay(_model, _clock);
+        _model.MyDayDate = remove ? null : _clock.Today;
+        _model.MyDayExcludedDate = remove && TaskDateLabels.IsDueToday(_model, _clock) ? _clock.Today : null;
         UpdateActionLabels();
         await PersistModelAsync();
     }

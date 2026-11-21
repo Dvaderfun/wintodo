@@ -1,5 +1,5 @@
 param(
-    [string]$SeedDatabase = (Join-Path $PSScriptRoot 'artifacts/schema-guard/seed-v6.db')
+    [string]$SeedDatabase = (Join-Path $PSScriptRoot 'artifacts/schema-guard/seed-v7.db')
 )
 
 # This gate exercises the Release JIT build layout. It is not AOT, signed-MSIX
@@ -87,7 +87,7 @@ try {
         throw 'Copy the built Release JIT layout into the guest with Invoke-VmGate.ps1 -Include.'
     }
     if (-not (Test-Path -LiteralPath $SeedDatabase -PathType Leaf)) {
-        throw 'Include the synthetic tests/ui/artifacts/schema-guard/seed-v6.db fixture.'
+        throw 'Include the synthetic tests/ui/artifacts/schema-guard/seed-v7.db fixture.'
     }
     Test-UI 'Release JIT launches a real interactive task window' {
         Start-ReleaseApp

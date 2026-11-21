@@ -1,10 +1,20 @@
 using System.Globalization;
+using Wintodo.Core.Models;
 using Wintodo.Core.Services;
 
 namespace Wintodo.Core.Presentation;
 
 public static class TaskDateLabels
 {
+    public static bool IsInMyDay(TodoTask task, IClock clock) =>
+        task.MyDayDate == clock.Today
+        || (task.MyDayExcludedDate != clock.Today && IsDueToday(task, clock));
+
+    public static bool IsDueToday(TodoTask task, IClock clock) =>
+        task.Due is { } due && DateOnly.FromDateTime(task.DueIsDateOnly
+            ? due.DateTime
+            : TimeZoneInfo.ConvertTime(due, clock.LocalTimeZone).DateTime) == clock.Today;
+
     public static string FormatCreated(
         DateTimeOffset localCreated,
         string format,

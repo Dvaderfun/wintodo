@@ -173,6 +173,7 @@ public sealed partial class SqliteTaskStore
                         else
                         {
                             task.Id = existing.Id;
+                            task.MyDayExcludedDate = existing.MyDayExcludedDate;
                             task.Created = source.Created == default ? existing.Created : source.Created;
                             task.RemoteHref ??= existing.RemoteHref;
                             task.RemoteETag ??= existing.RemoteETag;
@@ -384,6 +385,7 @@ public sealed partial class SqliteTaskStore
             Sequence = source.Sequence,
             RRule = source.RRule,
             MyDayDate = source.MyDayDate,
+            MyDayExcludedDate = source.MyDayExcludedDate,
             SortOrder = source.SortOrder,
             Location = source.Location,
             Url = source.Url,
