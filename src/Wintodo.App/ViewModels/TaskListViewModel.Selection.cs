@@ -31,7 +31,7 @@ public sealed partial class TaskListViewModel
     internal TaskItemViewModel[] ActionTargets(TaskItemViewModel row) =>
         SelectedTasks.Contains(row) ? SelectedTasks.ToArray() : [row];
 
-    internal bool SelectionIsInMyDay => SelectedTasks.All(item => item.Model.MyDayDate == _clock.Today);
+    internal bool SelectionIsInMyDay => SelectedTasks.All(item => Wintodo.Core.Presentation.TaskDateLabels.IsInMyDay(item.Model, _clock));
 
     internal string SelectionLabel(string key) => string.Format(
         Services.DisplayCulture.Current,

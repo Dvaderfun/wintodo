@@ -4837,3 +4837,11 @@ its SDK cannot build the seeder at the repository's current SDK pin.
 The fixed build passed the visual spacing, star and reorder checks (3/4).
 The completion scroll-position check still failed: the reference row moved
 356 px after completion (baseline: −360 px). The full gate remains open.
+
+### My Day includes tasks due today
+
+My Day and its navigation count include tasks due on the local calendar day.
+Removing a due-today task dismisses it for the current local day and preserves
+its due date. Adding it back clears the dismissal. The x64 Debug build and all
+709 unit tests passed. The UI gate is pending because the local Hyper-V
+management tools are unavailable.

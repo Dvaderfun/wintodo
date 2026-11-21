@@ -677,6 +677,7 @@ public sealed partial class SqliteTaskStore
                     else
                     {
                         task.Id = existing.Id;
+                        task.MyDayExcludedDate = existing.MyDayExcludedDate;
                         UpdateTaskRow(connection, transaction, task);
                         context.AddTask(existing.ListId, task.Uid);
                     }
@@ -1250,6 +1251,7 @@ public sealed partial class SqliteTaskStore
             Sequence = source.Sequence,
             RRule = source.RRule,
             MyDayDate = source.MyDayDate,
+            MyDayExcludedDate = source.MyDayExcludedDate,
             Location = source.Location,
             Url = source.Url,
             Class = source.Class,

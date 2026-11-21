@@ -73,12 +73,15 @@ public sealed partial class SqliteTaskStore
                         task.Priority = (int)TaskPriority.Undefined;
                         break;
                     case TaskBatchAction.AddToMyDay:
-                        changed = task.MyDayDate != _clock.Today;
+                        changed = task.MyDayDate != _clock.Today || task.MyDayExcludedDate is not null;
                         task.MyDayDate = _clock.Today;
+                        task.MyDayExcludedDate = null;
                         break;
                     case TaskBatchAction.RemoveFromMyDay:
-                        changed = task.MyDayDate is not null;
+                        DateOnly? exclusion = Wintodo.Core.Presentation.TaskDateLabels.IsDueToday(task, _clock) ? _clock.Today : null;
+                        changed = task.MyDayDate is not null || task.MyDayExcludedDate != exclusion;
                         task.MyDayDate = null;
+                        task.MyDayExcludedDate = exclusion;
                         break;
                     case TaskBatchAction.SetDueDate:
                         // Date-only storage preserves the calendar date, independent of the UTC offset.
