@@ -131,6 +131,7 @@ public partial class App : Application
                 new PasswordVaultCredentialStore(),
                 clock,
                 syncHttpClient);
+            ImportEnvironment importEnvironment = CreateImportEnvironment(commandLineDatabasePath, clock);
             var window = new MainWindow(
                 store,
                 clock,
@@ -138,7 +139,7 @@ public partial class App : Application
                 startupTaskService,
                 syncService,
                 syncHttpClient,
-                CreateImportEnvironment(commandLineDatabasePath, clock));
+                importEnvironment);
             TraceStartupStage("window-created", launchStartTimestamp);
             Window = window;
             Task firstFrame = ObserveFirstFrameAsync(launchStartTimestamp);
@@ -147,8 +148,7 @@ public partial class App : Application
             TraceStartupStage("first-frame", launchStartTimestamp);
             await store.InitializeAsync();
             TraceStartupStage("store", launchStartTimestamp);
-            if (string.IsNullOrWhiteSpace(commandLineDatabasePath))
-                await store.CleanupInterruptedImportsAsync(ApplicationData.Current.LocalFolder.Path);
+            await store.CleanupInterruptedImportsAsync(importEnvironment.AttachmentRoot);
             Task integrationTask = windowsIntegration.InitializeAsync();
             await window.InitializeAsync();
             TraceStartupStage("window", launchStartTimestamp);
@@ -316,7 +316,7 @@ public partial class App : Application
         return LaunchOptions.ResolveDatabasePath(
             commandLinePath,
             () => ResolveLowerPriorityDatabasePath(activation),
-            () => Path.Combine(ApplicationData.Current.LocalFolder.Path, "wintodo.db"));
+            () => Path.Combine(ApplicationData.Current.LocalFolder.Path, SqliteTaskStore.DefaultDatabaseFileName));
     }
 
     private static string? ResolveLowerPriorityDatabasePath(AppActivationArguments activation)

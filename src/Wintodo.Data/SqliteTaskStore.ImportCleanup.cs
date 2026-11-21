@@ -4,10 +4,16 @@ namespace Wintodo.Data;
 
 public sealed partial class SqliteTaskStore
 {
-    /// <summary>Recovers files abandoned by a terminated import, off the UI thread.</summary>
+    public const string DefaultDatabaseFileName = "wintodo.db";
+
+    /// <summary>Recovers files abandoned by a terminated import in the default database's own root.</summary>
     public Task CleanupInterruptedImportsAsync(string attachmentRoot, CancellationToken cancellationToken = default)
     {
         string root = Path.GetFullPath(attachmentRoot);
+        // Import recovery deletes by absence from the DB, so an override must
+        // never use the package's index of attachments under a different DB.
+        if (!string.Equals(_databasePath, Path.Combine(root, DefaultDatabaseFileName), StringComparison.Ordinal))
+            return Task.CompletedTask;
         return ExecuteRollbackAsync((connection, transaction) =>
         {
             string staging = Path.Combine(root, "import-staging");
@@ -20,7 +26,7 @@ public sealed partial class SqliteTaskStore
             using SqliteDataReader reader = command.ExecuteReader();
             while (reader.Read()) referenced.Add(reader.GetString(0));
             string files = Path.Combine(root, "attachments");
-            if (Directory.Exists(files))
+            if (Directory.Exists(files) && (File.GetAttributes(files) & FileAttributes.ReparsePoint) == 0)
             {
                 foreach (string folder in Directory.EnumerateDirectories(files))
                 {
