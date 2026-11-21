@@ -15,6 +15,7 @@ from datetime import datetime, timedelta, timezone
 RUNNER = Path(__file__).resolve().parents[2] / "scripts/workstation/Invoke-WorkstationMaintenance.ps1"
 PWSH = shutil.which("pwsh")
 FIXTURE_COMPONENT = """function Invoke-Component($name, [scriptblock]$action) {
+    if ($env:FIXTURE_PLUGIN -and $name -eq 'Codex plugins') { & $action; return }
     if ($env:FIXTURE_WAIT -and !(Test-Path (Join-Path $ReportDirectory 'release'))) {
         [IO.File]::WriteAllText((Join-Path $ReportDirectory 'waiting'), '')
         $end = [DateTime]::UtcNow.AddSeconds(15)
@@ -38,13 +39,19 @@ class WorkstationRun(unittest.TestCase):
                                 RUNNER.read_text(encoding="utf-8"), flags=re.M | re.S)
         self.assertEqual(count, 1, "Fixture must replace the entire component adapter")
         runner.write_text(source, encoding="utf-8")
-        (runner.parent / 'Show-MaintenanceNotice.ps1').write_text('exit ([int]$env:FIXTURE_NOTICE)')
+        (runner.parent / 'Show-MaintenanceNotice.ps1').write_text(
+            'param([string]$Reason)\n[IO.File]::WriteAllText($env:FIXTURE_SENT,$Reason)\nexit ([int]$env:FIXTURE_NOTICE)')
+        (runner.parent / 'Update-CodexPlugins.ps1').write_text(
+            """param([switch]$Json, [switch]$Apply)
+            '{"exitCode":0,"plugins":[{"plugin":"local-fixture","state":"updated","installed":"1.2.3"}]}'
+            """)
         self.reports = self.base / "reports"
         self.latest = self.reports / "latest.json"
         self.cmd = [PWSH, "-NoProfile", "-NonInteractive", "-File", str(runner), "-RepoPath", str(self.base),
                     "-ReportDirectory", str(self.reports)]
         self.env = {**os.environ, "USERPROFILE": tmp.name, "LOCALAPPDATA": tmp.name, "FIXTURE_STATE": "review",
-                    "FIXTURE_NOTICE": "0", "FIXTURE_WAIT": ""}
+                    "FIXTURE_NOTICE": "0", "FIXTURE_WAIT": "", "FIXTURE_PLUGIN": "",
+                    "FIXTURE_SENT": str(self.base / "notification-reason")}
 
     def invoke(self, *options, expect):
         result = subprocess.run([*self.cmd, *options], capture_output=True, text=True, env=self.env, timeout=20)
@@ -93,8 +100,11 @@ class WorkstationRun(unittest.TestCase):
             self.assertIn("31", failed["notification"]["detail"])
             self.env["FIXTURE_NOTICE"] = "0"
             self.assertEqual(self.invoke("-Notify", expect=1)["notification"]["state"], "requested")
+            self.assertEqual((self.base / "notification-reason").read_text(), "Review")
+            (self.base / "notification-reason").unlink()
         self.env["FIXTURE_STATE"] = "current"
         self.assertEqual(self.invoke("-Notify", expect=0)["notification"]["state"], "not needed")
+        self.assertFalse((self.base / "notification-reason").exists())
         # A storage failure must not replace the previous completed report with a partial one.
         broken = self.base / "broken"
         broken.mkdir()
@@ -106,6 +116,20 @@ class WorkstationRun(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         for filename in ("latest.md", "latest.json"):
             self.assertEqual((broken / filename).read_bytes(), (self.reports / filename).read_bytes())
+
+    def test_verified_plugin_update_triggers_notice_even_if_other_tools_are_current(self):
+        # The real Codex wrapper reads the synthetic plugin adapter: aggregate 'checked' cannot hide an update.
+        self.env.update(FIXTURE_STATE="current", FIXTURE_PLUGIN="1")
+        changed = self.invoke("-Apply", "-Notify", expect=0 if os.name == "nt" else 2)
+        self.assertEqual(changed["notification"]["reason"], "Changes")
+        self.assertIn("local-fixture", [r["name"] for r in changed["components"] if r["state"] == "updated"])
+        if os.name == "nt":
+            self.assertEqual(changed["notification"]["state"], "requested")
+            self.assertEqual((self.base / "notification-reason").read_text(), "Changes")
+            self.env["FIXTURE_STATE"] = "review"
+            mixed = self.invoke("-Apply", "-Notify", expect=1)
+            self.assertEqual(mixed["notification"]["reason"], "ChangesAndReview")
+            self.assertEqual((self.base / "notification-reason").read_text(), "ChangesAndReview")
 
     def test_overlapping_manual_and_scheduled_runs_do_not_touch_each_others_reports(self):
         previous = self.invoke(expect=1)

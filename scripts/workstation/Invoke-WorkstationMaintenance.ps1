@@ -36,13 +36,14 @@ function Open-MaintenanceReportLock($Directory) {
     # FileShare.None covers manual and scheduled sessions; Windows releases it if the process dies.
     [IO.File]::Open((Join-Path $Directory '.maintenance.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
 }
-function Get-MaintenanceNotification([bool]$Enabled, [int]$Code, [scriptblock]$Request) {
-    if (!$Enabled) { return @{state='not requested'; detail='Notifications were not enabled for this run.'} }
-    if (!$Code) { return @{state='not needed'; detail='No review or incomplete checks to report.'} }
+function Get-MaintenanceNotification([bool]$Enabled, [int]$Code, [bool]$Updated, [scriptblock]$Request) {
+    $reason = if ($Updated -and $Code) {'ChangesAndReview'} elseif ($Code) {'Review'} elseif ($Updated) {'Changes'} else {'None'}
+    if (!$Enabled) { return @{state='not requested'; reason=$reason; detail='Notifications were not enabled for this run.'} }
+    if ($reason -eq 'None') { return @{state='not needed'; reason=$reason; detail='No tool changes, review items or incomplete checks.'} }
     try {
-        & $Request
-        return @{state='requested'; detail='Windows accepted the request; display and receipt are not confirmed.'}
-    } catch { return @{state='failed'; detail=$_.Exception.Message} }
+        & $Request $reason
+        return @{state='requested'; reason=$reason; detail='Windows accepted the request; display and receipt are not confirmed.'}
+    } catch { return @{state='failed'; reason=$reason; detail=$_.Exception.Message} }
 }
 function Write-MaintenanceReport($Directory, $Report) {
     $id = ([DateTimeOffset]$Report.checkedAt).ToUniversalTime().ToString('yyyyMMddTHHmmssfffZ')+'-'+[guid]::NewGuid().ToString('N')
@@ -239,6 +240,11 @@ Invoke-Component 'Codex plugins' {
     & pwsh @pArgs *> (Join-Path $ReportDirectory 'plugins.log')
     $code=$LASTEXITCODE
     if ($code -notin @(0,1)) { throw 'Plugin inventory/refresh incomplete; see plugins.log' }
+    $pluginResult = Get-Content -Raw -LiteralPath (Join-Path $ReportDirectory 'plugins.log') | ConvertFrom-Json
+    if ($null -eq $pluginResult.exitCode -or $pluginResult.exitCode -ne $code) { throw 'Invalid Codex plugin report; see plugins.log' }
+    foreach ($changed in @($pluginResult.plugins | Where-Object state -eq 'updated')) {
+        Add-Result $changed.plugin 'updated' ("Installed version "+$changed.installed+'; see plugins.log.')
+    }
     Add-Result 'Codex plugins' $(if ($code) {'review'} else {'checked'}) 'See plugins.log for publisher-managed, enabled and disabled components.'
 }
 Invoke-Component 'Claude Code' {
@@ -261,9 +267,10 @@ Invoke-Component 'Repository pins' {
 }
 $states=@($rows | ForEach-Object { $_.state })
 $statusCode=if ($states -contains 'incomplete') {2} elseif ($states -contains 'review') {1} else {0}
-$notice = Get-MaintenanceNotification ([bool]$Notify) $statusCode {
+$notice = Get-MaintenanceNotification ([bool]$Notify) $statusCode ($states -contains 'updated') {
+    param($reason)
     $notifyFile=Join-Path $PSScriptRoot 'Show-MaintenanceNotice.ps1'
-    & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -File $notifyFile *> $null
+    & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -NonInteractive -WindowStyle Hidden -File $notifyFile -Reason $reason *> $null
     if ($LASTEXITCODE -ne 0) { throw "Windows notification helper exited with code $LASTEXITCODE; open the report directly." }
 }
 if ($notice.state -eq 'failed') { $statusCode = 2 }
