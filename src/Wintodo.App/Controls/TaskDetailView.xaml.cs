@@ -161,6 +161,9 @@ public sealed partial class TaskDetailView : UserControl
 
     private async void OnAddAttachmentRequested()
     {
+        string ownerUid = ViewModel.Uid;
+        var attach = ViewModel.CaptureAttachmentAdder();
+        if (attach is null) return;
         try
         {
             var picker = new FileOpenPicker(App.Window.AppWindow.Id);
@@ -170,14 +173,14 @@ public sealed partial class TaskDetailView : UserControl
             {
                 StorageFile file =
                     await StorageFile.GetFileFromPathAsync(result.Path);
-                await ViewModel.AttachFileAsync(file);
+                await attach(file);
             }
         }
         catch (Exception exception)
         {
             Trace.WriteLine($"WINTODO_ATTACHMENT_PICKER_EXCEPTION={DiagnosticException.Describe(exception)}");
-            ViewModel.ReportError(
-                StringResources.GetString("Detail_AttachmentPickerFailed"));
+            if (ViewModel.Uid == ownerUid)
+                ViewModel.ReportError(StringResources.GetString("Detail_AttachmentPickerFailed"));
         }
     }
 

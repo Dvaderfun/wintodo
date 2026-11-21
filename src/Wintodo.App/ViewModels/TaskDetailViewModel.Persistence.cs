@@ -13,18 +13,21 @@ public sealed partial class TaskDetailViewModel
     {
         int loadVersion = ++_loadVersion;
         int revision;
+        int attachmentRevision;
         Task<TodoTask?> taskRequest;
         Task<IReadOnlyList<TodoTask>> stepsRequest;
         do
         {
             if (!await FlushPendingEditsAsync() || loadVersion != _loadVersion) return false;
             revision = _textSaves.Revision;
+            attachmentRevision = _attachmentRevision;
             taskRequest = _taskStore.GetTaskAsync(uid, cancellationToken);
             stepsRequest = _taskStore.GetChildrenAsync(uid, cancellationToken);
             await Task.WhenAll(taskRequest, stepsRequest);
             if (loadVersion != _loadVersion) return false;
             // The old editor was still available while SQLite read the new selection.
-        } while (HasPendingEdits || (uid == _model?.Uid && revision != _textSaves.Revision));
+        } while (HasPendingEdits || attachmentRevision != _attachmentRevision
+            || (uid == _model?.Uid && revision != _textSaves.Revision));
 
         TodoTask task = await taskRequest
             ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");

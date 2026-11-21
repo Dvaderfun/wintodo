@@ -89,6 +89,9 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IImportStore, IAsyncDi
 
     Task SetTaskTextAsync(string uid, string summary, string? description, CancellationToken cancellationToken = default);
 
+    Task<bool> TryAddTaskAttachmentAsync(
+        string uid, TaskAttachment attachment, long maxTotalBytes, CancellationToken cancellationToken = default);
+
     Task<double> SetTaskImportanceAsync(
         string uid, bool isImportant, bool moveStarredToTop, CancellationToken cancellationToken = default);
 

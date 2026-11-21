@@ -2,78 +2,105 @@ using System.Diagnostics;
 using Windows.Storage;
 using Windows.System;
 using Wintodo.Core.Models;
+using Wintodo.Core.Services;
 
 namespace Wintodo.ViewModels;
 
 public sealed partial class TaskDetailViewModel
 {
-    internal async Task AttachFileAsync(StorageFile source)
-    {
-        if (_model is null)
-        {
-            return;
-        }
+    internal Func<StorageFile, Task>? CaptureAttachmentAdder() =>
+        _model is { } owner ? source => AttachFileAsync(owner, source) : null;
 
-        Windows.Storage.FileProperties.BasicProperties properties =
-            await source.GetBasicPropertiesAsync();
-        long currentSize = 0;
-        foreach (TaskAttachment item in _model.Attachments)
+    private async Task AttachFileAsync(TodoTask owner, StorageFile source)
+    {
+        try
         {
-            if (item.SizeBytes < 0
-                || item.SizeBytes > AttachmentLimitBytes - currentSize)
+            long remainingBytes = AttachmentLimitBytes;
+            foreach (TaskAttachment item in owner.Attachments)
             {
-                ShowError(_resources.GetString("Detail_AttachmentLimit"));
+                if (item.SizeBytes < 0 || item.SizeBytes > remainingBytes)
+                {
+                    ShowAttachmentError(owner.Uid, "Detail_AttachmentLimit");
+                    return;
+                }
+                remainingBytes -= item.SizeBytes;
+            }
+
+            var properties = await source.GetBasicPropertiesAsync();
+            if (properties.Size > (ulong)remainingBytes)
+            {
+                ShowAttachmentError(owner.Uid, "Detail_AttachmentLimit");
                 return;
             }
 
-            currentSize += item.SizeBytes;
+            bool copied = await DetailAttachmentCopy.CopyAsync(
+                owner, remainingBytes, uid => AllocateAttachmentAsync(uid, source), PersistAttachmentAsync);
+            if (!copied)
+            {
+                ShowAttachmentError(owner.Uid, "Detail_AttachmentLimit");
+            }
+            else if (_model is { } current && current.Uid == owner.Uid)
+            {
+                RebuildAttachments();
+                TaskChanged?.Invoke(CloneTask(current));
+                IsErrorOpen = false;
+            }
         }
-
-        ulong remainingBytes = (ulong)(AttachmentLimitBytes - currentSize);
-        if (properties.Size > remainingBytes)
+        catch (Exception exception)
         {
-            ShowError(_resources.GetString("Detail_AttachmentLimit"));
-            return;
+            Trace.WriteLine($"WINTODO_ATTACHMENT_COPY_EXCEPTION={DiagnosticException.Describe(exception)}");
+            ShowAttachmentError(owner.Uid, "Detail_SaveFailed");
         }
+    }
 
-        StorageFolder attachmentsRoot =
-            await ApplicationData.Current.LocalFolder.CreateFolderAsync(
-                "attachments",
-                CreationCollisionOption.OpenIfExists);
+    private async Task<AttachmentCopyTarget> AllocateAttachmentAsync(string ownerUid, StorageFile source)
+    {
+        StorageFolder attachmentsRoot = await ApplicationData.Current.LocalFolder.CreateFolderAsync(
+            "attachments", CreationCollisionOption.OpenIfExists);
         StorageFolder taskFolder = await attachmentsRoot.CreateFolderAsync(
-            _model.Uid,
-            CreationCollisionOption.OpenIfExists);
-        StorageFile copied = await source.CopyAsync(
-            taskFolder,
-            source.Name,
-            NameCollisionOption.GenerateUniqueName);
-        Windows.Storage.FileProperties.BasicProperties copiedProperties =
-            await copied.GetBasicPropertiesAsync();
-        if (copiedProperties.Size > remainingBytes)
+            ownerUid, CreationCollisionOption.OpenIfExists);
+        // Reserve a unique output first so a copy failure also has a file we own and can remove.
+        StorageFile output = await taskFolder.CreateFileAsync(source.Name, CreationCollisionOption.GenerateUniqueName);
+        return new AttachmentCopyTarget(async () =>
         {
-            await copied.DeleteAsync(StorageDeleteOption.PermanentDelete);
-            ShowError(_resources.GetString("Detail_AttachmentLimit"));
-            return;
-        }
+            await source.CopyAndReplaceAsync(output);
+            var properties = await output.GetBasicPropertiesAsync();
+            return new TaskAttachment
+            {
+                FileName = output.Name,
+                RelativePath = Path.Combine("attachments", ownerUid, output.Name),
+                SizeBytes = checked((long)properties.Size),
+                MimeType = output.ContentType,
+                Added = _clock.UtcNow,
+            };
+        }, async () => await output.DeleteAsync(StorageDeleteOption.PermanentDelete));
+    }
 
-        var attachment = new TaskAttachment
+    private async Task<bool> PersistAttachmentAsync(TodoTask owner, TaskAttachment attachment)
+    {
+        await _saveGate.WaitAsync();
+        try
         {
-            FileName = copied.Name,
-            RelativePath = Path.Combine("attachments", _model.Uid, copied.Name),
-            SizeBytes = (long)copiedProperties.Size,
-            MimeType = copied.ContentType,
-            Added = _clock.UtcNow,
-        };
-        _model.Attachments.Add(attachment);
-        if (await PersistModelAsync())
-        {
-            RebuildAttachments();
+            if (!await _taskStore.TryAddTaskAttachmentAsync(owner.Uid, attachment, AttachmentLimitBytes))
+                return false;
+
+            // Reject any in-flight detail read whose snapshot predates the insert.
+            _attachmentRevision++;
+            owner.Attachments.Add(attachment);
+            if (_model is { } current && current.Uid == owner.Uid && !ReferenceEquals(current, owner)
+                && !current.Attachments.Any(item => item.Id == attachment.Id))
+                current.Attachments.Add(attachment);
+            return true;
         }
-        else
+        finally
         {
-            _model.Attachments.Remove(attachment);
-            await copied.DeleteAsync(StorageDeleteOption.PermanentDelete);
+            _saveGate.Release();
         }
+    }
+
+    private void ShowAttachmentError(string ownerUid, string resource)
+    {
+        if (_model?.Uid == ownerUid) ShowError(_resources.GetString(resource));
     }
 
     private async Task OpenAttachmentAsync(AttachmentItemViewModel item)

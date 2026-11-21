@@ -30,6 +30,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private TodoTask? _model;
     private bool _isLoading;
     private int _loadVersion;
+    private int _attachmentRevision;
 
     internal TaskDetailViewModel(ITaskStore taskStore, IClock clock, TaskPreferences preferences, UndoService undo)
     {
