@@ -22,8 +22,18 @@ $latest = Join-Path $ReportDirectory 'latest.json'
 $runnerId = Split-Path $PSScriptRoot -Leaf
 function Get-ReusableMaintenanceReport($Path, $Repo, $Runner, [bool]$WantApply, [DateTimeOffset]$Now) {
     try {
-        $prior = [IO.File]::ReadAllText($Path) | ConvertFrom-Json -ErrorAction Stop
+        $historyDir = Join-Path (Split-Path $Path -Parent) 'history'
+        $newest = if ([IO.Directory]::Exists($historyDir)) {
+            Get-ChildItem -LiteralPath $historyDir -Directory | Where-Object Name -match '^\d{8}T\d{9}Z-[0-9a-f]{32}$' |
+                Sort-Object Name -Descending | Select-Object -First 1
+        }
+        if ($newest -and [IO.File]::Exists((Join-Path $newest.FullName 'publication.json'))) {
+            # latest.json may still be older, or may describe successful checks while latest.md is unavailable.
+            $prior = [IO.File]::ReadAllText((Join-Path $newest.FullName 'summary.json')) | ConvertFrom-Json -ErrorAction Stop
+            $prior.exitCode = 2 # Apply the shorter retry interval; do not alter the recorded component results.
+        } else { $prior = [IO.File]::ReadAllText($Path) | ConvertFrom-Json -ErrorAction Stop }
         if ($prior.completed -isnot [bool] -or !$prior.completed -or !$prior.components -or
+            $prior.history -notmatch '^history/\d{8}T\d{9}Z-[0-9a-f]{32}/summary\.md$' -or
             $prior.applied -isnot [bool] -or ($WantApply -and !$prior.applied) -or
             $prior.repo -ne $Repo -or $prior.runnerId -cne $Runner -or
             ($prior.exitCode -isnot [long] -and $prior.exitCode -isnot [int]) -or $prior.exitCode -notin @(0,1,2)) { return }
@@ -45,6 +55,27 @@ function Get-MaintenanceNotification([bool]$Enabled, [int]$Code, [bool]$Updated,
         return @{state='requested'; reason=$reason; detail='Windows accepted the request; display and receipt are not confirmed.'}
     } catch { return @{state='failed'; reason=$reason; detail=$_.Exception.Message} }
 }
+function Set-MaintenanceAlias($Target, $Content) {
+    $temp = $Target+'.'+[guid]::NewGuid().ToString('N')+'.tmp'
+    try {
+        [IO.File]::WriteAllText($temp, $Content)
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                if ([IO.File]::Exists($Target)) {
+                    # ReplaceFile preserves the existing file's ACL. Do not truncate it if a reader denies replacement.
+                    [IO.File]::Replace($temp, $Target, [NullString]::Value)
+                } else { [IO.File]::Move($temp, $Target) }
+                break
+            } catch {
+                $cause = $_.Exception.GetBaseException()
+                if ($attempt -ge 4 -or ($cause.HResult -band 65535) -notin @(5,32,33)) { throw }
+                Start-Sleep -Milliseconds (125*$attempt)
+            }
+        }
+    } finally {
+        if ([IO.File]::Exists($temp)) { try { [IO.File]::Delete($temp) } catch { Write-Warning "Could not remove staging file: $temp" } }
+    }
+}
 function Write-MaintenanceReport($Directory, $Report) {
     $id = ([DateTimeOffset]$Report.checkedAt).ToUniversalTime().ToString('yyyyMMddTHHmmssfffZ')+'-'+[guid]::NewGuid().ToString('N')
     $Report.history = "history/$id/summary.md"
@@ -64,11 +95,19 @@ function Write-MaintenanceReport($Directory, $Report) {
     [IO.Directory]::Move($stage, (Join-Path $historyDir $id))
     $currentMd = $md + [Environment]::NewLine + [Environment]::NewLine +
         "[Dated summary]($($Report.history)) · Latest attempt: [project details](project.md) · [plugin inventory](plugins.log)."
-    foreach ($entry in @(@('latest.md',$currentMd),@('latest.json',$json))) {
-        $target = Join-Path $Directory $entry[0]
-        [IO.File]::WriteAllText("$target.new", $entry[1])
-        [IO.File]::Move("$target.new", $target, $true)
+    $unavailable = @(foreach ($entry in @(@('latest.md',$currentMd),@('latest.json',$json))) {
+        try { Set-MaintenanceAlias (Join-Path $Directory $entry[0]) $entry[1] }
+        catch { [ordered]@{name=$entry[0]; detail=$_.Exception.GetBaseException().Message} }
+    })
+    if ($unavailable.Count) {
+        $archive = Join-Path $historyDir $id
+        $dated = Join-Path $archive 'summary.md'
+        Write-Warning ("Latest alias unavailable: "+($unavailable.name -join ', ')+". Use the dated report: $dated")
+        $status = [ordered]@{exitCode=2; unavailable=$unavailable; history=$Report.history}
+        [IO.File]::WriteAllText((Join-Path $archive 'publication.json'), ($status | ConvertTo-Json -Depth 4))
+        return $false
     }
+    return $true
 }
 
 try { $reportLock = Open-MaintenanceReportLock $ReportDirectory }
@@ -76,7 +115,7 @@ catch { Write-Warning "Cannot acquire the maintenance report lock; no checks sta
 try {
 if ($IfDue) {
     $prior = Get-ReusableMaintenanceReport $latest $RepoPath $runnerId ([bool]$Apply) ([DateTimeOffset]::UtcNow)
-    if ($prior) { Write-Output "Not due; reusing the completed report: $latest"; exit $prior.exitCode }
+    if ($prior) { Write-Output "Not due; reusing the completed report: $(Join-Path $ReportDirectory $prior.history)"; exit $prior.exitCode }
 }
 
 $rows = [Collections.Generic.List[object]]::new()
@@ -277,7 +316,8 @@ if ($notice.state -eq 'failed') { $statusCode = 2 }
 $sourceLabel = if ($RunSource) {$RunSource} elseif ($IfDue) {'Unspecified'} else {'Manual'}
 $report=[ordered]@{checkedAt=[DateTimeOffset]::UtcNow.ToString('o'); completed=$true; runnerId=$runnerId; applied=[bool]$Apply;
     runSource=$sourceLabel; repo=$RepoPath; exitCode=$statusCode; notification=$notice; components=$rows}
-Write-MaintenanceReport $ReportDirectory $report
+try { if (!(Write-MaintenanceReport $ReportDirectory $report)) { exit 2 } }
+catch { Write-Warning "Report publication did not finish: $($_.Exception.GetBaseException().Message)"; exit 2 }
 Write-Output (Join-Path $ReportDirectory 'latest.md')
 exit $statusCode
 } finally { $reportLock.Dispose() }

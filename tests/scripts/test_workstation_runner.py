@@ -113,7 +113,7 @@ class WorkstationRun(unittest.TestCase):
         (broken / "history").write_text("cannot create history here")
         self.cmd[-1] = str(broken)
         result = subprocess.run(self.cmd, capture_output=True, env=self.env, timeout=20)
-        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.returncode, 2, result.stderr)
         for filename in ("latest.md", "latest.json"):
             self.assertEqual((broken / filename).read_bytes(), (self.reports / filename).read_bytes())
 
@@ -130,6 +130,68 @@ class WorkstationRun(unittest.TestCase):
             mixed = self.invoke("-Apply", "-Notify", expect=1)
             self.assertEqual(mixed["notification"]["reason"], "ChangesAndReview")
             self.assertEqual((self.base / "notification-reason").read_text(), "ChangesAndReview")
+
+    @unittest.skipUnless(os.name == "nt", "Exercises real Windows share modes")
+    def test_held_alias_is_preserved_other_alias_updates_and_due_uses_short_retry(self):
+        for name, other in (("latest.md", "latest.json"), ("latest.json", "latest.md")):
+            with self.subTest(name=name):
+                previous = self.invoke(expect=1)
+                target, independent = self.reports / name, self.reports / other
+                held_bytes, other_bytes = target.read_bytes(), independent.read_bytes()
+                ready, release = self.base / (name + ".ready"), self.base / (name + ".release")
+                hold = """$f=[IO.File]::Open($env:HELD,'Open','Read','Read')
+                    try { [IO.File]::WriteAllText($env:READY,''); $end=[DateTime]::UtcNow.AddSeconds(15)
+                        while (![IO.File]::Exists($env:RELEASE) -and [DateTime]::UtcNow -lt $end) {
+                            Start-Sleep -Milliseconds 40
+                        }
+                    } finally { $f.Dispose() }"""
+                with subprocess.Popen([PWSH, "-NoProfile", "-NonInteractive", "-Command", hold],
+                                      env={**self.env, "HELD": str(target), "READY": str(ready), "RELEASE": str(release)},
+                                      stdout=subprocess.DEVNULL) as viewer:
+                    try:
+                        until = time.monotonic() + 8
+                        while not ready.is_file() and time.monotonic() < until:
+                            time.sleep(0.04)
+                        self.assertTrue(ready.is_file())
+                        result = subprocess.run(self.cmd, capture_output=True, text=True, env=self.env, timeout=10)
+                        self.assertEqual(result.returncode, 2, result.stderr)
+                        self.assertEqual(target.read_bytes(), held_bytes)
+                        self.assertNotEqual(independent.read_bytes(), other_bytes)
+                    finally:
+                        release.touch()
+                        viewer.wait(timeout=10)
+                newest = sorted((self.reports / "history").glob("*/summary.json"))[-1]
+                dated = json.loads(newest.read_text())
+                self.assertNotEqual(dated["history"], previous["history"])
+                self.assertIn(str(newest.with_suffix(".md")), result.stdout)
+                publication = json.loads((newest.parent / "publication.json").read_text())
+                self.assertEqual(publication["exitCode"], 2)
+                self.assertEqual([f["name"] for f in publication["unavailable"]], [name])
+                self.invoke("-IfDue", expect=2)
+                self.assertEqual(sorted((self.reports / "history").glob("*/summary.json"))[-1], newest)
+                dated["checkedAt"] = (datetime.now(timezone.utc) - timedelta(hours=25)).isoformat()
+                newest.write_text(json.dumps(dated))
+                recovered = self.invoke("-IfDue", expect=1)
+                self.assertNotEqual(recovered["history"], dated["history"])
+                self.assertIn(recovered["history"], (self.reports / "latest.md").read_text(encoding="utf-8"))
+
+    @unittest.skipUnless(os.name == "nt", "Exercises Windows DACL preservation")
+    def test_replacing_existing_alias_preserves_its_distinct_dacl(self):
+        previous = self.invoke(expect=1)
+        env = {**self.env, "ALIAS": str(self.latest)}
+        grant = """$a=Get-Acl -LiteralPath $env:ALIAS
+            $a.AddAccessRule([Security.AccessControl.FileSystemAccessRule]::new(
+                [Security.Principal.WindowsIdentity]::GetCurrent().User,'ReadAttributes','Allow'))
+            Set-Acl -LiteralPath $env:ALIAS -AclObject $a"""
+        read = "(Get-Acl -LiteralPath $env:ALIAS).GetSecurityDescriptorSddlForm('Access')"
+        def dacl():
+            return subprocess.check_output([PWSH, "-NoProfile", "-Command", read], env=env, text=True)
+        inherited = dacl()
+        subprocess.run([PWSH, "-NoProfile", "-Command", grant], env=env, check=True)
+        explicit = dacl()
+        self.assertNotEqual(explicit, inherited, "Fixture must add a distinct rule to the temporary alias")
+        self.assertNotEqual(self.invoke(expect=1)["history"], previous["history"])
+        self.assertEqual(dacl(), explicit)
 
     def test_overlapping_manual_and_scheduled_runs_do_not_touch_each_others_reports(self):
         previous = self.invoke(expect=1)
