@@ -148,6 +148,46 @@ public sealed partial class SqliteTaskStore
             cancellationToken);
     }
 
+    public Task RenameTaskAsync(string uid, string summary, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(summary);
+        return UpdateTaskFieldsAsync(uid, (_, _, task) => task.Summary = summary, cancellationToken);
+    }
+
+    public Task<double> SetTaskImportanceAsync(
+        string uid, bool isImportant, bool moveStarredToTop, CancellationToken cancellationToken = default)
+    {
+        return UpdateTaskFieldsAsync(uid, (connection, transaction, task) =>
+        {
+            if (moveStarredToTop && isImportant && task.Priority is not (>= 1 and <= 4)
+                && task.ParentUid is null && IsManualList(connection, transaction, task.ListId))
+            {
+                task.SortOrder = GetFirstTaskSortOrder(connection, transaction, task.ListId, uid);
+            }
+            task.Priority = isImportant ? (int)TaskPriority.High : (int)TaskPriority.Undefined;
+        }, cancellationToken);
+    }
+
+    private Task<double> UpdateTaskFieldsAsync(
+        string uid, Action<SqliteConnection, SqliteTransaction, TodoTask> update,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(uid);
+        return ExecuteWriteAsync((connection, transaction, context) =>
+        {
+            TodoTask task = ReadTaskByUid(connection, transaction, uid, includeDeleted: false)
+                ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
+            update(connection, transaction, task);
+            task.LastModified = _clock.UtcNow;
+            task.Sequence++;
+            task.IsDirty = true;
+            UpdateTaskRow(connection, transaction, task);
+            LogChange(connection, transaction, TaskEntityType, uid, ChangeOperation.Update);
+            context.AddTask(task.ListId, uid);
+            return task.SortOrder;
+        }, cancellationToken);
+    }
+
     public Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(uid);

@@ -85,6 +85,11 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IImportStore, IAsyncDi
 
     Task UpdateTaskAsync(TodoTask task, CancellationToken cancellationToken = default, bool moveStarredToTop = false);
 
+    Task RenameTaskAsync(string uid, string summary, CancellationToken cancellationToken = default);
+
+    Task<double> SetTaskImportanceAsync(
+        string uid, bool isImportant, bool moveStarredToTop, CancellationToken cancellationToken = default);
+
     Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default);
 
     Task UncompleteTaskAsync(string uid, CancellationToken cancellationToken = default);

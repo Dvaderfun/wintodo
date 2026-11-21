@@ -275,11 +275,11 @@ public sealed partial class TaskListViewModel
     private async Task ToggleTaskImportanceAsync(TaskItemViewModel item)
     {
         await Task.Yield();
-        item.Model.Priority = item.IsImportant
-            ? (int)TaskPriority.Undefined
-            : (int)TaskPriority.High;
-        await _taskStore.UpdateTaskAsync(item.Model, moveStarredToTop: _preferences.MoveStarredToTop);
-        item.IsImportant = !item.IsImportant;
+        bool isImportant = !item.IsImportant;
+        double sortOrder = await _taskStore.SetTaskImportanceAsync(item.Uid, isImportant, _preferences.MoveStarredToTop);
+        item.Model.Priority = isImportant ? (int)TaskPriority.High : (int)TaskPriority.Undefined;
+        item.Model.SortOrder = sortOrder;
+        item.IsImportant = isImportant;
         UpdateItemDisplay(item);
         if (_currentQuery?.SortMode == SortMode.Manual && _preferences.MoveStarredToTop && item.IsImportant)
         {
@@ -325,8 +325,9 @@ public sealed partial class TaskListViewModel
     private async Task RenameTaskAsync(TaskItemViewModel item)
     {
         await Task.Yield();
-        item.Model.Summary = item.EditTitle;
-        await _taskStore.UpdateTaskAsync(item.Model);
+        string title = item.EditTitle;
+        await _taskStore.RenameTaskAsync(item.Uid, title);
+        item.Model.Summary = title;
         UpdateItemDisplay(item);
         RebuildVisibleItems();
     }
