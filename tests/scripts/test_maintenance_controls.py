@@ -92,10 +92,16 @@ $PSBoundParameters|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $RepoPath 
 $now=[DateTimeOffset]::UtcNow
 $id=$now.ToString('yyyyMMddTHHmmssfffZ')+'-'+[guid]::NewGuid().ToString('N')
 $dir=[IO.Directory]::CreateDirectory((Join-Path $env:LOCALAPPDATA "WintodoMaintenance/reports/history/$id"))
-$r=@{checkedAt=$now.ToString('o');history="history/$id/summary.md";completed=$true;runnerId=(Split-Path $PSScriptRoot -Leaf);applied=[bool]$Apply;runSource=$RunSource;repo=$RepoPath;exitCode=1;components=@(@{state='review';name='fixture tool'})}
+$code=if($env:WINTODO_FIXTURE_RESULT){[int]$env:WINTODO_FIXTURE_RESULT}else{1}
+$r=@{checkedAt=$now.ToString('o');history="history/$id/summary.md";completed=$true;runnerId=(Split-Path $PSScriptRoot -Leaf);applied=[bool]$Apply;runSource=$RunSource;repo=$RepoPath;exitCode=$code;components=@(@{state=@('current','review','incomplete')[$code];name='fixture tool'})}
 $r|ConvertTo-Json -Depth 4|Set-Content -LiteralPath (Join-Path $dir.FullName 'summary.json')
 'Fake inventory only'|Set-Content -LiteralPath (Join-Path $dir.FullName 'summary.md')
-exit 1
+if($env:WINTODO_FIXTURE_PUBLISH -eq 'yes'){
+    $latest=$dir.Parent.Parent.FullName
+    $r|ConvertTo-Json -Depth 4|Set-Content -LiteralPath (Join-Path $latest 'latest.json')
+    "[Dated summary]($($r.history))"|Set-Content -LiteralPath (Join-Path $latest 'latest.md')
+}
+exit $code
 '@}
 foreach($n in 'Update-AgentNode.ps1','Update-CodexPlugins.ps1','Update-ClaudeTools.py','Update-CodeGraph.py','Show-MaintenanceNotice.ps1','Check-ProjectHealth.py') { $sources[$n]='# fixture' }
 $hashes=foreach($content in $sources.Values){[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($content)))}
@@ -108,8 +114,11 @@ $repo=[IO.Directory]::CreateDirectory((Join-Path $Scratch 'repo -Apply [A] & B')
 [IO.File]::WriteAllText((Join-Path $repo 'Wintodo.sln'),'fixture')
 $lines[$work]='-NoProfile -File "'+$wfile+'" -RepoPath "'+$repo+'" -Apply -IfDue -Notify -RunSource Scheduled'
 & $ScriptPath CheckNow -Job Wintodo -WhatIf|Out-Null
-Must (!(Test-Path -LiteralPath (Join-Path $repo 'observed.json'))) 'WhatIf ran the inventory'
+Must ($LASTEXITCODE -eq 0 -and !(Test-Path -LiteralPath (Join-Path $repo 'observed.json'))) 'WhatIf unexpectedly failed or ran the inventory'
+$env:WINTODO_FIXTURE_PUBLISH='no'
+$env:WINTODO_FIXTURE_RESULT='1'
 & $ScriptPath CheckNow -Job Wintodo|Out-Null
+Must ($LASTEXITCODE -eq 2) 'Partial publication must return 2 even when component review is 1'
 $seen=Get-Content -Raw -LiteralPath (Join-Path $repo 'observed.json')|ConvertFrom-Json -AsHashtable
 Must ($seen.Count -eq 2 -and $seen.RunSource -ceq 'Manual' -and $seen.RepoPath -ceq $repo) 'Check now forwarded automatic flags or changed the registered checkout'
 $view=(Snapshot)[0].report
@@ -120,8 +129,20 @@ $partial|ConvertTo-Json -Depth 4|Set-Content -LiteralPath (Join-Path $datedFolde
 Must ((Snapshot)[0].report.aliases -like 'Partial publication*latest.md*exit 2*') 'Partial publication hidden'
 [IO.File]::WriteAllText((Join-Path $datedFolder 'summary.json'),'{malformed')
 Must ((Snapshot)[0].report.outcome -like 'INTEGRITY WARNING*') 'Corrupt newest receipt masked by earlier successful report'
+$env:WINTODO_FIXTURE_PUBLISH='yes'
+foreach($expected in 1,2,0){
+    $env:WINTODO_FIXTURE_RESULT=[string]$expected
+    & $ScriptPath CheckNow -Job Wintodo|Out-Null
+    Must ($LASTEXITCODE -eq $expected) "Verified result $expected was not propagated"
+}
 [IO.File]::AppendAllText($wfile,'# local change')
-Refused @{Action='CheckNow';Job='Wintodo'} 'registered identifier'
+& $ScriptPath CheckNow -Job Wintodo|Out-Null
+Must ($LASTEXITCODE -eq 2) 'Unverified snapshot must return 2'
+$choices=[Collections.Generic.Queue[string]]::new()
+$choices.Enqueue('N');$choices.Enqueue('')
+function Read-Host($Prompt){if(!$choices.Count){throw 'Unexpected menu prompt'};$choices.Dequeue()}
+& $ScriptPath -Menu|Out-Null
+Must ($choices.Count -eq 0) 'Menu closed on an incomplete check instead of offering controls again'
 '''
 
 

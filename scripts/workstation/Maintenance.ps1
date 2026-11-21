@@ -8,7 +8,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 if ($Menu -and ($Action -ne 'Status' -or $Job -ne 'Both' -or $Json)) { throw 'Use -Menu on its own.' }
-if ($Action -eq 'CheckNow' -and $Job -eq 'DeveloperTools') { throw 'CheckNow runs only the Wintodo inventory.' }
+if ($Action -eq 'CheckNow' -and $Job -eq 'DeveloperTools') { Write-Warning 'CheckNow runs only the Wintodo inventory.'; exit 2 }
 $locations = [ordered]@{
     Wintodo = @{name='Wintodo-Weekly-Maintenance'; dir=(Join-Path $env:LOCALAPPDATA 'WintodoMaintenance/reports')}
     DeveloperTools = @{name='Codex-DeveloperTools-WeeklyCheck'; dir=(Join-Path $env:USERPROFILE '.codex/maintenance/reports')}
@@ -51,7 +51,7 @@ function Read-Triggers($task) {
 
 function Read-Report($key,$dir) {
     $path = Join-Path $dir 'latest.json'
-    $data = [ordered]@{time=$null; source='not recorded'; freshness='Unknown'; outcome='No report'; notification=$null; aliases=$null; reportPath=$path; folder=$dir; receipt=$null; runner=$null; repo=$null; applied=$null; code=$null}
+    $data = [ordered]@{time=$null; source='not recorded'; freshness='Unknown'; outcome='No report'; notification=$null; aliases=$null; aliasesVerified=$false; reportPath=$path; folder=$dir; receipt=$null; runner=$null; repo=$null; applied=$null; code=$null}
     try {
         $dated = $null
         $history = Join-Path $dir 'history'
@@ -74,9 +74,11 @@ function Read-Report($key,$dir) {
             $data.receipt = $dated.Name
             $aliasJson = try { Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -AsHashtable } catch { $null }
             $aliasMd = try { Get-Content -LiteralPath (Join-Path $dir 'latest.md') -Raw } catch { '' }
-            $data.aliases = if ($aliasJson.history -ceq $ref -and $aliasMd.Contains("]($ref)")) { 'Both latest files point to this receipt.' } else { 'Latest files are missing, unreadable or stale; showing the dated receipt.' }
+            $data.aliasesVerified = $aliasJson.history -ceq $ref -and $aliasMd.Contains("]($ref)")
+            $data.aliases = if ($data.aliasesVerified) { 'Both latest files point to this receipt.' } else { 'Latest files are missing, unreadable or stale; showing the dated receipt.' }
             $publication = Join-Path $dated.FullName 'publication.json'
             if (Test-Path -LiteralPath $publication -PathType Leaf) {
+                $data.aliasesVerified = $false
                 $p = try { Get-Content -LiteralPath $publication -Raw | ConvertFrom-Json -AsHashtable } catch { $null }
                 $names = @($p.unavailable | ForEach-Object { $_.name } | Where-Object { $_ -in @('latest.md','latest.json') })
                 $data.aliases = if ($p.exitCode -eq 2 -and $p.history -ceq $ref -and $names.Count) {
@@ -233,7 +235,7 @@ function Invoke-CheckNow($caller) {
     $hashes = @('Invoke-WorkstationMaintenance.ps1','Update-AgentNode.ps1','Update-CodexPlugins.ps1','Update-ClaudeTools.py','Update-CodeGraph.py','Show-MaintenanceNotice.ps1','Check-ProjectHealth.py') | ForEach-Object { (Get-FileHash -LiteralPath (Join-Path $folder $_)).Hash }
     $id = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($hashes -join ':')+'|'+[string]$profile))).Substring(0,16)
     if ($id -ine (Split-Path -Leaf $folder)) { throw 'Installed snapshot differs from its registered identifier. Reinstall the reviewed runner.' }
-    if (!$caller.ShouldProcess($entry.name,'Perform a manual inventory now; write report, install nothing')) { return }
+    if (!$caller.ShouldProcess($entry.name,'Perform a manual inventory now; write report, install nothing')) { return 0 }
     $previous = (Read-Report Wintodo $entry.dir).receipt
     $PSNativeCommandUseErrorActionPreference = $false
     Write-Host 'Checking Wintodo developer tools now. No updates will be installed; this can take several minutes.'
@@ -247,13 +249,17 @@ function Invoke-CheckNow($caller) {
     $meaning = @('completed','review needed','some checks incomplete')[[int]$new.code]
     Write-Host "Manual check: $meaning (component result $($new.code); process exit $code). $($new.aliases)"
     if ($code -ne $new.code) { Write-Warning 'The process and component results differ; open the dated report and inspect publication status.' }
+    if ($code -ne $new.code -or !$new.aliasesVerified) { return 2 }
+    return [int]$new.code
 }
 
+$checkExitCode = $null
 $keys = if ($Job -eq 'Both') { @($locations.Keys) } else { @($Job) }
 do {
     $records = @($keys | ForEach-Object { Get-Record $_ })
     if ($Action -eq 'CheckNow') {
-        Invoke-CheckNow $PSCmdlet
+        try { $checkExitCode = Invoke-CheckNow $PSCmdlet }
+        catch { Write-Warning "Manual check incomplete: $($_.Exception.Message)"; $checkExitCode = 2 }
         $records = @($keys | ForEach-Object { Get-Record $_ })
     } elseif ($Action -eq 'CheckOnly') {
         Set-ChecksOnly $records $PSCmdlet
@@ -308,3 +314,4 @@ do {
         }
     }
 } while ($Menu)
+if (!$Menu -and $null -ne $checkExitCode) { exit $checkExitCode }
