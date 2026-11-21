@@ -22,8 +22,9 @@ $lines=@{$work=('-NoProfile -File "'+$wfile+'" -RepoPath "C:\folder -Apply\repo"
 $stateWrites=[Collections.Generic.List[string]]::new()
 function Get-ScheduledTask($TaskPath,$TaskName){
     if($TaskPath -ne '\' -or !$states.ContainsKey($TaskName)){throw 'Unknown test job'}
-    [pscustomobject]@{State=$states[$TaskName];Actions=@([pscustomobject]@{Execute=(Get-Command pwsh -CommandType Application | Select-Object -First 1).Source;Arguments=$lines[$TaskName]});Triggers=@();Principal=@{UserId='fixture';LogonType='Interactive';RunLevel='Limited'}}
+    [pscustomobject]@{State=$states[$TaskName];Actions=@([pscustomobject]@{Execute=(Get-Command pwsh -CommandType Application | Select-Object -First 1).Source;Arguments=$lines[$TaskName];WorkingDirectory=$(if($TaskName -eq $work){Split-Path $wfile})});Triggers=@();Principal=@{UserId='fixture';LogonType='Interactive';RunLevel='Limited'}}
 }
+function Start-ScheduledTask { throw 'The controls must NEVER start the registered automatic action' }
 function Get-ScheduledTaskInfo($TaskPath,$TaskName){[pscustomobject]@{LastRunTime=[datetime]'2026-01-01';NextRunTime=$null;LastTaskResult=1;NumberOfMissedRuns=2}}
 function Disable-ScheduledTask($TaskPath,$TaskName){$stateWrites.Add("disable:$TaskPath$TaskName");$states[$TaskName]='Disabled'}
 function Enable-ScheduledTask($TaskPath,$TaskName){$stateWrites.Add("enable:$TaskPath$TaskName");$states[$TaskName]='Ready'}
@@ -81,6 +82,46 @@ Remove-Item -LiteralPath (Join-Path $sd 'latest.json')
 $states.Remove($tools)
 $r=Snapshot
 Must ($r[1].error -and $r[1].report.outcome -eq 'No report') 'Missing job/report masked'
+
+# Real child process with a harmless stand-in for the installed snapshot, in a temporary user profile.
+$sources=[ordered]@{'Invoke-WorkstationMaintenance.ps1'=@'
+[CmdletBinding()]
+param($RepoPath,$RunSource,[switch]$Apply,[switch]$IfDue,[switch]$Notify)
+$ErrorActionPreference='Stop'
+$PSBoundParameters|ConvertTo-Json|Set-Content -LiteralPath (Join-Path $RepoPath 'observed.json')
+$now=[DateTimeOffset]::UtcNow
+$id=$now.ToString('yyyyMMddTHHmmssfffZ')+'-'+[guid]::NewGuid().ToString('N')
+$dir=[IO.Directory]::CreateDirectory((Join-Path $env:LOCALAPPDATA "WintodoMaintenance/reports/history/$id"))
+$r=@{checkedAt=$now.ToString('o');history="history/$id/summary.md";completed=$true;runnerId=(Split-Path $PSScriptRoot -Leaf);applied=[bool]$Apply;runSource=$RunSource;repo=$RepoPath;exitCode=1;components=@(@{state='review';name='fixture tool'})}
+$r|ConvertTo-Json -Depth 4|Set-Content -LiteralPath (Join-Path $dir.FullName 'summary.json')
+'Fake inventory only'|Set-Content -LiteralPath (Join-Path $dir.FullName 'summary.md')
+exit 1
+'@}
+foreach($n in 'Update-AgentNode.ps1','Update-CodexPlugins.ps1','Update-ClaudeTools.py','Update-CodeGraph.py','Show-MaintenanceNotice.ps1','Check-ProjectHealth.py') { $sources[$n]='# fixture' }
+$hashes=foreach($content in $sources.Values){[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($content)))}
+$id=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($hashes -join ':')+'|'))).Substring(0,16)
+$stage=[IO.Directory]::CreateDirectory((Join-Path $Scratch "WintodoMaintenance/runners/$id")).FullName
+foreach($n in $sources.Keys){[IO.File]::WriteAllText((Join-Path $stage $n),$sources[$n])}
+[IO.File]::WriteAllText((Join-Path $stage 'local-profile.json'),'{"codexProfile":""}')
+$wfile=Join-Path $stage 'Invoke-WorkstationMaintenance.ps1'
+$repo=[IO.Directory]::CreateDirectory((Join-Path $Scratch 'repo -Apply [A] & B')).FullName
+[IO.File]::WriteAllText((Join-Path $repo 'Wintodo.sln'),'fixture')
+$lines[$work]='-NoProfile -File "'+$wfile+'" -RepoPath "'+$repo+'" -Apply -IfDue -Notify -RunSource Scheduled'
+& $ScriptPath CheckNow -Job Wintodo -WhatIf|Out-Null
+Must (!(Test-Path -LiteralPath (Join-Path $repo 'observed.json'))) 'WhatIf ran the inventory'
+& $ScriptPath CheckNow -Job Wintodo|Out-Null
+$seen=Get-Content -Raw -LiteralPath (Join-Path $repo 'observed.json')|ConvertFrom-Json -AsHashtable
+Must ($seen.Count -eq 2 -and $seen.RunSource -ceq 'Manual' -and $seen.RepoPath -ceq $repo) 'Check now forwarded automatic flags or changed the registered checkout'
+$view=(Snapshot)[0].report
+Must ($view.outcome -like 'Review needed*fixture tool*' -and $view.aliases -like '*stale*' -and $view.reportPath -like '*summary.md' -and $view.source -eq 'Manual') 'Did not surface new dated evidence over stale aliases'
+$datedFolder=Split-Path $view.reportPath
+$partial=@{exitCode=2;history=('history/'+$view.receipt+'/summary.md');unavailable=@(@{name='latest.md';detail='access denied'})}
+$partial|ConvertTo-Json -Depth 4|Set-Content -LiteralPath (Join-Path $datedFolder 'publication.json')
+Must ((Snapshot)[0].report.aliases -like 'Partial publication*latest.md*exit 2*') 'Partial publication hidden'
+[IO.File]::WriteAllText((Join-Path $datedFolder 'summary.json'),'{malformed')
+Must ((Snapshot)[0].report.outcome -like 'INTEGRITY WARNING*') 'Corrupt newest receipt masked by earlier successful report'
+[IO.File]::AppendAllText($wfile,'# local change')
+Refused @{Action='CheckNow';Job='Wintodo'} 'registered identifier'
 '''
 
 

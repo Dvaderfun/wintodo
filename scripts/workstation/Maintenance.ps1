@@ -2,12 +2,13 @@
 # Status reads only local records. Nothing here invokes an updater or starts a scheduled task.
 [CmdletBinding(SupportsShouldProcess)]
 param(
-    [ValidateSet('Status','Pause','Resume','CheckOnly')][string]$Action = 'Status',
+    [ValidateSet('Status','Pause','Resume','CheckOnly','CheckNow')][string]$Action = 'Status',
     [ValidateSet('Both','Wintodo','DeveloperTools')][string]$Job = 'Both',
     [switch]$AllowAutomaticUpdates, [switch]$Json, [switch]$Menu
 )
 $ErrorActionPreference = 'Stop'
 if ($Menu -and ($Action -ne 'Status' -or $Job -ne 'Both' -or $Json)) { throw 'Use -Menu on its own.' }
+if ($Action -eq 'CheckNow' -and $Job -eq 'DeveloperTools') { throw 'CheckNow runs only the Wintodo inventory.' }
 $locations = [ordered]@{
     Wintodo = @{name='Wintodo-Weekly-Maintenance'; dir=(Join-Path $env:LOCALAPPDATA 'WintodoMaintenance/reports')}
     DeveloperTools = @{name='Codex-DeveloperTools-WeeklyCheck'; dir=(Join-Path $env:USERPROFILE '.codex/maintenance/reports')}
@@ -50,11 +51,43 @@ function Read-Triggers($task) {
 
 function Read-Report($key,$dir) {
     $path = Join-Path $dir 'latest.json'
-    $data = [ordered]@{time=$null; source='not recorded'; freshness='Unknown'; outcome='No report'; notification=$null; reportPath=$path; folder=$dir}
-    if ($key -eq 'Wintodo' -and (Test-Path -LiteralPath (Join-Path $dir 'history') -PathType Container)) { $data.folder = Join-Path $dir 'history' }
-    if (!(Test-Path -LiteralPath $path -PathType Leaf)) { return $data }
+    $data = [ordered]@{time=$null; source='not recorded'; freshness='Unknown'; outcome='No report'; notification=$null; aliases=$null; reportPath=$path; folder=$dir; receipt=$null; runner=$null; repo=$null; applied=$null; code=$null}
     try {
-        $r = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -AsHashtable
+        $dated = $null
+        $history = Join-Path $dir 'history'
+        if ($key -eq 'Wintodo' -and (Test-Path -LiteralPath $history -PathType Container)) {
+            $data.folder = $history
+            # Enumerate only first-level UTC-stamped directory names; open at most ONE dated receipt.
+            $dated = Get-ChildItem -LiteralPath $history -Directory -Filter '????????T?????????Z-*' | Where-Object {
+                $_.Name -cmatch '^\d{8}T\d{9}Z-[0-9a-f]{32}$'
+            } | Sort-Object Name -Descending -Top 1
+        }
+        if ($dated) {
+            $data.reportPath = Join-Path $dated.FullName 'summary.json'
+            $md = Join-Path $dated.FullName 'summary.md'
+            $ref = "history/$($dated.Name)/summary.md"
+            $data.aliases = 'Unverified; see the dated receipt.'
+            if ($dated.Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'linked receipt directory' }
+            $r = Get-Content -LiteralPath $data.reportPath -Raw | ConvertFrom-Json -AsHashtable
+            $stamp = ([DateTimeOffset]$r.checkedAt).ToUniversalTime().ToString('yyyyMMddTHHmmssfffZ')
+            if ($dated.Name -cnotlike "$stamp-*" -or $r.completed -ne $true -or $r.history -cne $ref -or !(Test-Path -LiteralPath $md -PathType Leaf)) { throw 'incomplete or misdated receipt' }
+            $data.receipt = $dated.Name
+            $aliasJson = try { Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -AsHashtable } catch { $null }
+            $aliasMd = try { Get-Content -LiteralPath (Join-Path $dir 'latest.md') -Raw } catch { '' }
+            $data.aliases = if ($aliasJson.history -ceq $ref -and $aliasMd.Contains("]($ref)")) { 'Both latest files point to this receipt.' } else { 'Latest files are missing, unreadable or stale; showing the dated receipt.' }
+            $publication = Join-Path $dated.FullName 'publication.json'
+            if (Test-Path -LiteralPath $publication -PathType Leaf) {
+                $p = try { Get-Content -LiteralPath $publication -Raw | ConvertFrom-Json -AsHashtable } catch { $null }
+                $names = @($p.unavailable | ForEach-Object { $_.name } | Where-Object { $_ -in @('latest.md','latest.json') })
+                $data.aliases = if ($p.exitCode -eq 2 -and $p.history -ceq $ref -and $names.Count) {
+                    'Partial publication: could not update '+($names -join ', ')+' (exit 2). Dated component results are separate.'
+                } else { 'Publication metadata unreadable or inconsistent; latest files are unverified.' }
+            }
+        } else {
+            if (!(Test-Path -LiteralPath $path -PathType Leaf)) { return $data }
+            $r = Get-Content -LiteralPath $path -Raw | ConvertFrom-Json -AsHashtable
+            $md = Join-Path $dir 'latest.md'
+        }
         if (!$r.checkedAt) { throw 'missing timestamp' }
         $when = [DateTimeOffset]$r.checkedAt
         $data.time = $when.ToLocalTime().ToString('yyyy-MM-dd HH:mm:ss zzz')
@@ -63,12 +96,12 @@ function Read-Report($key,$dir) {
         if ($key -eq 'Wintodo') {
             if ($r.exitCode -notin @(0,1,2) -or !$r.components -or @($r.components | Where-Object { !$_.state }).Count) { throw 'missing component results' }
             if ($r.runSource -in @('Manual','Scheduled')) { $data.source = $r.runSource }
+            $data.code,$data.applied,$data.runner,$data.repo = $r.exitCode,$r.applied,$r.runnerId,$r.repo
             if ($r.notification.state) { $data.notification = $r.notification.state }
             $outcome = @('Completed','Review needed','INCOMPLETE')[[int]$r.exitCode]
             $runMode = if ($r.applied -eq $true) {'updates allowed'} elseif ($r.applied -eq $false) {'check only'} else {'unknown mode'}
             $attention = @($r.components | Where-Object state -in @('incomplete','review','updated') | ForEach-Object { "$($_.name): $($_.state)" })
             $data.outcome = "$outcome ($runMode). " + ($attention -join '; ')
-            $md = Join-Path $dir 'latest.md'
             if (Test-Path -LiteralPath $md -PathType Leaf) { $data.reportPath = $md }
         } else {
             if (!$r.tools -or @($r.tools | Where-Object { !$_.status }).Count) { throw 'missing tool results' }
@@ -77,7 +110,8 @@ function Read-Report($key,$dir) {
             $data.outcome = $summary
         }
     } catch {
-        $data.outcome = 'UNREADABLE or incomplete report; inspect the local file.'
+        $data.outcome = if ($dated) { 'INTEGRITY WARNING: newest dated report unreadable or incomplete; no older report substituted.' } else { 'UNREADABLE or incomplete report; inspect the local file.' }
+        $data.code = $null
         $data.freshness = 'Unknown'
     }
     return $data
@@ -122,6 +156,7 @@ function Write-Record($r) {
     "  Report: $($r.report.reportPath)"
     "  Reports folder: $($r.report.folder)"
     if ($r.report.notification) { "  Notification: $($r.report.notification)" }
+    if ($r.report.aliases) { "  Latest files: $($r.report.aliases)" }
     if ($r.error) { "  $($r.error)" }
     ''
 }
@@ -181,10 +216,46 @@ function Set-ChecksOnly($records,$caller) {
     if (!$Json) { Write-Information "Check-only changes verified. Previous task XML: $backup" -InformationAction Continue }
 }
 
+function Invoke-CheckNow($caller) {
+    $entry = $locations.Wintodo
+    $task = Get-ScheduledTask -TaskPath '\' -TaskName $entry.name
+    $exe = $task.Actions[0]
+    if ((Read-Mode Wintodo $task) -eq 'Unknown' -or "$($task.Principal.RunLevel)" -ne 'Limited' -or "$($task.Principal.LogonType)" -ne 'Interactive' -or
+        $exe.Arguments -notmatch '-File\s+"(?<file>[^"\r\n]+)"\s+-RepoPath\s+"(?<repo>[^"\r\n]+)"(?:\s+-(?:Apply|IfDue|Notify))*\s+-RunSource\s+Scheduled\s*$') {
+        throw 'Install the reviewed Wintodo runner before using Check now.'
+    }
+    $file,$repo = $Matches.file,$Matches.repo
+    $folder = Split-Path -Parent $file
+    if ($exe.WorkingDirectory -ine $folder -or ![IO.Path]::IsPathFullyQualified($repo) -or !(Test-Path -LiteralPath (Join-Path $repo 'Wintodo.sln') -PathType Leaf)) { throw 'Runner directory or registered checkout does not match the installation.' }
+    if ("$($task.State)" -eq 'Running') { throw 'A scheduled check is already running. Refresh status after it completes.' }
+    # Verify the same snapshot identifier the installer assigned, including the selected profile.
+    $profile = (Get-Content -LiteralPath (Join-Path $folder 'local-profile.json') -Raw | ConvertFrom-Json).codexProfile
+    $hashes = @('Invoke-WorkstationMaintenance.ps1','Update-AgentNode.ps1','Update-CodexPlugins.ps1','Update-ClaudeTools.py','Update-CodeGraph.py','Show-MaintenanceNotice.ps1','Check-ProjectHealth.py') | ForEach-Object { (Get-FileHash -LiteralPath (Join-Path $folder $_)).Hash }
+    $id = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($hashes -join ':')+'|'+[string]$profile))).Substring(0,16)
+    if ($id -ine (Split-Path -Leaf $folder)) { throw 'Installed snapshot differs from its registered identifier. Reinstall the reviewed runner.' }
+    if (!$caller.ShouldProcess($entry.name,'Perform a manual inventory now; write report, install nothing')) { return }
+    $previous = (Read-Report Wintodo $entry.dir).receipt
+    $PSNativeCommandUseErrorActionPreference = $false
+    Write-Host 'Checking Wintodo developer tools now. No updates will be installed; this can take several minutes.'
+    # Arguments are discrete values. Never invoke the registered command line or forward its update switches.
+    & $exe.Execute -NoProfile -NonInteractive -File $file -RepoPath $repo -RunSource Manual | Out-Host
+    $code = $LASTEXITCODE
+    $new = Read-Report Wintodo $entry.dir
+    if (!$new.receipt -or $new.receipt -eq $previous -or $new.source -ne 'Manual' -or $new.applied -ne $false -or $new.runner -ne $id -or $new.repo -ine $repo -or $null -eq $new.code) {
+        throw "The process exited $code without a verified fresh manual receipt. Inspect the report directory; this is not a successful check."
+    }
+    $meaning = @('completed','review needed','some checks incomplete')[[int]$new.code]
+    Write-Host "Manual check: $meaning (component result $($new.code); process exit $code). $($new.aliases)"
+    if ($code -ne $new.code) { Write-Warning 'The process and component results differ; open the dated report and inspect publication status.' }
+}
+
 $keys = if ($Job -eq 'Both') { @($locations.Keys) } else { @($Job) }
 do {
     $records = @($keys | ForEach-Object { Get-Record $_ })
-    if ($Action -eq 'CheckOnly') {
+    if ($Action -eq 'CheckNow') {
+        Invoke-CheckNow $PSCmdlet
+        $records = @($keys | ForEach-Object { Get-Record $_ })
+    } elseif ($Action -eq 'CheckOnly') {
         Set-ChecksOnly $records $PSCmdlet
         $records = @($keys | ForEach-Object { Get-Record $_ })
     } elseif ($Action -ne 'Status') {
@@ -216,7 +287,7 @@ do {
     if (!$Menu) { break }
     $Action = 'Status'
     $AllowAutomaticUpdates = $false
-    switch ((Read-Host '[S] Refresh  [1]/[2] Open report  [H] History  [C] Checks only  [P] Pause both  [R] Resume both  [Enter] Close').Trim().ToUpperInvariant()) {
+    switch ((Read-Host '[S] Refresh  [1]/[2] Open report  [H] History  [N] Check Wintodo now  [C] Checks only  [P] Pause  [R] Resume  [Enter] Close').Trim().ToUpperInvariant()) {
         '' { return }
         '1' { if (Test-Path -LiteralPath $records[0].report.reportPath) { Invoke-Item -LiteralPath $records[0].report.reportPath } }
         '2' { if (Test-Path -LiteralPath $records[1].report.reportPath) { Invoke-Item -LiteralPath $records[1].report.reportPath } }
@@ -228,6 +299,7 @@ do {
             }
         }
         'P' { if ((Read-Host 'Type PAUSE to disable future triggers for both tasks').Trim() -ceq 'PAUSE') { $Action = 'Pause' } }
+        'N' { $Action = 'CheckNow' }
         'C' { if ((Read-Host 'Type CHECK ONLY to remove unattended updates from both schedules; preserve their triggers and enabled state').Trim() -ceq 'CHECK ONLY') { $Action = 'CheckOnly' } }
         'R' {
             if (@($records | Where-Object { $_.state -eq 'Disabled' -and $_.mode -ne 'Check only' }).Count) {
