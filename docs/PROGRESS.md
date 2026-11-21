@@ -4912,3 +4912,42 @@ also passed. All seven PNGs were reviewed. Log:
 **Delivery:** The installer is ready for the owner to update using App Installer.
 The host still has DEV .180. Store Wintodo and hosted CI were left unchanged;
 the guide records how to add a separate DEV packaging job if builds become routine.
+
+## Branch cleanup and My Day PR review (2026-11-21)
+
+**DEV:** `5a6a53e` carries the integrity architecture notes and the Settings
+and M4 regression gates into `dev/preview`. All four production fixes were
+already in the signed .188 build. No application source or dependencies
+changed. The x64 build passed with warnings as errors. Both full suite runs
+were 719/720: the existing loopback import deadline check's fallback case
+cancelled before a request was observed. The isolated check passed 3/3.
+No timing threshold or fixture changed.
+
+**Guest:** M4 passed 9/9 and the restart round-trip. Settings passed 9/10,
+including F2 rename, starring and undo. The week-start calendar scenario
+did not complete because the UI automation tool timed out focusing the
+Week starts on control. All ten available screenshots were reviewed. Log:
+`run-dev-integrity-regression-gate-20261121-144031.log`.
+
+**Local branches:** Kept `main`, `dev/preview` and `maintenance/nov21-review`.
+The latter has separate workstation-control work. Removed eight retired
+branch names, kept their exact tips under `refs/archive/branches/<old-name>`,
+and left the existing checkouts and artifacts in place at those tips.
+To recreate a branch, use `git branch <old-name> refs/archive/branches/<old-name>`.
+Remote branches were not changed.
+
+| Archived local branch | Tip | Reason |
+|---|---|---|
+| `design/dev-hybrid-winui` | `31c2eac` | The accepted design is in DEV. |
+| `design/nov21-gallery-comparison` | `53aa662` | The comparison is retained for reference; its alternative design was not selected. |
+| `fix/nov21-integrity` | `7d6c116` | DEV has the four fixes and their regression gates. The original review evidence is retained. |
+| `maintenance/nov21-dependencies` | `d607622` | Evaluation history already reachable from DEV. |
+| `maintenance/nov21-dependencies-fallback` | `1c46d2a` | The verified fallback is already in DEV. |
+| `maintenance/nov21-health` | `7cc8016` | This checkpoint is included in the retained maintenance history. |
+| `maintenance/nov21-proposals` | `eff7732` | The same patch is in DEV as `8158974`. |
+| `maintenance/nov21-sdk27-evaluation` | `6cf6451` | The evaluation and its privacy gate failure are retained; the newer SDK was not adopted. |
+
+**PR #8:** [Written review](plans/2026-11-21-pr-8-my-day-review.md). The
+proposal adds automatic due-today membership and same-day dismissal. A
+synthetic regression verified that accepting a server-side rename currently
+makes the dismissed task reappear. The PR is open and was not merged.
