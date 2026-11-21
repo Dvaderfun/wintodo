@@ -83,7 +83,7 @@
                                         <VisualState.Setters>
                                             <Setter Target="StateOverlay.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
                                             <Setter Target="SelectionIndicator.Visibility" Value="Visible" />
-                                            <Setter Target="SelectionIndicator.Background" Value="{ThemeResource ListViewItemSelectionIndicatorPointerOverBrush}" />
+                                            <Setter Target="SelectionIndicator.Background" Value="{ThemeResource TaskCardSelectionIndicatorPointerOverBrush}" />
                                         </VisualState.Setters>
                                     </VisualState>
                                     <VisualState x:Name="PressedSelected">
@@ -91,7 +91,7 @@
                                             <Setter Target="StateOverlay.Background" Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
                                             <Setter Target="SelectionIndicator.Visibility" Value="Visible" />
                                             <Setter Target="SelectionIndicator.Height" Value="10" />
-                                            <Setter Target="SelectionIndicator.Background" Value="{ThemeResource ListViewItemSelectionIndicatorPressedBrush}" />
+                                            <Setter Target="SelectionIndicator.Background" Value="{ThemeResource TaskCardSelectionIndicatorPressedBrush}" />
                                         </VisualState.Setters>
                                     </VisualState>
                                 </VisualStateGroup>
@@ -135,7 +135,7 @@
                                     HorizontalAlignment="Left"
                                     VerticalAlignment="Center"
                                     AutomationProperties.AccessibilityView="Raw"
-                                    Background="{ThemeResource ListViewItemSelectionIndicatorBrush}"
+                                    Background="{ThemeResource TaskCardSelectionIndicatorBrush}"
                                     CornerRadius="{ThemeResource ListViewItemSelectionIndicatorCornerRadius}"
                                     IsHitTestVisible="False"
                                     Visibility="Collapsed" />

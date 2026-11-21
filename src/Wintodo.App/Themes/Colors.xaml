@@ -5,6 +5,9 @@
 
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
+            <StaticResource x:Key="TaskCardSelectionIndicatorBrush" ResourceKey="ListViewItemSelectionIndicatorBrush" />
+            <StaticResource x:Key="TaskCardSelectionIndicatorPointerOverBrush" ResourceKey="ListViewItemSelectionIndicatorPointerOverBrush" />
+            <StaticResource x:Key="TaskCardSelectionIndicatorPressedBrush" ResourceKey="ListViewItemSelectionIndicatorPressedBrush" />
             <StaticResource x:Key="ListHeaderPlaceholderBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
             <Thickness x:Key="ListHeaderButtonBorderThickness">1</Thickness>
             <Thickness x:Key="TitleSearchBorderThickness">0</Thickness>
@@ -40,6 +43,9 @@
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="Dark">
+            <StaticResource x:Key="TaskCardSelectionIndicatorBrush" ResourceKey="ListViewItemSelectionIndicatorBrush" />
+            <StaticResource x:Key="TaskCardSelectionIndicatorPointerOverBrush" ResourceKey="ListViewItemSelectionIndicatorPointerOverBrush" />
+            <StaticResource x:Key="TaskCardSelectionIndicatorPressedBrush" ResourceKey="ListViewItemSelectionIndicatorPressedBrush" />
             <StaticResource x:Key="ListHeaderPlaceholderBrush" ResourceKey="AccentTextFillColorPrimaryBrush" />
             <Thickness x:Key="ListHeaderButtonBorderThickness">1</Thickness>
             <Thickness x:Key="TitleSearchBorderThickness">0</Thickness>
@@ -75,6 +81,10 @@
         </ResourceDictionary>
 
         <ResourceDictionary x:Key="HighContrast">
+            <!-- Selected cards keep ButtonFace rather than the stock presenter's Highlight backplate. -->
+            <StaticResource x:Key="TaskCardSelectionIndicatorBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TaskCardSelectionIndicatorPointerOverBrush" ResourceKey="SystemColorButtonTextColorBrush" />
+            <StaticResource x:Key="TaskCardSelectionIndicatorPressedBrush" ResourceKey="SystemColorButtonTextColorBrush" />
             <StaticResource x:Key="ListHeaderPlaceholderBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <Thickness x:Key="ListHeaderButtonBorderThickness">0</Thickness>
             <Thickness x:Key="TitleSearchBorderThickness">1</Thickness>

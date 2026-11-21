@@ -278,7 +278,7 @@ fill) + `ContentPresenter`, with `CommonStates`, `DisabledStates`, and
 | Metadata | `CaptionTextBlockStyle`, `TextFillColorSecondaryBrush`, single line, ellipsised, 2 px above baseline gap |
 | Hover | Background → `CardBackgroundFillColorSecondaryBrush` |
 | Pressed | Background → `SubtleFillColorTertiaryBrush` |
-| Selected (hybrid DEV preview) | Keep the card and its existing fill; add the Gallery's system-accent pill, 4 DIPs from the inside left edge, 3 × 16 DIPs at rest and 3 × 10 while pressed. Use WinUI's `ListViewItemSelectionIndicator*` brushes and radius, including the contrast theme. |
+| Selected (hybrid DEV preview) | Keep the card and its existing fill; add the Gallery's system-accent pill, 4 DIPs from the inside left edge, 3 × 16 DIPs at rest and 3 × 10 while pressed. Light and Dark use WinUI's `ListViewItemSelectionIndicator*` brushes and radius. High Contrast uses system ButtonText on the retained ButtonFace backplate; disabled retains WinUI's GrayText. |
 | Activation | Clicking a row selects it and opens detail; Ctrl+click toggles membership and Esc clears selection |
 | Drag-over | 2 px accent insertion line, 4 px inset |
 
