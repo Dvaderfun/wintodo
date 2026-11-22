@@ -4851,3 +4851,13 @@ notice. The refresh checks the expected commit and retains unrelated skills.
 A scratch refresh verified the mirrored files and exact license bytes; a wrong
 commit was rejected. The x64 build passed with zero warnings and all 707 unit
 tests passed. No app behavior changed or new UI gate result is claimed.
+
+### 2026-11-22 — Refresh the GitHub README
+
+The README now pairs the Glide icon and official Microsoft Store button with
+the Store gallery’s My Day capture. The button and screenshot follow the
+reader’s light or dark theme. Three linked badges show the Windows requirement,
+supported processors and source licence. Both themes were rendered locally;
+the badges wrapped at phone width, and all local targets, badge images and the
+Wintodo Store link were verified. On `dev`, the x64 build passed without
+warnings and all 720 unit tests passed.
