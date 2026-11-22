@@ -4993,3 +4993,28 @@ were exercised in scratch checkouts, including rejection of an incorrect pin.
 Main retains v0.7.1; its x64 build passed with zero warnings, all 707 unit tests
 and all 206 script tests passed. DEV retains WinAppCli v0.8.0; its weekly vendor
 proposal also verifies both copies of the license and includes upstream changes.
+
+### 2026-11-22 — Consolidate development and verify the surviving checkout
+
+`dev` includes the previous `dev/preview` and `maintenance/nov21-review` heads.
+The unselected Gallery layout and the SDK 2.7.0 evaluation remain archived.
+All 12 linked checkouts had clean indexes and working trees before removal.
+Their 20,965 ignored files (11,242,594,867 bytes) matched their archived copies
+by SHA-256. Three older detached snapshots had identical full trees in `main`.
+The local recovery guide is `artifacts/worktree-recovery/20261122-consolidation/README.md`.
+
+Eleven independent historical dependency clones under `artifacts/` also had no
+unmerged product work. Their source snapshots and private SQLite diagnostics
+remain in place; their Git metadata was backed up separately. The private
+recovery material is not part of the repository or the app package.
+
+From the primary checkout, DEV built with zero warnings; all 720 unit tests
+and all 243 script tests passed. The Settings gate in WintodoTest passed 10/10,
+including the week-start scenario that previously timed out. All ten captures
+were reviewed (`run-settings-gate-20261122-021256.log`). No release or new
+installer is implied by these checks.
+
+The app XAML uses explicit modes on all 456 compiled bindings on `main` and
+457 on `dev`; both have 12 two-way text editor bindings with immediate updates.
+The design audit still found a 2-DIP sync-account gap and four hardcoded
+navigation icon sizes. These visual details were not changed by consolidation.
