@@ -43,10 +43,14 @@ class ProposalTests(unittest.TestCase):
             for repo, prefixes in [(self.root, P.MIRRORS), (self.public, [P.SOURCE])]:
                 for prefix in prefixes:
                     put(repo, f"{prefix}/{skill}/SKILL.md", "original instructions\n")
+        put(self.public, "LICENSE", "original upstream notice\n")
+        for mirror in P.MIRRORS:
+            put(self.root, mirror + "/LICENSE", "original upstream notice\n")
         self.old = commit(self.public)
         GIT(self.public, "tag", "v1.0.0")
         put(self.public, P.SOURCE + "/winui-design/SKILL.md", "next public instructions\n")
         put(self.public, P.SOURCE + "/winui-design/references/new.md", "public reference\n")
+        put(self.public, "LICENSE", "updated upstream notice\n")
         self.new = commit(self.public)
         GIT(self.public, "tag", "v1.1.0")
         tick = chr(96)
@@ -86,6 +90,8 @@ class ProposalTests(unittest.TestCase):
         for mirror in P.MIRRORS:
             self.assertEqual("next public instructions\n", (self.root / mirror / "winui-design/SKILL.md").read_text())
             self.assertEqual("public reference\n", (self.root / mirror / "winui-design/references/new.md").read_text())
+            self.assertEqual(GIT(self.public, "cat-file", "blob", self.new + ":LICENSE"),
+                             (self.root / mirror / "LICENSE").read_bytes())
         self.assertIn(self.new, (self.root / P.UPDATER).read_text())
         self.assertIn(self.new, (self.root / P.MANIFEST).read_text())
         self.assertEqual(self.digest, json.loads((self.root / P.PIN).read_text())["sha256"])
@@ -103,6 +109,19 @@ class ProposalTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             P.prepare(self.root, self.output)
         self.assertFalse(self.output.exists())
+
+    def test_divergent_or_missing_license_blocks_even_a_noop(self):
+        self.latest = "v1.0.0"
+        license_file = self.root / P.MIRRORS[1] / "LICENSE"
+        license_file.write_text("local-only license\n", encoding="utf-8")
+        for state in ("divergent", "missing"):
+            with self.subTest(state=state):
+                if state == "missing":
+                    license_file.unlink()
+                commit(self.root)
+                with self.assertRaises(ValueError):
+                    P.prepare(self.root, self.output)
+                self.assertFalse(self.output.exists())
 
     def test_asset_mismatch_prevents_even_a_valid_skill_update_being_written(self):
         self.archive.write_bytes(b"different")

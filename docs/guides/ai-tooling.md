@@ -23,6 +23,7 @@ are committed at a pinned release tag:
   Cursor, Gemini and others.
 - `.claude/skills/winui-*` — identical mirror for Claude Code.
 - `.agents/skills/VENDORED.md` — tag, commit and date.
+- Both mirrors include the [upstream license](../../.agents/skills/LICENSE).
 
 | Skill | Use it when |
 |---|---|
@@ -33,13 +34,15 @@ are committed at a pinned release tag:
 | `winui-ui-testing` | Writing or running a `winapp ui` suite |
 | `winui-packaging` | MSIX, signing, CI release, Store (M10); AOT source-generation patterns |
 
-Not vendored: `winui-wpf-migration` (no WPF here) and `winui-session-report`
-(user-invoked agent-session diagnostics; available from the user-level plugin).
+The only other skill in this upstream release is `winui-wpf-migration`. It is
+not vendored because Wintodo has no WPF code to migrate.
 
 **Updating:** after checking the stable release and its full commit on the Microsoft repository, use
 `.\scripts\Update-AgentSkills.ps1 -Tag vX.Y.Z -ExpectedCommit <full-commit>`.
 Update the two defaults in the script in the same change. Review the upstream
-release notes, update these guides if commands changed, then commit. The former
+release notes and any license change, update these guides if commands changed,
+then commit. The weekly vendor patch verifies both copies of the license along
+with the skills. The former
 `microsoft/win-dev-skills` repository is now a catalog, not the source of these files.
 Minor releases can break things
 (0.7 removed `BuildAndRun.ps1` and the bundled analyzer). Never hand-edit the

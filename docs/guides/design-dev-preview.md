@@ -12,7 +12,7 @@ The builder verifies the existing local test publisher. On that machine installa
 
 ## Rebuild
 
-From the preview worktree, commit the UI changes and run:
+From the repository root with `dev` checked out, commit the UI changes and run:
 
 ```powershell
 .\scripts\Build-DevPreview.ps1
@@ -41,7 +41,7 @@ before closing the new version and exercises the chosen card and title design.
 ## DEV CI recommendation
 
 Keep the same build and unit checks for both channels. If DEV packages become
-routine, add a separate on-demand job for the `dev/preview` branch and the
+routine, add a separate on-demand job for the `dev` branch and the
 `Wintodo.Hybrid.Dev` identity. Build and validate an unsigned x64 package there
 and finish signing locally with the existing developer key. Keep the revision
 increasing so App Installer can update in place. No hosted DEV workflow or

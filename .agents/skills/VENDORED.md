@@ -8,6 +8,7 @@ folders by hand; re-run the script instead.
 - Commit: `696222f72e80c669671845bd6c7b0286eefab987`
 - Vendored: 2026-11-20
 - Mirrored to: `.claude/skills/`
+- License: [upstream license](LICENSE), included in both copies.
 
 - `winui-setup`
 - `winui-dev-workflow`

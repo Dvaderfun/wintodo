@@ -29,10 +29,10 @@ These ratios use [WCAG relative luminance](https://www.w3.org/WAI/WCAG22/Underst
 
 ## Capture the signed package in WintodoTest
 
-Use the [DEV installer and build instructions](../guides/design-dev-preview.md). From the preview worktree, place the specific build’s installer and generated metadata in the ignored input directory:
+Use the [DEV installer and build instructions](../guides/design-dev-preview.md). From the repository root with `dev` checked out, place the specific build’s installer and generated metadata in the ignored input directory:
 
 ~~~powershell
-$build = '..\dev-preview\1.0.1.180-7fa57e14' # use the actual directory printed by Build-DevPreview.ps1
+$build = 'artifacts\dev-preview\1.0.1.180-7fa57e14' # use the actual directory printed by Build-DevPreview.ps1
 $metadata = Join-Path $build 'build.json'
 $msix = Join-Path $build (Get-Content -LiteralPath $metadata -Raw | ConvertFrom-Json).file
 $inputDirectory = New-Item -Path artifacts\hybrid-input -ItemType Directory -Force

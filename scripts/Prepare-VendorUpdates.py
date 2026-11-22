@@ -40,15 +40,21 @@ def text_blob(root, oid):
 
 def tree(root, ref, prefix):
     paths = {}
-    entries = git(root, "ls-tree", "-rz", ref, "--", *(prefix + "/" + skill for skill in SKILLS))
+    license_path = "LICENSE" if prefix == SOURCE else prefix + "/LICENSE"
+    entries = git(root, "ls-tree", "-rz", ref, "--", license_path, *(prefix + "/" + skill for skill in SKILLS))
     for entry in entries.rstrip(b"\0").split(b"\0"):
         meta, path = entry.decode("utf-8").split("\t")
         mode, kind, oid = meta.split()
-        path = path.removeprefix(prefix + "/")
-        H.require(mode == "100644" and kind == "blob" and re.fullmatch(r"winui-[a-z-]+/(?:[a-zA-Z0-9_-]+/)*[a-zA-Z0-9_-]+\.md", path))
-        H.require(path.split("/")[0] in SKILLS and path.casefold() not in (p.casefold() for p in paths))
+        H.require(mode == "100644" and kind == "blob")
+        if path == license_path:
+            path = "LICENSE"
+        else:
+            path = path.removeprefix(prefix + "/")
+            H.require(re.fullmatch(r"winui-[a-z-]+/(?:[a-zA-Z0-9_-]+/)*[a-zA-Z0-9_-]+\.md", path))
+            H.require(path.split("/")[0] in SKILLS)
+        H.require(path.casefold() not in (p.casefold() for p in paths))
         paths[path] = H.exact(H.SHA, oid)
-    H.require(len(paths) <= 100 and all(skill + "/SKILL.md" in paths for skill in SKILLS))
+    H.require("LICENSE" in paths and len(paths) <= 101 and all(skill + "/SKILL.md" in paths for skill in SKILLS))
     return paths
 
 
@@ -92,7 +98,7 @@ def skill_changes(root, tmp):
     for name in sorted(current.keys() | candidate.keys()):
         if current.get(name) == candidate.get(name):
             continue
-        # Only public publisher Markdown may enter the patch, including its removed lines.
+        # Only public publisher Markdown and the upstream license may enter the patch, including removed lines.
         versions = (text_blob(before, current[name]) if name in current else None,
                     text_blob(after, candidate[name]) if name in candidate else None)
         for mirror in MIRRORS:
