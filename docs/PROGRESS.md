@@ -15,10 +15,12 @@ update the list and open detail; date-only tasks retain their calendar day
 in Planned and in accessible row labels. These changes are in the private DEV
 installer; the Store package predates them.
 
-**Private DEV build (this branch only):** Wintodo DEV **1.0.1.222** is the
-signed x64 build of `b6988b22`. It keeps the [owner-tested appearance](design/hybrid-preview.md)
-and includes the My Day changes above. WintodoTest verified that updating from
-1.0.1.188 keeps the existing task and note. See the [installer guide](guides/design-dev-preview.md).
+**Private DEV build (this branch only):** Wintodo DEV **1.0.1.224** is the
+signed x64 build of `c7400210`. Choosing Repeat now sets an undated task due
+today; checking it off advances its due date. The build keeps the My Day
+changes above and the [owner-tested appearance](design/hybrid-preview.md).
+WintodoTest verified the update from .222 with an existing undated daily task
+and note. See the [installer guide](guides/design-dev-preview.md).
 
 As of 2026-11-21:
 
@@ -5110,3 +5112,16 @@ task with neither a due date nor a start date gains its next due date when
 completed; undo restores the previously missing date. Start-only calendar
 tasks keep their start-only schedule. The x64 build passed without warnings
 and all 742 unit tests passed, with no skips.
+
+WintodoTest passed all five composer and detail checks: selecting Daily showed
+**Due Today**, row completion advanced it to **Due Tomorrow**, and completing
+a new Weekly task from detail advanced it to **Due Next week**. Selecting
+Weekly also preserved an explicit **Due Tomorrow**. The detail screenshot
+showed both the due date and Daily in their active styles
+(`run-composer-layout-gate-20261122-221009.log`).
+
+The signed x64 Native AOT installer **1.0.1.224** passed the signature,
+structure and privacy checks. WintodoTest passed all eight installed-package
+checks when upgrading from **1.0.1.222**. The old daily task and note survived
+the update and restart. Completing the task made it due tomorrow with the
+same UID and an unchecked box (`run-dev-preview-gate-20261122-221746.log`).

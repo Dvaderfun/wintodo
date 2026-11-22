@@ -4,7 +4,9 @@ Open the signed `Wintodo-DEV-…-x64.msix` using App Installer and choose **Inst
 
 A first install starts with its own empty task database. Updating DEV keeps that database. Create a list and a few sample tasks, select a row, and rename the list. The card boundaries stay in place; the selected marker and title editor are the changes to compare. No F8 switch is needed. The Store app remains separately available as **Wintodo**.
 
-Use **1.0.1.222** to try the My Day update. Tasks due today appear automatically, and changing a due date or completing a task from its row updates the open detail pane. This version keeps the November data integrity fixes from **1.0.1.188**. [The appearance notes](../design/hybrid-preview.md) describe the DEV selection marker, list title editor and tested palettes.
+Use **1.0.1.224** to try Repeat. On a task with no due date, choose **Repeat → Weekly**: it becomes due today. Mark it done and the same task stays open, due next week. If a task from **1.0.1.222** already repeats daily but says **Add due date**, marking it done makes it due tomorrow. You can also choose **Add due date → Today** to give it today's deadline without completing it.
+
+Tasks due today appear automatically in My Day, and a row edit updates the open detail pane. [The appearance notes](../design/hybrid-preview.md) describe the DEV selection marker, list title editor and tested palettes.
 
 The package is named `Wintodo.Hybrid.Dev` and uses a local developer publisher, `CN=AppPublisher`. Its AUMID, package LocalState (tasks, attachments and settings), reminder activation class and startup registration are separate. Database launch/environment overrides are ignored in this build, and its vault resource names have a DEV prefix. To keep the comparison local, use sample tasks; connecting both apps to the same real CalDAV account would intentionally synchronize that remote calendar. Uninstalling **Wintodo DEV** removes only the preview and its local data.
 
