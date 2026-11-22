@@ -28,17 +28,18 @@ function Ui([string[]]$Command) {
 
 function Assert-MyDay([bool]$Included) {
     $label = if ($Included) { 'Added to My Day' } else { 'Add to My Day' }
+    $navigationName = if ($Included) { 'My Day, 1 tasks' } else { 'My Day' }
     Ui @('wait-for', 'Todo.Detail.MyDay', '--property', 'Name', '--value', $label, '-t', '5000') | Out-Null
+    Ui @('wait-for', 'Todo.Nav.MyDay', '--property', 'Name', '--value', $navigationName, '-t', '5000') | Out-Null
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
     do {
         $tree = (Ui @('inspect', '--depth', '30', '--hide-offscreen', '--json')) -join "`n"
-        $hasBadge = $tree.Contains('Todo.Nav.MyDay.Count')
         $hasMetadata = $tree -match ' (?:·|\\u00b7) My Day'
-        if ($hasBadge -eq $Included -and $hasMetadata -eq $Included) { return }
+        if ($hasMetadata -eq $Included) { return }
         Start-Sleep -Milliseconds 200
     } while ([DateTime]::UtcNow -lt $deadline)
     $tree | Set-Content (Join-Path $artifacts 'failure-tree.txt')
-    throw "Expected My Day sidebar badge and row metadata visibility to be $Included."
+    throw "Expected My Day row metadata visibility to be $Included."
 }
 
 try {
@@ -81,7 +82,7 @@ public static class MyDayGateWindow
 '@
     Set-TestClock ([DateTime]::new(2026, 11, 21, 0, 1, 0))
     $window = (Ui @('list-windows', '--json') | ConvertFrom-Json) |
-        Where-Object title -eq 'Wintodo' | Select-Object -First 1
+        Where-Object title -like 'Wintodo*' | Select-Object -First 1
     if (-not $window) { throw 'The Wintodo window was not found for rollover.' }
     $handle = if ("$($window.hwnd)" -match '^0x') {
         [IntPtr]::new([Convert]::ToInt64("$($window.hwnd)".Substring(2), 16))
@@ -91,7 +92,16 @@ public static class MyDayGateWindow
     [MyDayGateWindow]::ShowWindowAsync($handle, 9) | Out-Null
     [MyDayGateWindow]::SetForegroundWindow($handle) | Out-Null
     Assert-MyDay $false
-    Write-Host 'My Day UI gate: PASS (automatic add, dismissal, undo, rollover)'
+
+    # Changing a due date from the row must refresh the same open detail.
+    Ui @('click', $row.automationId, '--right') | Out-Null
+    Ui @('wait-for', 'Todo.Row.Selection.Due', '-t', '5000') | Out-Null
+    Ui @('invoke', 'Todo.Row.Selection.Due') | Out-Null
+    Ui @('invoke', 'Todo.Row.Selection.Due.Today') | Out-Null
+    Assert-MyDay $true
+    Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Today', '-t', '5000') | Out-Null
+    Ui @('screenshot', '-o', (Join-Path $artifacts 'due-date-updated.png')) | Out-Null
+    Write-Host 'My Day UI gate: PASS (automatic inclusion, dismissal, undo, manual pin, rollover, due date change from row)'
 } finally {
     Stop-Process -Id $appPid -ErrorAction SilentlyContinue
 }

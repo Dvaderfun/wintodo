@@ -15,7 +15,7 @@ public sealed partial class TaskListViewModel
 
     internal event Action<IReadOnlyList<TaskItemViewModel>>? DeleteTasksRequested;
     internal event Action? DueDatePickerRequested;
-    internal event Func<IReadOnlyList<string>, Task>? MyDayMembershipChanged;
+    internal event Func<IReadOnlyList<string>, Task>? TaskDatesChanged;
 
     internal void SetSelection(IEnumerable<TaskItemViewModel> items)
     {
@@ -47,10 +47,10 @@ public sealed partial class TaskListViewModel
         var states = await _taskStore.CaptureTaskUndoAsync(uids, UndoFields(action));
         await _taskStore.ApplyTaskBatchAsync(uids, action, date: date,
             destinationListId: destinationListId, moveStarredToTop: _preferences.MoveStarredToTop);
-        if (action is TaskBatchAction.AddToMyDay or TaskBatchAction.RemoveFromMyDay
-            && MyDayMembershipChanged is not null)
-            await MyDayMembershipChanged(uids);
         RecordTaskUndo(states, action == TaskBatchAction.Move ? "Undo_TaskMoved" : "Undo_TasksChanged");
+        if (action is TaskBatchAction.AddToMyDay or TaskBatchAction.RemoveFromMyDay or TaskBatchAction.SetDueDate
+            && TaskDatesChanged is not null)
+            await TaskDatesChanged(uids);
         if (action == TaskBatchAction.Complete) _completedExpanded = true;
         await ReloadAsync();
         NavigationDataChanged?.Invoke();
@@ -74,8 +74,8 @@ public sealed partial class TaskListViewModel
             _ => throw new ArgumentOutOfRangeException(nameof(target)),
         };
         await _taskStore.ApplyTaskBatchAsync(uids, action, moveStarredToTop: _preferences.MoveStarredToTop);
-        if (action == TaskBatchAction.AddToMyDay && MyDayMembershipChanged is not null)
-            await MyDayMembershipChanged(uids);
+        if (action == TaskBatchAction.AddToMyDay && TaskDatesChanged is not null)
+            await TaskDatesChanged(uids);
         await ReloadAsync();
         NavigationDataChanged?.Invoke();
     }
@@ -94,10 +94,11 @@ public sealed partial class TaskListViewModel
 
     internal async Task SetTasksDueDateAsync(IReadOnlyList<TaskItemViewModel> items, DateOnly date)
     {
-        var states = await _taskStore.CaptureTaskUndoAsync(items.Select(item => item.Uid).ToArray(), TaskUndoFields.Due);
-        await _taskStore.ApplyTaskBatchAsync(items.Select(item => item.Uid).ToArray(),
-            TaskBatchAction.SetDueDate, date: date);
+        string[] uids = items.Select(item => item.Uid).ToArray();
+        var states = await _taskStore.CaptureTaskUndoAsync(uids, TaskUndoFields.Due);
+        await _taskStore.ApplyTaskBatchAsync(uids, TaskBatchAction.SetDueDate, date: date);
         RecordTaskUndo(states, "Undo_TasksChanged");
+        if (TaskDatesChanged is not null) await TaskDatesChanged(uids);
         await ReloadAsync();
         NavigationDataChanged?.Invoke();
     }

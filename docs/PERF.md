@@ -499,3 +499,20 @@ Debug build again had zero warnings/errors. A separate full serial run passed
 707/707 (zero skipped) in 17.871 s before Native AOT packaging started. On
 this run My Day took **3.053 ms** and the worst warm FTS query **1.192 ms**.
 These are two observations of the same unchanged store, not a speedup claim.
+
+### 2026-11-22 — My Day after PR #8
+
+Debug x64, `SmartListPerformanceTests`, 10,000 tasks, 5 ms budget.
+The review ran the base and PR benchmark separately on the same laptop. DEV
+was measured in the full suite with parallel test modules and again in isolation.
+
+| Revision and run | Best warm My Day query | Result |
+|---|---:|---|
+| PR base `d8efe5e`, focused | 1.801 ms | PASS |
+| PR head `c07f510`, focused | 6.180 ms | FAIL |
+| DEV merge plus date fixes, full suite | 14.351 ms | FAIL |
+| DEV merge plus date fixes, focused | 9.564 ms | FAIL |
+
+These runs do not isolate power settings or test contention. The owner
+accepted integrating the feature and addressing the two functional issues
+first. The 5 ms threshold remains unchanged.

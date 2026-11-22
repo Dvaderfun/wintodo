@@ -163,6 +163,38 @@ public sealed class TaskStoreTests
         Assert.Equal(timed.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
     }
 
+    [Theory]
+    [InlineData(3, 29, 30)] // The spring jump skips midnight and ends at 00:30 local.
+    [InlineData(10, 25, 0)] // The autumn clock reaches midnight twice, an hour apart.
+    public async Task MyDayChangesAtTheFirstInstantOfTheLocalDate(int month, int day, int utcMinute)
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        DateTime start = new(2026, 1, 1);
+        DateTime end = new(2026, 12, 31);
+        var adjustment = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(start, end, TimeSpan.FromHours(1),
+            TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 23, 30, 0), 3, 28),
+            TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 1, 0, 0), 10, 25));
+        fixture.Clock.LocalTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "Midnight transitions", TimeSpan.FromHours(-1), "Midnight transitions", "Standard", "Daylight",
+            [adjustment]);
+        var boundary = new DateTimeOffset(2026, month, day, 0, utcMinute, 0, TimeSpan.Zero);
+        var token = TestContext.Current.CancellationToken;
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: token);
+        TodoTask before = await AddTaskAsync(fixture, list.Id, "Before today's start", 0, boundary.AddTicks(-1));
+        TodoTask after = await AddTaskAsync(fixture, list.Id, "At today's start", 0, boundary);
+        TodoTask later = await AddTaskAsync(fixture, list.Id, "After the transition", 0, boundary.AddMinutes(75));
+
+        fixture.Clock.UtcNow = boundary.AddTicks(-1);
+        Assert.Equal(new DateOnly(2026, month, day).AddDays(-1), fixture.Clock.Today);
+        Assert.Equal(before.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
+        Assert.Equal(1, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
+
+        fixture.Clock.UtcNow = boundary;
+        Assert.Equal(new DateOnly(2026, month, day), fixture.Clock.Today);
+        Assert.Equal([after.Uid, later.Uid], (await QueryAsync(fixture, ListQueryKind.MyDay)).Select(task => task.Uid));
+        Assert.Equal(2, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
+    }
+
     [Fact]
     public async Task SmartListsAndSorts_ReturnExpectedTopLevelTasks()
     {

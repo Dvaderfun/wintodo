@@ -567,7 +567,7 @@ partial index — verify with `EXPLAIN QUERY PLAN`.
 
 | List | Predicate |
 |---|---|
-| **My Day** | Manually added today, or due today and not removed from My Day today. Deleted tasks are excluded. Date-only deadlines match the local calendar date. Timed deadlines match the UTC interval for the local day. |
+| **My Day** | Manually added today, or due today and not removed from My Day today. Deleted tasks are excluded. Date-only deadlines match the local calendar date. Timed deadlines match the UTC interval from the first valid instant of this date to the first valid instant of the next date. |
 | **Important** | `priority BETWEEN 1 AND 4 AND is_deleted = 0` |
 | **Planned** | `due_utc IS NOT NULL AND is_deleted = 0`, grouped: overdue `< @todayStart AND status <> 2` · today · tomorrow · this week · later · (no-date excluded) |
 | **All** | `is_deleted = 0 AND parent_uid IS NULL` |
@@ -581,8 +581,10 @@ single flat query — never one query per node.
 
 `My Day` reset: a task's `my_day_date` is not cleared at midnight. The query
 stops matching yesterday's manual additions and deadlines, and picks up the new
-day's deadlines. A single `DispatcherQueueTimer` set for the next local
-midnight (plus a check on app resume and on window activation) re-runs the query.
+day's deadlines. A single `DispatcherQueueTimer` set for the first valid instant
+of the next local date (plus a check on app resume and on window activation)
+re-runs the query. This is the first occurrence if midnight repeats, or the
+first valid time after the jump if midnight is skipped.
 Nothing is written at midnight — this survives the app being closed, suspended,
 or the machine being asleep.
 

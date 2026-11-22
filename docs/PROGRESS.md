@@ -9,6 +9,9 @@ The working copy uses one checkout for `main` and `dev`. On 2026-11-22 the 12
 secondary worktrees were retired; their local installers, test evidence and build
 outputs were verified and preserved under the ignored `artifacts/worktree-recovery/`.
 Development, including the selected preview and maintenance work, is on `dev`.
+The `dev` source includes PR #8's automatic My Day membership and schema 006,
+plus fixes for due-date changes with detail open and local day rollover. The
+package versions below predate these changes.
 
 As of 2026-11-21:
 
@@ -5043,3 +5046,24 @@ and re-upgrade. They added the guest gate but did not run it on their host.
 The owner accepted merging the reviewed revision into `dev` first, with the
 remaining fixes to follow there. The merge keeps DEV's edit draining and
 text-only saves in the detail pane.
+
+### 2026-11-22 — My Day follow-up on DEV
+
+Merged `c07f510` into local `dev` as `8c2d00e` before making the fixes.
+Due-date changes from a row update My Day and the open detail while preserving
+the text editor. The SQLite query, sidebar count, and rollover timer share
+the first valid instant of the local day, handling repeated and skipped
+midnight.
+
+The Debug x64 build passed with no warnings. All 13 focused data cases
+passed, including repeated and skipped midnight, CalDAV dismissals, and
+the disposable schema-5 upgrade and backup restore. WintodoTest passed the
+My Day gate: automatic inclusion, dismissal, undo, manual pinning, rollover
+on activation, and the row due-date change with detail open. The captured
+row, count, and detail were visually checked
+(`run-my-day-gate-20261122-172452.log`).
+
+The full unit run passed 732/733, with no skips. Only the
+[10,000-task My Day query benchmark](PERF.md#2026-11-22--my-day-after-pr-8)
+missed the budget, both in the full suite and on its own. The threshold stays
+at 5 ms. No installed profile or Store release was used.

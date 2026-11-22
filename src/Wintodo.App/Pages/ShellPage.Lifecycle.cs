@@ -162,12 +162,8 @@ public sealed partial class ShellPage
         _midnightTimer.Tick += OnMidnightTimerTick;
         _midnightTimer.IsRepeating = false;
 
-        DateTime nextLocalMidnight = DateTime.SpecifyKind(
-            _clock.Today.AddDays(1).ToDateTime(TimeOnly.MinValue),
-            DateTimeKind.Unspecified);
-        DateTime nextUtc =
-            TimeZoneInfo.ConvertTimeToUtc(nextLocalMidnight, _clock.LocalTimeZone);
-        TimeSpan interval = nextUtc - _clock.UtcNow.UtcDateTime;
+        DateTimeOffset nextUtc = LocalDay.StartUtc(_clock.Today.AddDays(1), _clock.LocalTimeZone);
+        TimeSpan interval = nextUtc - _clock.UtcNow;
         _midnightTimer.Interval = interval > TimeSpan.Zero
             ? interval
             : TimeSpan.FromSeconds(1);

@@ -96,7 +96,7 @@ public sealed partial class TaskDetailViewModel
             await _taskStore.ApplyTaskBatchAsync([current.Uid],
                 remove ? TaskBatchAction.RemoveFromMyDay : TaskBatchAction.AddToMyDay);
             RecordUndo(states, "Undo_TasksChanged");
-            TodoTask? updated = await RefreshMyDayAsync([current.Uid]);
+            TodoTask? updated = await RefreshTaskDatesAsync([current.Uid]);
             if (updated is not null) TaskChanged?.Invoke(updated);
         }
         catch (Exception exception)
@@ -106,13 +106,21 @@ public sealed partial class TaskDetailViewModel
         }
     }
 
-    internal async Task<TodoTask?> RefreshMyDayAsync(IReadOnlyList<string> uids)
+    internal async Task<TodoTask?> RefreshTaskDatesAsync(IReadOnlyList<string> uids)
     {
         TodoTask? current = _model;
         if (current is null || !uids.Contains(current.Uid)) return null;
         TodoTask? updated = await _taskStore.GetTaskAsync(current.Uid);
         if (updated is null || !ReferenceEquals(_model, current)) return null;
 
+        if (current.Due != updated.Due || current.DueIsDateOnly != updated.DueIsDateOnly
+            || current.DueTzid != updated.DueTzid)
+        {
+            current.Due = updated.Due;
+            current.DueIsDateOnly = updated.DueIsDateOnly;
+            current.DueTzid = updated.DueTzid;
+            RefreshPendingDueDate(current);
+        }
         current.MyDayDate = updated.MyDayDate;
         current.MyDayExcludedDate = updated.MyDayExcludedDate;
         UpdateActionLabels();

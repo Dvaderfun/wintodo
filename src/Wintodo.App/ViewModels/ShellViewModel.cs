@@ -85,7 +85,7 @@ public sealed partial class ShellViewModel : ObservableObject
         _taskStore.StoreChanged += OnUndoStoreChanged;
         Detail.CloseRequested += CloseDetail;
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
-        TaskList.MyDayMembershipChanged += Detail.RefreshMyDayAsync;
+        TaskList.TaskDatesChanged += Detail.RefreshTaskDatesAsync;
         Detail.TaskDeleted += TaskList.ApplyDetailTaskDeleted;
         Detail.DeleteRequested += OnDetailDeleteRequested;
         InitializeImport(taskStore, clock, importEnvironment);
