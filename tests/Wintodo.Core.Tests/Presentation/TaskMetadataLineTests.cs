@@ -64,7 +64,29 @@ public sealed class TaskMetadataLineTests
         TaskMetadataResult result = TaskMetadataLine.Build(new() { Due = new(2026, 10, 5, 23, 0, 0, TimeSpan.Zero) },
             ListQueryKind.All, clock, null);
         Assert.True(result.IsDueToday);
-        Assert.Equal(clock.Today, Assert.Single(result.Parts).Date);
+        Assert.Equal(clock.Today, Assert.Single(result.Parts, part => part.Kind == TaskMetadataKind.DueDate).Date);
+    }
+
+    [Theory]
+    [InlineData(0, null, false, true)]
+    [InlineData(0, null, true, false)]
+    [InlineData(-1, -1, false, false)]
+    [InlineData(0, -1, false, true)]
+    [InlineData(-1, 0, false, true)]
+    public void MyDayBadgeUsesCurrentMembership(int dueOffset, int? pinOffset, bool dismissed, bool expected)
+    {
+        TimeZoneInfo zone = TimeZoneInfo.CreateCustomTimeZone("Test-07", TimeSpan.FromHours(-7), "Test-07", "Test-07");
+        IClock clock = new Clock(zone);
+        var task = new TodoTask
+        {
+            Due = new DateTimeOffset(clock.Today.AddDays(dueOffset).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero),
+            DueIsDateOnly = true,
+            MyDayDate = pinOffset is int days ? clock.Today.AddDays(days) : null,
+            MyDayExcludedDate = dismissed ? clock.Today : null,
+        };
+        var metadata = TaskMetadataLine.Build(task, ListQueryKind.UserList, clock, null);
+        Assert.Equal(expected, metadata.Parts.Any(part => part.Kind == TaskMetadataKind.MyDay));
+        Assert.Equal(dueOffset == 0, metadata.IsDueToday);
     }
 
     private sealed class Clock(TimeZoneInfo? zone = null) : IClock

@@ -45,7 +45,6 @@ public sealed partial class TaskDetailViewModel
         Note = task.Description ?? string.Empty;
         IsCompleted = task.Status == Wintodo.Core.Models.TaskStatus.Completed;
         IsImportant = task.Priority is >= 1 and <= 4;
-        IsMyDay = task.MyDayDate is not null;
         CreatedText = TaskDateLabels.FormatCreated(
             task.Created.ToLocalTime(),
             _resources.GetString("Detail_Created"),
@@ -77,7 +76,10 @@ public sealed partial class TaskDetailViewModel
         try
         {
             await Task.Delay(delay, cancellationToken);
-            await PersistModelAsync(cancellationToken);
+            if (await PersistModelAsync(cancellationToken) && !cancellationToken.IsCancellationRequested)
+            {
+                CancelPendingSave();
+            }
         }
         catch (OperationCanceledException)
         {
@@ -98,6 +100,7 @@ public sealed partial class TaskDetailViewModel
             TodoTask snapshot = CloneTask(current);
             snapshot.Summary = snapshot.Summary.Trim();
             await _taskStore.UpdateTaskAsync(snapshot, cancellationToken, moveStarredToTop: _preferences.MoveStarredToTop);
+            current.MyDayExcludedDate = snapshot.MyDayExcludedDate;
             current.SortOrder = snapshot.SortOrder;
             current.Sequence = snapshot.Sequence;
             current.LastModified = snapshot.LastModified;
@@ -159,6 +162,7 @@ public sealed partial class TaskDetailViewModel
             Sequence = source.Sequence,
             RRule = source.RRule,
             MyDayDate = source.MyDayDate,
+            MyDayExcludedDate = source.MyDayExcludedDate,
             SortOrder = source.SortOrder,
             Location = source.Location,
             Url = source.Url,

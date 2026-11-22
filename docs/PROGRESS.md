@@ -4843,6 +4843,29 @@ The fixed build passed the visual spacing, star and reorder checks (3/4).
 The completion scroll-position check still failed: the reference row moved
 356 px after completion (baseline: −360 px). The full gate remains open.
 
+### My Day includes tasks due today
+
+My Day and its navigation count include tasks due on the local calendar day.
+Removing a due-today task dismisses it for the current local day and preserves
+its due date. Adding it back clears the dismissal. The x64 Debug build and all
+709 unit tests passed. The UI gate is pending because the local Hyper-V
+management tools are unavailable.
+
+### 2026-11-22 — My Day dismissal review
+
+- CalDAV conflict adoption and remote moves preserve the current local My Day
+  dismissal. Dismissal-only writes and undo publish store notifications while
+  keeping the sync queue, sequence, and modification timestamp unchanged.
+- The row uses today's membership for the My Day indicator. Date changes refresh
+  the list, sidebar count, and open task detail. Detail My Day changes support
+  undo through the shared task batch path.
+- Debug x64 build passed with warnings as errors. All 718 unit tests passed,
+  including the disposable schema-5 upgrade, row preservation, backup restore,
+  and re-upgrade. The installed DEV profile was not opened.
+- The My Day guest gate covers automatic inclusion, dismissal, undo, manual
+  pinning, and rollover. Execution is pending because the host lacks the
+  Hyper-V cmdlets and virtualization management namespace for WintodoTest.
+  
 ### 2026-11-22 — Verify the vendored WinUI skills
 
 The six selected skills and their references in both mirrors match the 11 files

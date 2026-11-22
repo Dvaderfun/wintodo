@@ -130,6 +130,8 @@ public sealed partial class TaskDetailViewModel
         if (await PersistModelAsync()) RecordUndo(states, "Undo_ReminderCleared");
     }
 
+    internal void RefreshDateLabels() => UpdateActionLabels();
+
     private void UpdateActionLabels()
     {
         if (_model is null)
@@ -137,9 +139,10 @@ public sealed partial class TaskDetailViewModel
             return;
         }
 
-        MyDayLabel = _model.MyDayDate is null
-            ? _resources.GetString("Detail_AddToMyDay")
-            : _resources.GetString("Detail_AddedToMyDay");
+        IsMyDay = TaskDateLabels.IsInMyDay(_model, _clock);
+        MyDayLabel = _resources.GetString(IsMyDay
+            ? "Detail_AddedToMyDay"
+            : "Detail_AddToMyDay");
         DueLabel = _model.Due is null
             ? _resources.GetString("Detail_AddDueDate")
             : string.Format(

@@ -15,6 +15,7 @@ public sealed partial class TaskListViewModel
 
     internal event Action<IReadOnlyList<TaskItemViewModel>>? DeleteTasksRequested;
     internal event Action? DueDatePickerRequested;
+    internal event Func<IReadOnlyList<string>, Task>? MyDayMembershipChanged;
 
     internal void SetSelection(IEnumerable<TaskItemViewModel> items)
     {
@@ -31,7 +32,7 @@ public sealed partial class TaskListViewModel
     internal TaskItemViewModel[] ActionTargets(TaskItemViewModel row) =>
         SelectedTasks.Contains(row) ? SelectedTasks.ToArray() : [row];
 
-    internal bool SelectionIsInMyDay => SelectedTasks.All(item => item.Model.MyDayDate == _clock.Today);
+    internal bool SelectionIsInMyDay => SelectedTasks.All(item => Wintodo.Core.Presentation.TaskDateLabels.IsInMyDay(item.Model, _clock));
 
     internal string SelectionLabel(string key) => string.Format(
         Services.DisplayCulture.Current,
@@ -46,6 +47,9 @@ public sealed partial class TaskListViewModel
         var states = await _taskStore.CaptureTaskUndoAsync(uids, UndoFields(action));
         await _taskStore.ApplyTaskBatchAsync(uids, action, date: date,
             destinationListId: destinationListId, moveStarredToTop: _preferences.MoveStarredToTop);
+        if (action is TaskBatchAction.AddToMyDay or TaskBatchAction.RemoveFromMyDay
+            && MyDayMembershipChanged is not null)
+            await MyDayMembershipChanged(uids);
         RecordTaskUndo(states, action == TaskBatchAction.Move ? "Undo_TaskMoved" : "Undo_TasksChanged");
         if (action == TaskBatchAction.Complete) _completedExpanded = true;
         await ReloadAsync();
@@ -70,6 +74,8 @@ public sealed partial class TaskListViewModel
             _ => throw new ArgumentOutOfRangeException(nameof(target)),
         };
         await _taskStore.ApplyTaskBatchAsync(uids, action, moveStarredToTop: _preferences.MoveStarredToTop);
+        if (action == TaskBatchAction.AddToMyDay && MyDayMembershipChanged is not null)
+            await MyDayMembershipChanged(uids);
         await ReloadAsync();
         NavigationDataChanged?.Invoke();
     }

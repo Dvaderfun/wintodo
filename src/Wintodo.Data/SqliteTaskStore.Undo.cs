@@ -79,7 +79,11 @@ public sealed partial class SqliteTaskStore
                     task.Priority = before.Priority;
                     task.SortOrder = before.SortOrder;
                 }
-                if ((fields & TaskUndoFields.MyDay) != 0) task.MyDayDate = before.MyDayDate;
+                if ((fields & TaskUndoFields.MyDay) != 0)
+                {
+                    task.MyDayDate = before.MyDayDate;
+                    task.MyDayExcludedDate = before.MyDayExcludedDate;
+                }
                 if ((fields & TaskUndoFields.Completion) != 0)
                 {
                     task.Status = before.Status;
@@ -107,12 +111,15 @@ public sealed partial class SqliteTaskStore
                     task.Alarms.AddRange(before.Alarms);
                     ReplaceTaskCollections(connection, transaction, task);
                 }
-                task.LastModified = _clock.UtcNow;
-                task.Sequence++;
-                task.IsDirty = true;
+                if (fields != TaskUndoFields.MyDay || task.MyDayDate != membershipBefore.MyDayDate)
+                {
+                    task.LastModified = _clock.UtcNow;
+                    task.Sequence++;
+                    task.IsDirty = true;
+                    LogChange(connection, transaction, TaskEntityType, task.Uid,
+                        task.IsDeleted ? ChangeOperation.Delete : ChangeOperation.Update);
+                }
                 UpdateTaskRow(connection, transaction, task);
-                LogChange(connection, transaction, TaskEntityType, task.Uid,
-                    task.IsDeleted ? ChangeOperation.Delete : ChangeOperation.Update);
                 if (membershipBefore.ListId != task.ListId)
                     RecordMove(connection, transaction, task, membershipBefore, moveGroup);
                 if (membershipBefore.IsDeleted && !task.IsDeleted)

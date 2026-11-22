@@ -23,7 +23,8 @@ public static class TaskMetadataLine
     public static TaskMetadataResult Build(TodoTask task, ListQueryKind? context, IClock clock, string? listName)
     {
         DateOnly? dueDate = task.Due is { } due
-            ? DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(due, clock.LocalTimeZone).DateTime)
+            ? DateOnly.FromDateTime(task.DueIsDateOnly
+                ? due.DateTime : TimeZoneInfo.ConvertTime(due, clock.LocalTimeZone).DateTime)
             : null;
         bool completed = task.Status == Models.TaskStatus.Completed;
         var parts = new List<TaskMetadataPart>(4);
@@ -39,7 +40,7 @@ public static class TaskMetadataLine
         {
             parts.Add(new(TaskMetadataKind.Repeat));
         }
-        if (task.MyDayDate is not null && context != ListQueryKind.MyDay)
+        if (context != ListQueryKind.MyDay && TaskDateLabels.IsInMyDay(task, clock))
         {
             parts.Add(new(TaskMetadataKind.MyDay));
         }
