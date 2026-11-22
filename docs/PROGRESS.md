@@ -5,6 +5,11 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
+The working copy uses one checkout for `main` and `dev`. On 2026-11-22 the 12
+secondary worktrees were retired; their local installers, test evidence and build
+outputs were verified and preserved under the ignored `artifacts/worktree-recovery/`.
+Development, including the selected preview and maintenance work, is on `dev`.
+
 As of 2026-11-20:
 
 Store-first under **Univera LLC** is selected in
