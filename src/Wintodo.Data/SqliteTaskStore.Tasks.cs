@@ -5,6 +5,7 @@ using Wintodo.Core.Models;
 using Wintodo.Core.Presentation;
 using Wintodo.Core.Queries;
 using Wintodo.Core.Recurrence;
+using Wintodo.Core.Services;
 using Wintodo.Data.Mapping;
 
 namespace Wintodo.Data;
@@ -40,7 +41,8 @@ public sealed partial class SqliteTaskStore
             connection =>
             {
                 using SqliteCommand command = connection.CreateCommand();
-                var sql = new StringBuilder($"SELECT {SqliteMapper.TaskColumns} FROM tasks t WHERE t.is_deleted = 0 AND t.parent_uid IS NULL");
+                string source = query.Kind == ListQueryKind.MyDay ? MyDaySource : "tasks";
+                var sql = new StringBuilder($"SELECT {SqliteMapper.TaskColumns} FROM {source} t WHERE t.is_deleted = 0 AND t.parent_uid IS NULL");
 
                 AppendListPredicate(sql, command, query);
                 if (!query.IncludeCompleted && query.Kind != ListQueryKind.Completed)
@@ -130,6 +132,7 @@ public sealed partial class SqliteTaskStore
 
                 task.Id = existing.Id;
                 task.Created = existing.Created;
+                task.MyDayExcludedDate = existing.MyDayExcludedDate;
                 task.LastModified = _clock.UtcNow;
                 task.Sequence = Math.Max(existing.Sequence, task.Sequence) + 1;
                 task.IsDirty = true;
@@ -411,6 +414,33 @@ public sealed partial class SqliteTaskStore
             cancellationToken);
     }
 
+    // Date-only values are YYYY-MM-DD; timed values are UTC instants. Seek a single
+    // range containing both, then exclude neighboring local dates within that range.
+    private const string MyDayAutomaticPredicate = """
+        t.my_day_excluded_date IS NOT @today
+        AND t.due_utc >= min(@today, @dayStart) AND t.due_utc < @dayEnd
+        AND (t.due_utc = @today OR (t.due_is_date_only = 0 AND t.due_utc >= @dayStart))
+        """;
+
+    private const string MyDayPredicate = $"(t.my_day_date = @today OR ({MyDayAutomaticPredicate}))";
+
+    // The branches are disjoint so SQLite can merge the pin and deadline index
+    // searches and apply the outer sort/limit without materializing every pin.
+    private const string MyDaySource = $"""
+        (SELECT t.* FROM tasks t WHERE t.my_day_date = @today
+         UNION ALL
+         SELECT t.* FROM tasks t WHERE t.my_day_date IS NOT @today AND {MyDayAutomaticPredicate})
+        """;
+
+    private void AddMyDayParameters(SqliteCommand command)
+    {
+        TimeZoneInfo zone = _clock.LocalTimeZone;
+        DateOnly today = _clock.Today;
+        command.Parameters.AddWithValue("@today", SqliteMapper.FormatDateOnly(today));
+        command.Parameters.AddWithValue("@dayStart", SqliteMapper.FormatInstant(LocalDay.StartUtc(today, zone)));
+        command.Parameters.AddWithValue("@dayEnd", SqliteMapper.FormatInstant(LocalDay.StartUtc(today.AddDays(1), zone)));
+    }
+
     private void AppendListPredicate(
         StringBuilder sql,
         SqliteCommand command,
@@ -423,10 +453,7 @@ public sealed partial class SqliteTaskStore
                 command.Parameters.AddWithValue("@listId", query.ListId!.Value);
                 break;
             case ListQueryKind.MyDay:
-                sql.Append(" AND t.my_day_date = @today");
-                command.Parameters.AddWithValue(
-                    "@today",
-                    SqliteMapper.FormatDateOnly(_clock.Today));
+                AddMyDayParameters(command);
                 break;
             case ListQueryKind.Important:
                 sql.Append(" AND t.priority BETWEEN 1 AND 4");
@@ -581,14 +608,14 @@ public sealed partial class SqliteTaskStore
                 start_utc, start_is_date_only, completed_utc, created_utc,
                 modified_utc, sequence, rrule, my_day_date, sort_order, location,
                 url, classification, ical_unknown, remote_href, remote_etag,
-                is_dirty, is_deleted)
+                is_dirty, is_deleted, my_day_excluded_date)
             VALUES(
                 @uid, @listId, @parentUid, @summary, @description, @status,
                 @percentComplete, @priority, @dueUtc, @dueIsDateOnly, @dueTzid,
                 @startUtc, @startIsDateOnly, @completedUtc, @createdUtc,
                 @modifiedUtc, @sequence, @rrule, @myDayDate, @sortOrder, @location,
                 @url, @classification, @icalUnknown, @remoteHref, @remoteEtag,
-                @isDirty, @isDeleted)
+                @isDirty, @isDeleted, @myDayExcludedDate)
             RETURNING id;
             """;
         AddTaskParameters(command, task);
@@ -612,7 +639,7 @@ public sealed partial class SqliteTaskStore
                 due_tzid = @dueTzid, start_utc = @startUtc,
                 start_is_date_only = @startIsDateOnly, completed_utc = @completedUtc,
                 modified_utc = @modifiedUtc, sequence = @sequence, rrule = @rrule,
-                my_day_date = @myDayDate, sort_order = @sortOrder,
+                my_day_date = @myDayDate, my_day_excluded_date = @myDayExcludedDate, sort_order = @sortOrder,
                 location = @location, url = @url, classification = @classification,
                 ical_unknown = @icalUnknown, remote_href = @remoteHref,
                 remote_etag = @remoteEtag, is_dirty = @isDirty,
@@ -648,6 +675,7 @@ public sealed partial class SqliteTaskStore
         command.Parameters.AddWithValue("@sequence", task.Sequence);
         AddParameter(command, "@rrule", task.RRule);
         AddParameter(command, "@myDayDate", SqliteMapper.FormatDateOnly(task.MyDayDate));
+        AddParameter(command, "@myDayExcludedDate", SqliteMapper.FormatDateOnly(task.MyDayExcludedDate));
         command.Parameters.AddWithValue("@sortOrder", task.SortOrder);
         AddParameter(command, "@location", task.Location);
         AddParameter(command, "@url", task.Url);

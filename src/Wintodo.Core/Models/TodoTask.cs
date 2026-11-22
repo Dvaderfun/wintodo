@@ -41,6 +41,7 @@ public sealed class TodoTask
     public string? RRule { get; set; }
 
     public DateOnly? MyDayDate { get; set; }
+    public DateOnly? MyDayExcludedDate { get; set; }
 
     public double SortOrder { get; set; }
 

@@ -85,7 +85,7 @@ They prepare useful regression evidence; none installs the signed candidate.
 dotnet build Wintodo.sln -p:Platform=x64 -warnaserror
 python -B tests/ui/New-SchemaGuardSeed.py
 .\scripts\Invoke-VmGate.ps1 -Gate run-schema-guard-gate.ps1 `
-  -Include 'tests\ui\artifacts\schema-guard\seed-v6.db'
+  -Include 'tests\ui\artifacts\schema-guard\seed-v8.db'
 .\scripts\Invoke-VmGate.ps1 -Gate run-import-gate.ps1
 .\scripts\Invoke-VmGate.ps1 -Gate run-attachment-provenance-gate.ps1
 .\scripts\Invoke-VmGate.ps1 -Gate run-undo-gate.ps1

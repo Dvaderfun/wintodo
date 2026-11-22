@@ -19,12 +19,21 @@ public sealed class UndoStoreTests
         {
             await connection.OpenAsync(ct);
             await using SqliteCommand command = connection.CreateCommand();
-            command.CommandText = "DROP TABLE task_move_outbox; ALTER TABLE tasks DROP COLUMN remote_delete_state; DROP TABLE import_links; DROP TABLE import_sources; DROP TABLE list_deleted_tasks; DELETE FROM schema_version WHERE version >= 3;";
+            command.CommandText = """
+                DROP INDEX ix_tasks_due_live;
+                ALTER TABLE tasks DROP COLUMN my_day_excluded_date;
+                DROP TABLE task_move_outbox;
+                ALTER TABLE tasks DROP COLUMN remote_delete_state;
+                DROP TABLE import_links;
+                DROP TABLE import_sources;
+                DROP TABLE list_deleted_tasks;
+                DELETE FROM schema_version WHERE version >= 3;
+                """;
             await command.ExecuteNonQueryAsync(ct);
         }
         await using var reopened = new SqliteTaskStore(f.DatabasePath, f.Clock);
         await reopened.InitializeAsync(ct);
-        Assert.Equal(5, (await reopened.GetStatsAsync(ct)).SchemaVersion);
+        Assert.Equal(7, (await reopened.GetStatsAsync(ct)).SchemaVersion);
         Assert.Equal(task.Summary, (await reopened.GetTaskAsync(task.Uid, ct))!.Summary);
         Assert.True(File.Exists(f.DatabasePath + ".bak-3"));
         await reopened.InitializeAsync(ct);

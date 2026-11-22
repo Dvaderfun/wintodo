@@ -118,6 +118,7 @@ public sealed partial class SqliteTaskStore
             {
                 TodoTask adopted = CloneMoveTask(conflict.RemoteTask!);
                 adopted.Id = current.Id;
+                adopted.MyDayExcludedDate = current.MyDayExcludedDate;
                 adopted.ListId = conflict.ListId;
                 adopted.RemoteHref = conflict.RemoteHref;
                 adopted.RemoteETag = conflict.RemoteETag;

@@ -318,6 +318,7 @@ public sealed partial class SqliteTaskStore
                 TaskMoveIntent move = moves[index];
                 TodoTask restored = CloneMoveTask(restores[index].SourceTask);
                 restored.Id = currentTasks[index].Id;
+                restored.MyDayExcludedDate = currentTasks[index].MyDayExcludedDate;
                 restored.Uid = move.TaskUid;
                 restored.ListId = move.SourceListId;
                 restored.RemoteHref = move.SourceAccountId is null ? null : restores[index].SourceHref;
@@ -387,6 +388,7 @@ public sealed partial class SqliteTaskStore
             ValidateTask(target.Task);
             TodoTask moved = CloneMoveTask(target.Task);
             moved.Id = current.Id;
+            moved.MyDayExcludedDate = current.MyDayExcludedDate;
             moved.ListId = destinationListId;
             moved.RemoteHref = target.Href;
             moved.RemoteETag = target.ETag;

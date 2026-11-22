@@ -130,6 +130,16 @@ public sealed partial class TaskDetailViewModel
         if (await PersistModelAsync()) RecordUndo(states, "Undo_ReminderCleared");
     }
 
+    internal void RefreshDateLabels() => UpdateActionLabels();
+
+    private void RefreshPendingDueDate(TodoTask task)
+    {
+        PendingDueDate = task.Due is { } due && task.DueIsDateOnly
+            ? StartOfLocalDay(DateOnly.FromDateTime(due.DateTime))
+            : task.Due?.ToLocalTime();
+        PendingDueTime = task.DueIsDateOnly ? TimeSpan.Zero : PendingDueDate?.TimeOfDay ?? TimeSpan.Zero;
+    }
+
     private void UpdateActionLabels()
     {
         if (_model is null)
@@ -137,15 +147,16 @@ public sealed partial class TaskDetailViewModel
             return;
         }
 
-        MyDayLabel = _model.MyDayDate is null
-            ? _resources.GetString("Detail_AddToMyDay")
-            : _resources.GetString("Detail_AddedToMyDay");
-        DueLabel = _model.Due is null
+        IsMyDay = TaskDateLabels.IsInMyDay(_model, _clock);
+        MyDayLabel = _resources.GetString(IsMyDay
+            ? "Detail_AddedToMyDay"
+            : "Detail_AddToMyDay");
+        DueLabel = TaskDateLabels.GetDueDate(_model, _clock) is not { } dueDate
             ? _resources.GetString("Detail_AddDueDate")
             : string.Format(
                 DisplayCulture.Current,
                 _resources.GetString("Detail_Due"),
-                FormatDate(_model.Due.Value));
+                FormatDate(dueDate));
 
         TaskAlarm? reminder = _model.Alarms.FirstOrDefault(alarm => !alarm.IsAcknowledged);
         ReminderLabel = reminder?.Trigger is null
@@ -157,9 +168,8 @@ public sealed partial class TaskDetailViewModel
         RepeatLabel = FormatRepeat(_model.RRule);
     }
 
-    private string FormatDate(DateTimeOffset value)
+    private string FormatDate(DateOnly date)
     {
-        DateOnly date = DateOnly.FromDateTime(value.LocalDateTime);
         return TaskDateLabels.FormatDetailDue(
             date,
             _clock,

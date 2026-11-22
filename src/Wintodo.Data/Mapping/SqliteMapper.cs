@@ -14,7 +14,7 @@ internal static class SqliteMapper
         t.created_utc, t.modified_utc, t.sequence,
         t.rrule, t.my_day_date, t.sort_order,
         t.location, t.url, t.classification, t.ical_unknown,
-        t.remote_href, t.remote_etag, t.is_dirty, t.is_deleted
+        t.remote_href, t.remote_etag, t.is_dirty, t.is_deleted, t.my_day_excluded_date
         """;
 
     internal static TodoTask ReadTask(SqliteDataReader reader)
@@ -53,6 +53,7 @@ internal static class SqliteMapper
             RemoteETag = GetNullableString(reader, 26),
             IsDirty = reader.GetBoolean(27),
             IsDeleted = reader.GetBoolean(28),
+            MyDayExcludedDate = ReadDateOnly(reader, 29),
         };
     }
 

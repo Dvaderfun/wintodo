@@ -310,6 +310,7 @@ fields and retains current sync identity, unknown properties and unrelated edits
 ```sql
 CREATE INDEX ix_tasks_list_status_sort ON tasks(list_id, status, sort_order) WHERE is_deleted = 0;
 CREATE INDEX ix_tasks_due              ON tasks(due_utc)      WHERE is_deleted = 0 AND status <> 2;
+CREATE INDEX ix_tasks_due_live         ON tasks(due_utc)      WHERE is_deleted = 0 AND due_utc IS NOT NULL;
 CREATE INDEX ix_tasks_parent           ON tasks(parent_uid)   WHERE is_deleted = 0 AND parent_uid IS NOT NULL;
 CREATE INDEX ix_tasks_myday            ON tasks(my_day_date, sort_order) WHERE is_deleted = 0 AND my_day_date IS NOT NULL;
 CREATE INDEX ix_tasks_important        ON tasks(priority)     WHERE is_deleted = 0 AND priority BETWEEN 1 AND 4;
@@ -470,6 +471,17 @@ or its root is restored, the same verified source/destination intent may freeze
 a live payload and newer acknowledgement boundary again, atomically with the
 family. Existing nonempty attempts remain immutable; source snapshots and ETags
 are retained so source-removal replay remains conditional or idempotent.
+Migration 006 adds `tasks.my_day_excluded_date`, a local calendar date recording
+when automatic My Day inclusion was dismissed. CalDAV replacements preserve the
+current local value, including conflict resolution and cross-list moves.
+Changing the exclusion alone, including undo, notifies store listeners without
+changing the task sequence, modification timestamp, or pending CalDAV changes.
+Changing a manual My Day pin continues to queue a sync update.
+
+Migration 007 indexes deadlines of undeleted tasks, including completed ones.
+My Day can look up pins and deadlines separately without scanning unrelated
+tasks. A task that is both pinned and due appears once.
+
 Migration 005 also adds internal `tasks.remote_delete_state`: 0 means explicit
 or unproven state, 1 records an ordinary pull tombstone, and 2 holds a known
 visible version when a confirmed remote move offers an older or ambiguous
@@ -560,7 +572,7 @@ partial index — verify with `EXPLAIN QUERY PLAN`.
 
 | List | Predicate |
 |---|---|
-| **My Day** | `my_day_date = @today AND is_deleted = 0` |
+| **My Day** | Manually added today, or due today and not removed from My Day today. Deleted tasks are excluded. Date-only deadlines match the local calendar date. Timed deadlines match the UTC interval from the first valid instant of this date to the first valid instant of the next date. |
 | **Important** | `priority BETWEEN 1 AND 4 AND is_deleted = 0` |
 | **Planned** | `due_utc IS NOT NULL AND is_deleted = 0`, grouped: overdue `< @todayStart AND status <> 2` · today · tomorrow · this week · later · (no-date excluded) |
 | **All** | `is_deleted = 0 AND parent_uid IS NULL` |
@@ -573,8 +585,11 @@ M11's tree view drops that predicate and builds the hierarchy in memory from a
 single flat query — never one query per node.
 
 `My Day` reset: a task's `my_day_date` is not cleared at midnight. The query
-simply stops matching. A single `DispatcherQueueTimer` set for the next local
-midnight (plus a check on app resume and on window activation) re-runs the query.
+stops matching yesterday's manual additions and deadlines, and picks up the new
+day's deadlines. A single `DispatcherQueueTimer` set for the first valid instant
+of the next local date (plus a check on app resume and on window activation)
+re-runs the query. This is the first occurrence if midnight repeats, or the
+first valid time after the jump if midnight is skipped.
 Nothing is written at midnight — this survives the app being closed, suspended,
 or the machine being asleep.
 

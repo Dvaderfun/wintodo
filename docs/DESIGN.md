@@ -241,6 +241,14 @@ Smart lists prefill the new task so it lands where it was typed:
 | All / user list | Nothing |
 | Completed | Composer hidden — a completed task cannot be composed |
 
+My Day shows tasks manually added today and tasks due today in the local
+calendar. Removing a task hides it from My Day for the current day and keeps
+its due date. Changing a due date from the list also updates My Day and the
+open task detail. Completing a recurring task that was included only because
+it was due today removes it once its next occurrence falls on another day.
+A task manually added to My Day stays there for the day. All-day deadlines
+keep the same calendar date in Planned, row labels, and screen-reader text.
+
 The task itself is always created in a real user list (the picker target), never
 in a smart list. A first-run database is seeded with one list, `Tasks`, and the
 last list can never be deleted away — deleting it recreates `Tasks`.
@@ -307,7 +315,8 @@ Metadata segments, joined with ` · `, in this order, omitting empties:
 5. Repeat glyph.
 6. Note glyph — only if a note exists.
 7. Attachment glyph + count.
-8. "My Day" sun glyph — only when viewing a list other than My Day.
+8. "My Day" indicator — shown outside My Day when the task belongs to My Day
+   today. The row, navigation count, and open detail refresh at local midnight.
 
 Precompute this string in the item ViewModel. **Never** compose it in the
 `DataTemplate` with multiple bindings and converters.

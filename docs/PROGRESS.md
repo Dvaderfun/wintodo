@@ -9,6 +9,10 @@ The working copy uses one checkout for `main` and `dev`. On 2026-11-22 the 12
 secondary worktrees were retired; their local installers, test evidence and build
 outputs were verified and preserved under the ignored `artifacts/worktree-recovery/`.
 Development, including the selected preview and maintenance work, is on `dev`.
+This source includes PR #8's automatic My Day membership, local day rollover,
+and schema 007's deadline index. Row completion and My Day edits update the
+list and open detail; all-day tasks keep their calendar date in Planned and
+in accessible row labels. The Store version listed below predates these changes.
 
 As of 2026-11-20:
 
@@ -4843,6 +4847,29 @@ The fixed build passed the visual spacing, star and reorder checks (3/4).
 The completion scroll-position check still failed: the reference row moved
 356 px after completion (baseline: −360 px). The full gate remains open.
 
+### My Day includes tasks due today
+
+My Day and its navigation count include tasks due on the local calendar day.
+Removing a due-today task dismisses it for the current local day and preserves
+its due date. Adding it back clears the dismissal. The x64 Debug build and all
+709 unit tests passed. The UI gate is pending because the local Hyper-V
+management tools are unavailable.
+
+### 2026-11-22 — My Day dismissal review
+
+- CalDAV conflict adoption and remote moves preserve the current local My Day
+  dismissal. Dismissal-only writes and undo publish store notifications while
+  keeping the sync queue, sequence, and modification timestamp unchanged.
+- The row uses today's membership for the My Day indicator. Date changes refresh
+  the list, sidebar count, and open task detail. Detail My Day changes support
+  undo through the shared task batch path.
+- Debug x64 build passed with warnings as errors. All 718 unit tests passed,
+  including the disposable schema-5 upgrade, row preservation, backup restore,
+  and re-upgrade. The installed DEV profile was not opened.
+- The My Day guest gate covers automatic inclusion, dismissal, undo, manual
+  pinning, and rollover. Execution is pending because the host lacks the
+  Hyper-V cmdlets and virtualization management namespace for WintodoTest.
+
 ### 2026-11-22 — Verify the vendored WinUI skills
 
 The six selected skills and their references in both mirrors match the 11 files
@@ -4861,3 +4888,35 @@ supported processors and source licence. Both themes were rendered locally;
 the badges wrapped at phone width, and all local targets, badge images and the
 Wintodo Store link were verified. On `dev`, the x64 build passed without
 warnings and all 720 unit tests passed.
+
+### 2026-11-22 — My Day row dates and local midnight
+
+Changing a due date from a row refreshes the open task's date and My Day
+membership without replacing its text fields. The My Day query, sidebar count,
+and rollover timer use the same first valid instant of the local calendar day,
+including ambiguous or skipped midnight. The guest gate now checks the open
+detail pane after changing the row's deadline. The earlier [query timings](PERF.md#2026-11-22--my-day-after-pr-8)
+are from the reviewed PR and DEV revisions; this entry makes no build, unit,
+or guest gate claim for the main integration.
+
+### 2026-11-22 — My Day review fixes on the main integration
+
+The My Day query uses indexed pins and deadlines while preserving list order,
+completed-task filtering, and one result per task. Finishing an automatically
+included recurring occurrence removes it once its deadline moves to another day;
+a pinned occurrence stays in My Day. The open editor follows row completion and
+uncompletion; a saved My Day toggle refreshes its task even after selection or
+navigation changes. Planned, row text, detail, and the row's accessible name
+use the same calendar date for all-day and timed deadlines.
+
+The Debug x64 build passed with zero warnings and all 725 unit tests passed
+without skips. The [10,000-task My Day query](PERF.md#2026-11-22--indexed-my-day-query-on-the-main-integration)
+took 3.641 ms against its unchanged 5 ms limit. Tests cover pin/due overlap,
+query ordering and limits, UTC−07 calendar dates, upgrades through schema 007,
+backup restoration, and rejection of schema 008.
+
+In WintodoTest (Pacific time), the expanded My Day gate passed recurrence,
+undo, row and detail updates, Planned and accessible dates, and switching
+tasks or opening My Day while a save was waiting. The newer-schema guard
+passed 5/5; its recovery dialog and the My Day row/detail capture were
+visually checked (`run-local-my-day-review-batch-20261122-213557.log`).

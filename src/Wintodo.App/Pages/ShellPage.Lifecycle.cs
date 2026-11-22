@@ -44,7 +44,7 @@ public sealed partial class ShellPage
                 await ViewModel.TaskList.ReloadAsync(cancellationToken);
                 await ViewModel.RefreshNavigationAsync(cancellationToken);
             }
-            await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken);
+            await RefreshForDateChangeAsync(cancellationToken);
             await _windowsIntegration.RefreshAsync(cancellationToken);
             if (_clock.UtcNow - _lastSyncAttempt >= TimeSpan.FromMinutes(1))
             {
@@ -162,12 +162,8 @@ public sealed partial class ShellPage
         _midnightTimer.Tick += OnMidnightTimerTick;
         _midnightTimer.IsRepeating = false;
 
-        DateTime nextLocalMidnight = DateTime.SpecifyKind(
-            _clock.Today.AddDays(1).ToDateTime(TimeOnly.MinValue),
-            DateTimeKind.Unspecified);
-        DateTime nextUtc =
-            TimeZoneInfo.ConvertTimeToUtc(nextLocalMidnight, _clock.LocalTimeZone);
-        TimeSpan interval = nextUtc - _clock.UtcNow.UtcDateTime;
+        DateTimeOffset nextUtc = LocalDay.StartUtc(_clock.Today.AddDays(1), _clock.LocalTimeZone);
+        TimeSpan interval = nextUtc - _clock.UtcNow;
         _midnightTimer.Interval = interval > TimeSpan.Zero
             ? interval
             : TimeSpan.FromSeconds(1);
@@ -210,9 +206,16 @@ public sealed partial class ShellPage
         Microsoft.UI.Dispatching.DispatcherQueueTimer sender,
         object args)
     {
-        await ViewModel.TaskList.RefreshForDateChangeAsync();
-        await ViewModel.RefreshNavigationCountsAsync();
+        await RefreshForDateChangeAsync();
         ScheduleMidnightRefresh();
     }
 
+    private async Task RefreshForDateChangeAsync(CancellationToken cancellationToken = default)
+    {
+        if (await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken))
+        {
+            ViewModel.Detail.RefreshDateLabels();
+            await ViewModel.RefreshNavigationCountsAsync(cancellationToken);
+        }
+    }
 }

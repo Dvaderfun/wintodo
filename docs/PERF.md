@@ -434,3 +434,32 @@ Command: dotnet test --project tests/Wintodo.Data.Tests -c Release -p:Platform=x
 | All | 1.519 ms | 5 ms | PASS |
 | Completed | 2.652 ms | 5 ms | PASS |
 | FTS5 (worst warm query) | 6.694 ms | 60 ms | PASS |
+
+### 2026-11-22 — My Day after PR #8
+
+Debug x64, `SmartListPerformanceTests`, 10,000 tasks, unchanged 5 ms budget.
+Earlier runs on the same laptop measured the following revisions:
+
+| Revision and run | Best warm My Day query | Result |
+|---|---:|---|
+| PR base `d8efe5e`, focused | 1.801 ms | PASS |
+| PR head `c07f510`, focused | 6.180 ms | FAIL |
+| DEV with the row date and midnight fixes (`8f15605`), full suite | 14.351 ms | FAIL |
+| Same DEV revision, focused | 9.564 ms | FAIL |
+
+Power settings and test contention were not controlled. These are historical
+revision measurements, not measurements of the main integration.
+
+### 2026-11-22 — Indexed My Day query on the main integration
+
+The Debug x64 suite at `b1a51e8` passed all 725 tests with serial test
+modules. The unchanged 10,000-task benchmark measured these best-of-seven
+warm reads, each within the 5 ms limit:
+
+| My Day | Important | Planned | All | Completed |
+|---:|---:|---:|---:|---:|
+| 3.641 ms | 1.981 ms | 1.938 ms | 1.575 ms | 1.884 ms |
+
+The query merges disjoint index lookups for pins and live deadlines; a task
+that matches both is returned only once. The highest warm FTS read was
+5.553 ms (60 ms limit).

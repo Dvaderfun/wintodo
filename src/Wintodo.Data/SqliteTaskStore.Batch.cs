@@ -42,6 +42,7 @@ public sealed partial class SqliteTaskStore
                     ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
                 long sourceListId = task.ListId;
                 bool wasDeleted = task.IsDeleted;
+                DateOnly? previousPin = task.MyDayDate;
                 bool changed = true;
                 switch (action)
                 {
@@ -73,12 +74,15 @@ public sealed partial class SqliteTaskStore
                         task.Priority = (int)TaskPriority.Undefined;
                         break;
                     case TaskBatchAction.AddToMyDay:
-                        changed = task.MyDayDate != _clock.Today;
+                        changed = task.MyDayDate != _clock.Today || task.MyDayExcludedDate is not null;
                         task.MyDayDate = _clock.Today;
+                        task.MyDayExcludedDate = null;
                         break;
                     case TaskBatchAction.RemoveFromMyDay:
-                        changed = task.MyDayDate is not null;
-                        task.MyDayDate = null;
+                        DateOnly? exclusion = Wintodo.Core.Presentation.TaskDateLabels.IsDueToday(task, _clock) ? _clock.Today : null;
+                        if (task.MyDayDate == _clock.Today) task.MyDayDate = null;
+                        changed = task.MyDayDate != previousPin || task.MyDayExcludedDate != exclusion;
+                        task.MyDayExcludedDate = exclusion;
                         break;
                     case TaskBatchAction.SetDueDate:
                         // Date-only storage preserves the calendar date, independent of the UTC offset.
@@ -96,12 +100,17 @@ public sealed partial class SqliteTaskStore
                         break;
                 }
                 if (!changed) continue;
-                task.LastModified = _clock.UtcNow;
-                task.Sequence++;
-                task.IsDirty = true;
+                bool syncChange = action is not (TaskBatchAction.AddToMyDay or TaskBatchAction.RemoveFromMyDay)
+                    || task.MyDayDate != previousPin;
+                if (syncChange)
+                {
+                    task.LastModified = _clock.UtcNow;
+                    task.Sequence++;
+                    task.IsDirty = true;
+                    LogChange(connection, transaction, TaskEntityType, uid,
+                        action == TaskBatchAction.Delete ? ChangeOperation.Delete : ChangeOperation.Update);
+                }
                 UpdateTaskRow(connection, transaction, task);
-                LogChange(connection, transaction, TaskEntityType, uid,
-                    action == TaskBatchAction.Delete ? ChangeOperation.Delete : ChangeOperation.Update);
                 if (action == TaskBatchAction.Restore && wasDeleted)
                     QueueRestoredSteps(connection, transaction, context, uid);
                 context.AddTask(sourceListId, uid);

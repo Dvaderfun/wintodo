@@ -1,5 +1,6 @@
 using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
+using Wintodo.Core.Services;
 
 namespace Wintodo.Data.Tests;
 
@@ -110,6 +111,132 @@ public sealed class TaskStoreTests
             Assert.Equal(parent.Uid, child.ParentUid);
             Assert.Equal(list.Id, child.ListId);
         });
+    }
+
+    [Fact]
+    public async Task MyDayIncludesTasksAsSoonAsTheirDueDateBecomesToday()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        fixture.Clock.LocalTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "Test UTC+05:30", TimeSpan.FromMinutes(330), "Test UTC+05:30", "Test UTC+05:30");
+        fixture.Clock.UtcNow = new DateTimeOffset(2026, 1, 4, 23, 0, 0, TimeSpan.Zero);
+        var token = TestContext.Current.CancellationToken;
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: token);
+        TodoTask task = await AddTaskAsync(fixture, list.Id, "Due date changes", priority: 0,
+            due: fixture.Clock.UtcNow.AddDays(1));
+        Assert.Empty(await QueryAsync(fixture, ListQueryKind.MyDay));
+
+        task.Due = new DateTimeOffset(fixture.Clock.Today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        task.DueIsDateOnly = true;
+        await fixture.Store.UpdateTaskAsync(task, token);
+        TodoTask timed = await AddTaskAsync(fixture, list.Id, "Timed today", priority: 0,
+            due: fixture.Clock.UtcNow);
+        Assert.Equal(2, (await QueryAsync(fixture, ListQueryKind.MyDay)).Count);
+        Assert.Equal(2, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
+
+        task.Due = null;
+        task.DueIsDateOnly = false;
+        await fixture.Store.UpdateTaskAsync(task, token);
+        Assert.Equal(timed.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
+        Assert.Equal(1, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
+
+        var undoRemoval = await fixture.Store.CaptureTaskUndoAsync([timed.Uid], TaskUndoFields.MyDay, token);
+        await fixture.Store.ApplyTaskBatchAsync([timed.Uid], TaskBatchAction.RemoveFromMyDay, token);
+        Assert.Empty(await QueryAsync(fixture, ListQueryKind.MyDay));
+        Assert.Equal(0, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
+        var dismissed = Assert.Single(await QueryAsync(fixture, ListQueryKind.Planned));
+        Assert.Equal(timed.Due, dismissed.Due);
+        Assert.Equal(fixture.Clock.Today, dismissed.MyDayExcludedDate);
+
+        await fixture.Store.RestoreTaskFieldsAsync(undoRemoval, token);
+        Assert.Equal(timed.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
+
+        await fixture.Store.ApplyTaskBatchAsync([timed.Uid], TaskBatchAction.RemoveFromMyDay, token);
+        await fixture.Store.ApplyTaskBatchAsync([timed.Uid], TaskBatchAction.AddToMyDay, token);
+        Assert.Null(Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).MyDayExcludedDate);
+
+        await fixture.Store.ApplyTaskBatchAsync([timed.Uid], TaskBatchAction.RemoveFromMyDay, token);
+        dismissed = Assert.Single(await QueryAsync(fixture, ListQueryKind.Planned));
+        dismissed.Due = fixture.Clock.UtcNow.AddDays(1);
+        await fixture.Store.UpdateTaskAsync(dismissed, token);
+        fixture.Clock.UtcNow = fixture.Clock.UtcNow.AddDays(1);
+        Assert.Equal(timed.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
+    }
+
+    [Theory]
+    [InlineData(-7)]
+    [InlineData(9)]
+    public async Task MyDayCombinesPinsAndDueTasksBeforeFilteringSortingAndLimiting(int offsetHours)
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TimeSpan offset = TimeSpan.FromHours(offsetHours);
+        fixture.Clock.LocalTimeZone = TimeZoneInfo.CreateCustomTimeZone("Test", offset, "Test", "Test");
+        var token = TestContext.Current.CancellationToken;
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: token);
+        DateOnly today = fixture.Clock.Today;
+        var start = new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), offset);
+        var date = new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+        Task<TodoTask> Add(string summary, DateTimeOffset? due = null, bool dateOnly = false, bool pin = false) =>
+            fixture.Store.CreateTaskAsync(new TodoTask
+            {
+                ListId = list.Id, Summary = summary, Due = due, DueIsDateOnly = dateOnly,
+                MyDayDate = pin ? today : null,
+            }, token);
+
+        await Add("C match pin", pin: true);
+        await Add("B match both", start, pin: true);
+        TodoTask done = await Add("Z match completed", date, dateOnly: true);
+        await fixture.Store.CompleteTaskAsync(done.Uid, token);
+        await Add("D match timed", start.AddDays(1).AddTicks(-1));
+        await Add("No filter hit", date, dateOnly: true);
+        await Add("Out of range: match before start", start.AddTicks(-1));
+        await Add("Out of range: match next date", date.AddDays(1), dateOnly: true);
+
+        var query = new ListQuery
+        {
+            Kind = ListQueryKind.MyDay, Filter = "match", SortMode = SortMode.Alphabetical,
+            IncludeCompleted = true,
+        };
+        Assert.Equal(["B match both", "C match pin", "D match timed", "Z match completed"],
+            (await fixture.Store.GetTasksAsync(query, token)).Select(task => task.Summary));
+        query.IncludeCompleted = false;
+        query.SortDescending = true;
+        query.Limit = 2;
+        Assert.Equal(["D match timed", "C match pin"],
+            (await fixture.Store.GetTasksAsync(query, token)).Select(task => task.Summary));
+    }
+
+    [Theory]
+    [InlineData(3, 29, 30)] // The spring jump skips midnight and ends at 00:30 local.
+    [InlineData(10, 25, 0)] // The autumn clock reaches midnight twice, an hour apart.
+    public async Task MyDayChangesAtTheFirstInstantOfTheLocalDate(int month, int day, int utcMinute)
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        DateTime start = new(2026, 1, 1);
+        DateTime end = new(2026, 12, 31);
+        var adjustment = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(start, end, TimeSpan.FromHours(1),
+            TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 23, 30, 0), 3, 28),
+            TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 1, 0, 0), 10, 25));
+        fixture.Clock.LocalTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "Midnight transitions", TimeSpan.FromHours(-1), "Midnight transitions", "Standard", "Daylight",
+            [adjustment]);
+        var boundary = new DateTimeOffset(2026, month, day, 0, utcMinute, 0, TimeSpan.Zero);
+        var token = TestContext.Current.CancellationToken;
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: token);
+        TodoTask before = await AddTaskAsync(fixture, list.Id, "Before today's start", 0, boundary.AddTicks(-1));
+        TodoTask after = await AddTaskAsync(fixture, list.Id, "At today's start", 0, boundary);
+        TodoTask later = await AddTaskAsync(fixture, list.Id, "After the transition", 0, boundary.AddMinutes(75));
+
+        fixture.Clock.UtcNow = boundary.AddTicks(-1);
+        Assert.Equal(new DateOnly(2026, month, day).AddDays(-1), fixture.Clock.Today);
+        Assert.Equal(before.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
+        Assert.Equal(1, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
+
+        fixture.Clock.UtcNow = boundary;
+        Assert.Equal(new DateOnly(2026, month, day), fixture.Clock.Today);
+        Assert.Equal([after.Uid, later.Uid], (await QueryAsync(fixture, ListQueryKind.MyDay)).Select(task => task.Uid));
+        Assert.Equal(2, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
     }
 
     [Fact]

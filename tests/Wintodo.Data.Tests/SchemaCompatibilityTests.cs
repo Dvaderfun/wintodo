@@ -13,10 +13,12 @@ public sealed class SchemaCompatibilityTests
         "Wintodo.Data.Migrations.003_list_delete_membership.sql",
         "Wintodo.Data.Migrations.004_import_links.sql",
         "Wintodo.Data.Migrations.005_task_move_outbox.sql",
+        "Wintodo.Data.Migrations.006_my_day_exclusion.sql",
+        "Wintodo.Data.Migrations.007_my_day_due_index.sql",
     ];
 
     [Theory]
-    [InlineData(6L)]
+    [InlineData(8L)]
     [InlineData(2147483648L)]
     [InlineData(long.MaxValue)]
     public async Task NewerSchema_RejectsBeforeChangingDatabase(long version)
@@ -39,7 +41,7 @@ public sealed class SchemaCompatibilityTests
                         await Assert.ThrowsAsync<UnsupportedDatabaseSchemaException>(
                             () => store.InitializeAsync(TestContext.Current.CancellationToken));
                     Assert.Equal(version, exception.DatabaseVersion);
-                    Assert.Equal(5, exception.SupportedVersion);
+                    Assert.Equal(7, exception.SupportedVersion);
                 }
 
                 await Assert.ThrowsAsync<InvalidOperationException>(
@@ -72,7 +74,7 @@ public sealed class SchemaCompatibilityTests
             await SeedDatabaseAsync(path, 4);
             string supportedCopy = Path.Combine(directory, "supported.db");
             File.Copy(path, supportedCopy);
-            await AddNewerSchemaAsync(path, 6);
+            await AddNewerSchemaAsync(path, 8);
 
             await using var store = new SqliteTaskStore(path, new FakeClock());
             await Assert.ThrowsAsync<UnsupportedDatabaseSchemaException>(
@@ -95,6 +97,8 @@ public sealed class SchemaCompatibilityTests
     [InlineData(3)]
     [InlineData(4)]
     [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
     public async Task SupportedSchema_UpgradesPreserveRowsAndBackupsCanBeRestored(int version)
     {
         string directory = CreateDirectory();
@@ -105,7 +109,7 @@ public sealed class SchemaCompatibilityTests
             await AssertStoreRowsAsync(path);
 
             var backupBytes = new Dictionary<string, byte[]>();
-            for (int nextVersion = version + 1; nextVersion <= 5; nextVersion++)
+            for (int nextVersion = version + 1; nextVersion <= 7; nextVersion++)
             {
                 string backupPath = path + ".bak-" + nextVersion;
                 backupBytes.Add(backupPath, await File.ReadAllBytesAsync(backupPath, TestContext.Current.CancellationToken));
@@ -120,7 +124,7 @@ public sealed class SchemaCompatibilityTests
                 Assert.Equal(bytes, await File.ReadAllBytesAsync(backupPath, TestContext.Current.CancellationToken));
             }
 
-            if (version < 5)
+            if (version < 7)
             {
                 string restoredPath = Path.Combine(directory, "restored.db");
                 File.Copy(path + ".bak-" + (version + 1), restoredPath);
@@ -154,14 +158,14 @@ public sealed class SchemaCompatibilityTests
             {
                 await store.InitializeAsync(TestContext.Current.CancellationToken);
                 await store.InitializeAsync(TestContext.Current.CancellationToken);
-                Assert.Equal(5, (await store.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
+                Assert.Equal(7, (await store.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
                 await store.SetSettingAsync("kept", "value", TestContext.Current.CancellationToken);
             }
 
             await using var reopened = new SqliteTaskStore(path, new FakeClock());
             await reopened.InitializeAsync(TestContext.Current.CancellationToken);
             Assert.Equal("value", await reopened.GetSettingAsync("kept", TestContext.Current.CancellationToken));
-            Assert.Equal(5, (await reopened.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
+            Assert.Equal(7, (await reopened.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
             Assert.Empty(Directory.EnumerateFiles(directory, "*.bak-*"));
         }
         finally
@@ -174,7 +178,7 @@ public sealed class SchemaCompatibilityTests
     {
         await using var store = new SqliteTaskStore(path, new FakeClock());
         await store.InitializeAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(5, (await store.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
+        Assert.Equal(7, (await store.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
         Assert.Equal("Legacy", Assert.Single(await store.GetListsAsync(TestContext.Current.CancellationToken)).DisplayName);
         TodoTask task = Assert.IsType<TodoTask>(await store.GetTaskAsync("legacy-task", TestContext.Current.CancellationToken));
         Assert.Equal("Preserved task", task.Summary);
