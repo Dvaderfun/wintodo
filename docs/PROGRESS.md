@@ -5018,3 +5018,13 @@ The app XAML uses explicit modes on all 456 compiled bindings on `main` and
 457 on `dev`; both have 12 two-way text editor bindings with immediate updates.
 The design audit still found a 2-DIP sync-account gap and four hardcoded
 navigation icon sizes. These visual details were not changed by consolidation.
+
+### 2026-11-22 — Refresh the GitHub README
+
+The README now pairs the Glide icon and official Microsoft Store button with
+the Store gallery’s My Day capture. The button and screenshot follow the
+reader’s light or dark theme. Three linked badges show the Windows requirement,
+supported processors and source licence. Both themes were rendered locally;
+the badges wrapped at phone width, and all local targets, badge images and the
+Wintodo Store link were verified. On `dev`, the x64 build passed without
+warnings and all 720 unit tests passed.
