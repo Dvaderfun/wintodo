@@ -121,6 +121,9 @@ searching with coding. More: [docs/guides/ai-tooling.md](docs/guides/ai-tooling.
 
 ## Working style
 
+- Use one checkout for `main` and `dev`. Switch branches with `git switch`;
+  keep development work on `dev` until it is ready for `main`. If a task needs
+  an isolated worktree, retire it after preserving its changes and local evidence.
 - Batch fixes: read all build errors, fix all, rebuild once.
 - Do not change the plan or an accepted decision silently. Say so, write an ADR,
   get the owner's acknowledgement, then change it.
