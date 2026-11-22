@@ -59,7 +59,7 @@ public static class TaskGrouping
                 key => key, _ => new List<string>(), StringComparer.Ordinal);
             foreach (TodoTask task in active.Concat(completed))
             {
-                buckets[GetPlannedBucket(task.Due, clock, weekStart)].Add(task.Uid);
+                buckets[GetPlannedBucket(task, clock, weekStart)].Add(task.Uid);
             }
             foreach (string key in PlannedBuckets)
             {
@@ -95,14 +95,12 @@ public static class TaskGrouping
         }
     }
 
-    public static string GetPlannedBucket(DateTimeOffset? due, IClock clock, DayOfWeek weekStart)
+    public static string GetPlannedBucket(TodoTask task, IClock clock, DayOfWeek weekStart)
     {
-        if (due is null)
+        if (TaskDateLabels.GetDueDate(task, clock) is not { } dueDate)
         {
             return "NoDate";
         }
-        DateOnly dueDate = DateOnly.FromDateTime(
-            TimeZoneInfo.ConvertTime(due.Value, clock.LocalTimeZone).DateTime);
         DateOnly today = clock.Today;
         int offset = dueDate.DayNumber - today.DayNumber;
         if (offset < 0)

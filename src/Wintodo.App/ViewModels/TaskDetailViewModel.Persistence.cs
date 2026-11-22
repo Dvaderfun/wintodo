@@ -51,13 +51,17 @@ public sealed partial class TaskDetailViewModel
             DisplayCulture.Current);
 
         RefreshPendingDueDate(task);
-        TaskAlarm? reminder = task.Alarms.FirstOrDefault(alarm => !alarm.IsAcknowledged);
-        PendingReminderDate = reminder?.Trigger?.ToLocalTime();
-        PendingReminderTime =
-            reminder?.Trigger?.ToLocalTime().TimeOfDay ?? _preferences.DefaultReminderTime;
+        RefreshPendingReminder(task);
         ConfigureRepeatEditor(task.RRule);
         UpdateActionLabels();
         _isLoading = false;
+    }
+
+    private void RefreshPendingReminder(TodoTask task)
+    {
+        TaskAlarm? reminder = task.Alarms.FirstOrDefault(alarm => !alarm.IsAcknowledged);
+        PendingReminderDate = reminder?.Trigger?.ToLocalTime();
+        PendingReminderTime = PendingReminderDate?.TimeOfDay ?? _preferences.DefaultReminderTime;
     }
 
     private void ScheduleSave(TimeSpan delay)

@@ -26,6 +26,18 @@ function Ui([string[]]$Command) {
     $output
 }
 
+function Add-GateTask([string]$Title) {
+    Ui @('click', 'Todo.List.AddTaskBox') | Out-Null
+    Ui @('set-value', 'Todo.List.AddTaskBox', $Title) | Out-Null
+    Ui @('wait-for', 'Todo.Composer.AddButton', '--property', 'IsEnabled', '--value', 'True', '-t', '5000') | Out-Null
+    Ui @('invoke', 'Todo.Composer.AddButton') | Out-Null
+    Ui @('wait-for', $Title, '-t', '5000') | Out-Null
+    $match = (Ui @('search', $Title, '--json') | ConvertFrom-Json).matches |
+        Where-Object { $_.automationId -match '^Todo\.Row\.[0-9a-f-]+$' } | Select-Object -First 1
+    if (-not $match) { throw "Cannot find the new task row: $Title" }
+    $match.automationId
+}
+
 function Assert-MyDay([bool]$Included) {
     $label = if ($Included) { 'Added to My Day' } else { 'Add to My Day' }
     $navigationName = if ($Included) { 'My Day, 1 tasks' } else { 'My Day' }
@@ -45,15 +57,8 @@ function Assert-MyDay([bool]$Included) {
 try {
     Ui @('wait-for', 'Todo.Nav.DefaultList', '-t', '10000') | Out-Null
     Ui @('invoke', 'Todo.Nav.DefaultList') | Out-Null
-    Ui @('click', 'Todo.List.AddTaskBox') | Out-Null
-    Ui @('set-value', 'Todo.List.AddTaskBox', 'My Day gate task') | Out-Null
-    Ui @('wait-for', 'Todo.Composer.AddButton', '--property', 'IsEnabled', '--value', 'True', '-t', '5000') | Out-Null
-    Ui @('invoke', 'Todo.Composer.AddButton') | Out-Null
-    Ui @('wait-for', 'My Day gate task', '-t', '5000') | Out-Null
-    $row = (Ui @('search', 'My Day gate task', '--json') | ConvertFrom-Json).matches |
-        Where-Object { $_.automationId -match '^Todo\.Row\.[0-9a-f-]+$' } | Select-Object -First 1
-    if (-not $row) { throw 'The newly added task row was not found.' }
-    Ui @('invoke', $row.automationId) | Out-Null
+    $row = Add-GateTask 'My Day gate task'
+    Ui @('invoke', $row) | Out-Null
     Assert-MyDay $false
     Ui @('invoke', 'Todo.Detail.Due') | Out-Null
     Ui @('invoke', 'Todo.Detail.Due.Today') | Out-Null
@@ -94,14 +99,114 @@ public static class MyDayGateWindow
     Assert-MyDay $false
 
     # Changing a due date from the row must refresh the same open detail.
-    Ui @('click', $row.automationId, '--right') | Out-Null
+    Ui @('click', $row, '--right') | Out-Null
     Ui @('wait-for', 'Todo.Row.Selection.Due', '-t', '5000') | Out-Null
     Ui @('invoke', 'Todo.Row.Selection.Due') | Out-Null
     Ui @('invoke', 'Todo.Row.Selection.Due.Today') | Out-Null
     Assert-MyDay $true
     Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Today', '-t', '5000') | Out-Null
     Ui @('screenshot', '-o', (Join-Path $artifacts 'due-date-updated.png')) | Out-Null
-    Write-Host 'My Day UI gate: PASS (automatic inclusion, dismissal, undo, manual pin, rollover, due date change from row)'
+    Ui @('invoke', 'Todo.Nav.Planned') | Out-Null
+    Ui @('wait-for', 'Todo.List.PlannedGroup.Today', '-t', '5000') | Out-Null
+    Ui @('wait-for', $row, '--property', 'Name', '--contains', '--value', 'Today', '-t', '5000') | Out-Null
+    Ui @('invoke', $row) | Out-Null
+    # The same row click must remove an automatic occurrence and retain a pinned one.
+    Ui @('invoke', 'Todo.Detail.Repeat') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.RepeatOption.Daily', '-t', '3000') | Out-Null
+    Ui @('invoke', 'Todo.Detail.RepeatOption.Daily') | Out-Null
+    Ui @('send-keys', 'escape', '--via', 'send-input') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Repeat', '--property', 'Name', '--value', 'Repeats daily', '-t', '5000') | Out-Null
+    Ui @('invoke', 'Todo.Nav.MyDay') | Out-Null
+    Ui @('wait-for', $row, '-t', '5000') | Out-Null
+    Ui @('invoke', $row) | Out-Null
+    $complete = $row.Replace('Todo.Row.', 'Todo.Row.CompleteToggle.')
+    Ui @('invoke', $complete, '--action', 'toggle-on') | Out-Null
+    Ui @('wait-for', $row, '--gone', '-t', '5000') | Out-Null
+    Ui @('wait-for', 'Todo.Nav.MyDay', '--property', 'Name', '--value', 'My Day', '-t', '5000') | Out-Null
+    Ui @('focus', 'Todo.List.MenuButton') | Out-Null
+    Ui @('send-keys', 'ctrl+vk=0x5A', '--via', 'send-input') | Out-Null
+    Ui @('wait-for', $row, '-t', '5000') | Out-Null
+    Ui @('invoke', 'Todo.Nav.DefaultList') | Out-Null
+    Ui @('wait-for', $row, '-t', '5000') | Out-Null
+    Ui @('invoke', $row) | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Today', '-t', '5000') | Out-Null
+    Ui @('invoke', 'Todo.Detail.MyDay') | Out-Null
+    Assert-MyDay $false
+    Ui @('invoke', 'Todo.Detail.MyDay') | Out-Null
+    Assert-MyDay $true
+    Ui @('invoke', 'Todo.Nav.MyDay') | Out-Null
+    Ui @('wait-for', $row, '-t', '5000') | Out-Null
+    Ui @('invoke', $row) | Out-Null
+    Ui @('invoke', $complete, '--action', 'toggle-on') | Out-Null
+    Ui @('wait-for', $row, '--property', 'Name', '--contains', '--value', 'Tomorrow', '-t', '5000') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Tomorrow', '-t', '5000') | Out-Null
+    Ui @('wait-for', 'Todo.Nav.MyDay', '--property', 'Name', '--value', 'My Day, 1 tasks', '-t', '5000') | Out-Null
+
+    # Hold only this fixture's writer. WAL readers can open B before A's toggle commits.
+    Ui @('invoke', 'Todo.Nav.DefaultList') | Out-Null
+    $otherTitle = 'Second gate task'
+    $otherRow = Add-GateTask $otherTitle
+    Ui @('invoke', $row) | Out-Null
+    Assert-MyDay $true
+    Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class MyDayGateWriteLock
+{
+    [DllImport("winsqlite3", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    private static extern int sqlite3_open16(string path, out IntPtr db);
+    [DllImport("winsqlite3", ExactSpelling = true)]
+    private static extern int sqlite3_exec(IntPtr db, string sql, IntPtr callback, IntPtr state, IntPtr error);
+    [DllImport("winsqlite3", ExactSpelling = true)]
+    public static extern int sqlite3_close(IntPtr db);
+    public static IntPtr Acquire(string path)
+    {
+        IntPtr db;
+        int rc = sqlite3_open16(path, out db);
+        if (rc == 0) rc = sqlite3_exec(db, "PRAGMA busy_timeout=3000; BEGIN IMMEDIATE", IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+        if (rc == 0) return db;
+        sqlite3_close(db);
+        throw new InvalidOperationException("Cannot hold fixture writer: SQLite " + rc);
+    }
+}
+'@
+    $writer = [MyDayGateWriteLock]::Acquire($database)
+    try {
+        Ui @('invoke', 'Todo.Detail.MyDay') | Out-Null
+        Ui @('invoke', $otherRow) | Out-Null
+        Ui @('wait-for', 'Todo.Detail.Title', '--value', $otherTitle, '-t', '5000') | Out-Null
+        Ui @('wait-for', 'Todo.Nav.MyDay', '--property', 'Name', '--value', 'My Day, 1 tasks', '-t', '3000') | Out-Null
+    } finally {
+        if ([MyDayGateWriteLock]::sqlite3_close($writer) -ne 0) { throw 'Cannot release fixture writer.' }
+    }
+    Assert-MyDay $false
+    Ui @('wait-for', 'Todo.Detail.Title', '--value', $otherTitle, '-t', '5000') | Out-Null
+
+    # Navigate to an empty My Day before the saved pin becomes visible to readers.
+    Ui @('invoke', $row) | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Title', '--value', 'My Day gate task', '-t', '5000') | Out-Null
+    $writer = [MyDayGateWriteLock]::Acquire($database)
+    try {
+        Ui @('invoke', 'Todo.Detail.MyDay') | Out-Null
+        Ui @('invoke', 'Todo.Nav.MyDay') | Out-Null
+        Ui @('wait-for', 'Focus on your day', '-t', '5000') | Out-Null
+        Ui @('wait-for', $row, '--gone', '-t', '3000') | Out-Null
+    } finally {
+        if ([MyDayGateWriteLock]::sqlite3_close($writer) -ne 0) { throw 'Cannot release fixture writer.' }
+    }
+    Ui @('wait-for', $row, '-t', '5000') | Out-Null
+    Ui @('wait-for', 'Todo.Nav.MyDay', '--property', 'Name', '--value', 'My Day, 1 tasks', '-t', '5000') | Out-Null
+    Ui @('invoke', $row) | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Tomorrow', '-t', '5000') | Out-Null
+    Ui @('invoke', 'Todo.Nav.DefaultList') | Out-Null
+    Ui @('wait-for', $otherRow, '-t', '5000') | Out-Null
+    Ui @('invoke', $otherRow) | Out-Null
+    $otherComplete = $otherRow.Replace('Todo.Row.', 'Todo.Row.CompleteToggle.')
+    Ui @('invoke', $otherComplete, '--action', 'toggle-on') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'On', '-t', '5000') | Out-Null
+    Ui @('invoke', $otherComplete, '--action', 'toggle-off') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'Off', '-t', '5000') | Out-Null
+    Write-Host 'My Day UI gate: PASS (inclusion, dismissal, undo, pin, rollover, row due date, recurring completion, switch during save)'
 } finally {
     Stop-Process -Id $appPid -ErrorAction SilentlyContinue
 }

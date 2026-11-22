@@ -41,7 +41,8 @@ public sealed partial class SqliteTaskStore
             connection =>
             {
                 using SqliteCommand command = connection.CreateCommand();
-                var sql = new StringBuilder($"SELECT {SqliteMapper.TaskColumns} FROM tasks t WHERE t.is_deleted = 0 AND t.parent_uid IS NULL");
+                string source = query.Kind == ListQueryKind.MyDay ? MyDaySource : "tasks";
+                var sql = new StringBuilder($"SELECT {SqliteMapper.TaskColumns} FROM {source} t WHERE t.is_deleted = 0 AND t.parent_uid IS NULL");
 
                 AppendListPredicate(sql, command, query);
                 if (!query.IncludeCompleted && query.Kind != ListQueryKind.Completed)
@@ -413,9 +414,22 @@ public sealed partial class SqliteTaskStore
             cancellationToken);
     }
 
-    private const string MyDayPredicate = """
-        (t.my_day_date = @today OR (t.my_day_excluded_date IS NOT @today
-         AND (t.due_utc = @today OR (t.due_is_date_only = 0 AND t.due_utc >= @dayStart AND t.due_utc < @dayEnd))))
+    // Date-only values are YYYY-MM-DD; timed values are UTC instants. Seek a single
+    // range containing both, then exclude neighboring local dates within that range.
+    private const string MyDayAutomaticPredicate = """
+        t.my_day_excluded_date IS NOT @today
+        AND t.due_utc >= min(@today, @dayStart) AND t.due_utc < @dayEnd
+        AND (t.due_utc = @today OR (t.due_is_date_only = 0 AND t.due_utc >= @dayStart))
+        """;
+
+    private const string MyDayPredicate = $"(t.my_day_date = @today OR ({MyDayAutomaticPredicate}))";
+
+    // The branches are disjoint so SQLite can merge the pin and deadline index
+    // searches and apply the outer sort/limit without materializing every pin.
+    private const string MyDaySource = $"""
+        (SELECT t.* FROM tasks t WHERE t.my_day_date = @today
+         UNION ALL
+         SELECT t.* FROM tasks t WHERE t.my_day_date IS NOT @today AND {MyDayAutomaticPredicate})
         """;
 
     private void AddMyDayParameters(SqliteCommand command)
@@ -439,7 +453,6 @@ public sealed partial class SqliteTaskStore
                 command.Parameters.AddWithValue("@listId", query.ListId!.Value);
                 break;
             case ListQueryKind.MyDay:
-                sql.Append(" AND ").Append(MyDayPredicate);
                 AddMyDayParameters(command);
                 break;
             case ListQueryKind.Important:

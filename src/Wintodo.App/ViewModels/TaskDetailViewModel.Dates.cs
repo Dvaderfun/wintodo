@@ -151,12 +151,12 @@ public sealed partial class TaskDetailViewModel
         MyDayLabel = _resources.GetString(IsMyDay
             ? "Detail_AddedToMyDay"
             : "Detail_AddToMyDay");
-        DueLabel = _model.Due is null
+        DueLabel = TaskDateLabels.GetDueDate(_model, _clock) is not { } dueDate
             ? _resources.GetString("Detail_AddDueDate")
             : string.Format(
                 DisplayCulture.Current,
                 _resources.GetString("Detail_Due"),
-                FormatDate(_model.Due.Value, _model.DueIsDateOnly));
+                FormatDate(dueDate));
 
         TaskAlarm? reminder = _model.Alarms.FirstOrDefault(alarm => !alarm.IsAcknowledged);
         ReminderLabel = reminder?.Trigger is null
@@ -168,10 +168,8 @@ public sealed partial class TaskDetailViewModel
         RepeatLabel = FormatRepeat(_model.RRule);
     }
 
-    private string FormatDate(DateTimeOffset value, bool dateOnly)
+    private string FormatDate(DateOnly date)
     {
-        DateOnly date = DateOnly.FromDateTime(dateOnly
-            ? value.DateTime : TimeZoneInfo.ConvertTime(value, _clock.LocalTimeZone).DateTime);
         return TaskDateLabels.FormatDetailDue(
             date,
             _clock,

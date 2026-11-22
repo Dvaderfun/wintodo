@@ -24,12 +24,12 @@ public sealed class TaskGroupingTests
     public void PlannedBucket_UsesLocalDayAndConfiguredWeekBoundary(int offset, DayOfWeek weekStart, string expected)
     {
         var clock = new Clock(new(2026, 10, 6, 12, 0, 0, TimeSpan.Zero)); // Tuesday
-        Assert.Equal(expected, TaskGrouping.GetPlannedBucket(clock.UtcNow.AddDays(offset), clock, weekStart));
+        Assert.Equal(expected, TaskGrouping.GetPlannedBucket(new() { Due = clock.UtcNow.AddDays(offset) }, clock, weekStart));
     }
 
     [Fact]
     public void PlannedBucket_NoDateIsExplicit() =>
-        Assert.Equal("NoDate", TaskGrouping.GetPlannedBucket(null, new Clock(), DayOfWeek.Monday));
+        Assert.Equal("NoDate", TaskGrouping.GetPlannedBucket(new(), new Clock(), DayOfWeek.Monday));
 
     [Theory]
     [InlineData(0, "Tomorrow")]
@@ -40,7 +40,24 @@ public sealed class TaskGroupingTests
         TimeZoneInfo zone = TimeZoneInfo.CreateCustomTimeZone("Test+02", TimeSpan.FromHours(2), "Test+02", "Test+02");
         var clock = new Clock(new DateTimeOffset(2026, 10, 6, 21, 59, 0, TimeSpan.Zero).AddDays(days), zone);
         DateTimeOffset due = new(2026, 10, 6, 22, 0, 0, TimeSpan.Zero);
-        Assert.Equal(expected, TaskGrouping.GetPlannedBucket(due, clock, DayOfWeek.Monday));
+        Assert.Equal(expected, TaskGrouping.GetPlannedBucket(new() { Due = due }, clock, DayOfWeek.Monday));
+    }
+
+    [Theory]
+    [InlineData(true, "Today", 0)]
+    [InlineData(false, "Overdue", -1)]
+    public void PlannedGroupAndRowUseTheSameCalendarDateWestOfUtc(bool dateOnly, string bucket, int dayOffset)
+    {
+        var zone = TimeZoneInfo.CreateCustomTimeZone("UTC-07", TimeSpan.FromHours(-7), "UTC-07", "UTC-07");
+        IClock clock = new Clock(new(2026, 10, 6, 12, 0, 0, TimeSpan.Zero), zone);
+        var task = new TodoTask { Uid = "midnight", Due = new(2026, 10, 6, 0, 0, 0, TimeSpan.Zero), DueIsDateOnly = dateOnly };
+
+        var group = Assert.Single(Build(ListQueryKind.Planned, [task], [], clock: clock));
+        var row = TaskMetadataLine.Build(task, ListQueryKind.Planned, clock, null);
+
+        Assert.Equal(bucket, group.Key);
+        Assert.Equal(clock.Today.AddDays(dayOffset), Assert.Single(row.Parts, part => part.Kind == TaskMetadataKind.DueDate).Date);
+        Assert.Equal(dayOffset == 0, row.Parts.Any(part => part.Kind == TaskMetadataKind.MyDay));
     }
 
     [Fact]

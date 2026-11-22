@@ -13,6 +13,7 @@ public sealed partial class SqliteTaskStore : ITaskStore, ISettingsStore
         "Wintodo.Data.Migrations.004_import_links.sql",
         "Wintodo.Data.Migrations.005_task_move_outbox.sql",
         "Wintodo.Data.Migrations.006_my_day_exclusion.sql",
+        "Wintodo.Data.Migrations.007_my_day_due_index.sql",
     ];
     private const string ConnectionPragmas = """
         PRAGMA journal_mode = WAL;

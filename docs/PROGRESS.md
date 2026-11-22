@@ -9,9 +9,10 @@ The working copy uses one checkout for `main` and `dev`. On 2026-11-22 the 12
 secondary worktrees were retired; their local installers, test evidence and build
 outputs were verified and preserved under the ignored `artifacts/worktree-recovery/`.
 Development, including the selected preview and maintenance work, is on `dev`.
-This source includes PR #8's automatic My Day membership and schema 006,
-plus the follow-up for open task details and local day rollover. The Store
-version listed below predates these changes.
+This source includes PR #8's automatic My Day membership, local day rollover,
+and schema 007's deadline index. Row completion and My Day edits update the
+list and open detail; all-day tasks keep their calendar date in Planned and
+in accessible row labels. The Store version listed below predates these changes.
 
 As of 2026-11-20:
 
@@ -4897,3 +4898,17 @@ including ambiguous or skipped midnight. The guest gate now checks the open
 detail pane after changing the row's deadline. The earlier [query timings](PERF.md#2026-11-22--my-day-after-pr-8)
 are from the reviewed PR and DEV revisions; this entry makes no build, unit,
 or guest gate claim for the main integration.
+
+### 2026-11-22 — My Day review fixes on the main integration
+
+The My Day query uses indexed pins and deadlines while preserving list order,
+completed-task filtering, and one result per task. Finishing an automatically
+included recurring occurrence removes it once its deadline moves to another day;
+a pinned occurrence stays in My Day. The open editor follows row completion and
+uncompletion; a saved My Day toggle refreshes its task even after selection or
+navigation changes. Planned, row text, detail, and the row's accessible name
+use the same calendar date for all-day and timed deadlines.
+
+The unit suite includes overlap, sorting, and UTC−07 date regressions. The My
+Day guest gate covers occurrences, selection changes, and navigation during a
+pending save. Validation of this main integration is pending.

@@ -22,10 +22,7 @@ public static class TaskMetadataLine
 {
     public static TaskMetadataResult Build(TodoTask task, ListQueryKind? context, IClock clock, string? listName)
     {
-        DateOnly? dueDate = task.Due is { } due
-            ? DateOnly.FromDateTime(task.DueIsDateOnly
-                ? due.DateTime : TimeZoneInfo.ConvertTime(due, clock.LocalTimeZone).DateTime)
-            : null;
+        DateOnly? dueDate = TaskDateLabels.GetDueDate(task, clock);
         bool completed = task.Status == Models.TaskStatus.Completed;
         var parts = new List<TaskMetadataPart>(4);
         if (context != ListQueryKind.UserList && !string.IsNullOrEmpty(listName))
