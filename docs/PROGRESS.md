@@ -5165,3 +5165,14 @@ structure and privacy checks. WintodoTest passed all eight installed-package
 checks when upgrading from **1.0.1.222**. The old daily task and note survived
 the update and restart. Completing the task made it due tomorrow with the
 same UID and an unchecked box (`run-dev-preview-gate-20261122-221746.log`).
+
+### 2026-11-23 — Integrate DEV with main and verify maintenance on Windows short paths
+
+The integration retains both branches' My Day measurements and guest gate
+records. The x64 solution built with zero warnings. The first hosted check
+exposed two workstation test assumptions about the spelling of a Windows
+temporary path. Both failures reproduced with an actual 8.3 alias. The
+maintenance fixture now registers the runner path exactly as the installer
+does, and the locked-report test verifies the identity of the dated file.
+Both focused tests passed with the same alias; production code is unchanged
+by these test corrections.

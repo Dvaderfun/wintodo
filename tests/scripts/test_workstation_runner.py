@@ -163,7 +163,9 @@ class WorkstationRun(unittest.TestCase):
                 newest = sorted((self.reports / "history").glob("*/summary.json"))[-1]
                 dated = json.loads(newest.read_text())
                 self.assertNotEqual(dated["history"], previous["history"])
-                self.assertIn(str(newest.with_suffix(".md")), result.stdout)
+                report = re.search(r"Use the dated report: ([^\r\n\x1b]+)", result.stdout)
+                self.assertIsNotNone(report, result.stdout)
+                self.assertTrue(newest.with_suffix(".md").samefile(report[1]), report[1])
                 publication = json.loads((newest.parent / "publication.json").read_text())
                 self.assertEqual(publication["exitCode"], 2)
                 self.assertEqual([f["name"] for f in publication["unavailable"]], [name])

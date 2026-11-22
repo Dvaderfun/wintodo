@@ -106,7 +106,9 @@ exit $code
 foreach($n in 'Update-AgentNode.ps1','Update-CodexPlugins.ps1','Update-ClaudeTools.py','Update-CodeGraph.py','Show-MaintenanceNotice.ps1','Check-ProjectHealth.py') { $sources[$n]='# fixture' }
 $hashes=foreach($content in $sources.Values){[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($content)))}
 $id=[Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes(($hashes -join ':')+'|'))).Substring(0,16)
-$stage=[IO.Directory]::CreateDirectory((Join-Path $Scratch "WintodoMaintenance/runners/$id")).FullName
+# Register the same LOCALAPPDATA spelling as the installer, even if TEMP uses an 8.3 alias.
+$stage=Join-Path $env:LOCALAPPDATA "WintodoMaintenance/runners/$id"
+$null=[IO.Directory]::CreateDirectory($stage)
 foreach($n in $sources.Keys){[IO.File]::WriteAllText((Join-Path $stage $n),$sources[$n])}
 [IO.File]::WriteAllText((Join-Path $stage 'local-profile.json'),'{"codexProfile":""}')
 $wfile=Join-Path $stage 'Invoke-WorkstationMaintenance.ps1'
