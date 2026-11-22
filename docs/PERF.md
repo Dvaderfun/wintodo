@@ -449,3 +449,17 @@ Earlier runs on the same laptop measured the following revisions:
 
 Power settings and test contention were not controlled. These are historical
 revision measurements, not measurements of the main integration.
+
+### 2026-11-22 — Indexed My Day query on the main integration
+
+The Debug x64 suite at `b1a51e8` passed all 725 tests with serial test
+modules. The unchanged 10,000-task benchmark measured these best-of-seven
+warm reads, each within the 5 ms limit:
+
+| My Day | Important | Planned | All | Completed |
+|---:|---:|---:|---:|---:|
+| 3.641 ms | 1.981 ms | 1.938 ms | 1.575 ms | 1.884 ms |
+
+The query merges disjoint index lookups for pins and live deadlines; a task
+that matches both is returned only once. The highest warm FTS read was
+5.553 ms (60 ms limit).

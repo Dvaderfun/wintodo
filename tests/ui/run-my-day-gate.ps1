@@ -22,7 +22,10 @@ $appPid = [int]$launch.ProcessId
 
 function Ui([string[]]$Command) {
     $output = winapp ui @Command -a $appPid
-    if ($LASTEXITCODE -ne 0) { throw "UI command failed ($Command): $output" }
+    if ($LASTEXITCODE -ne 0) {
+        winapp ui inspect --depth 30 --json -a $appPid | Set-Content (Join-Path $artifacts 'failure-tree.json')
+        throw "UI command failed ($Command): $output"
+    }
     $output
 }
 
@@ -36,6 +39,13 @@ function Add-GateTask([string]$Title) {
         Where-Object { $_.automationId -match '^Todo\.Row\.[0-9a-f-]+$' } | Select-Object -First 1
     if (-not $match) { throw "Cannot find the new task row: $Title" }
     $match.automationId
+}
+
+function Select-GateRow([string]$Id) {
+    $items = @((Ui @('search', $Id, '--json') | ConvertFrom-Json).matches |
+        Where-Object { $_.automationId -eq $Id -and $_.type -eq 'ListItem' })
+    if ($items.Count -ne 1) { throw "Expected one list item for $Id." }
+    Ui @('invoke', $items[0].selector, '--action', 'select') | Out-Null
 }
 
 function Assert-MyDay([bool]$Included) {
@@ -142,11 +152,16 @@ public static class MyDayGateWindow
     Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Tomorrow', '-t', '5000') | Out-Null
     Ui @('wait-for', 'Todo.Nav.MyDay', '--property', 'Name', '--value', 'My Day, 1 tasks', '-t', '5000') | Out-Null
 
-    # Hold only this fixture's writer. WAL readers can open B before A's toggle commits.
+    # A pending BEGIN can hold the shared-cache mutex for a native 5 s busy wait.
+    # Readers must finish during a retry gap, before we release the fixture writer.
+    $lockedReadTimeout = '15000'
     Ui @('invoke', 'Todo.Nav.DefaultList') | Out-Null
     $otherTitle = 'Second gate task'
     $otherRow = Add-GateTask $otherTitle
-    Ui @('invoke', $row) | Out-Null
+    Select-GateRow $otherRow
+    Ui @('wait-for', 'Todo.Detail.Title', '--value', $otherTitle, '--contains', '-t', '5000') | Out-Null
+    Select-GateRow $row
+    Ui @('wait-for', 'Todo.Detail.Title', '--value', 'My Day gate task', '--contains', '-t', '5000') | Out-Null
     Assert-MyDay $true
     Add-Type @'
 using System;
@@ -173,23 +188,23 @@ public static class MyDayGateWriteLock
     $writer = [MyDayGateWriteLock]::Acquire($database)
     try {
         Ui @('invoke', 'Todo.Detail.MyDay') | Out-Null
-        Ui @('invoke', $otherRow) | Out-Null
-        Ui @('wait-for', 'Todo.Detail.Title', '--value', $otherTitle, '-t', '5000') | Out-Null
+        Select-GateRow $otherRow
+        Ui @('wait-for', 'Todo.Detail.Title', '--value', $otherTitle, '--contains', '-t', $lockedReadTimeout) | Out-Null
         Ui @('wait-for', 'Todo.Nav.MyDay', '--property', 'Name', '--value', 'My Day, 1 tasks', '-t', '3000') | Out-Null
     } finally {
         if ([MyDayGateWriteLock]::sqlite3_close($writer) -ne 0) { throw 'Cannot release fixture writer.' }
     }
     Assert-MyDay $false
-    Ui @('wait-for', 'Todo.Detail.Title', '--value', $otherTitle, '-t', '5000') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Title', '--value', $otherTitle, '--contains', '-t', '5000') | Out-Null
 
     # Navigate to an empty My Day before the saved pin becomes visible to readers.
-    Ui @('invoke', $row) | Out-Null
-    Ui @('wait-for', 'Todo.Detail.Title', '--value', 'My Day gate task', '-t', '5000') | Out-Null
+    Select-GateRow $row
+    Ui @('wait-for', 'Todo.Detail.Title', '--value', 'My Day gate task', '--contains', '-t', '5000') | Out-Null
     $writer = [MyDayGateWriteLock]::Acquire($database)
     try {
         Ui @('invoke', 'Todo.Detail.MyDay') | Out-Null
         Ui @('invoke', 'Todo.Nav.MyDay') | Out-Null
-        Ui @('wait-for', 'Focus on your day', '-t', '5000') | Out-Null
+        Ui @('wait-for', 'Focus on your day', '-t', $lockedReadTimeout) | Out-Null
         Ui @('wait-for', $row, '--gone', '-t', '3000') | Out-Null
     } finally {
         if ([MyDayGateWriteLock]::sqlite3_close($writer) -ne 0) { throw 'Cannot release fixture writer.' }

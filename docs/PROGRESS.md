@@ -4869,7 +4869,7 @@ management tools are unavailable.
 - The My Day guest gate covers automatic inclusion, dismissal, undo, manual
   pinning, and rollover. Execution is pending because the host lacks the
   Hyper-V cmdlets and virtualization management namespace for WintodoTest.
-  
+
 ### 2026-11-22 — Verify the vendored WinUI skills
 
 The six selected skills and their references in both mirrors match the 11 files
@@ -4909,6 +4909,14 @@ uncompletion; a saved My Day toggle refreshes its task even after selection or
 navigation changes. Planned, row text, detail, and the row's accessible name
 use the same calendar date for all-day and timed deadlines.
 
-The unit suite includes overlap, sorting, and UTC−07 date regressions. The My
-Day guest gate covers occurrences, selection changes, and navigation during a
-pending save. Validation of this main integration is pending.
+The Debug x64 build passed with zero warnings and all 725 unit tests passed
+without skips. The [10,000-task My Day query](PERF.md#2026-11-22--indexed-my-day-query-on-the-main-integration)
+took 3.641 ms against its unchanged 5 ms limit. Tests cover pin/due overlap,
+query ordering and limits, UTC−07 calendar dates, upgrades through schema 007,
+backup restoration, and rejection of schema 008.
+
+In WintodoTest (Pacific time), the expanded My Day gate passed recurrence,
+undo, row and detail updates, Planned and accessible dates, and switching
+tasks or opening My Day while a save was waiting. The newer-schema guard
+passed 5/5; its recovery dialog and the My Day row/detail capture were
+visually checked (`run-local-my-day-review-batch-20261122-213557.log`).
