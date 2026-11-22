@@ -50,10 +50,7 @@ public sealed partial class TaskDetailViewModel
             _resources.GetString("Detail_Created"),
             DisplayCulture.Current);
 
-        PendingDueDate = task.Due?.ToLocalTime();
-        PendingDueTime = task.DueIsDateOnly
-            ? TimeSpan.Zero
-            : task.Due?.ToLocalTime().TimeOfDay ?? TimeSpan.Zero;
+        RefreshPendingDueDate(task);
         TaskAlarm? reminder = task.Alarms.FirstOrDefault(alarm => !alarm.IsAcknowledged);
         PendingReminderDate = reminder?.Trigger?.ToLocalTime();
         PendingReminderTime =

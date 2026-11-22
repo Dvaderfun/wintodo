@@ -5,6 +5,7 @@ using Wintodo.Core.Models;
 using Wintodo.Core.Presentation;
 using Wintodo.Core.Queries;
 using Wintodo.Core.Recurrence;
+using Wintodo.Core.Services;
 using Wintodo.Data.Mapping;
 
 namespace Wintodo.Data;
@@ -422,14 +423,8 @@ public sealed partial class SqliteTaskStore
         TimeZoneInfo zone = _clock.LocalTimeZone;
         DateOnly today = _clock.Today;
         command.Parameters.AddWithValue("@today", SqliteMapper.FormatDateOnly(today));
-        command.Parameters.AddWithValue("@dayStart", FormatLocalMidnight(today));
-        command.Parameters.AddWithValue("@dayEnd", FormatLocalMidnight(today.AddDays(1)));
-
-        string FormatLocalMidnight(DateOnly date)
-        {
-            DateTime midnight = date.ToDateTime(TimeOnly.MinValue);
-            return SqliteMapper.FormatInstant(new DateTimeOffset(midnight, zone.GetUtcOffset(midnight)));
-        }
+        command.Parameters.AddWithValue("@dayStart", SqliteMapper.FormatInstant(LocalDay.StartUtc(today, zone)));
+        command.Parameters.AddWithValue("@dayEnd", SqliteMapper.FormatInstant(LocalDay.StartUtc(today.AddDays(1), zone)));
     }
 
     private void AppendListPredicate(

@@ -9,6 +9,9 @@ The working copy uses one checkout for `main` and `dev`. On 2026-11-22 the 12
 secondary worktrees were retired; their local installers, test evidence and build
 outputs were verified and preserved under the ignored `artifacts/worktree-recovery/`.
 Development, including the selected preview and maintenance work, is on `dev`.
+This source includes PR #8's automatic My Day membership and schema 006,
+plus the follow-up for open task details and local day rollover. The Store
+version listed below predates these changes.
 
 As of 2026-11-20:
 
@@ -4884,3 +4887,13 @@ supported processors and source licence. Both themes were rendered locally;
 the badges wrapped at phone width, and all local targets, badge images and the
 Wintodo Store link were verified. On `dev`, the x64 build passed without
 warnings and all 720 unit tests passed.
+
+### 2026-11-22 — My Day row dates and local midnight
+
+Changing a due date from a row refreshes the open task's date and My Day
+membership without replacing its text fields. The My Day query, sidebar count,
+and rollover timer use the same first valid instant of the local calendar day,
+including ambiguous or skipped midnight. The guest gate now checks the open
+detail pane after changing the row's deadline. The earlier [query timings](PERF.md#2026-11-22--my-day-after-pr-8)
+are from the reviewed PR and DEV revisions; this entry makes no build, unit,
+or guest gate claim for the main integration.

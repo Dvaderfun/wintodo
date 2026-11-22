@@ -132,6 +132,14 @@ public sealed partial class TaskDetailViewModel
 
     internal void RefreshDateLabels() => UpdateActionLabels();
 
+    private void RefreshPendingDueDate(TodoTask task)
+    {
+        PendingDueDate = task.Due is { } due && task.DueIsDateOnly
+            ? StartOfLocalDay(DateOnly.FromDateTime(due.DateTime))
+            : task.Due?.ToLocalTime();
+        PendingDueTime = task.DueIsDateOnly ? TimeSpan.Zero : PendingDueDate?.TimeOfDay ?? TimeSpan.Zero;
+    }
+
     private void UpdateActionLabels()
     {
         if (_model is null)
@@ -148,7 +156,7 @@ public sealed partial class TaskDetailViewModel
             : string.Format(
                 DisplayCulture.Current,
                 _resources.GetString("Detail_Due"),
-                FormatDate(_model.Due.Value));
+                FormatDate(_model.Due.Value, _model.DueIsDateOnly));
 
         TaskAlarm? reminder = _model.Alarms.FirstOrDefault(alarm => !alarm.IsAcknowledged);
         ReminderLabel = reminder?.Trigger is null
@@ -160,9 +168,10 @@ public sealed partial class TaskDetailViewModel
         RepeatLabel = FormatRepeat(_model.RRule);
     }
 
-    private string FormatDate(DateTimeOffset value)
+    private string FormatDate(DateTimeOffset value, bool dateOnly)
     {
-        DateOnly date = DateOnly.FromDateTime(value.LocalDateTime);
+        DateOnly date = DateOnly.FromDateTime(dateOnly
+            ? value.DateTime : TimeZoneInfo.ConvertTime(value, _clock.LocalTimeZone).DateTime);
         return TaskDateLabels.FormatDetailDue(
             date,
             _clock,

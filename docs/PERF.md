@@ -434,3 +434,18 @@ Command: dotnet test --project tests/Wintodo.Data.Tests -c Release -p:Platform=x
 | All | 1.519 ms | 5 ms | PASS |
 | Completed | 2.652 ms | 5 ms | PASS |
 | FTS5 (worst warm query) | 6.694 ms | 60 ms | PASS |
+
+### 2026-11-22 — My Day after PR #8
+
+Debug x64, `SmartListPerformanceTests`, 10,000 tasks, unchanged 5 ms budget.
+Earlier runs on the same laptop measured the following revisions:
+
+| Revision and run | Best warm My Day query | Result |
+|---|---:|---|
+| PR base `d8efe5e`, focused | 1.801 ms | PASS |
+| PR head `c07f510`, focused | 6.180 ms | FAIL |
+| DEV with the row date and midnight fixes (`8f15605`), full suite | 14.351 ms | FAIL |
+| Same DEV revision, focused | 9.564 ms | FAIL |
+
+Power settings and test contention were not controlled. These are historical
+revision measurements, not measurements of the main integration.
