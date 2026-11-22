@@ -23,6 +23,7 @@ are committed at a pinned release tag:
   Cursor, Gemini and others.
 - `.claude/skills/winui-*` — identical mirror for Claude Code.
 - `.agents/skills/VENDORED.md` — tag, commit and date.
+- Both mirrors include the [upstream license](../../.agents/skills/LICENSE).
 
 | Skill | Use it when |
 |---|---|
@@ -36,8 +37,10 @@ are committed at a pinned release tag:
 Not vendored: `winui-wpf-migration` (no WPF here) and `winui-session-report`
 (user-invoked agent-session diagnostics; available from the user-level plugin).
 
-**Updating:** `.\scripts\Update-AgentSkills.ps1 -Tag vX.Y.Z`, read the upstream
-`CHANGELOG.md` for that range, update `AGENTS.md` and these guides if commands
+**Updating:** check the release tag and its full commit upstream, then run
+`.\scripts\Update-AgentSkills.ps1 -Tag vX.Y.Z -ExpectedCommit <full-commit>`.
+Update the two defaults in the script in the same change. Read the upstream
+`CHANGELOG.md` for that range and review any license change. Update `AGENTS.md` and these guides if commands
 changed, then commit. win-dev-skills is v0.x: minor releases can break things
 (0.7 removed `BuildAndRun.ps1` and the bundled analyzer). Never hand-edit the
 vendored folders.

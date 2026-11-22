@@ -3,7 +3,7 @@
 Vendors the WinUI agent skills from microsoft/win-dev-skills into this repo.
 
 .DESCRIPTION
-Copies the selected skills from a pinned win-dev-skills release tag into
+Copies the selected skills and their license from a pinned win-dev-skills release tag and commit into
 .agents/skills (Codex, Copilot, Cursor, Gemini and other Agent Skills readers)
 and mirrors them into .claude/skills (Claude Code). Writes
 .agents/skills/VENDORED.md recording the tag and commit. Commit the result.
@@ -12,10 +12,12 @@ See docs/guides/ai-tooling.md for when and why to bump the tag.
 
 .EXAMPLE
 .\scripts\Update-AgentSkills.ps1
-.\scripts\Update-AgentSkills.ps1 -Tag v0.8.0
+.\scripts\Update-AgentSkills.ps1 -Tag v0.7.1 -ExpectedCommit 2e8c902e9ba675e4c57550e066fc7e48b64c49b0
 #>
 param(
-    [string]$Tag = "v0.7.1",
+    [ValidatePattern('^v\d+\.\d+\.\d+$')][string]$Tag = "v0.7.1",
+    [ValidatePattern('^[0-9a-f]{40}$')][string]$ExpectedCommit = "2e8c902e9ba675e4c57550e066fc7e48b64c49b0",
+    [ValidatePattern('^winui-[a-z0-9-]+$')]
     [string[]]$Skills = @(
         "winui-setup",
         "winui-dev-workflow",
@@ -32,14 +34,26 @@ $cloneDirectory = Join-Path ([System.IO.Path]::GetTempPath()) (
     "win-dev-skills-" + [guid]::NewGuid().ToString("N")
 )
 
+function Remove-OwnedDirectory([string]$Path, [string]$Parent, [string]$ExpectedName) {
+    $resolved = (Resolve-Path -LiteralPath $Path -ErrorAction Stop).ProviderPath
+    if ([IO.Path]::GetDirectoryName($resolved) -ne [IO.Path]::GetFullPath($Parent).TrimEnd('\','/') -or
+        [IO.Path]::GetFileName($resolved) -cne $ExpectedName -or
+        ((Get-Item -Force -LiteralPath $resolved).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw "Refusing to replace unexpected skill path."
+    }
+    Remove-Item -LiteralPath $resolved -Recurse -Force -ErrorAction Stop
+}
+
 try {
-    git -c advice.detachedHead=false clone --quiet --depth 1 --branch $Tag `
+    git -c advice.detachedHead=false clone --config core.autocrlf=false --config core.eol=lf --quiet --depth 1 --branch $Tag `
         https://github.com/microsoft/win-dev-skills $cloneDirectory
     if ($LASTEXITCODE -ne 0) {
         throw "git clone of win-dev-skills $Tag failed."
     }
     $commit = (git -C $cloneDirectory rev-parse HEAD).Trim()
+    if ($commit -cne $ExpectedCommit) { throw "The tag does not resolve to the reviewed commit." }
     $sourceRoot = Join-Path $cloneDirectory "plugins\winui\agent-plugin\skills"
+    $sourceLicense = Get-Item -LiteralPath (Join-Path $cloneDirectory "LICENSE")
 
     foreach ($skill in $Skills) {
         if (-not (Test-Path -LiteralPath (Join-Path $sourceRoot "$skill\SKILL.md"))) {
@@ -50,9 +64,10 @@ try {
     foreach ($targetName in ".agents\skills", ".claude\skills") {
         $target = Join-Path $repositoryRoot $targetName
         New-Item -ItemType Directory -Force -Path $target | Out-Null
-        Get-ChildItem -LiteralPath $target -Directory -Filter "winui-*" |
-            Remove-Item -Recurse -Force
+        Copy-Item -LiteralPath $sourceLicense.FullName -Destination $target -Force
         foreach ($skill in $Skills) {
+            $destination = Join-Path $target $skill
+            if (Test-Path -LiteralPath $destination) { Remove-OwnedDirectory $destination $target $skill }
             Copy-Item -LiteralPath (Join-Path $sourceRoot $skill) -Destination $target -Recurse
         }
     }
@@ -70,6 +85,7 @@ folders by hand; re-run the script instead.
 - Commit: ``$commit``
 - Vendored: $date
 - Mirrored to: ``.claude/skills/``
+- License: [upstream license](LICENSE), included in both copies.
 
 $skillList
 "@
@@ -78,6 +94,6 @@ $skillList
 }
 finally {
     if (Test-Path -LiteralPath $cloneDirectory) {
-        Remove-Item -LiteralPath $cloneDirectory -Recurse -Force
+        Remove-OwnedDirectory $cloneDirectory ([IO.Path]::GetTempPath()) ([IO.Path]::GetFileName($cloneDirectory))
     }
 }

@@ -6,6 +6,8 @@
 
 # Preserve supplier legal bytes, including original line endings and whitespace.
 /src/Wintodo.App/Assets/ThirdPartyNotices.txt -text -whitespace
+/.agents/skills/LICENSE -text
+/.claude/skills/LICENSE -text
 
 # Local indexing scaffolding is unnecessary in distributable source archives.
 /.codegraph export-ignore

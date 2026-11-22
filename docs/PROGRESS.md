@@ -5,6 +5,11 @@
 _Maintained summary — update it whenever an entry below changes it. Everything
 under "History" is append-only._
 
+The working copy uses one checkout for `main` and `dev`. On 2026-11-22 the 12
+secondary worktrees were retired; their local installers, test evidence and build
+outputs were verified and preserved under the ignored `artifacts/worktree-recovery/`.
+Development, including the selected preview and maintenance work, is on `dev`.
+
 As of 2026-11-20:
 
 Store-first under **Univera LLC** is selected in
@@ -4860,3 +4865,12 @@ management tools are unavailable.
 - The My Day guest gate covers automatic inclusion, dismissal, undo, manual
   pinning, and rollover. Execution is pending because the host lacks the
   Hyper-V cmdlets and virtualization management namespace for WintodoTest.
+  
+### 2026-11-22 — Verify the vendored WinUI skills
+
+The six selected skills and their references in both mirrors match the 11 files
+at the recorded upstream commit. Both directories now carry the original MIT
+notice. The refresh checks the expected commit and retains unrelated skills.
+A scratch refresh verified the mirrored files and exact license bytes; a wrong
+commit was rejected. The x64 build passed with zero warnings and all 707 unit
+tests passed. No app behavior changed or new UI gate result is claimed.
