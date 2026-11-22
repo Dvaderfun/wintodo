@@ -4979,3 +4979,12 @@ or UI gate run.
 
 [PR #8 received a Codex-assisted Request changes review](https://github.com/Dvaderfun/wintodo/pull/8#pullrequestreview-6006242546)
 on its exact `6a67c4a` revision. The PR was not merged.
+
+### 2026-11-22 — Verify the vendored WinUI skills on main and dev
+
+Both branches keep Microsoft's exact MIT notice in both mirrors. All 11 selected
+skill and reference files match each branch's upstream commit. The refreshes
+were exercised in scratch checkouts, including rejection of an incorrect pin.
+Main retains v0.7.1; its x64 build passed with zero warnings, all 707 unit tests
+and all 206 script tests passed. DEV retains WinAppCli v0.8.0; its weekly vendor
+proposal also verifies both copies of the license and includes upstream changes.

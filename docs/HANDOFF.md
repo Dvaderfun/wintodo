@@ -94,7 +94,7 @@ DATA-MODEL before domain/storage, testing/build/packaging guides as relevant.
 CodeGraph exists: use codegraph explore before locating/reading code.
 Vendored .agents/skills: winui-design, winui-dev-workflow, winui-ui-testing,
 winui-code-review, winui-packaging. Surgical-patch for UX-10, lean-build for
-UX-18; caveman-commit for commit message style. No new skill installs/toolchain
+UX-18. Follow the repository's commit conventions. No new skill installs/toolchain
 enablement or ADR approval request needed for the authorized work.
 
 ## Completion update — 2026-10-18
