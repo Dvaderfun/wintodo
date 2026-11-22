@@ -510,7 +510,7 @@ was measured in the full suite with parallel test modules and again in isolation
 |---|---:|---|
 | PR base `d8efe5e`, focused | 1.801 ms | PASS |
 | PR head `c07f510`, focused | 6.180 ms | FAIL |
-| DEV merge plus date fixes, full suite | 14.351 ms | FAIL |
+| DEV merge plus date fixes (`8f15605`), full suite | 14.351 ms | FAIL |
 | DEV merge plus date fixes, focused | 9.564 ms | FAIL |
 
 These runs do not isolate power settings or test contention. The owner
@@ -532,3 +532,17 @@ deadlines, both with and without completed tasks. The two branches exclude
 overlap before applying the shared order and limit. All 24 ordered top-100
 comparisons matched the previous query across two time zones, three sorts,
 both completion settings, and filtered/unfiltered lists.
+
+### 2026-11-22 — Indexed My Day query on the main integration
+
+The Debug x64 suite at `b1a51e8` passed all 725 tests with serial test
+modules. The unchanged 10,000-task benchmark measured these best-of-seven
+warm reads, each within the 5 ms limit:
+
+| My Day | Important | Planned | All | Completed |
+|---:|---:|---:|---:|---:|
+| 3.641 ms | 1.981 ms | 1.938 ms | 1.575 ms | 1.884 ms |
+
+The query merges disjoint index lookups for pins and live deadlines; a task
+that matches both is returned only once. The highest warm FTS read was
+5.553 ms (60 ms limit).

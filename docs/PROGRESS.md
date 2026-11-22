@@ -8,14 +8,14 @@ under "History" is append-only._
 The working copy uses one checkout for `main` and `dev`. On 2026-11-22 the 12
 secondary worktrees were retired; their local installers, test evidence and build
 outputs were verified and preserved under the ignored `artifacts/worktree-recovery/`.
-Development, including the selected preview and maintenance work, is on `dev`.
-The `dev` source includes PR #8's automatic My Day membership, local-day
-rollover, and schema 007's deadline index. Row completion and My Day edits
-update the list and open detail; date-only tasks retain their calendar day
-in Planned and in accessible row labels. These changes are in the private DEV
-installer; the Store package predates them.
+The integrated source includes the selected card appearance, task and attachment
+integrity fixes, and workstation maintenance updates. PR #8's automatic My Day
+membership, local-day rollover and schema 007 deadline index are also present.
+Row completion and My Day edits update the list and open detail; all-day tasks
+keep their calendar date in Planned and in accessible row labels. The Store
+version below predates these changes.
 
-**Private DEV build (this branch only):** Wintodo DEV **1.0.1.224** is the
+**Private DEV installer:** Wintodo DEV **1.0.1.224** is the
 signed x64 build of `c7400210`. Choosing Repeat now sets an undated task due
 today; checking it off advances its due date. The build keeps the My Day
 changes above and the [owner-tested appearance](design/hybrid-preview.md).
@@ -26,7 +26,7 @@ As of 2026-11-21:
 
 The two local maintenance jobs have a shared [owner control menu](guides/workstation-maintenance.md)
 for status, report history, manual inventory, check-only mode and pause/resume.
-Windows App SDK remains at 2.5.1 on DEV. Revisit the newer SDK in the next
+Windows App SDK remains at 2.5.1. Revisit the newer SDK in the next
 dependency PR as described in the [prioritized checklist](plans/2026-11-project-health-and-release.md).
 
 Store-first under **Univera LLC** is selected in
@@ -4998,6 +4998,7 @@ were exercised in scratch checkouts, including rejection of an incorrect pin.
 Main retains v0.7.1; its x64 build passed with zero warnings, all 707 unit tests
 and all 206 script tests passed. DEV retains WinAppCli v0.8.0; its weekly vendor
 proposal also verifies both copies of the license and includes upstream changes.
+The main skill refresh changed no app behavior and claimed no new UI gate result.
 
 ### 2026-11-22 — Consolidate development and verify the surviving checkout
 
@@ -5045,6 +5046,13 @@ pin changes. The contributor reported a clean x64 build, all 718 unit tests
 passing, and a disposable schema-5 upgrade with a successful backup restore
 and re-upgrade. They added the guest gate but did not run it on their host.
 
+The initial PR revision passed 709 unit tests. At the later dismissal review
+the x64 build treated warnings as errors and 718 tests passed. That review
+also confirmed that adding a dismissed task back clears the dismissal, and that
+the sidebar count, row indicator, detail pane and shared undo follow the change.
+The installed DEV profile was not opened; the contributor's host lacked the
+Hyper-V management tools to run the guest gate at that stage.
+
 The owner accepted merging the reviewed revision into `dev` first, with the
 remaining fixes to follow there. The merge keeps DEV's edit draining and
 text-only saves in the detail pane.
@@ -5090,6 +5098,38 @@ boundary; a second encountered a selector option unavailable in the guest.
 The final run selected the actual list item and required the new detail or
 list to load before releasing the fixture writer
 (`run-local-my-day-review-batch-20261122-213131.log`).
+
+### 2026-11-22 — My Day row dates and local midnight
+
+Changing a due date from a row refreshes the open task's date and My Day
+membership without replacing its text fields. The My Day query, sidebar count,
+and rollover timer use the same first valid instant of the local calendar day,
+including ambiguous or skipped midnight. The guest gate now checks the open
+detail pane after changing the row's deadline. The earlier [query timings](PERF.md#2026-11-22--my-day-after-pr-8)
+are from the reviewed PR and DEV revisions; this entry makes no build, unit,
+or guest gate claim for the main integration.
+
+### 2026-11-22 — My Day review fixes on the main integration
+
+The My Day query uses indexed pins and deadlines while preserving list order,
+completed-task filtering, and one result per task. Finishing an automatically
+included recurring occurrence removes it once its deadline moves to another day;
+a pinned occurrence stays in My Day. The open editor follows row completion and
+uncompletion; a saved My Day toggle refreshes its task even after selection or
+navigation changes. Planned, row text, detail, and the row's accessible name
+use the same calendar date for all-day and timed deadlines.
+
+The Debug x64 build passed with zero warnings and all 725 unit tests passed
+without skips. The [10,000-task My Day query](PERF.md#2026-11-22--indexed-my-day-query-on-the-main-integration)
+took 3.641 ms against its unchanged 5 ms limit. Tests cover pin/due overlap,
+query ordering and limits, UTC−07 calendar dates, upgrades through schema 007,
+backup restoration, and rejection of schema 008.
+
+In WintodoTest (Pacific time), the expanded My Day gate passed recurrence,
+undo, row and detail updates, Planned and accessible dates, and switching
+tasks or opening My Day while a save was waiting. The newer-schema guard
+passed 5/5; its recovery dialog and the My Day row/detail capture were
+visually checked (`run-local-my-day-review-batch-20261122-213557.log`).
 
 ### 2026-11-23 — Signed My Day DEV installer
 
