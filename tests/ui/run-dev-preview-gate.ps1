@@ -98,10 +98,17 @@ function Add-PreviewTask([string]$title) {
 }
 function Open-UpgradeFixture {
     Ui @('wait-for','Todo.List.AddTaskBox','-t','30000') | Out-Null
+    Ui @('invoke','Todo.Nav.DefaultList') | Out-Null
+    Ui @('wait-for','DEV upgrade fixture','--type','ListItem','-t','10000') | Out-Null
     $row = @(Rows | Where-Object { $_.name -like 'DEV upgrade fixture*' })
     if ($row.Count -ne 1) { throw 'Expected one preserved fixture task.' }
     Ui @('invoke', $row[0].automationId) | Out-Null
     Ui @('wait-for','Todo.Detail.Title','--value','DEV upgrade fixture','-t','10000') | Out-Null
+    $row[0].automationId
+}
+function Assert-UpgradeSchedule([string]$due) {
+    Ui @('wait-for','Todo.Detail.Repeat','--property','Name','--value','Repeats daily','-t','5000') | Out-Null
+    Ui @('wait-for','Todo.Detail.Due','--property','Name','--value',$due,'-t','5000') | Out-Null
 }
 function Close-InstalledDev([string[]]$keys) {
     $process = Get-Process -Id $appPid
@@ -124,8 +131,19 @@ try {
         Add-AppxPackage -Path $oldPackage
         Start-InstalledDev (Get-DevRegistration $old)
         Complete-Onboarding
+        Ui @('invoke','Todo.Nav.DefaultList') | Out-Null
         Add-PreviewTask 'DEV upgrade fixture'
-        Open-UpgradeFixture
+        $fixtureId = Open-UpgradeFixture
+        Ui @('invoke','Todo.Detail.Repeat') | Out-Null
+        Ui @('wait-for','Todo.Detail.RepeatOption.Daily','-t','5000') | Out-Null
+        Ui @('invoke','Todo.Detail.RepeatOption.Daily') | Out-Null
+        Ui @('send-keys','escape','--via','send-input') | Out-Null
+        Ui @('wait-for','Todo.Detail.Repeat','--property','Name','--value','Repeats daily','-t','5000') | Out-Null
+        # Older installers leave this undated; newer ones default the first due date to today.
+        $due = (Ui @('search','Todo.Detail.Due','--json') | ConvertFrom-Json).matches |
+            Where-Object automationId -eq 'Todo.Detail.Due'
+        if ($due.name -ne 'Add due date') { Ui @('invoke','Todo.Detail.ClearDue') | Out-Null }
+        Assert-UpgradeSchedule 'Add due date'
         Ui @('set-value','Todo.Detail.Note','Note from the previous version') | Out-Null
         Ui @('invoke','Todo.Detail.Close') | Out-Null
         Ui @('wait-for','Todo.Detail.Title','--gone','-t','10000') | Out-Null
@@ -136,15 +154,21 @@ try {
     $report.checks += 'Signed installer, hash, package family, version and registration'
     Start-InstalledDev $registration
     if ($UpgradeFromPrevious) {
-        Open-UpgradeFixture
+        if ((Open-UpgradeFixture) -ne $fixtureId) { throw 'The update replaced the original task.' }
+        Assert-UpgradeSchedule 'Add due date'
         Ui @('wait-for','Todo.Detail.Note','--value','Note from the previous version','-t','10000') | Out-Null
         $report.checks += 'In-place update preserved the existing DEV task, note and onboarding state'
         Close-InstalledDev @('send-keys','ctrl+a text=Note\ssaved\son\sclose alt+f4','--target','Todo.Detail.Note','--via','send-input','--allow-system-keys')
         Start-InstalledDev $registration
-        Open-UpgradeFixture
+        if ((Open-UpgradeFixture) -ne $fixtureId) { throw 'Restart replaced the original task.' }
         Ui @('wait-for','Todo.Detail.Note','--value','Note saved on close','-t','10000') | Out-Null
         Capture '00-upgrade-and-close'
         $report.checks += 'Note typed immediately before closing survived restart on the signed build'
+        Ui @('invoke','Todo.Detail.Complete') | Out-Null
+        Assert-UpgradeSchedule 'Due Tomorrow'
+        Ui @('wait-for','Todo.Detail.Complete','--value','Off','-t','5000') | Out-Null
+        Ui @('wait-for',$fixtureId,'--property','Name','--contains','--value','Tomorrow','-t','5000') | Out-Null
+        $report.checks += 'Legacy undated daily task stayed undated on open and advanced to tomorrow on completion, keeping its UID and active status'
     } else {
         Complete-Onboarding
         $report.checks += 'Start activation, first-run onboarding and task shell'

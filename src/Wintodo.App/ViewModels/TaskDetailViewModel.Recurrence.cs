@@ -131,6 +131,13 @@ public sealed partial class TaskDetailViewModel
             5 => BuildCustomRepeatRule(),
             _ => null,
         };
+        if (_model.RRule is not null && _model.Due is null)
+        {
+            _model.Due = StartOfLocalDay(_clock.Today);
+            _model.DueIsDateOnly = true;
+            _model.DueTzid = null;
+            RefreshPendingDueDate(_model);
+        }
         UpdateActionLabels();
         ScheduleSave(TimeSpan.FromMilliseconds(200), writesWholeTask: true);
     }

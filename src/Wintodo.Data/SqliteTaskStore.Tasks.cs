@@ -910,9 +910,13 @@ public sealed partial class SqliteTaskStore
         TodoTask task,
         DateTimeOffset completedAt)
     {
-        DateTimeOffset occurrence = task.Due ?? task.Start ?? completedAt;
+        // Older repeats can have neither date. Anchor those to the local calendar day,
+        // using the same midnight/zero-offset representation as stored date-only values.
+        bool needsFirstDue = task.Due is null && task.Start is null;
+        DateTimeOffset occurrence = task.Due ?? task.Start
+            ?? new DateTimeOffset(TimeZoneInfo.ConvertTime(completedAt, _clock.LocalTimeZone).Date, TimeSpan.Zero);
         int completedOccurrences = GetCompletionCount(connection, transaction, task.Uid) + 1;
-        TimeZoneInfo? timeZone = ResolveTimeZone(task.DueTzid);
+        TimeZoneInfo? timeZone = needsFirstDue ? null : ResolveTimeZone(task.DueTzid);
         DateTimeOffset? next = RecurrenceRule.Parse(task.RRule!)
             .ComputeNext(occurrence, completedOccurrences, timeZone);
 
@@ -938,7 +942,16 @@ public sealed partial class SqliteTaskStore
         }
 
         TimeSpan shift = next.Value - occurrence;
-        task.Due = task.Due is null ? null : task.Due.Value + shift;
+        if (needsFirstDue)
+        {
+            task.Due = next.Value;
+            task.DueIsDateOnly = true;
+            task.DueTzid = null;
+        }
+        else
+        {
+            task.Due += shift;
+        }
         task.Start = task.Start is null ? null : task.Start.Value + shift;
         task.Status = Wintodo.Core.Models.TaskStatus.NeedsAction;
         task.PercentComplete = 0;

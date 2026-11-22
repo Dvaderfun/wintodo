@@ -97,7 +97,7 @@ The examples below show the gate scripts; on this machine, run each one through
 dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 .\tests\ui\run-m0-gate.ps1                        # launch + m0-smoke, 4 checks
 .\tests\ui\run-m8-gate.ps1                        # design + accessibility, 17 checks
-.\tests\ui\run-composer-layout-gate.ps1           # detail-open/narrow input, options, resize; -Aot for publish
+.\tests\ui\run-composer-layout-gate.ps1           # composer layout, repeat due dates and completion; -Aot for publish
 .\tests\ui\run-navigation-startup-gate.ps1       # one selected category on first launch, restart and hover
 .\tests\ui\run-m5-gate.ps1                        # smart lists, search, restart
 .\tests\ui\run-m13-gate.ps1                       # starts a loopback CalDAV server

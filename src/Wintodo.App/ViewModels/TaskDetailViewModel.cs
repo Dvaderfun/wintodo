@@ -135,7 +135,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
     public bool HasReminder => PendingReminderDate is not null;
 
-    public bool HasRepeat => RepeatModeIndex > 0;
+    public bool HasRepeat => RepeatModeIndex >= 0;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddStepCommand))]
@@ -157,7 +157,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasRepeat))]
-    public partial int RepeatModeIndex { get; set; }
+    public partial int RepeatModeIndex { get; set; } = -1;
 
     [ObservableProperty]
     public partial double CustomInterval { get; set; } = 1;

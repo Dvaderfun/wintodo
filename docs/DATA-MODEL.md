@@ -602,13 +602,15 @@ complete(task):
     if task.rrule is null:
         status = Completed; completed_utc = now; percent_complete = 100
     else:
-        next = RecurrenceRule.Parse(task.rrule).ComputeNext(task.due ?? now)
+        occurrence = task.due ?? task.start ?? localCalendarDate(now)
+        next = RecurrenceRule.Parse(task.rrule).ComputeNext(occurrence, completionCount + 1)
+        insert completion_history(task.uid, now, occurrence)
         if next is null:                       # COUNT exhausted or past UNTIL
             status = Completed; completed_utc = now
         else:
-            insert completion_history(task.uid, now, task.due)
-            shift start by (next - due) if start is set
-            due = next
+            shift start by (next - occurrence) if start is set
+            if due is set: advance due by (next - occurrence)
+            if neither date was set: set due to next as a date only
             status = NeedsAction
             completed_utc = null
             sequence += 1

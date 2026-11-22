@@ -9,6 +9,7 @@ namespace Wintodo.ViewModels;
 
 public sealed partial class TaskListViewModel
 {
+    internal Func<string, Task<bool>>? PrepareRowCompletionAsync { get; set; }
     internal event Action<TodoTask, bool>? RowCompletionSaved;
 
     internal async Task ReorderActiveTaskAsync(string taskUid, string targetUid, bool insertAfter)
@@ -229,6 +230,12 @@ public sealed partial class TaskListViewModel
     private async Task ToggleTaskCompletionAsync(TaskItemViewModel item)
     {
         await Task.Yield();
+        // A just-selected repeat rule and its first due date may still be in the detail editor.
+        if (PrepareRowCompletionAsync is { } prepare && !await prepare(item.Uid))
+        {
+            item.RefreshCompletionToggle();
+            return;
+        }
         VisibleItemsUpdating?.Invoke(true);
         try
         {

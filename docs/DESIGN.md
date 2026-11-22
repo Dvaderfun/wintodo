@@ -538,6 +538,12 @@ Repeat editor flyout: `RadioButtons` (Daily · Weekdays · Weekly · Monthly ·
 Yearly · Custom). "Custom" reveals a `NumberBox` ("every N") + a period
 `ComboBox` + a weekday `ToggleButton` row for weekly.
 
+Choosing Repeat in the composer or detail pane sets a missing due date to
+**Today**, with no time of day. An existing due date and time stay as chosen.
+Completing an occurrence advances the same task to its next scheduled date:
+a weekly task due today stays open and becomes due the same weekday next week.
+Clearing Repeat leaves the due date in place.
+
 ---
 
 ## 6. Responsive behaviour

@@ -5100,3 +5100,13 @@ preserved the task, note and onboarding state; a note edited immediately
 before closing .222 survived restart. The card layout, title editing, high
 contrast and keyboard selection checks also passed
 (`run-dev-preview-gate-20261122-215658.log`). This was a local DEV build.
+
+### 2026-11-23 — Give repeating tasks a first due date (M4)
+
+Choosing Repeat on an undated task sets an all-day deadline of today in both
+the detail pane and the composer. An explicit deadline is kept. Completing from
+a row waits for the open editor to save the repeat rule. An older repeating
+task with neither a due date nor a start date gains its next due date when
+completed; undo restores the previously missing date. Start-only calendar
+tasks keep their start-only schedule. The x64 build passed without warnings
+and all 742 unit tests passed, with no skips.
