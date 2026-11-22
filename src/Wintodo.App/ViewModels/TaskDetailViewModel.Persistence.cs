@@ -76,7 +76,10 @@ public sealed partial class TaskDetailViewModel
         try
         {
             await Task.Delay(delay, cancellationToken);
-            await PersistModelAsync(cancellationToken);
+            if (await PersistModelAsync(cancellationToken) && !cancellationToken.IsCancellationRequested)
+            {
+                CancelPendingSave();
+            }
         }
         catch (OperationCanceledException)
         {
@@ -97,6 +100,7 @@ public sealed partial class TaskDetailViewModel
             TodoTask snapshot = CloneTask(current);
             snapshot.Summary = snapshot.Summary.Trim();
             await _taskStore.UpdateTaskAsync(snapshot, cancellationToken, moveStarredToTop: _preferences.MoveStarredToTop);
+            current.MyDayExcludedDate = snapshot.MyDayExcludedDate;
             current.SortOrder = snapshot.SortOrder;
             current.Sequence = snapshot.Sequence;
             current.LastModified = snapshot.LastModified;

@@ -130,6 +130,7 @@ public sealed partial class SqliteTaskStore
 
                 task.Id = existing.Id;
                 task.Created = existing.Created;
+                task.MyDayExcludedDate = existing.MyDayExcludedDate;
                 task.LastModified = _clock.UtcNow;
                 task.Sequence = Math.Max(existing.Sequence, task.Sequence) + 1;
                 task.IsDirty = true;

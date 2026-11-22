@@ -42,6 +42,7 @@ public sealed partial class SqliteTaskStore
                     ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
                 long sourceListId = task.ListId;
                 bool wasDeleted = task.IsDeleted;
+                DateOnly? previousPin = task.MyDayDate;
                 bool changed = true;
                 switch (action)
                 {
@@ -79,8 +80,8 @@ public sealed partial class SqliteTaskStore
                         break;
                     case TaskBatchAction.RemoveFromMyDay:
                         DateOnly? exclusion = Wintodo.Core.Presentation.TaskDateLabels.IsDueToday(task, _clock) ? _clock.Today : null;
-                        changed = task.MyDayDate is not null || task.MyDayExcludedDate != exclusion;
-                        task.MyDayDate = null;
+                        if (task.MyDayDate == _clock.Today) task.MyDayDate = null;
+                        changed = task.MyDayDate != previousPin || task.MyDayExcludedDate != exclusion;
                         task.MyDayExcludedDate = exclusion;
                         break;
                     case TaskBatchAction.SetDueDate:
@@ -99,12 +100,17 @@ public sealed partial class SqliteTaskStore
                         break;
                 }
                 if (!changed) continue;
-                task.LastModified = _clock.UtcNow;
-                task.Sequence++;
-                task.IsDirty = true;
+                bool syncChange = action is not (TaskBatchAction.AddToMyDay or TaskBatchAction.RemoveFromMyDay)
+                    || task.MyDayDate != previousPin;
+                if (syncChange)
+                {
+                    task.LastModified = _clock.UtcNow;
+                    task.Sequence++;
+                    task.IsDirty = true;
+                    LogChange(connection, transaction, TaskEntityType, uid,
+                        action == TaskBatchAction.Delete ? ChangeOperation.Delete : ChangeOperation.Update);
+                }
                 UpdateTaskRow(connection, transaction, task);
-                LogChange(connection, transaction, TaskEntityType, uid,
-                    action == TaskBatchAction.Delete ? ChangeOperation.Delete : ChangeOperation.Update);
                 if (action == TaskBatchAction.Restore && wasDeleted)
                     QueueRestoredSteps(connection, transaction, context, uid);
                 context.AddTask(sourceListId, uid);

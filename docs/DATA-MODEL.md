@@ -471,7 +471,11 @@ a live payload and newer acknowledgement boundary again, atomically with the
 family. Existing nonempty attempts remain immutable; source snapshots and ETags
 are retained so source-removal replay remains conditional or idempotent.
 Migration 006 adds `tasks.my_day_excluded_date`, a local calendar date recording
-when automatic My Day inclusion was dismissed. It is not exported to iCalendar.
+when automatic My Day inclusion was dismissed. CalDAV replacements preserve the
+current local value, including conflict resolution and cross-list moves.
+Changing the exclusion alone, including undo, notifies store listeners without
+changing the task sequence, modification timestamp, or pending CalDAV changes.
+Changing a manual My Day pin continues to queue a sync update.
 
 Migration 005 also adds internal `tasks.remote_delete_state`: 0 means explicit
 or unproven state, 1 records an ordinary pull tombstone, and 2 holds a known

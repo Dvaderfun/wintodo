@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Wintodo.Core.Models;
 using Wintodo.Core.Presentation;
+using Wintodo.Core.Services;
 
 namespace Wintodo.ViewModels;
 
@@ -81,16 +82,41 @@ public sealed partial class TaskDetailViewModel
     [RelayCommand]
     private async Task ToggleMyDayAsync()
     {
-        if (_model is null)
+        TodoTask? current = _model;
+        if (current is null)
         {
             return;
         }
 
-        bool remove = TaskDateLabels.IsInMyDay(_model, _clock);
-        _model.MyDayDate = remove ? null : _clock.Today;
-        _model.MyDayExcludedDate = remove && TaskDateLabels.IsDueToday(_model, _clock) ? _clock.Today : null;
+        try
+        {
+            await FlushUndoEditorAsync();
+            var states = await _taskStore.CaptureTaskUndoAsync([current.Uid], TaskUndoFields.MyDay);
+            bool remove = TaskDateLabels.IsInMyDay(states[0].Task, _clock);
+            await _taskStore.ApplyTaskBatchAsync([current.Uid],
+                remove ? TaskBatchAction.RemoveFromMyDay : TaskBatchAction.AddToMyDay);
+            RecordUndo(states, "Undo_TasksChanged");
+            TodoTask? updated = await RefreshMyDayAsync([current.Uid]);
+            if (updated is not null) TaskChanged?.Invoke(updated);
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.WriteLine($"WINTODO_MY_DAY_EXCEPTION={DiagnosticException.Describe(exception)}");
+            ShowError(_resources.GetString("Detail_SaveFailed"));
+        }
+    }
+
+    internal async Task<TodoTask?> RefreshMyDayAsync(IReadOnlyList<string> uids)
+    {
+        TodoTask? current = _model;
+        if (current is null || !uids.Contains(current.Uid)) return null;
+        TodoTask? updated = await _taskStore.GetTaskAsync(current.Uid);
+        if (updated is null || !ReferenceEquals(_model, current)) return null;
+
+        current.MyDayDate = updated.MyDayDate;
+        current.MyDayExcludedDate = updated.MyDayExcludedDate;
         UpdateActionLabels();
-        await PersistModelAsync();
+        return updated;
     }
 
     private bool CanAddStep()

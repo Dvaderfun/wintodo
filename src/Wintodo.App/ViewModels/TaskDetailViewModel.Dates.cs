@@ -130,6 +130,8 @@ public sealed partial class TaskDetailViewModel
         if (await PersistModelAsync()) RecordUndo(states, "Undo_ReminderCleared");
     }
 
+    internal void RefreshDateLabels() => UpdateActionLabels();
+
     private void UpdateActionLabels()
     {
         if (_model is null)

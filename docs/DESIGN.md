@@ -307,7 +307,8 @@ Metadata segments, joined with ` · `, in this order, omitting empties:
 5. Repeat glyph.
 6. Note glyph — only if a note exists.
 7. Attachment glyph + count.
-8. "My Day" sun glyph — only when viewing a list other than My Day.
+8. "My Day" indicator — shown outside My Day when the task belongs to My Day
+   today. The row, navigation count, and open detail refresh at local midnight.
 
 Precompute this string in the item ViewModel. **Never** compose it in the
 `DataTemplate` with multiple bindings and converters.
