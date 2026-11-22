@@ -73,7 +73,7 @@ When update-enabled, the separate Sunday 10:00 task, `Codex-DeveloperTools-Weekl
 
 | What is being maintained | Suggested owner |
 |---|---|
-| Versions that build or ship Wintodo | Dependabot PRs, immutable pins, and CI on the actual x64/ARM64 packages. NuGet and Actions are **already configured on main**; the maintenance branch adds the exact .NET SDK and the independent health/vendor-patch workflow. No automatic promotion to Store. |
+| Versions that build or ship Wintodo | Dependabot PRs, immutable pins, and CI on the actual x64/ARM64 packages. Dependabot checks NuGet and GitHub Actions on `main`. The `dev` branch also includes .NET SDK checks and the project health workflow that prepares vendor update patches. No automatic promotion to Store. |
 | Installed tools with a supported servicing route | Let Microsoft Store and the tool's existing package manager/native updater service their installations where appropriate. WinGet can perform selected upgrades when invoked; installing WinGet alone does not schedule upgrades for every tool. |
 | Agent plugins, skills and exceptional portable installations | Keep one user-level weekly inventory/notification for both tool lists. Prefer a reviewed update for agent instructions or executable plugin changes, particularly inputs that follow a branch tip. Keep only the unattended, publisher-verified tool updates the owner wants. |
 

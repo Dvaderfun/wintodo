@@ -1,6 +1,6 @@
 # November 2026 release fallback for dependency servicing
 
-Two local refs preserve different outcomes. `maintenance/nov21-review` keeps Windows App SDK 2.5.1 and takes the other updates: 21 of 22 tracked checks match their stable targets. `refs/archive/branches/maintenance/nov21-sdk27-evaluation` preserves the exact 2.7.0 evaluation: 22 of 22 current, but both actual packages failed the privacy gate. “Current” is a version comparison; it does not certify an update for release.
+Two local archive refs preserve the tested revisions. `refs/archive/branches/maintenance/nov21-review` (`cb362c6`) keeps Windows App SDK 2.5.1 and takes the other updates: 21 of 22 tracked checks matched their stable targets. `refs/archive/branches/maintenance/nov21-sdk27-evaluation` (`6cf6451`) preserves the 2.7.0 evaluation: 22 of 22 matched, but both packages failed the privacy gate. “Current” is a version comparison; it does not certify an update for release.
 
 **Priority:** The four [data-integrity fixes](2026-11-sol-integrity-handoff.md) are in DEV 1.0.1.188. Treat the Windows App SDK update as routine work for the next dependency PR. The finding is a generic Microsoft build-account path in unmodified Microsoft DLLs; the evidence does not indicate exposure of a Wintodo user or developer path.
 
@@ -124,7 +124,7 @@ supplier-input checks, not app-package builds on intermediate SDKs.
 NuGet lists no other stable SDK between 2.5.1 and 2.7.0.
 
 The release fallback retains the prior 2.5.1 SDK graph and every
-other dependency update. The separate 2.7.0 evaluation branch is the starting
+other dependency update. The archived 2.7.0 evaluation is the starting
 point for the next SDK update. Native compilation does not itself prove runtime
 acceptance, privacy compliance or release authorization.
 
