@@ -556,6 +556,7 @@ public sealed partial class SqliteTaskStore
                 TodoTask updated = BuildImportedTask(source, local.Uid, targetList, parentUid ?? local.ParentUid);
                 updated.Id = local.Id;
                 updated.MyDayDate = local.MyDayDate;
+                updated.MyDayExcludedDate = local.MyDayExcludedDate;
                 updated.RemoteHref = local.RemoteHref;
                 updated.RemoteETag = local.RemoteETag;
                 updated.Sequence = local.Sequence + 1;
@@ -623,6 +624,7 @@ public sealed partial class SqliteTaskStore
             task.Id = existing.Id;
             task.ListId = isRoot ? listId : existing.ListId;
             task.MyDayDate = existing.MyDayDate;
+            task.MyDayExcludedDate = existing.MyDayExcludedDate;
             task.RemoteHref = existing.RemoteHref;
             task.RemoteETag = existing.RemoteETag;
             task.Sequence = existing.Sequence + 1;

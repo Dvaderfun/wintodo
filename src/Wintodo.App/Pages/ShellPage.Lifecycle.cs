@@ -44,7 +44,7 @@ public sealed partial class ShellPage
                 await ViewModel.TaskList.ReloadAsync(cancellationToken);
                 await ViewModel.RefreshNavigationAsync(cancellationToken);
             }
-            await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken);
+            await RefreshForDateChangeAsync(cancellationToken);
             await _windowsIntegration.RefreshAsync(cancellationToken);
             if (_clock.UtcNow - _lastSyncAttempt >= TimeSpan.FromMinutes(1))
             {
@@ -210,9 +210,16 @@ public sealed partial class ShellPage
         Microsoft.UI.Dispatching.DispatcherQueueTimer sender,
         object args)
     {
-        await ViewModel.TaskList.RefreshForDateChangeAsync();
-        await ViewModel.RefreshNavigationCountsAsync();
+        await RefreshForDateChangeAsync();
         ScheduleMidnightRefresh();
     }
 
+    private async Task RefreshForDateChangeAsync(CancellationToken cancellationToken = default)
+    {
+        if (await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken))
+        {
+            ViewModel.Detail.RefreshDateLabels();
+            await ViewModel.RefreshNavigationCountsAsync(cancellationToken);
+        }
+    }
 }

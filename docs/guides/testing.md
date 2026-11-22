@@ -136,7 +136,7 @@ explicit opt-in above. The VM being unavailable does not authorize host automati
 
 ## Running gates in the test VM
 
-For the schema-compatibility startup gate, create a synthetic schema-6 database
+For the schema-compatibility startup gate, create a synthetic schema-7 database
 on the host using the Python standard library, then copy only that fixture into
 the guest. The generator preserves any existing seed; keep it for subsequent
 runs. No live user database is used.
@@ -145,7 +145,7 @@ runs. No live user database is used.
 python .\tests\ui\New-SchemaGuardSeed.py  # once, if the seed does not exist
 dotnet build Wintodo.sln -p:Platform=x64 -warnaserror
 .\scripts\Invoke-VmGate.ps1 -Gate run-schema-guard-gate.ps1 `
-  -Include 'tests\ui\artifacts\schema-guard\seed-v6.db'
+  -Include 'tests\ui\artifacts\schema-guard\seed-v7.db'
 ```
 
 The gate runs five checks in one guest session and saves a warning screenshot

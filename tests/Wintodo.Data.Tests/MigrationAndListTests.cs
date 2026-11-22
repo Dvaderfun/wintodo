@@ -16,7 +16,7 @@ public sealed class MigrationAndListTests
         await fixture.Store.InitializeAsync(TestContext.Current.CancellationToken);
         StoreStats stats = await fixture.Store.GetStatsAsync(TestContext.Current.CancellationToken);
 
-        Assert.Equal(5, stats.SchemaVersion);
+        Assert.Equal(6, stats.SchemaVersion);
         Assert.Equal(0, stats.ListCount);
         Assert.Equal(0, stats.TaskCount);
         Assert.True(stats.DatabaseSizeBytes > 0);
@@ -57,7 +57,7 @@ public sealed class MigrationAndListTests
         await reopened.InitializeAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(list.Uid, Assert.Single(await reopened.GetListsAsync(TestContext.Current.CancellationToken)).Uid);
-        Assert.Equal(5, (await reopened.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
+        Assert.Equal(6, (await reopened.GetStatsAsync(TestContext.Current.CancellationToken)).SchemaVersion);
     }
 
     [Fact]
@@ -249,7 +249,7 @@ public sealed class MigrationAndListTests
                 StoreStats stats = await store.GetStatsAsync(TestContext.Current.CancellationToken);
                 TodoList list = Assert.Single(await store.GetListsAsync(TestContext.Current.CancellationToken));
 
-                Assert.Equal(5, stats.SchemaVersion);
+                Assert.Equal(6, stats.SchemaVersion);
                 Assert.Equal("Legacy", list.DisplayName);
                 Assert.Null(list.IconEmoji);
             }

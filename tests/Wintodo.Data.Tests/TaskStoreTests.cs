@@ -1,5 +1,6 @@
 using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
+using Wintodo.Core.Services;
 
 namespace Wintodo.Data.Tests;
 
@@ -110,6 +111,56 @@ public sealed class TaskStoreTests
             Assert.Equal(parent.Uid, child.ParentUid);
             Assert.Equal(list.Id, child.ListId);
         });
+    }
+
+    [Fact]
+    public async Task MyDayIncludesTasksAsSoonAsTheirDueDateBecomesToday()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        fixture.Clock.LocalTimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "Test UTC+05:30", TimeSpan.FromMinutes(330), "Test UTC+05:30", "Test UTC+05:30");
+        fixture.Clock.UtcNow = new DateTimeOffset(2026, 1, 4, 23, 0, 0, TimeSpan.Zero);
+        var token = TestContext.Current.CancellationToken;
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: token);
+        TodoTask task = await AddTaskAsync(fixture, list.Id, "Due date changes", priority: 0,
+            due: fixture.Clock.UtcNow.AddDays(1));
+        Assert.Empty(await QueryAsync(fixture, ListQueryKind.MyDay));
+
+        task.Due = new DateTimeOffset(fixture.Clock.Today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+        task.DueIsDateOnly = true;
+        await fixture.Store.UpdateTaskAsync(task, token);
+        TodoTask timed = await AddTaskAsync(fixture, list.Id, "Timed today", priority: 0,
+            due: fixture.Clock.UtcNow);
+        Assert.Equal(2, (await QueryAsync(fixture, ListQueryKind.MyDay)).Count);
+        Assert.Equal(2, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
+
+        task.Due = null;
+        task.DueIsDateOnly = false;
+        await fixture.Store.UpdateTaskAsync(task, token);
+        Assert.Equal(timed.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
+        Assert.Equal(1, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
+
+        var undoRemoval = await fixture.Store.CaptureTaskUndoAsync([timed.Uid], TaskUndoFields.MyDay, token);
+        await fixture.Store.ApplyTaskBatchAsync([timed.Uid], TaskBatchAction.RemoveFromMyDay, token);
+        Assert.Empty(await QueryAsync(fixture, ListQueryKind.MyDay));
+        Assert.Equal(0, (await fixture.Store.GetSmartListTaskCountsAsync(token))[ListQueryKind.MyDay]);
+        var dismissed = Assert.Single(await QueryAsync(fixture, ListQueryKind.Planned));
+        Assert.Equal(timed.Due, dismissed.Due);
+        Assert.Equal(fixture.Clock.Today, dismissed.MyDayExcludedDate);
+
+        await fixture.Store.RestoreTaskFieldsAsync(undoRemoval, token);
+        Assert.Equal(timed.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
+
+        await fixture.Store.ApplyTaskBatchAsync([timed.Uid], TaskBatchAction.RemoveFromMyDay, token);
+        await fixture.Store.ApplyTaskBatchAsync([timed.Uid], TaskBatchAction.AddToMyDay, token);
+        Assert.Null(Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).MyDayExcludedDate);
+
+        await fixture.Store.ApplyTaskBatchAsync([timed.Uid], TaskBatchAction.RemoveFromMyDay, token);
+        dismissed = Assert.Single(await QueryAsync(fixture, ListQueryKind.Planned));
+        dismissed.Due = fixture.Clock.UtcNow.AddDays(1);
+        await fixture.Store.UpdateTaskAsync(dismissed, token);
+        fixture.Clock.UtcNow = fixture.Clock.UtcNow.AddDays(1);
+        Assert.Equal(timed.Uid, Assert.Single(await QueryAsync(fixture, ListQueryKind.MyDay)).Uid);
     }
 
     [Fact]

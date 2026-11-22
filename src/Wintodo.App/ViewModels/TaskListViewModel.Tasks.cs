@@ -77,7 +77,16 @@ public sealed partial class TaskListViewModel
             previous.Status != task.Status
             || previous.Priority != task.Priority
             || previous.Due != task.Due
-            || previous.MyDayDate != task.MyDayDate;
+            || previous.DueIsDateOnly != task.DueIsDateOnly
+            || previous.MyDayDate != task.MyDayDate
+            || previous.MyDayExcludedDate != task.MyDayExcludedDate;
+        if (_currentQuery?.Kind == ListQueryKind.MyDay
+            && !TaskDateLabels.IsInMyDay(task, _clock))
+        {
+            ApplyDetailTaskDeleted(task.Uid);
+            return;
+        }
+
         item.Model = task;
         UpdateItemDisplay(item);
         if (wasCompleted == item.IsCompleted)

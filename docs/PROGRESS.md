@@ -5028,3 +5028,18 @@ supported processors and source licence. Both themes were rendered locally;
 the badges wrapped at phone width, and all local targets, badge images and the
 Wintodo Store link were verified. On `dev`, the x64 build passed without
 warnings and all 720 unit tests passed.
+
+### 2026-11-22 — My Day includes tasks due today
+
+[PR #8](https://github.com/Dvaderfun/wintodo/pull/8) adds automatic My Day
+membership for tasks due today and lets people dismiss them for the local
+calendar day without changing the due date. The follow-up preserves local
+dismissals across CalDAV conflict adoption and remote moves. Dismissal and
+undo notify store listeners without changing sync metadata unless the manual
+pin changes. The contributor reported a clean x64 build, all 718 unit tests
+passing, and a disposable schema-5 upgrade with a successful backup restore
+and re-upgrade. They added the guest gate but did not run it on their host.
+
+The owner accepted merging the reviewed revision into `dev` first, with the
+remaining fixes to follow there. The merge keeps DEV's edit draining and
+text-only saves in the detail pane.
