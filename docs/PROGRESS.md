@@ -4837,3 +4837,12 @@ its SDK cannot build the seeder at the repository's current SDK pin.
 The fixed build passed the visual spacing, star and reorder checks (3/4).
 The completion scroll-position check still failed: the reference row moved
 356 px after completion (baseline: −360 px). The full gate remains open.
+
+### 2026-11-22 — Verify the vendored WinUI skills
+
+The six selected skills and their references in both mirrors match the 11 files
+at the recorded upstream commit. Both directories now carry the original MIT
+notice. The refresh checks the expected commit and retains unrelated skills.
+A scratch refresh verified the mirrored files and exact license bytes; a wrong
+commit was rejected. The x64 build passed with zero warnings and all 707 unit
+tests passed. No app behavior changed or new UI gate result is claimed.
