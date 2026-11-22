@@ -164,6 +164,50 @@ public sealed class TaskStoreTests
     }
 
     [Theory]
+    [InlineData(-7)]
+    [InlineData(9)]
+    public async Task MyDayCombinesPinsAndDueTasksBeforeFilteringSortingAndLimiting(int offsetHours)
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        TimeSpan offset = TimeSpan.FromHours(offsetHours);
+        fixture.Clock.LocalTimeZone = TimeZoneInfo.CreateCustomTimeZone("Test", offset, "Test", "Test");
+        var token = TestContext.Current.CancellationToken;
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: token);
+        DateOnly today = fixture.Clock.Today;
+        var start = new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), offset);
+        var date = new DateTimeOffset(today.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
+
+        Task<TodoTask> Add(string summary, DateTimeOffset? due = null, bool dateOnly = false, bool pin = false) =>
+            fixture.Store.CreateTaskAsync(new TodoTask
+            {
+                ListId = list.Id, Summary = summary, Due = due, DueIsDateOnly = dateOnly,
+                MyDayDate = pin ? today : null,
+            }, token);
+
+        await Add("C match pin", pin: true);
+        await Add("B match both", start, pin: true);
+        TodoTask done = await Add("Z match completed", date, dateOnly: true);
+        await fixture.Store.CompleteTaskAsync(done.Uid, token);
+        await Add("D match timed", start.AddDays(1).AddTicks(-1));
+        await Add("No filter hit", date, dateOnly: true);
+        await Add("Out of range: match before start", start.AddTicks(-1));
+        await Add("Out of range: match next date", date.AddDays(1), dateOnly: true);
+
+        var query = new ListQuery
+        {
+            Kind = ListQueryKind.MyDay, Filter = "match", SortMode = SortMode.Alphabetical,
+            IncludeCompleted = true,
+        };
+        Assert.Equal(["B match both", "C match pin", "D match timed", "Z match completed"],
+            (await fixture.Store.GetTasksAsync(query, token)).Select(task => task.Summary));
+        query.IncludeCompleted = false;
+        query.SortDescending = true;
+        query.Limit = 2;
+        Assert.Equal(["D match timed", "C match pin"],
+            (await fixture.Store.GetTasksAsync(query, token)).Select(task => task.Summary));
+    }
+
+    [Theory]
     [InlineData(3, 29, 30)] // The spring jump skips midnight and ends at 00:30 local.
     [InlineData(10, 25, 0)] // The autumn clock reaches midnight twice, an hour apart.
     public async Task MyDayChangesAtTheFirstInstantOfTheLocalDate(int month, int day, int utcMinute)

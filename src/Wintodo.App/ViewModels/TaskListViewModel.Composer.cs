@@ -189,7 +189,7 @@ public sealed partial class TaskListViewModel
         HasComposerRepeat = _composerRecurrence is not null;
         ComposerDueLabel = _composerDue is null
             ? _resources.GetString("Composer_DueDate")
-            : FormatDueDate(_composerDue.Value);
+            : FormatDueDate(DateOnly.FromDateTime(_composerDue.Value.DateTime));
         ComposerReminderLabel = _composerReminder is null
             ? _resources.GetString("Composer_RemindMe")
             : FormatReminder(_composerReminder.Value);
@@ -206,9 +206,10 @@ public sealed partial class TaskListViewModel
         DateTime local =
             TimeZoneInfo.ConvertTime(reminder, _clock.LocalTimeZone).DateTime;
         string time = local.ToString("t", DisplayCulture.Current);
-        return DateOnly.FromDateTime(local) == _clock.Today
+        DateOnly reminderDate = DateOnly.FromDateTime(local);
+        return reminderDate == _clock.Today
             ? time
-            : $"{FormatDueDate(reminder)} {time}";
+            : $"{FormatDueDate(reminderDate)} {time}";
     }
 
 }

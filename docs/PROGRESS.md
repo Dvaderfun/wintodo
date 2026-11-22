@@ -9,9 +9,10 @@ The working copy uses one checkout for `main` and `dev`. On 2026-11-22 the 12
 secondary worktrees were retired; their local installers, test evidence and build
 outputs were verified and preserved under the ignored `artifacts/worktree-recovery/`.
 Development, including the selected preview and maintenance work, is on `dev`.
-The `dev` source includes PR #8's automatic My Day membership and schema 006,
-plus fixes for due-date changes with detail open and local day rollover. The
-package versions below predate these changes.
+The `dev` source includes PR #8's automatic My Day membership, local-day
+rollover, and schema 007's deadline index. Row completion and My Day edits
+update the list and open detail; date-only tasks retain their calendar day
+in Planned and in accessible row labels. The packages below predate these changes.
 
 As of 2026-11-21:
 
@@ -5067,3 +5068,24 @@ The full unit run passed 732/733, with no skips. Only the
 [10,000-task My Day query benchmark](PERF.md#2026-11-22--my-day-after-pr-8)
 missed the budget, both in the full suite and on its own. The threshold stays
 at 5 ms. No installed profile or Store release was used.
+
+### 2026-11-22 — My Day query and row updates on DEV
+
+Migration 007 adds an index for live deadlines, including those of completed
+tasks. The My Day query uses separate index lookups for pins and deadlines.
+In the serial x64 Debug suite, all 738 tests passed without skips; the
+[10,000-task My Day query](PERF.md#2026-11-22--indexed-my-day-query-on-dev)
+took 3.653 ms against its unchanged 5 ms limit. The final build had zero
+warnings and errors. Migration tests cover versions 1–7, backup restoration,
+and rejecting version 8 without changing it.
+
+In WintodoTest (Pacific time), the My Day gate passed automatic and pinned
+recurring completion, undo, row and detail dates, the Planned heading and
+accessible row date, and switching tasks or navigating to My Day while a
+save was pending. Row completion and uncompletion also updated the open
+checkbox. The newer-schema guard passed 5/5, including reopening the same
+unchanged database. The first guest run timed out at the SQLite busy-wait
+boundary; a second encountered a selector option unavailable in the guest.
+The final run selected the actual list item and required the new detail or
+list to load before releasing the fixture writer
+(`run-local-my-day-review-batch-20261122-213131.log`).

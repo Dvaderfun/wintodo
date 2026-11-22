@@ -1,5 +1,5 @@
 param(
-    [string]$SeedDatabase = (Join-Path $PSScriptRoot 'artifacts\schema-guard\seed-v7.db')
+    [string]$SeedDatabase = (Join-Path $PSScriptRoot 'artifacts\schema-guard\seed-v8.db')
 )
 if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1') {
     throw 'Run this gate through scripts/Invoke-VmGate.ps1 in WintodoTest; host UI automation requires explicit session permission.'
@@ -10,7 +10,7 @@ $appDirectory = Join-Path $repositoryRoot 'src\Wintodo.App\bin\x64\Debug\net10.0
 $artifactDirectory = Join-Path $PSScriptRoot ('artifacts\schema-guard\run-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
 if (-not (Test-Path -LiteralPath $SeedDatabase -PathType Leaf)) {
-    throw 'Copy the synthetic newer-schema seed into the guest with Invoke-VmGate.ps1 -Include tests/ui/artifacts/schema-guard/seed-v7.db.'
+    throw 'Copy the synthetic newer-schema seed into the guest with Invoke-VmGate.ps1 -Include tests/ui/artifacts/schema-guard/seed-v8.db.'
 }
 $databasePath = Join-Path $artifactDirectory 'newer-schema.db'
 Copy-Item -LiteralPath $SeedDatabase -Destination $databasePath

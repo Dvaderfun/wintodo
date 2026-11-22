@@ -310,6 +310,7 @@ fields and retains current sync identity, unknown properties and unrelated edits
 ```sql
 CREATE INDEX ix_tasks_list_status_sort ON tasks(list_id, status, sort_order) WHERE is_deleted = 0;
 CREATE INDEX ix_tasks_due              ON tasks(due_utc)      WHERE is_deleted = 0 AND status <> 2;
+CREATE INDEX ix_tasks_due_live         ON tasks(due_utc)      WHERE is_deleted = 0 AND due_utc IS NOT NULL;
 CREATE INDEX ix_tasks_parent           ON tasks(parent_uid)   WHERE is_deleted = 0 AND parent_uid IS NOT NULL;
 CREATE INDEX ix_tasks_myday            ON tasks(my_day_date, sort_order) WHERE is_deleted = 0 AND my_day_date IS NOT NULL;
 CREATE INDEX ix_tasks_important        ON tasks(priority)     WHERE is_deleted = 0 AND priority BETWEEN 1 AND 4;
@@ -476,6 +477,10 @@ current local value, including conflict resolution and cross-list moves.
 Changing the exclusion alone, including undo, notifies store listeners without
 changing the task sequence, modification timestamp, or pending CalDAV changes.
 Changing a manual My Day pin continues to queue a sync update.
+
+Migration 007 indexes deadlines of undeleted tasks, including completed ones.
+My Day can look up pins and deadlines separately without scanning unrelated
+tasks. A task that is both pinned and due appears once.
 
 Migration 005 also adds internal `tasks.remote_delete_state`: 0 means explicit
 or unproven state, 1 records an ordinary pull tombstone, and 2 holds a known

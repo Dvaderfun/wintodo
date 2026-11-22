@@ -247,7 +247,10 @@ Smart lists prefill the new task so it lands where it was typed:
 My Day shows tasks manually added today and tasks due today in the local
 calendar. Removing a task hides it from My Day for the current day and keeps
 its due date. Changing a due date from the list also updates My Day and the
-open task detail.
+open task detail. Completing a recurring task that was included only because
+it was due today removes it once its next occurrence falls on another day.
+A task manually added to My Day stays there for the day. All-day deadlines
+keep the same calendar date in Planned, row labels, and screen-reader text.
 
 The task itself is always created in a real user list (the picker target), never
 in a smart list. A first-run database is seeded with one list, `Tasks`, and the

@@ -516,3 +516,19 @@ was measured in the full suite with parallel test modules and again in isolation
 These runs do not isolate power settings or test contention. The owner
 accepted integrating the feature and addressing the two functional issues
 first. The 5 ms threshold remains unchanged.
+
+### 2026-11-22 — Indexed My Day query on DEV
+
+Debug x64, 10,000 tasks, full unit suite with test modules run serially.
+The existing best-of-seven warm query test recorded the following times:
+
+| My Day | Important | Planned | All | Completed | Budget per query |
+|---:|---:|---:|---:|---:|---:|
+| 3.653 ms | 2.089 ms | 2.245 ms | 2.032 ms | 3.058 ms | 5 ms |
+
+On bundled SQLite 3.54.1, `EXPLAIN QUERY PLAN` shows a search on
+`ix_tasks_myday` for pins and a range search on `ix_tasks_due_live` for
+deadlines, both with and without completed tasks. The two branches exclude
+overlap before applying the shared order and limit. All 24 ordered top-100
+comparisons matched the previous query across two time zones, three sorts,
+both completion settings, and filtered/unfiltered lists.

@@ -7,6 +7,8 @@ namespace Wintodo.ViewModels;
 
 public sealed partial class TaskDetailViewModel
 {
+    internal event Func<TodoTask, Task>? MyDayMembershipChanged;
+
     internal async Task PersistStepOrderAsync(CancellationToken cancellationToken = default)
     {
         for (int index = 0; index < Steps.Count; index++)
@@ -96,8 +98,11 @@ public sealed partial class TaskDetailViewModel
             await _taskStore.ApplyTaskBatchAsync([current.Uid],
                 remove ? TaskBatchAction.RemoveFromMyDay : TaskBatchAction.AddToMyDay);
             RecordUndo(states, "Undo_TasksChanged");
-            TodoTask? updated = await RefreshTaskDatesAsync([current.Uid]);
-            if (updated is not null) TaskChanged?.Invoke(updated);
+            if (await _taskStore.GetTaskAsync(current.Uid) is { } updated)
+            {
+                if (_model is { } editor && editor.Uid == updated.Uid) ApplyTaskDates(editor, updated);
+                if (MyDayMembershipChanged is not null) await MyDayMembershipChanged(updated);
+            }
         }
         catch (Exception exception)
         {
@@ -106,13 +111,32 @@ public sealed partial class TaskDetailViewModel
         }
     }
 
-    internal async Task<TodoTask?> RefreshTaskDatesAsync(IReadOnlyList<string> uids)
+    internal async Task RefreshTaskDatesAsync(IReadOnlyList<string> uids)
     {
         TodoTask? current = _model;
-        if (current is null || !uids.Contains(current.Uid)) return null;
+        if (current is null || !uids.Contains(current.Uid)) return;
         TodoTask? updated = await _taskStore.GetTaskAsync(current.Uid);
-        if (updated is null || !ReferenceEquals(_model, current)) return null;
+        if (updated is not null && ReferenceEquals(_model, current)) ApplyTaskDates(current, updated);
+    }
 
+    internal void ApplyRowCompletion(TodoTask updated, bool occurrenceAdvanced)
+    {
+        if (_model is not { } current || current.Uid != updated.Uid) return;
+        current.Status = updated.Status;
+        current.PercentComplete = updated.PercentComplete;
+        current.CompletedAt = updated.CompletedAt;
+        IsCompleted = current.Status == Core.Models.TaskStatus.Completed;
+        if (!occurrenceAdvanced) return;
+
+        current.Start = updated.Start;
+        current.Alarms.Clear();
+        current.Alarms.AddRange(updated.Alarms);
+        RefreshPendingReminder(current);
+        ApplyTaskDates(current, updated);
+    }
+
+    private void ApplyTaskDates(TodoTask current, TodoTask updated)
+    {
         if (current.Due != updated.Due || current.DueIsDateOnly != updated.DueIsDateOnly
             || current.DueTzid != updated.DueTzid)
         {
@@ -124,7 +148,6 @@ public sealed partial class TaskDetailViewModel
         current.MyDayDate = updated.MyDayDate;
         current.MyDayExcludedDate = updated.MyDayExcludedDate;
         UpdateActionLabels();
-        return updated;
     }
 
     private bool CanAddStep()

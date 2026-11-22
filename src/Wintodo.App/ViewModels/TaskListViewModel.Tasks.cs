@@ -9,6 +9,8 @@ namespace Wintodo.ViewModels;
 
 public sealed partial class TaskListViewModel
 {
+    internal event Action<TodoTask, bool>? RowCompletionSaved;
+
     internal async Task ReorderActiveTaskAsync(string taskUid, string targetUid, bool insertAfter)
     {
         if (!CanReorderTasks)
@@ -61,6 +63,21 @@ public sealed partial class TaskListViewModel
             double sortOrder = (index + 1) * 1024d;
             item.Model.SortOrder = sortOrder;
             await _taskStore.ReorderTaskAsync(item.Uid, sortOrder, cancellationToken);
+        }
+    }
+
+    internal async Task ApplyDetailMyDayUpdateAsync(TodoTask task)
+    {
+        if (_currentQuery?.Kind == ListQueryKind.MyDay)
+        {
+            // A navigation query started before the save may still be loading.
+            // Supersede it with the committed membership and current sort.
+            await ReloadAsync();
+            NavigationDataChanged?.Invoke();
+        }
+        else
+        {
+            ApplyDetailTaskUpdate(task);
         }
     }
 
@@ -222,6 +239,7 @@ public sealed partial class TaskListViewModel
                 item.Model.PercentComplete = 0;
                 item.Model.CompletedAt = null;
                 item.IsCompleted = false;
+                RowCompletionSaved?.Invoke(item.Model, false);
                 item.CompletionDateText = string.Empty;
                 CompletionReordering?.Invoke();
                 _completedTasks.Remove(item);
@@ -244,6 +262,7 @@ public sealed partial class TaskListViewModel
             item.Model = updated;
             item.IsCompleted =
                 updated.Status == Wintodo.Core.Models.TaskStatus.Completed;
+            RowCompletionSaved?.Invoke(updated, !item.IsCompleted);
             // A recurring occurrence remains incomplete; reset the CheckBox's native toggle
             // even when the observable bool has not changed from false.
             item.RefreshCompletionToggle();
@@ -257,7 +276,16 @@ public sealed partial class TaskListViewModel
             TaskCompletionChanged?.Invoke(item);
             if (!item.IsCompleted)
             {
-                VisibleItemsUpdated?.Invoke();
+                bool inMyDay = TaskDateLabels.IsInMyDay(updated, _clock);
+                if (_currentQuery?.Kind == ListQueryKind.MyDay && !inMyDay)
+                {
+                    _activeTasks.Remove(item);
+                }
+                else if (inMyDay != TaskDateLabels.IsInMyDay(completionUndo[0].Task, _clock))
+                {
+                    NavigationDataChanged?.Invoke();
+                }
+                RebuildVisibleItems(viewportAlreadyCaptured: true);
                 RecordTaskUndo(completionUndo, "Undo_TaskCompleted");
                 return;
             }

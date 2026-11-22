@@ -116,7 +116,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-completion-motion-gate.ps1 -BaselineTimings <timings.json>` | 200 tasks / 20 lists: 15 in-process UIA placement samples versus a matched UX-07 baseline from `run-completion-measure.ps1`, screenshot/video, uncompletion, star and undo. `-TestReducedMotion` temporarily changes Windows Animation effects: obtain owner permission first; checks three instant placements and verifies restoration in `finally`. |
 | `run-m4-gate.ps1` | Detail pane fields, local attachment copy/removal, and restart persistence, including a note typed immediately before Alt+F4 |
 | `run-m5-gate.ps1` | Smart lists, search, sort; single/repeated/multi-task drops on My Day and Important, original-list retention and restart persistence |
-| `run-my-day-gate.ps1` | Automatic membership, dismissal and undo, manual pinning, rollover on window activation, and due-date changes from the row with detail open |
+| `run-my-day-gate.ps1` | Automatic membership, dismissal and undo, manual pins, rollover, row due-date edits, Planned and accessible dates, recurring completion with/without a pin, and switching detail while a My Day save is waiting on the fixture database |
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |
 | `run-import-gate.ps1` | Onboarding Welcome on a fresh database, Microsoft To Do wizard end to end against `tests/fixtures/mstodo/basic` (`--import-fixture`, Debug only), dry-run counts, second import from Settings duplicates nothing, cancel, expired sign-in returns to sign-in and keeps choices (`--import-fixture-expire-once`), Start fresh, scratch databases skip Welcome, accessibility audit |
 | `run-attachment-provenance-gate.ps1` | DEP-10: synthetic staging/final metadata and cleanup regressions, real wizard import with hostile filename confinement, benign document opening through Windows, removal/restart and failed-download cleanup; uses an existing guest document association |
@@ -137,7 +137,7 @@ explicit opt-in above. The VM being unavailable does not authorize host automati
 
 ## Running gates in the test VM
 
-For the schema-compatibility startup gate, create a synthetic schema-7 database
+For the schema-compatibility startup gate, create a synthetic schema-8 database
 on the host using the Python standard library, then copy only that fixture into
 the guest. The generator preserves any existing seed; keep it for subsequent
 runs. No live user database is used.
@@ -146,7 +146,7 @@ runs. No live user database is used.
 python .\tests\ui\New-SchemaGuardSeed.py  # once, if the seed does not exist
 dotnet build Wintodo.sln -p:Platform=x64 -warnaserror
 .\scripts\Invoke-VmGate.ps1 -Gate run-schema-guard-gate.ps1 `
-  -Include 'tests\ui\artifacts\schema-guard\seed-v7.db'
+  -Include 'tests\ui\artifacts\schema-guard\seed-v8.db'
 ```
 
 The gate runs five checks in one guest session and saves a warning screenshot

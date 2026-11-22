@@ -110,16 +110,22 @@ public sealed partial class TaskListViewModel
             task, _currentQuery?.Kind, _clock, FindListName(task.ListId));
         item.IsOverdue = metadata.IsOverdue;
         item.IsDueToday = metadata.IsDueToday;
-        item.Metadata = string.Join(" · ", metadata.Parts.Select(part => part.Kind switch
+        string? dueLabel = null;
+        var labels = new List<string>(metadata.Parts.Count);
+        foreach (TaskMetadataPart part in metadata.Parts)
         {
-            TaskMetadataKind.ListName => part.Text ?? string.Empty,
-            TaskMetadataKind.DueDate => TaskDateLabels.FormatListDue(part.Date!.Value, _clock,
-                DisplayCulture.Current, _resources.GetString("Task_Metadata_Yesterday"),
-                _resources.GetString("Task_Metadata_Today"), _resources.GetString("Task_Metadata_Tomorrow")),
-            TaskMetadataKind.Repeat => _resources.GetString("Task_Metadata_Repeats"),
-            TaskMetadataKind.MyDay => _resources.GetString("Task_Metadata_MyDay"),
-            _ => throw new InvalidOperationException("Unknown metadata part kind."),
-        }));
+            string label = part.Kind switch
+            {
+                TaskMetadataKind.ListName => part.Text ?? string.Empty,
+                TaskMetadataKind.DueDate => FormatDueDate(part.Date!.Value),
+                TaskMetadataKind.Repeat => _resources.GetString("Task_Metadata_Repeats"),
+                TaskMetadataKind.MyDay => _resources.GetString("Task_Metadata_MyDay"),
+                _ => throw new InvalidOperationException("Unknown metadata part kind."),
+            };
+            labels.Add(label);
+            if (part.Kind == TaskMetadataKind.DueDate) dueLabel = label;
+        }
+        item.Metadata = string.Join(" · ", labels);
         item.CompletionDateText = task.CompletedAt is null
             ? string.Empty
             : string.Format(
@@ -128,12 +134,12 @@ public sealed partial class TaskListViewModel
                 task.CompletedAt.Value.ToLocalTime());
 
         var accessibleParts = new List<string>(5) { task.Summary };
-        if (task.Due is not null)
+        if (dueLabel is not null)
         {
             accessibleParts.Add(string.Format(
                 DisplayCulture.Current,
                 _resources.GetString("Task_Accessible_Due"),
-                FormatDueDate(task.Due.Value)));
+                dueLabel));
         }
 
         if (item.IsImportant)
@@ -201,11 +207,8 @@ public sealed partial class TaskListViewModel
         };
     }
 
-    private string FormatDueDate(DateTimeOffset due)
+    private string FormatDueDate(DateOnly date)
     {
-        DateTime localDue =
-            TimeZoneInfo.ConvertTime(due, _clock.LocalTimeZone).DateTime;
-        DateOnly date = DateOnly.FromDateTime(localDue);
         return TaskDateLabels.FormatListDue(
             date,
             _clock,
