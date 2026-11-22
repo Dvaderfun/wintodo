@@ -12,16 +12,15 @@ Development, including the selected preview and maintenance work, is on `dev`.
 The `dev` source includes PR #8's automatic My Day membership, local-day
 rollover, and schema 007's deadline index. Row completion and My Day edits
 update the list and open detail; date-only tasks retain their calendar day
-in Planned and in accessible row labels. The packages below predate these changes.
+in Planned and in accessible row labels. These changes are in the private DEV
+installer; the Store package predates them.
+
+**Private DEV build (this branch only):** Wintodo DEV **1.0.1.222** is the
+signed x64 build of `b6988b22`. It keeps the [owner-tested appearance](design/hybrid-preview.md)
+and includes the My Day changes above. WintodoTest verified that updating from
+1.0.1.188 keeps the existing task and note. See the [installer guide](guides/design-dev-preview.md).
 
 As of 2026-11-21:
-
-**Private DEV build (this branch only):** Wintodo DEV 1.0.1.188 is the
-signed x64 update to the [owner-tested appearance preview](design/hybrid-preview.md).
-It keeps the chosen cards, selection marker and list-title editor, and includes
-the four November data integrity fixes. WintodoTest verified an in-place update
-from .180 with a synthetic task and note, and verified that a note typed just
-before closing survives restart. See the [installer guide](guides/design-dev-preview.md).
 
 The two local maintenance jobs have a shared [owner control menu](guides/workstation-maintenance.md)
 for status, report history, manual inventory, check-only mode and pause/resume.
@@ -5089,3 +5088,15 @@ boundary; a second encountered a selector option unavailable in the guest.
 The final run selected the actual list item and required the new detail or
 list to load before releasing the fixture writer
 (`run-local-my-day-review-batch-20261122-213131.log`).
+
+### 2026-11-23 — Signed My Day DEV installer
+
+Built `Wintodo-DEV-1.0.1.222-x64.msix` from `b6988b22` using the existing
+DEV signer. The signed package matched its recorded SHA-256; the structural
+and privacy checks passed, including a scan of all 335 payload files.
+
+WintodoTest passed all seven installed-package checks. Updating from .188
+preserved the task, note and onboarding state; a note edited immediately
+before closing .222 survived restart. The card layout, title editing, high
+contrast and keyboard selection checks also passed
+(`run-dev-preview-gate-20261122-215658.log`). This was a local DEV build.
