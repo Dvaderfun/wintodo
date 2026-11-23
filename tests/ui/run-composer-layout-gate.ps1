@@ -49,6 +49,20 @@ function Get-Element {
     $matches[0]
 }
 
+function Open-TaskDetail([string]$Title) {
+    Invoke-Ui @('wait-for', $Title, '--type', 'ListItem', '-t', '5000') | Out-Null
+    $matches = @((Invoke-Ui @('search', $Title, '--type', 'ListItem', '--json') | ConvertFrom-Json).matches |
+        Where-Object { $_.automationId -match '^Todo\.Row\.[0-9a-f-]+$' })
+    if ($matches.Count -ne 1) { throw "Expected one task row for $Title." }
+    Invoke-Ui @('invoke', $matches[0].selector, '--action', 'select') | Out-Null
+    Invoke-Ui @('wait-for', 'Todo.Detail.Title', '--value', $Title, '-t', '5000') | Out-Null
+    return $matches[0].automationId
+}
+
+function Assert-DetailName([string]$Control, [string]$Name) {
+    Invoke-Ui @('wait-for', "Todo.Detail.$Control", '--property', 'Name', '--value', $Name, '-t', '5000') | Out-Null
+}
+
 function Save-Screenshot {
     param([string]$Name)
     $path = Join-Path $artifactDirectory $Name
@@ -92,7 +106,9 @@ public static class ComposerLayoutNative {
 '@
 
 try {
-    $launch = & winapp run $appDirectory --detach --json -- --database-path (Join-Path $artifactDirectory 'composer.db') |
+    $clock = Join-Path $artifactDirectory 'clock.txt'
+    [IO.File]::WriteAllText($clock, '2026-11-23T06:30:00Z')
+    $launch = & winapp run $appDirectory --detach --json -- --database-path (Join-Path $artifactDirectory 'composer.db') --clock-file $clock |
         ConvertFrom-Json
     if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) { throw 'Composer gate launch failed.' }
     $appPid = [int]$launch.ProcessId
@@ -108,18 +124,27 @@ try {
     Invoke-Ui @('focus', 'Todo.List.AddTaskBox') | Out-Null
     Invoke-Ui @('set-value', 'Todo.List.AddTaskBox', 'Detail layout sample') | Out-Null
     Invoke-Ui @('send-keys', 'enter', '--target', 'Todo.List.AddTaskBox', '--via', 'send-input') | Out-Null
-    Start-Sleep -Milliseconds 300
-    $row = (Invoke-Ui @('search', 'Detail layout sample', '--json') | ConvertFrom-Json).matches |
-        Where-Object { $_.type -eq 'ListItem' -and $_.automationId -match '^Todo.Row.' } | Select-Object -First 1
-    if (-not $row) { throw 'Created sample task not found.' }
-    Invoke-Ui @('focus', $row.selector) | Out-Null
-    Invoke-Ui @('send-keys', 'enter', '--via', 'send-input') | Out-Null
-    Invoke-Ui @('wait-for', 'Todo.Detail.Title', '-t', '5000') | Out-Null
+    $dailyRow = Open-TaskDetail 'Detail layout sample'
     Invoke-Ui @('focus', 'Todo.List.AddTaskBox') | Out-Null
 
     Test-UI 'Detail open keeps a usable single-row composer' {
         Assert-CompactLayout
         Save-Screenshot '01-detail-open.png'
+    }
+    Test-UI 'Daily repeat sets an undated task due today and completion advances it to tomorrow' {
+        Assert-DetailName 'Due' 'Add due date'
+        Invoke-Ui @('invoke', 'Todo.Detail.Repeat') | Out-Null
+        Invoke-Ui @('wait-for', 'Todo.Detail.RepeatOption.Daily', '-t', '3000') | Out-Null
+        Invoke-Ui @('invoke', 'Todo.Detail.RepeatOption.Daily') | Out-Null
+        Invoke-Ui @('send-keys', 'escape', '--via', 'send-input') | Out-Null
+        Assert-DetailName 'Repeat' 'Repeats daily'
+        Assert-DetailName 'Due' 'Due Today'
+        Save-Screenshot '05-repeat-daily-due-today.png'
+        $rowToggle = $dailyRow.Replace('Todo.Row.', 'Todo.Row.CompleteToggle.')
+        Invoke-Ui @('invoke', $rowToggle, '--action', 'toggle-on') | Out-Null
+        Assert-DetailName 'Due' 'Due Tomorrow'
+        Invoke-Ui @('wait-for', $rowToggle, '--value', 'Off', '-t', '3000') | Out-Null
+        Invoke-Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'Off', '-t', '3000') | Out-Null
     }
     Test-UI 'Compact options expose target, due, reminder and repeat' {
         Invoke-Ui @('invoke', 'Todo.Composer.OptionsButton') | Out-Null
@@ -141,6 +166,23 @@ try {
         Invoke-Ui @('wait-for', 'Compact scheduled task', '--type', 'ListItem', '-t', '5000') | Out-Null
         Invoke-Ui @('wait-for', 'Todo.List.AddTaskBox', '--value', '', '-t', '3000') | Out-Null
         Assert-CompactLayout
+        Open-TaskDetail 'Compact scheduled task'
+        Assert-DetailName 'Repeat' 'Repeats weekly'
+        Assert-DetailName 'Due' 'Due Tomorrow'
+    }
+    Test-UI 'Weekly repeat in the composer starts today and advances to next week' {
+        Invoke-Ui @('focus', 'Todo.List.AddTaskBox') | Out-Null
+        Invoke-Ui @('set-value', 'Todo.List.AddTaskBox', 'Weekly without a due date') | Out-Null
+        Invoke-Ui @('invoke', 'Todo.Composer.OptionsButton') | Out-Null
+        Invoke-Ui @('invoke', 'Todo.Composer.Options.Repeat') | Out-Null
+        Invoke-Ui @('invoke', 'Todo.Composer.Options.RepeatWeekly') | Out-Null
+        Invoke-Ui @('invoke', 'Todo.Composer.AddButton') | Out-Null
+        Open-TaskDetail 'Weekly without a due date'
+        Assert-DetailName 'Repeat' 'Repeats weekly'
+        Assert-DetailName 'Due' 'Due Today'
+        Invoke-Ui @('invoke', 'Todo.Detail.Complete') | Out-Null
+        Assert-DetailName 'Due' 'Due Next week'
+        Invoke-Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'Off', '-t', '3000') | Out-Null
     }
     Test-UI 'Narrow list and wider window update without losing the draft' {
         # Escape in the composer cancels its draft before the shell sees it.

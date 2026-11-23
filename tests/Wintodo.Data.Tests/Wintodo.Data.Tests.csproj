@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\src\Wintodo.App\ViewModels\DetailSaveQueue.cs" Link="App\DetailSaveQueue.cs" />
+    <Compile Include="..\..\src\Wintodo.App\ViewModels\DetailAttachmentCopy.cs" Link="App\DetailAttachmentCopy.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
 

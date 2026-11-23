@@ -130,6 +130,7 @@ public sealed partial class TaskListViewModel
             "Weekly" => "FREQ=WEEKLY",
             _ => null,
         };
+        if (_composerRecurrence is not null) _composerDue ??= StartOfLocalDay(_clock.Today);
         UpdateComposerLabels();
     }
 

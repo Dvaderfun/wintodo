@@ -13,7 +13,7 @@ public sealed class PasswordVaultCredentialStore : ICredentialStore
         string secret,
         CancellationToken cancellationToken = default)
     {
-        Validate(resource, username);
+        resource = VaultResource(resource, username);
         ArgumentException.ThrowIfNullOrWhiteSpace(secret);
         cancellationToken.ThrowIfCancellationRequested();
         RemoveMatching(resource, username);
@@ -26,7 +26,7 @@ public sealed class PasswordVaultCredentialStore : ICredentialStore
         string username,
         CancellationToken cancellationToken = default)
     {
-        Validate(resource, username);
+        resource = VaultResource(resource, username);
         cancellationToken.ThrowIfCancellationRequested();
         PasswordCredential? credential = _vault.RetrieveAll().FirstOrDefault(value =>
             string.Equals(value.Resource, resource, StringComparison.Ordinal)
@@ -45,7 +45,7 @@ public sealed class PasswordVaultCredentialStore : ICredentialStore
         string username,
         CancellationToken cancellationToken = default)
     {
-        Validate(resource, username);
+        resource = VaultResource(resource, username);
         cancellationToken.ThrowIfCancellationRequested();
         RemoveMatching(resource, username);
         return Task.CompletedTask;
@@ -61,9 +61,14 @@ public sealed class PasswordVaultCredentialStore : ICredentialStore
         }
     }
 
-    private static void Validate(string resource, string username)
+    private static string VaultResource(string resource, string username)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(resource);
         ArgumentException.ThrowIfNullOrWhiteSpace(username);
+#if WINTODO_PRIVATE_PREVIEW
+        return "Wintodo.Hybrid.Dev." + resource;
+#else
+        return resource;
+#endif
     }
 }

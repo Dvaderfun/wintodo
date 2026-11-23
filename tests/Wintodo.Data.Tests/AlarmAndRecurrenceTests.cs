@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Wintodo.Core.Models;
+using Wintodo.Core.Services;
 
 namespace Wintodo.Data.Tests;
 
@@ -125,6 +126,72 @@ public sealed class AlarmAndRecurrenceTests
             Convert.ToInt64(
                 await command.ExecuteScalarAsync(TestContext.Current.CancellationToken),
                 System.Globalization.CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public async Task CompleteRecurringTask_StartOnlyShiftsStartWithoutCreatingDue()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        var ct = TestContext.Current.CancellationToken;
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: ct);
+        DateTimeOffset start = fixture.Clock.UtcNow.AddDays(-2);
+        TodoTask task = await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = list.Id, Summary = "Start-only series", Start = start, RRule = "FREQ=WEEKLY",
+        }, ct);
+
+        await fixture.Store.CompleteTaskAsync(task.Uid, ct);
+        TodoTask advanced = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(task.Uid, ct));
+        Assert.Null(advanced.Due);
+        Assert.Equal(start.AddDays(7), advanced.Start);
+    }
+
+    [Theory]
+    [InlineData("FREQ=DAILY", 1)]
+    [InlineData("FREQ=WEEKLY", 7)]
+    public async Task CompleteUndatedRepeat_SchedulesFromLocalDayAndUndoRestoresMissingDue(string rule, int days)
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        var ct = TestContext.Current.CancellationToken;
+        fixture.Clock.UtcNow = new DateTimeOffset(2026, 1, 5, 1, 0, 0, TimeSpan.Zero);
+        fixture.Clock.LocalTimeZone = TimeZoneInfo.CreateCustomTimeZone("TestWest", TimeSpan.FromHours(-8), "West", "West");
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: ct);
+        TodoTask task = await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = list.Id, Summary = "Undated series", RRule = rule,
+        }, ct);
+        var before = await fixture.Store.CaptureTaskUndoAsync([task.Uid], TaskUndoFields.Completion, ct);
+
+        await fixture.Store.CompleteTaskAsync(task.Uid, ct);
+        TodoTask advanced = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(task.Uid, ct));
+        Assert.Equal(new DateTimeOffset(2026, 1, 4, 0, 0, 0, TimeSpan.Zero).AddDays(days), advanced.Due);
+        Assert.True(advanced.DueIsDateOnly);
+        Assert.Null(advanced.DueTzid);
+        Assert.Equal(Wintodo.Core.Models.TaskStatus.NeedsAction, advanced.Status);
+
+        await fixture.Store.RestoreTaskFieldsAsync(before, ct);
+        var restored = Assert.Single(await fixture.Store.CaptureTaskUndoAsync([task.Uid], TaskUndoFields.Completion, ct));
+        Assert.Equal(0, restored.CompletionCount);
+        Assert.Null(restored.Task.Due);
+        Assert.False(restored.Task.DueIsDateOnly);
+    }
+
+    [Fact]
+    public async Task CompleteLastUndatedOccurrence_FinishesWithoutCreatingADueDate()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        var ct = TestContext.Current.CancellationToken;
+        TodoList list = await fixture.Store.CreateListAsync("Inbox", cancellationToken: ct);
+        TodoTask task = await fixture.Store.CreateTaskAsync(new TodoTask
+        {
+            ListId = list.Id, Summary = "Last occurrence", RRule = "FREQ=DAILY;COUNT=1",
+        }, ct);
+
+        await fixture.Store.CompleteTaskAsync(task.Uid, ct);
+        TodoTask completed = Assert.IsType<TodoTask>(await fixture.Store.GetTaskAsync(task.Uid, ct));
+        Assert.Equal(Wintodo.Core.Models.TaskStatus.Completed, completed.Status);
+        Assert.Null(completed.Due);
+        Assert.False(completed.DueIsDateOnly);
     }
 
     [Fact]

@@ -1,13 +1,11 @@
-# Installation and recovery — review draft
+# Installation and recovery
 
-**DRAFT — no production release is available from this document.** Prepared
-2026-11-08 from source `4fa223d`; updated 2026-11-09 against `db6c448` for the
-production override policy; now aligned with selected Store-first delivery under
-ADR-019. Wintodo is published by Univera LLC; contact support@univera.app.
-Wintodo is reserved as [9PF4DX2BSF0X](https://apps.microsoft.com/detail/9PF4DX2BSF0X).
-Version `1.0.0.0` uses `47371DermenzhyStudio.Wintodo_rg7xtn0gdgdnp`;
-certification and installed update tests are pending.
-The steps below must be checked against the exact final signed packages.
+Wintodo is available from [Microsoft Store](https://apps.microsoft.com/detail/9PF4DX2BSF0X),
+published by Univera LLC. Support: support@univera.app. On 21 November 2026
+the reviewed workstation had Store-signed version `1.0.1.0` installed.
+The production package family is `47371DermenzhyStudio.Wintodo_rg7xtn0gdgdnp`.
+Customer update-with-existing-data and recovery checks are still pending;
+the installed version alone does not verify them.
 
 ## Windows and architecture
 
@@ -25,8 +23,8 @@ after that check, rather than assumed from a development machine.
 
 ## Obtain the app
 
-After publication, open [Wintodo in Microsoft Store](https://apps.microsoft.com/detail/9PF4DX2BSF0X)
-and confirm **Univera LLC** as publisher. A reserved link does not mean the app is available.
+Open [Wintodo in Microsoft Store](https://apps.microsoft.com/detail/9PF4DX2BSF0X)
+and confirm **Univera LLC** as publisher.
 Microsoft Store handles package delivery and signing and selects a compatible
 architecture from the published packages.
 

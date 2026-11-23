@@ -17,6 +17,11 @@ Read what the task needs, not everything. Start from `AGENTS.md`, then
 
 All new planning documents belong under `docs/plans/`.
 
+The [November project review and prioritized checklist](plans/2026-11-project-health-and-release.md)
+tracks the data-integrity findings, WinUI comparison, dependency servicing and performance work.
+The [workstation maintenance guide](guides/workstation-maintenance.md) explains the local weekly
+job and the separate update PRs and reports on GitHub.
+
 | Plan | Scope |
 |---|---|
 | [Deployment readiness and GitHub release](plans/deployment-readiness.md) | Audit remediation, data/API security, privacy, CI/CD, signing and final deployment gates (`DEP-01`–`DEP-20`) |

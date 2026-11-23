@@ -64,7 +64,7 @@ public sealed partial class MainWindow : Window
 
         WindowRoot.SizeChanged += OnWindowRootSizeChanged;
         AppWindow.Changed += OnAppWindowChanged;
-        AppWindow.Closing += OnImportWindowClosing;
+        AppWindow.Closing += OnWindowClosing;
         Activated += OnActivated;
         Closed += OnClosed;
         TitleSearch.SearchRequested += OnSearchRequested;
@@ -230,7 +230,7 @@ public sealed partial class MainWindow : Window
     {
         WindowRoot.SizeChanged -= OnWindowRootSizeChanged;
         AppWindow.Changed -= OnAppWindowChanged;
-        AppWindow.Closing -= OnImportWindowClosing;
+        AppWindow.Closing -= OnWindowClosing;
         Activated -= OnActivated;
         TitleSearch.SearchRequested -= OnSearchRequested;
         if (_shellPage is not null)

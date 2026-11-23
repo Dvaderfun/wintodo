@@ -100,11 +100,12 @@ UI types     ──X──► below Wintodo.App
 
 Core, Data, Sync and Import set `IsAotCompatible`. A new library project must too.
 
-The App directly selects `Microsoft.Windows.AI.MachineLearning 2.5.96` within
-Windows App SDK 2.5.1's declared ML range. This services the SDK's existing ML
-payload to the vendor's current supported release. The four app locks and notice
-origin labels are reviewed together; inherited supplier texts remain exact.
-See [the servicing evidence](docs/plans/dep02-vendor-provenance-resolution.md).
+The App explicitly selects `Microsoft.Windows.AI.MachineLearning 2.5.96`,
+within the range requested by Windows App SDK 2.5.1's ML module. The Data project
+also pins the native SQLite engine independently of the managed SQLitePCLRaw
+bundle. Review both architecture locks and supplier notices when servicing
+these components. See the [November dependency update](docs/plans/2026-11-21-dependency-servicing.md)
+and the [earlier ML provenance review](docs/plans/dep02-vendor-provenance-resolution.md).
 
 ## Shell composition
 
@@ -144,7 +145,10 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
 - ShellViewModel owns a shared 20-entry UndoService for list/detail destructive
   actions. Snackbar expiry hides the message; Ctrl+Z retains history across lists.
   Undo flushes pending detail edits, restores only captured fields atomically,
-  then refreshes navigation and the open detail pane. Remote StoreChanged events
+  then refreshes navigation and the open detail pane. The detail editor also
+  drains pending title and note edits before replacing its model or closing the
+  main window; a write already in progress finishes before newer text is saved.
+  Remote StoreChanged events
   invalidate affected entries; local writes and push acknowledgements retain them.
   List deletion records task membership in migration 003; restore retains earlier
   task deletions and queues CalDAV collection creation before task uploads when
@@ -262,6 +266,11 @@ Settings → Data.
   `MicrosoftTodoExport`. `GraphTodoMapper` turns it into an `ImportSnapshot`
   for the lists the person selected. Attachments download to `import-staging\`
   and are copied under `attachments\<uid>\` inside the import transaction.
+  Startup cleanup operates only when the effective database is the
+  `wintodo.db` in that attachment root. An unrelated database override
+  cannot use its attachment index to clean the package root. The detail picker
+  captures its task before opening and inserts the reference for that task
+  after copying. Failure removes the unique output reserved for that copy.
 - **Saving.** `IImportStore` (implemented by `SqliteTaskStore.Import.cs`,
   DATA-MODEL §3.6) previews in a rolled-back transaction and applies in one
   writer transaction. Completed Graph downloads and final attachment copies

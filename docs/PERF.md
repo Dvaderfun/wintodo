@@ -435,20 +435,103 @@ Command: dotnet test --project tests/Wintodo.Data.Tests -c Release -p:Platform=x
 | Completed | 2.652 ms | 5 ms | PASS |
 | FTS5 (worst warm query) | 6.694 ms | 60 ms | PASS |
 
+## 2026-11-21 — dependency servicing, headless 10,000-task checks
+
+Debug x64, .NET 10.0.404, Microsoft.Data.Sqlite 10.0.15 and native SQLite
+3.54.1. The first full unit run missed My Day (6.483 ms; 5 ms budget).
+A second full run with its test modules serialized also missed My Day (5.881 ms).
+The focused performance class, with no build running in this checkout,
+passed both tests. Results below use the existing budgets and measurement
+methods in `SmartListPerformanceTests`.
+
+| Query | Focused warm time | Budget |
+|---|---:|---:|
+| My Day | 4.034 ms | 5 ms |
+| Important | 3.107 ms | 5 ms |
+| Planned | 2.969 ms | 5 ms |
+| All | 2.876 ms | 5 ms |
+| Completed | 3.286 ms | 5 ms |
+| FTS5 (worst warm query) | 13.707 ms | 60 ms |
+
+On an empty database initialized by all five migrations, both engines report
+the same My Day plan: `SEARCH t USING INDEX ix_tasks_myday (my_day_date=?)`.
+This rules out a different chosen index in that check, not a runtime regression.
+
+These are existing store tests, not measurements of the packaged UI,
+process memory or a controlled engine-to-engine speed comparison. No
+threshold, query, schema, or performance claim changed.
+
+## 2026-11-21 — release-fallback dependency test measurements
+
+Single full fallback run (source `c12e5e6`), x64 Debug, .NET SDK 10.0.404,
+Microsoft.Data.Sqlite 10.0.15, native SQLite 3.54.1. The clean solution build
+finished before the four MTP modules ran serially. This was a headless store
+test run, not an app/UI or idle-system measurement.
+
+| Query (10,000 tasks) | Warm time from the full test | Budget | Result |
+|---|---:|---:|---|
+| My Day | 3.952 ms | 5 ms | PASS |
+| Important | 3.526 ms | 5 ms | PASS |
+| Planned | 4.135 ms | 5 ms | PASS |
+| All | 3.991 ms | 5 ms | PASS |
+| Completed | 3.052 ms | 5 ms | PASS |
+| FTS5 (worst warm query) | 428.653 ms | 60 ms | FAIL |
+
+The full suite was 706/707, zero skipped. These values came from the same
+run's TRX; the timing assertion was not retried or weakened. On the 2.7.0
+candidate the identical Data/test graphs gave a focused FTS measurement of
+13.707 ms; its two full suites missed My Day instead. The observed timing
+variation does not establish the cause, steady-state query performance, a
+memory regression, or a fix.
+
+### 2026-11-21 — hybrid DEV preview, full x64 suite
+
+The first full Debug run for the hybrid appearance change passed 707/707
+(Core 257, Data 133, Import 155, Sync 162; no skips). The build finished
+before the four test modules ran serially. At 10,000 tasks, the Data TRX
+recorded **2.841 ms** for My Day and **2.929 ms** for the worst warm FTS
+query. No store code or threshold changed. These results belong to that
+run; they do not explain the fallback's earlier 428.653 ms FTS result or
+measure packaged UI startup, RAM, or native ARM64 performance.
+
+After correcting the High Contrast marker at `7fa57e1`, an incremental x64
+Debug build again had zero warnings/errors. A separate full serial run passed
+707/707 (zero skipped) in 17.871 s before Native AOT packaging started. On
+this run My Day took **3.053 ms** and the worst warm FTS query **1.192 ms**.
+These are two observations of the same unchanged store, not a speedup claim.
+
 ### 2026-11-22 — My Day after PR #8
 
-Debug x64, `SmartListPerformanceTests`, 10,000 tasks, unchanged 5 ms budget.
-Earlier runs on the same laptop measured the following revisions:
+Debug x64, `SmartListPerformanceTests`, 10,000 tasks, 5 ms budget.
+The review ran the base and PR benchmark separately on the same laptop. DEV
+was measured in the full suite with parallel test modules and again in isolation.
 
 | Revision and run | Best warm My Day query | Result |
 |---|---:|---|
 | PR base `d8efe5e`, focused | 1.801 ms | PASS |
 | PR head `c07f510`, focused | 6.180 ms | FAIL |
-| DEV with the row date and midnight fixes (`8f15605`), full suite | 14.351 ms | FAIL |
-| Same DEV revision, focused | 9.564 ms | FAIL |
+| DEV merge plus date fixes (`8f15605`), full suite | 14.351 ms | FAIL |
+| DEV merge plus date fixes, focused | 9.564 ms | FAIL |
 
-Power settings and test contention were not controlled. These are historical
-revision measurements, not measurements of the main integration.
+These runs do not isolate power settings or test contention. The owner
+accepted integrating the feature and addressing the two functional issues
+first. The 5 ms threshold remains unchanged.
+
+### 2026-11-22 — Indexed My Day query on DEV
+
+Debug x64, 10,000 tasks, full unit suite with test modules run serially.
+The existing best-of-seven warm query test recorded the following times:
+
+| My Day | Important | Planned | All | Completed | Budget per query |
+|---:|---:|---:|---:|---:|---:|
+| 3.653 ms | 2.089 ms | 2.245 ms | 2.032 ms | 3.058 ms | 5 ms |
+
+On bundled SQLite 3.54.1, `EXPLAIN QUERY PLAN` shows a search on
+`ix_tasks_myday` for pins and a range search on `ix_tasks_due_live` for
+deadlines, both with and without completed tasks. The two branches exclude
+overlap before applying the shared order and limit. All 24 ordered top-100
+comparisons matched the previous query across two time zones, three sorts,
+both completion settings, and filtered/unfiltered lists.
 
 ### 2026-11-22 — Indexed My Day query on the main integration
 

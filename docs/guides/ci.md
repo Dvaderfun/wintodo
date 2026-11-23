@@ -5,12 +5,74 @@ manual dispatch. It uses the explicit `windows-2025` runner family and reviewed
 commit revisions of checkout, setup-dotnet, setup-python and upload-artifact.
 Checkouts do not persist credentials. Permissions are read-only; there is no
 `pull_request_target`, signing secret, certificate trust or deployment step.
-Dependabot proposes weekly Actions and centrally managed NuGet updates; each
+Dependabot proposes weekly Actions, centrally managed NuGet and .NET SDK updates; each
 update needs review and the usual analyzer/test/AOT compatibility evidence.
 Do not enable automatic merging to bypass that review.
 
-The build job runs synthetic scanner/privacy regressions, pinned Gitleaks
-8.30.1 against fetched reachable history and the current source archive, a
+## Weekly dependency review
+
+On Mondays at 07:41 UTC the independent **Project health / review** workflow
+compares the default branch with stable upstream releases. GitHub also offers
+manual dispatch on main. A newer pin or a failed lookup makes this workflow
+fail and puts the component, versions and recommended action in its run
+summary. GitHub can notify subscribers about failed Actions runs according to
+their notification settings. The workflow has only `contents: read`; it cannot
+create issues, push branches, merge, sign or deploy. Dependabot separately
+opens reviewable Actions and NuGet PRs every week. Scheduled checks begin
+once the workflow is on the GitHub default branch and Actions is enabled.
+
+The same report runs locally with Python 3.11+ and no extra modules:
+
+```powershell
+python scripts/Check-ProjectHealth.py
+# Optional outputs in the ignored artifact directory.
+New-Item -ItemType Directory -Force artifacts/health | Out-Null
+python scripts/Check-ProjectHealth.py --json artifacts/health/report.json --markdown artifacts/health/report.md
+```
+
+Exit **0** means every check matched, **1** means an update or repin needs
+review, and **2** means at least one feed or required local pin was missing,
+malformed or inconsistent. JSON contains a `checks` array with explicit
+`current`, `review` or `incomplete` states; independent results survive a feed
+failure. Checks read public metadata anonymously and never install anything.
+
+| Component | Comparison and follow-up |
+|---|---|
+| Central NuGet packages | Compare every declared direct pin with listed stable versions on NuGet.org. For Microsoft.Data.Sqlite, alert on servicing within the selected SDK major and display the newest overall release for migration planning. Other majors are review candidates. Keep the usual locked restore and transitive advisory checks. |
+| .NET SDK | Read Microsoft's official [release metadata](https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json) for the LTS channel selected by `global.json`. Preserve the exact pin and regenerate affected locks together under ADR-020. |
+| Native SQLite | Compare the resolved `SQLite` package in all four app locks with [SQLite's canonical source release](https://www.sqlite.org/download.html). Review the vendor advisories and shipped x64/ARM64 binaries before accepting a change; the managed provider and bundle version numbers are separate. |
+| Actions and Gitleaks | Compare the four build actions with their stable GitHub release commits (peel annotated tags). Check [Gitleaks](https://github.com/gitleaks/gitleaks/releases/latest) and the publisher's Windows x64 archive SHA-256 against `scripts/gitleaks-pin.json`. Review an unexpected digest or retag; never trust the new value automatically. |
+| Repository WinUI skills | Compare the source, tag **and commit** in `.agents/skills/VENDORED.md` with the stable [Microsoft WinAppCli release](https://github.com/microsoft/WinAppCli/releases/latest), now the home of the WinUI plugin. Review changes and use the vendor updater to refresh both mirrors. |
+
+This hosted check cannot observe personal Codex/Claude plugins, local CLI
+installations, Store apps or the host's Windows SDK. Check those on the
+developer machine. A matching package version does not prove the absence of
+a security issue; security audit and release gates still run independently.
+
+A second job in the same workflow prepares the two updates that Dependabot
+does not manage: the six vendored WinUI skills and the Gitleaks scanner.
+When there is a verified stable update the run includes one
+`vendor-update-<source-commit>` artifact containing only a source patch.
+No branch, PR, or release is created. A clean run creates no artifact;
+a moved tag, changed historical checksum, divergent mirror, unexpected skill
+file type or failed download prevents upload and needs investigation.
+
+The preparer checks the full old and new WinUI tag commits, reads Markdown
+only from bare Git objects, requires both repo mirrors to match the old
+public tree, and updates both mirrors, provenance and updater defaults
+together. A proposed scanner ZIP is hashed against its publisher's checksum
+without executing or packaging the binary. The script verifies the patch
+against the original committed tree using a temporary index. Inspect
+release notes and patch contents; on a clean checkout at the artifact's
+source commit, run `git apply --check path/to/wintodo-vendor-update.patch`
+before applying it on a review branch and running CI. The same read-only
+preparer runs with `python scripts/Prepare-VendorUpdates.py --output candidate.patch`
+where the output file does not already exist.
+
+## Build and release gates
+
+The build job runs synthetic scanner/privacy regressions, the pinned Gitleaks
+scanner against fetched reachable history and the current source archive, a
 warnings-as-errors restore with all direct/transitive NuGet advisories enabled,
 explicit dependency auditing, toolchain verification, the x64 Debug solution
 build and all four Microsoft Testing Platform suites. A failed, incomplete or
@@ -20,8 +82,8 @@ is valid only with a successful command and all nine expected projects present.
 An explicit malformed collection or command/report error is rejected.
 
 Gitleaks is downloaded into ignored repo-local `artifacts/ci-security`, with
-the reviewed Windows x64 ZIP SHA-256 checked before extraction:
-`d29144deff3a68aa93ced33dddf84b7fdc26070add4aa0f4513094c8332afc4e`.
+the reviewed Windows x64 ZIP SHA-256 from
+[`gitleaks-pin.json`](../../scripts/gitleaks-pin.json) checked before extraction.
 Each invocation uses a fresh source extraction directory. Its history/tree
 reports are fully redacted but still contain attribution and filenames, so
 they and the private logs are never uploaded. The uploaded summaries contain
@@ -120,8 +182,8 @@ Visual Studio 2022 17.14 and both x64/ARM64 tools. Each run verifies availabilit
 again; actual run evidence takes precedence over that inventory.
 
 Both setup-dotnet jobs install the exact SDK in `global.json` with roll-forward
-disabled. Weekly CI checks Microsoft's .NET 10 release feed for a newer patch
-and warns without changing the build. Review the SDK, all affected locks and
+disabled. The separate weekly project health report flags new stable servicing
+releases without changing the build. Review the SDK, all affected locks and
 runtime notices together in one update; retain locked restore and advisory checks.
 For a portable SDK, the .NET 10 host also searches the ignored
 `artifacts/toolset/dotnet` after the installed SDK location.

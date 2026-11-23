@@ -92,6 +92,8 @@ public sealed partial class SqliteTaskStore
                     if (!string.IsNullOrWhiteSpace(before.RRule))
                     {
                         task.Due = before.Due;
+                        task.DueIsDateOnly = before.DueIsDateOnly;
+                        task.DueTzid = before.DueTzid;
                         task.Start = before.Start;
                     }
                     using SqliteCommand history = connection.CreateCommand();

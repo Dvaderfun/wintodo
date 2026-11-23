@@ -8,13 +8,26 @@ under "History" is append-only._
 The working copy uses one checkout for `main` and `dev`. On 2026-11-22 the 12
 secondary worktrees were retired; their local installers, test evidence and build
 outputs were verified and preserved under the ignored `artifacts/worktree-recovery/`.
-Development, including the selected preview and maintenance work, is on `dev`.
-This source includes PR #8's automatic My Day membership, local day rollover,
-and schema 007's deadline index. Row completion and My Day edits update the
-list and open detail; all-day tasks keep their calendar date in Planned and
-in accessible row labels. The Store version listed below predates these changes.
+The integrated source includes the selected card appearance, task and attachment
+integrity fixes, and workstation maintenance updates. PR #8's automatic My Day
+membership, local-day rollover and schema 007 deadline index are also present.
+Row completion and My Day edits update the list and open detail; all-day tasks
+keep their calendar date in Planned and in accessible row labels. The Store
+version below predates these changes.
 
-As of 2026-11-20:
+**Private DEV installer:** Wintodo DEV **1.0.1.224** is the
+signed x64 build of `c7400210`. Choosing Repeat now sets an undated task due
+today; checking it off advances its due date. The build keeps the My Day
+changes above and the [owner-tested appearance](design/hybrid-preview.md).
+WintodoTest verified the update from .222 with an existing undated daily task
+and note. See the [installer guide](guides/design-dev-preview.md).
+
+As of 2026-11-21:
+
+The two local maintenance jobs have a shared [owner control menu](guides/workstation-maintenance.md)
+for status, report history, manual inventory, check-only mode and pause/resume.
+Windows App SDK remains at 2.5.1. Revisit the newer SDK in the next
+dependency PR as described in the [prioritized checklist](plans/2026-11-project-health-and-release.md).
 
 Store-first under **Univera LLC** is selected in
 [ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
@@ -27,9 +40,9 @@ copies; the individual author retains the official brand and monetization. The
 [reserved Store identity](plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
 and version `1.0.0.0` are in both unsigned packages. Each contains the nine
 approved [Glide icon files](adr/ADR-021-store-package-icon-proposal.md).
-Microsoft Store now offers Wintodo publicly, and the installed app reports
-Store signature and version `1.0.0.0`. The `1.0.1.0` update is in
-preparation with [larger small-size Glide artwork](adr/ADR-024-glide-taskbar-sizing.md).
+Microsoft Store offers Wintodo publicly. The audited workstation reports
+Store signature and installed version `1.0.1.0` with
+[larger small-size Glide artwork](adr/ADR-024-glide-taskbar-sizing.md).
 The [English Store gallery](releases/store/en-US/README.md) pairs complete
 Windows captures with separate promos and a text-free checklist illustration.
 The [first submission readback](plans/deployment-store-first-preparation.md#partner-center-draft--20-november-2026) records the completed draft sections and PEGI 3 / ESRB Everyone ratings. The [public launch](adr/ADR-022-public-free-store-launch.md) is free and discoverable without a tester group; publication is manual. The [privacy policy](releases/PRIVACY.md) is published. The owner accepted the eight backgrounds for staging; their redistribution rights remain unverified. Native dependency review, ref protection and customer update tests remain open.
@@ -41,7 +54,7 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 | M7 Reminders / Windows integration | AUTOMATED PASS | Reminder survives reboot; visible taskbar badge check |
 | M8 Design / accessibility | AUTOMATED PASS | Narrator listening check |
 | M9 Native AOT | DEFERRED (owner) | Full idle perf matrix pending; AOT startup crash fixed and M8 automation passed; ARM64 runtime perf not measured |
-| M10 Packaging and release | IN PROGRESS | Store `1.0.0.0` is live; `1.0.1.0` update in preparation. Artwork rights, ref protection, native provenance and installed x64/native ARM64 update checks remain open. |
+| M10 Packaging and release | IN PROGRESS | Store-signed `1.0.1.0` verified installed. Artwork rights, ref protection, native provenance and data-preserving x64/native ARM64 update checks remain open. |
 | M11 Deep subtasks | not started | — |
 | M12 Tags and saved filters | not started | — |
 | M13 CalDAV sync | AUTOMATED PASS | Live Radicale + Nextcloud convergence; conflict dialog via UI Automation |
@@ -65,9 +78,7 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
   tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
   455/455 and zero failures/skips verified from the four uploaded TRX files.
-- **Toolchain:** exact .NET SDK 10.0.404 (runtime/AOT compiler 10.0.15; [ADR-020](adr/ADR-020-pin-sdk-with-lockfiles.md)), Windows App SDK 2.5.1, WinApp CLI 0.7.1,
-  Windows ML 2.5.96 explicitly selected within the SDK's range;
-  win-dev-skills v0.7.1 vendored (ADR-010).
+- **Maintenance review:** 21 of 22 tracked versions are current on the supported .NET 10 LTS line: exact SDK 10.0.404, WinApp CLI/analyzer 0.8.0, Windows ML 2.5.96, SQLite 3.54.1 and six WinUI skills from Microsoft's v0.8.0 release. Windows App SDK stays at 2.5.1 because both actual 2.7.0 packages failed the existing privacy gate on unchanged Microsoft DLLs. Both unsigned fallback packages passed structure, privacy and NuGet audits, and their Settings resources match all 14 package entries. The full fallback suite is 706/707: a search timing failure remains open. See the [package evidence](plans/2026-11-21-dependency-servicing.md), [prioritized audit](plans/2026-11-project-health-and-release.md) and [weekly servicing schedule](guides/workstation-maintenance.md). These changes have not shipped.
 - **ML servicing and SQLite test isolation (2026-11-09):** the declared-compatible
   ML 2.5.96 update passes both isolated AOT/MSIX structure/privacy/audit targets,
   then current-helper Debug/Release builds and x64/ARM64 AOT publishing. Four app
@@ -4847,37 +4858,172 @@ The fixed build passed the visual spacing, star and reorder checks (3/4).
 The completion scroll-position check still failed: the reference row moved
 356 px after completion (baseline: −360 px). The full gate remains open.
 
-### My Day includes tasks due today
+## 2026-11-21 — M10 dependency servicing candidate: native SDK privacy blocked
 
-My Day and its navigation count include tasks due on the local calendar day.
-Removing a due-today task dismisses it for the current local day and preserves
-its due date. Adding it back clears the dismissal. The x64 Debug build and all
-709 unit tests passed. The UI gate is pending because the local Hyper-V
-management tools are unavailable.
+The [2.7.0 SDK, SQLite and tooling candidate](plans/2026-11-21-dependency-servicing.md)
+builds cleanly in x64 Debug/Release and publishes native x64 and ARM64. The
+nine-project NuGet audit found no advisories. The full suite passed 706/707
+twice; the focused 10k performance class passed 2/2 and both full runs missed
+My Day's unchanged 5 ms budget. The structural/privacy gate rejected each
+unsigned MSIX on 16 byte-identical Microsoft supplier DLLs. No gate was
+waived. A separate 2.5.1 fallback preserves the other servicing updates.
 
-### 2026-11-22 — My Day dismissal review
+### 2026-11-21 — M10: verify the native Claude CLI and scoped plugin updates
 
-- CalDAV conflict adoption and remote moves preserve the current local My Day
-  dismissal. Dismissal-only writes and undo publish store notifications while
-  keeping the sync queue, sequence, and modification timestamp unchanged.
-- The row uses today's membership for the My Day indicator. Date changes refresh
-  the list, sidebar count, and open task detail. Detail My Day changes support
-  undo through the shared task batch path.
-- Debug x64 build passed with warnings as errors. All 718 unit tests passed,
-  including the disposable schema-5 upgrade, row preservation, backup restore,
-  and re-upgrade. The installed DEV profile was not opened.
-- The My Day guest gate covers automatic inclusion, dismissal, undo, manual
-  pinning, and rollover. Execution is pending because the host lacks the
-  Hyper-V cmdlets and virtualization management namespace for WintodoTest.
+The [workstation runner](guides/workstation-maintenance.md) now checks the native
+Claude Code installation's chosen channel and services four known enabled user
+plugins through their publishers. A live run verified CLI 2.1.330, Figma
+2.2.157 → 2.2.211 and Security Guidance 2.0.16 → 2.0.21; the other two stayed
+at 1.0.0. All ten scoped installation identities and their enabled states
+were preserved, including six disabled records. Eight isolated tests passed.
 
-### 2026-11-22 — Verify the vendored WinUI skills
+## 2026-11-21 — M10 dependency fallback and packaged Settings notice
 
-The six selected skills and their references in both mirrors match the 11 files
-at the recorded upstream commit. Both directories now carry the original MIT
-notice. The refresh checks the expected commit and retains unrelated skills.
-A scratch refresh verified the mirrored files and exact license bytes; a wrong
-commit was rejected. The x64 build passed with zero warnings and all 707 unit
-tests passed. No app behavior changed or new UI gate result is claimed.
+Both [final x64/ARM64 unsigned AOT fallback packages](plans/2026-11-21-dependency-servicing.md)
+pass structural and checkout-root privacy checks with zero findings/advisories;
+the packaged English Settings licence resource matches all 14 central pins
+and labels. Updated the SQLite engine/provider, Windows SDK build tools,
+WinApp CLI and analyzer, xUnit and TRX; kept Windows App SDK 2.5.1 because
+2.7.0 vendor DLLs failed the unchanged privacy gate. Stable 2.6.4 and 2.6.5
+supplier inputs also contain the blocked marker. Clean Debug build passes;
+one full four-project run is 706/707, no skips: all smart lists met 5 ms, but
+10k FTS worst warm was 428.653 ms against 60 ms. No waived or retried gate,
+host UI automation, sign, install or deployment.
+
+## 2026-11-21 — M8 / M10: signed side-by-side Wintodo DEV appearance preview
+
+The owner chose Wintodo's task cards, the Gallery-style selected marker and the WinUI title typography for a private trial. Package source: `4817007237892ae97d6760a07f35f5d17304de6a`. The signed x64 MSIX `Wintodo-DEV-1.0.1.179-x64.msix` has SHA-256 `643068a84160f8aa976901188dde78cc3026950a27331a00a21d7674aee43e7f`. Artwork readback covered 20 PNGs and the seven-frame window ICO. The separate package family, DEV title resources, activation and startup registrations were checked. Structure and privacy passed on the signed package (335 entries; no findings). The host retained only Store Wintodo 1.0.1.0; no host launch, registration or certificate trust change was part of the build. The [recorded unit timing](PERF.md#2026-11-21--hybrid-dev-preview-full-x64-suite) is from a full 707/707 run, not a change to the unrelated fallback search budget.
+
+The original .179 passed its standard guest interaction smoke but was superseded after its enabled marker was found to have only 1.04–1.48:1 contrast on the retained cards across the four built-in palettes. `Wintodo-DEV-1.0.1.180-x64.msix` from `7fa57e14b257658b89309e308a9f365bf769fb8e` (SHA-256 `61fb3d464956a9d8e9c40c820e0ef5896602f48674a791788f34ae2499f35d8b`) uses the system’s ButtonText on ButtonFace in High Contrast. The corrected x64 Native AOT package passed signature, structure, DEV identity/activation, badge assets and privacy checks (335 entries; zero findings); the corrected resource keys were present in the signed package. No host app or certificate was installed.
+
+The corrected MSIX also passed all six assertion groups in the clean `WintodoTest` VM: install/registration, Start/onboarding, five clickable cards and detail navigation, title edit (Escape, Enter and focus loss), selected marker in Desert, and keyboard single/multiselect/clear. The measured light-theme row pitch remained 54 px and the editor measured 250 × 47 px. At 96 DPI the Desert marker had a verified 14-pixel solid run against the adjacent card; its measured foreground/background colours yield 15.65:1 contrast. The original guest theme was restored and the VM shut down. The other three contrast palettes were calculated, not rendered. Owner hands-on acceptance, Dark and narrow-window visual checks remain open. See the [preview notes and captures](design/hybrid-preview.md).
+
+Owner follow-up (21 November): DEV .180 was checked in person and “looks normal for me.” This records acceptance of the combined appearance; it does not assert a specific theme, width or Narrator test, or a release to Store.
+
+## M10 — Signed DEV update with data integrity fixes (2026-11-21)
+
+**Source and package:** `dev/preview` at `5b857272` combines the accepted
+DEV appearance and the four fixes from `fix/nov21-integrity`. The signed
+x64 Native AOT MSIX is `Wintodo-DEV-1.0.1.188-x64.msix`, under
+`artifacts/dev-preview/1.0.1.188-5b857272/` in the main checkout. SHA-256:
+`1695963d55bf8def27786c6f1701194bb5df5f6f7a8dd4b149c300ce80fa8796`.
+It uses the existing DEV signer and package family. Locked restore, the
+signature and structural checks, all 21 DEV badge assets, all four compiled
+DEV labels and final privacy scan (335 files, zero findings) passed.
+
+**Host gates:** The Debug x64 build with warnings as errors passed cleanly.
+The first full run was 719/720: the unchanged loopback Graph deadline fixture
+cancelled before its fallback request was observed. All three cases passed
+in isolation. The full suite rerun after packaging and guest execution passed
+720/720 with none skipped. No code or timing threshold changed for that test.
+
+**Guest gate:** The exact signed package passed 7/7 in WintodoTest. Installing
+over .180 preserved its synthetic task, note and onboarding state. A new
+note typed immediately before closing persisted on restart. Cards, list
+title editing, multiple selection and the rendered Desert contrast marker
+also passed. All seven PNGs were reviewed. Log:
+`run-dev-preview-gate-20261121-124531.log`.
+
+**Delivery:** The installer is ready for the owner to update using App Installer.
+The host still has DEV .180. Store Wintodo and hosted CI were left unchanged;
+the guide records how to add a separate DEV packaging job if builds become routine.
+
+## Branch cleanup and My Day PR review (2026-11-21)
+
+**DEV:** `5a6a53e` carries the integrity architecture notes and the Settings
+and M4 regression gates into `dev/preview`. All four production fixes were
+already in the signed .188 build. No application source or dependencies
+changed. The x64 build passed with warnings as errors. Both full suite runs
+were 719/720: the existing loopback import deadline check's fallback case
+cancelled before a request was observed. The isolated check passed 3/3.
+No timing threshold or fixture changed.
+
+**Guest:** M4 passed 9/9 and the restart round-trip. Settings passed 9/10,
+including F2 rename, starring and undo. The week-start calendar scenario
+did not complete because the UI automation tool timed out focusing the
+Week starts on control. All ten available screenshots were reviewed. Log:
+`run-dev-integrity-regression-gate-20261121-144031.log`.
+
+**Local branches:** Kept `main`, `dev/preview` and `maintenance/nov21-review`.
+The latter has separate workstation-control work. Removed eight retired
+branch names, kept their exact tips under `refs/archive/branches/<old-name>`,
+and left the existing checkouts and artifacts in place at those tips.
+To recreate a branch, use `git branch <old-name> refs/archive/branches/<old-name>`.
+Remote branches were not changed.
+
+| Archived local branch | Tip | Reason |
+|---|---|---|
+| `design/dev-hybrid-winui` | `31c2eac` | The accepted design is in DEV. |
+| `design/nov21-gallery-comparison` | `53aa662` | The comparison is retained for reference; its alternative design was not selected. |
+| `fix/nov21-integrity` | `7d6c116` | DEV has the four fixes and their regression gates. The original review evidence is retained. |
+| `maintenance/nov21-dependencies` | `d607622` | Evaluation history already reachable from DEV. |
+| `maintenance/nov21-dependencies-fallback` | `1c46d2a` | The verified fallback is already in DEV. |
+| `maintenance/nov21-health` | `7cc8016` | This checkpoint is included in the retained maintenance history. |
+| `maintenance/nov21-proposals` | `eff7732` | The same patch is in DEV as `8158974`. |
+| `maintenance/nov21-sdk27-evaluation` | `6cf6451` | The evaluation and its privacy gate failure are retained; the newer SDK was not adopted. |
+
+**PR #8:** [Written review](plans/2026-11-21-pr-8-my-day-review.md). The
+proposal adds automatic due-today membership and same-day dismissal. A
+synthetic regression verified that accepting a server-side rename currently
+makes the dismissed task reappear. The PR is open and was not merged.
+
+## 2026-11-21 — owner controls and observable workstation checks
+
+The owner can open Maintenance.cmd for both actual jobs, run a manual Wintodo inventory, switch registrations to inventory only, or pause/resume future triggers. Opening the menu performs no update. Wintodo keeps dated JSON/Markdown summaries and distinguishes review, incomplete checks, alias publication and a notification request from actual delivery. The two registrations retained their previous enabled states, update permissions and schedules. Readback of exported task definitions matched both jobs' original triggers, settings and principals; only Saturday’s registered action changed, to the revised runner. No third job, administrator permission, machine-wide event history change or tool update was required.
+
+A real manual inventory at 02:39 local completed the component checks, but replacing the previous latest Markdown returned access denied. The previous file and the dated result survived. Subsequent rights probes succeeded: the exact cause of the original denial is not established. The corrected publisher replaces existing files while retaining permissions, tries each current alias independently, and records incomplete publication separately. Windows fixtures covered open files, the original ACL and retry timing. The live owner “Check Wintodo now” command at 02:44 local ran the corrected snapshot 6969DA7328B36225 in check-only mode: the dated receipt and both latest files agreed, result 1 for repository pins only, zero incomplete checks and zero reported updates. This was a manual check, not evidence that the next scheduled trigger has fired. The prior legacy and failed-publication summaries were retained.
+
+## Maintenance controls merged into DEV (2026-11-21)
+
+Merged `maintenance/nov21-review` at `cb362c6` into `dev/preview`. Kept
+the verified .188 status and the original workstation history when resolving
+`PROGRESS.md`. The merge adds the owner controls and dated report handling
+without changing app source, dependencies, build configuration or workflows.
+No new installer is needed. The live schedules and installed runner were not
+changed.
+
+All 242 script tests passed, including the temporary scheduler-control and
+workstation-runner fixtures, and all four changed PowerShell scripts parsed
+cleanly. This was verification of the workstation changes, with no new app
+or UI gate run.
+
+[PR #8 received a Codex-assisted Request changes review](https://github.com/Dvaderfun/wintodo/pull/8#pullrequestreview-6006242546)
+on its exact `6a67c4a` revision. The PR was not merged.
+
+### 2026-11-22 — Verify the vendored WinUI skills on main and dev
+
+Both branches keep Microsoft's exact MIT notice in both mirrors. All 11 selected
+skill and reference files match each branch's upstream commit. The refreshes
+were exercised in scratch checkouts, including rejection of an incorrect pin.
+Main retains v0.7.1; its x64 build passed with zero warnings, all 707 unit tests
+and all 206 script tests passed. DEV retains WinAppCli v0.8.0; its weekly vendor
+proposal also verifies both copies of the license and includes upstream changes.
+The main skill refresh changed no app behavior and claimed no new UI gate result.
+
+### 2026-11-22 — Consolidate development and verify the surviving checkout
+
+`dev` includes the previous `dev/preview` and `maintenance/nov21-review` heads.
+The unselected Gallery layout and the SDK 2.7.0 evaluation remain archived.
+All 12 linked checkouts had clean indexes and working trees before removal.
+Their 20,965 ignored files (11,242,594,867 bytes) matched their archived copies
+by SHA-256. Three older detached snapshots had identical full trees in `main`.
+The local recovery guide is `artifacts/worktree-recovery/20261122-consolidation/README.md`.
+
+Eleven independent historical dependency clones under `artifacts/` also had no
+unmerged product work. Their source snapshots and private SQLite diagnostics
+remain in place; their Git metadata was backed up separately. The private
+recovery material is not part of the repository or the app package.
+
+From the primary checkout, DEV built with zero warnings; all 720 unit tests
+and all 243 script tests passed. The Settings gate in WintodoTest passed 10/10,
+including the week-start scenario that previously timed out. All ten captures
+were reviewed (`run-settings-gate-20261122-021256.log`). No release or new
+installer is implied by these checks.
+
+The app XAML uses explicit modes on all 456 compiled bindings on `main` and
+457 on `dev`; both have 12 two-way text editor bindings with immediate updates.
+The design audit still found a 2-DIP sync-account gap and four hardcoded
+navigation icon sizes. These visual details were not changed by consolidation.
 
 ### 2026-11-22 — Refresh the GitHub README
 
@@ -4888,6 +5034,70 @@ supported processors and source licence. Both themes were rendered locally;
 the badges wrapped at phone width, and all local targets, badge images and the
 Wintodo Store link were verified. On `dev`, the x64 build passed without
 warnings and all 720 unit tests passed.
+
+### 2026-11-22 — My Day includes tasks due today
+
+[PR #8](https://github.com/Dvaderfun/wintodo/pull/8) adds automatic My Day
+membership for tasks due today and lets people dismiss them for the local
+calendar day without changing the due date. The follow-up preserves local
+dismissals across CalDAV conflict adoption and remote moves. Dismissal and
+undo notify store listeners without changing sync metadata unless the manual
+pin changes. The contributor reported a clean x64 build, all 718 unit tests
+passing, and a disposable schema-5 upgrade with a successful backup restore
+and re-upgrade. They added the guest gate but did not run it on their host.
+
+The initial PR revision passed 709 unit tests. At the later dismissal review
+the x64 build treated warnings as errors and 718 tests passed. That review
+also confirmed that adding a dismissed task back clears the dismissal, and that
+the sidebar count, row indicator, detail pane and shared undo follow the change.
+The installed DEV profile was not opened; the contributor's host lacked the
+Hyper-V management tools to run the guest gate at that stage.
+
+The owner accepted merging the reviewed revision into `dev` first, with the
+remaining fixes to follow there. The merge keeps DEV's edit draining and
+text-only saves in the detail pane.
+
+### 2026-11-22 — My Day follow-up on DEV
+
+Merged `c07f510` into local `dev` as `8c2d00e` before making the fixes.
+Due-date changes from a row update My Day and the open detail while preserving
+the text editor. The SQLite query, sidebar count, and rollover timer share
+the first valid instant of the local day, handling repeated and skipped
+midnight.
+
+The Debug x64 build passed with no warnings. All 13 focused data cases
+passed, including repeated and skipped midnight, CalDAV dismissals, and
+the disposable schema-5 upgrade and backup restore. WintodoTest passed the
+My Day gate: automatic inclusion, dismissal, undo, manual pinning, rollover
+on activation, and the row due-date change with detail open. The captured
+row, count, and detail were visually checked
+(`run-my-day-gate-20261122-172452.log`).
+
+The full unit run passed 732/733, with no skips. Only the
+[10,000-task My Day query benchmark](PERF.md#2026-11-22--my-day-after-pr-8)
+missed the budget, both in the full suite and on its own. The threshold stays
+at 5 ms. No installed profile or Store release was used.
+
+### 2026-11-22 — My Day query and row updates on DEV
+
+Migration 007 adds an index for live deadlines, including those of completed
+tasks. The My Day query uses separate index lookups for pins and deadlines.
+In the serial x64 Debug suite, all 738 tests passed without skips; the
+[10,000-task My Day query](PERF.md#2026-11-22--indexed-my-day-query-on-dev)
+took 3.653 ms against its unchanged 5 ms limit. The final build had zero
+warnings and errors. Migration tests cover versions 1–7, backup restoration,
+and rejecting version 8 without changing it.
+
+In WintodoTest (Pacific time), the My Day gate passed automatic and pinned
+recurring completion, undo, row and detail dates, the Planned heading and
+accessible row date, and switching tasks or navigating to My Day while a
+save was pending. Row completion and uncompletion also updated the open
+checkbox. The newer-schema guard passed 5/5, including reopening the same
+unchanged database. The first guest run timed out at the SQLite busy-wait
+boundary; a second encountered a selector option unavailable in the guest.
+The final run selected the actual list item and required the new detail or
+list to load before releasing the fixture writer
+(`run-local-my-day-review-batch-20261122-213131.log`).
 
 ### 2026-11-22 — My Day row dates and local midnight
 
@@ -4920,3 +5130,49 @@ undo, row and detail updates, Planned and accessible dates, and switching
 tasks or opening My Day while a save was waiting. The newer-schema guard
 passed 5/5; its recovery dialog and the My Day row/detail capture were
 visually checked (`run-local-my-day-review-batch-20261122-213557.log`).
+
+### 2026-11-23 — Signed My Day DEV installer
+
+Built `Wintodo-DEV-1.0.1.222-x64.msix` from `b6988b22` using the existing
+DEV signer. The signed package matched its recorded SHA-256; the structural
+and privacy checks passed, including a scan of all 335 payload files.
+
+WintodoTest passed all seven installed-package checks. Updating from .188
+preserved the task, note and onboarding state; a note edited immediately
+before closing .222 survived restart. The card layout, title editing, high
+contrast and keyboard selection checks also passed
+(`run-dev-preview-gate-20261122-215658.log`). This was a local DEV build.
+
+### 2026-11-23 — Give repeating tasks a first due date (M4)
+
+Choosing Repeat on an undated task sets an all-day deadline of today in both
+the detail pane and the composer. An explicit deadline is kept. Completing from
+a row waits for the open editor to save the repeat rule. An older repeating
+task with neither a due date nor a start date gains its next due date when
+completed; undo restores the previously missing date. Start-only calendar
+tasks keep their start-only schedule. The x64 build passed without warnings
+and all 742 unit tests passed, with no skips.
+
+WintodoTest passed all five composer and detail checks: selecting Daily showed
+**Due Today**, row completion advanced it to **Due Tomorrow**, and completing
+a new Weekly task from detail advanced it to **Due Next week**. Selecting
+Weekly also preserved an explicit **Due Tomorrow**. The detail screenshot
+showed both the due date and Daily in their active styles
+(`run-composer-layout-gate-20261122-221009.log`).
+
+The signed x64 Native AOT installer **1.0.1.224** passed the signature,
+structure and privacy checks. WintodoTest passed all eight installed-package
+checks when upgrading from **1.0.1.222**. The old daily task and note survived
+the update and restart. Completing the task made it due tomorrow with the
+same UID and an unchecked box (`run-dev-preview-gate-20261122-221746.log`).
+
+### 2026-11-23 — Integrate DEV with main and verify maintenance on Windows short paths
+
+The integration retains both branches' My Day measurements and guest gate
+records. The x64 solution built with zero warnings. The first hosted check
+exposed two workstation test assumptions about the spelling of a Windows
+temporary path. Both failures reproduced with an actual 8.3 alias. The
+maintenance fixture now registers the runner path exactly as the installer
+does, and the locked-report test verifies the identity of the dated file.
+Both focused tests passed with the same alias; production code is unchanged
+by these test corrections.

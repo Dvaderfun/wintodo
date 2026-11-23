@@ -9,6 +9,7 @@ namespace Wintodo.ViewModels;
 
 public sealed partial class TaskListViewModel
 {
+    internal Func<string, Task<bool>>? PrepareRowCompletionAsync { get; set; }
     internal event Action<TodoTask, bool>? RowCompletionSaved;
 
     internal async Task ReorderActiveTaskAsync(string taskUid, string targetUid, bool insertAfter)
@@ -229,6 +230,12 @@ public sealed partial class TaskListViewModel
     private async Task ToggleTaskCompletionAsync(TaskItemViewModel item)
     {
         await Task.Yield();
+        // A just-selected repeat rule and its first due date may still be in the detail editor.
+        if (PrepareRowCompletionAsync is { } prepare && !await prepare(item.Uid))
+        {
+            item.RefreshCompletionToggle();
+            return;
+        }
         VisibleItemsUpdating?.Invoke(true);
         try
         {
@@ -312,11 +319,11 @@ public sealed partial class TaskListViewModel
     private async Task ToggleTaskImportanceAsync(TaskItemViewModel item)
     {
         await Task.Yield();
-        item.Model.Priority = item.IsImportant
-            ? (int)TaskPriority.Undefined
-            : (int)TaskPriority.High;
-        await _taskStore.UpdateTaskAsync(item.Model, moveStarredToTop: _preferences.MoveStarredToTop);
-        item.IsImportant = !item.IsImportant;
+        bool isImportant = !item.IsImportant;
+        double sortOrder = await _taskStore.SetTaskImportanceAsync(item.Uid, isImportant, _preferences.MoveStarredToTop);
+        item.Model.Priority = isImportant ? (int)TaskPriority.High : (int)TaskPriority.Undefined;
+        item.Model.SortOrder = sortOrder;
+        item.IsImportant = isImportant;
         UpdateItemDisplay(item);
         if (_currentQuery?.SortMode == SortMode.Manual && _preferences.MoveStarredToTop && item.IsImportant)
         {
@@ -362,8 +369,9 @@ public sealed partial class TaskListViewModel
     private async Task RenameTaskAsync(TaskItemViewModel item)
     {
         await Task.Yield();
-        item.Model.Summary = item.EditTitle;
-        await _taskStore.UpdateTaskAsync(item.Model);
+        string title = item.EditTitle;
+        await _taskStore.RenameTaskAsync(item.Uid, title);
+        item.Model.Summary = title;
         UpdateItemDisplay(item);
         RebuildVisibleItems();
     }

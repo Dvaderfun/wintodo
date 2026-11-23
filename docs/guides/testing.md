@@ -97,7 +97,7 @@ The examples below show the gate scripts; on this machine, run each one through
 dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 .\tests\ui\run-m0-gate.ps1                        # launch + m0-smoke, 4 checks
 .\tests\ui\run-m8-gate.ps1                        # design + accessibility, 17 checks
-.\tests\ui\run-composer-layout-gate.ps1           # detail-open/narrow input, options, resize; -Aot for publish
+.\tests\ui\run-composer-layout-gate.ps1           # composer layout, repeat due dates and completion; -Aot for publish
 .\tests\ui\run-navigation-startup-gate.ps1       # one selected category on first launch, restart and hover
 .\tests\ui\run-m5-gate.ps1                        # smart lists, search, restart
 .\tests\ui\run-m13-gate.ps1                       # starts a loopback CalDAV server
@@ -114,7 +114,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-sort-indicator-gate.ps1` | UX-14: actual defaults across five smart lists, Tasks and user lists; mode/direction changes, effective Completed ordering, keyboard reset, search/navigation, Light/Dark and detail/narrow layout, non-default and reset persistence across two restarts. M8 also checks the chip/reset in all four contrast palettes. |
 | `run-multiselect-gate.ps1` | Ctrl/Shift selection, SelectionPattern and detail visibility, bulk importance/My Day/due date/completion, move, delete/undo, Ctrl+A and Esc |
 | `run-completion-motion-gate.ps1 -BaselineTimings <timings.json>` | 200 tasks / 20 lists: 15 in-process UIA placement samples versus a matched UX-07 baseline from `run-completion-measure.ps1`, screenshot/video, uncompletion, star and undo. `-TestReducedMotion` temporarily changes Windows Animation effects: obtain owner permission first; checks three instant placements and verifies restoration in `finally`. |
-| `run-m4-gate.ps1` | Detail pane fields and restart persistence |
+| `run-m4-gate.ps1` | Detail pane fields, local attachment copy/removal, and restart persistence, including a note typed immediately before Alt+F4 |
 | `run-m5-gate.ps1` | Smart lists, search, sort; single/repeated/multi-task drops on My Day and Important, original-list retention and restart persistence |
 | `run-my-day-gate.ps1` | Automatic membership, dismissal and undo, manual pins, rollover, row due-date edits, Planned and accessible dates, recurring completion with/without a pin, and switching detail while a My Day save is waiting on the fixture database |
 | `run-m6-gate.ps1` | `.ics` import/export through the UI |
@@ -124,7 +124,7 @@ dotnet build Wintodo.sln -p:Platform=x64          # or .\BuildAndRun.ps1 once
 | `run-m8-gate.ps1` | Design, responsive layout, all four Windows contrast palettes (selected/unselected custom list, search border and header focus), accessibility audit |
 | `run-m13-gate.ps1` | CalDAV Configure dialog, cancel/retry, sync, list toggles, footer visibility before connect/after connect/restart/disconnect (`-Aot` for published x64) |
 | `run-notification-settings-gate.ps1` | Reminder enable/disable, actual scheduled payload defaults, restart, Data/About and accessibility |
-| `run-settings-gate.ps1` | Tasks settings, immediate delete/undo, restart, reminder default, ordering and accessibility |
+| `run-settings-gate.ps1` | Tasks settings, inline rename, immediate delete/undo, restart, reminder default, ordering and accessibility |
 | `run-list-icon-gate.ps1` | Emoji list icons and navigation counts; UX-15 unset header dot, hover, keyboard focus/Enter, clear, Light/Dark, detail-open and minimum-width screenshots |
 | `run-header-alignment-gate.ps1` | Screenshot ink-center alignment for five fixed categories and new user lists in Light/Dark; fixed glyphs within 1 px; unset dot uses owner-selected 2 px optical lowering (±1 px) against the cap-to-baseline band; Latin and Cyrillic descender titles must draw ≥5 px below the baseline (no clipping); fixed-icon crop follows its 44 px XAML slot |
 | `run-undo-gate.ps1` | Undo history across navigation/expiry, preserved newer title, due/reminder/repeat clears, step/list deletion, moves and bulk field/completion actions |

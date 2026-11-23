@@ -26,10 +26,11 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private readonly UndoService _undo;
     private readonly ResourceLoader _resources = new();
     private readonly SemaphoreSlim _saveGate = new(1, 1);
-    private CancellationTokenSource? _saveCancellation;
+    private readonly DetailSaveQueue _textSaves = new();
     private TodoTask? _model;
     private bool _isLoading;
     private int _loadVersion;
+    private int _attachmentRevision;
 
     internal TaskDetailViewModel(ITaskStore taskStore, IClock clock, TaskPreferences preferences, UndoService undo)
     {
@@ -134,7 +135,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
     public bool HasReminder => PendingReminderDate is not null;
 
-    public bool HasRepeat => RepeatModeIndex > 0;
+    public bool HasRepeat => RepeatModeIndex >= 0;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddStepCommand))]
@@ -156,7 +157,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasRepeat))]
-    public partial int RepeatModeIndex { get; set; }
+    public partial int RepeatModeIndex { get; set; } = -1;
 
     [ObservableProperty]
     public partial double CustomInterval { get; set; } = 1;

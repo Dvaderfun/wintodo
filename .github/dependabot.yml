@@ -1,12 +1,29 @@
 version: 2
 updates:
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 2
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"] # ADR-020: review a new SDK major separately
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
+    groups:
+      reviewed-actions:
+        patterns: ["*"]
     open-pull-requests-limit: 5
   - package-ecosystem: nuget
     directory: /
     schedule:
       interval: weekly
+      day: monday
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: Microsoft.Data.Sqlite
+        update-types: ["version-update:semver-major"] # change SDK/provider major together after LTS review

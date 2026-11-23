@@ -9,19 +9,21 @@ namespace Wintodo;
 
 public sealed partial class MainWindow
 {
-    private bool _closingImport;
-    private bool _importCloseApproved;
+    private bool _closePending;
+    private bool _closeApproved;
 
-    private async void OnImportWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
+    private async void OnWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        var wizard = _shellPage?.ViewModel.ImportWizard;
-        if (wizard is null || _importCloseApproved) return;
+        var viewModel = _shellPage?.ViewModel;
+        if (viewModel is null || _closeApproved) return;
+        var wizard = viewModel.ImportWizard;
+        if (!_closePending && wizard is null && !viewModel.Detail.HasPendingEdits) return;
         args.Cancel = true;
-        if (_closingImport) return;
-        _closingImport = true;
+        if (_closePending) return;
+        _closePending = true;
         try
         {
-            if (wizard.IsBusy)
+            if (wizard?.IsBusy == true)
             {
                 var resources = new ResourceLoader();
                 var dialog = new ContentDialog
@@ -36,14 +38,18 @@ public sealed partial class MainWindow
                 AutomationProperties.SetAutomationId(dialog, "Todo.Import.CloseConfirm");
                 if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
             }
-            await _shellPage!.ViewModel.ShutdownImportAsync();
-            _importCloseApproved = true;
-            DispatcherQueue.TryEnqueue(Close);
+            if (wizard is not null) await viewModel.ShutdownImportAsync();
+            // Unwind the original Closing event before calling Close ourselves.
+            await Task.Yield();
+            if (!await viewModel.Detail.FlushPendingEditsAsync()) return;
+            _closeApproved = true;
+            Close();
         }
         catch (Exception exception)
         {
-            System.Diagnostics.Trace.WriteLine($"WINTODO_IMPORT_CLOSE_EXCEPTION={DiagnosticException.Describe(exception)}");
+            _closeApproved = false;
+            System.Diagnostics.Trace.WriteLine($"WINTODO_WINDOW_CLOSE_EXCEPTION={DiagnosticException.Describe(exception)}");
         }
-        finally { _closingImport = false; }
+        finally { _closePending = false; }
     }
 }

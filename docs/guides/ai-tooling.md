@@ -16,7 +16,7 @@ area belongs in that area's doc or guide.
 
 ## Vendored skills
 
-The WinUI skills from [microsoft/win-dev-skills](https://github.com/microsoft/win-dev-skills)
+The WinUI skills from the [Microsoft WinApp CLI plugin](https://github.com/microsoft/WinAppCli/tree/v0.8.0/plugins/winui)
 are committed at a pinned release tag:
 
 - `.agents/skills/winui-*` — Agent Skills location read by Codex, Copilot,
@@ -34,14 +34,17 @@ are committed at a pinned release tag:
 | `winui-ui-testing` | Writing or running a `winapp ui` suite |
 | `winui-packaging` | MSIX, signing, CI release, Store (M10); AOT source-generation patterns |
 
-Not vendored: `winui-wpf-migration` (no WPF here) and `winui-session-report`
-(user-invoked agent-session diagnostics; available from the user-level plugin).
+The only other skill in this upstream release is `winui-wpf-migration`. It is
+not vendored because Wintodo has no WPF code to migrate.
 
-**Updating:** check the release tag and its full commit upstream, then run
+**Updating:** after checking the stable release and its full commit on the Microsoft repository, use
 `.\scripts\Update-AgentSkills.ps1 -Tag vX.Y.Z -ExpectedCommit <full-commit>`.
-Update the two defaults in the script in the same change. Read the upstream
-`CHANGELOG.md` for that range and review any license change. Update `AGENTS.md` and these guides if commands
-changed, then commit. win-dev-skills is v0.x: minor releases can break things
+Update the two defaults in the script in the same change. Review the upstream
+release notes and any license change, update these guides if commands changed,
+then commit. The weekly vendor patch verifies both copies of the license along
+with the skills. The former
+`microsoft/win-dev-skills` repository is now a catalog, not the source of these files.
+Minor releases can break things
 (0.7 removed `BuildAndRun.ps1` and the bundled analyzer). Never hand-edit the
 vendored folders.
 
@@ -50,7 +53,7 @@ Code, each skill appears twice. Prefer the project copy; it matches the repo.
 
 ## WinApp CLI (`winapp`)
 
-Microsoft's agent-first CLI for Windows apps. Requires 0.7+.
+Microsoft's CLI for Windows apps. This checkout uses WinApp 0.8.0; the six skills are from Microsoft's v0.8.0 release. The design and build skills declare CLI 0.7+ as their minimum.
 
 ```powershell
 winapp run src\Wintodo.App\Wintodo.csproj --detach --json   # build + register + launch

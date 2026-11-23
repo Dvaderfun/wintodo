@@ -151,6 +151,87 @@ public sealed partial class SqliteTaskStore
             cancellationToken);
     }
 
+    public Task RenameTaskAsync(string uid, string summary, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(summary);
+        return UpdateTaskFieldsAsync(uid, (_, _, task) => task.Summary = summary, cancellationToken);
+    }
+
+    public Task SetTaskTextAsync(
+        string uid, string summary, string? description, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(summary);
+        return UpdateTaskFieldsAsync(uid, (_, _, task) =>
+        {
+            task.Summary = summary;
+            task.Description = description;
+        }, cancellationToken);
+    }
+
+    public Task<double> SetTaskImportanceAsync(
+        string uid, bool isImportant, bool moveStarredToTop, CancellationToken cancellationToken = default)
+    {
+        return UpdateTaskFieldsAsync(uid, (connection, transaction, task) =>
+        {
+            if (moveStarredToTop && isImportant && task.Priority is not (>= 1 and <= 4)
+                && task.ParentUid is null && IsManualList(connection, transaction, task.ListId))
+            {
+                task.SortOrder = GetFirstTaskSortOrder(connection, transaction, task.ListId, uid);
+            }
+            task.Priority = isImportant ? (int)TaskPriority.High : (int)TaskPriority.Undefined;
+        }, cancellationToken);
+    }
+
+    public Task<bool> TryAddTaskAttachmentAsync(
+        string uid, TaskAttachment attachment, long maxTotalBytes, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(uid);
+        ValidateAttachment(attachment);
+        ArgumentOutOfRangeException.ThrowIfNegative(maxTotalBytes);
+        return ExecuteWriteAsync((connection, transaction, context) =>
+        {
+            TodoTask task = ReadTaskByUid(connection, transaction, uid, includeDeleted: false)
+                ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
+            using SqliteCommand size = connection.CreateCommand();
+            size.Transaction = transaction;
+            size.CommandText = "SELECT TOTAL(size_bytes) FROM attachments WHERE task_id = @taskId;";
+            size.Parameters.AddWithValue("@taskId", task.Id);
+            double existingBytes = (double)size.ExecuteScalar()!;
+            if (existingBytes + attachment.SizeBytes > maxTotalBytes) return false;
+
+            attachment.TaskId = task.Id;
+            if (attachment.Added == default) attachment.Added = _clock.UtcNow;
+            attachment.Id = InsertAttachment(connection, transaction, attachment);
+            task.LastModified = _clock.UtcNow;
+            task.Sequence++;
+            task.IsDirty = true;
+            UpdateTaskRow(connection, transaction, task);
+            LogChange(connection, transaction, TaskEntityType, uid, ChangeOperation.Update);
+            context.AddTask(task.ListId, uid);
+            return true;
+        }, cancellationToken);
+    }
+
+    private Task<double> UpdateTaskFieldsAsync(
+        string uid, Action<SqliteConnection, SqliteTransaction, TodoTask> update,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(uid);
+        return ExecuteWriteAsync((connection, transaction, context) =>
+        {
+            TodoTask task = ReadTaskByUid(connection, transaction, uid, includeDeleted: false)
+                ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
+            update(connection, transaction, task);
+            task.LastModified = _clock.UtcNow;
+            task.Sequence++;
+            task.IsDirty = true;
+            UpdateTaskRow(connection, transaction, task);
+            LogChange(connection, transaction, TaskEntityType, uid, ChangeOperation.Update);
+            context.AddTask(task.ListId, uid);
+            return task.SortOrder;
+        }, cancellationToken);
+    }
+
     public Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(uid);
@@ -829,9 +910,13 @@ public sealed partial class SqliteTaskStore
         TodoTask task,
         DateTimeOffset completedAt)
     {
-        DateTimeOffset occurrence = task.Due ?? task.Start ?? completedAt;
+        // Older repeats can have neither date. Anchor those to the local calendar day,
+        // using the same midnight/zero-offset representation as stored date-only values.
+        bool needsFirstDue = task.Due is null && task.Start is null;
+        DateTimeOffset occurrence = task.Due ?? task.Start
+            ?? new DateTimeOffset(TimeZoneInfo.ConvertTime(completedAt, _clock.LocalTimeZone).Date, TimeSpan.Zero);
         int completedOccurrences = GetCompletionCount(connection, transaction, task.Uid) + 1;
-        TimeZoneInfo? timeZone = ResolveTimeZone(task.DueTzid);
+        TimeZoneInfo? timeZone = needsFirstDue ? null : ResolveTimeZone(task.DueTzid);
         DateTimeOffset? next = RecurrenceRule.Parse(task.RRule!)
             .ComputeNext(occurrence, completedOccurrences, timeZone);
 
@@ -857,7 +942,16 @@ public sealed partial class SqliteTaskStore
         }
 
         TimeSpan shift = next.Value - occurrence;
-        task.Due = task.Due is null ? null : task.Due.Value + shift;
+        if (needsFirstDue)
+        {
+            task.Due = next.Value;
+            task.DueIsDateOnly = true;
+            task.DueTzid = null;
+        }
+        else
+        {
+            task.Due += shift;
+        }
         task.Start = task.Start is null ? null : task.Start.Value + shift;
         task.Status = Wintodo.Core.Models.TaskStatus.NeedsAction;
         task.PercentComplete = 0;

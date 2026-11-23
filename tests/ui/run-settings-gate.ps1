@@ -163,6 +163,17 @@ try {
         Assert-RowOrder @('Second task','First task','Third task')
         Invoke-Ui @('send-keys', 'escape', '--via', 'send-input')
     }
+    Test-UI 'F2 renames the selected row without reordering it' {
+        $row = Get-Row 'First task'
+        $uid = $row.automationId.Substring('Todo.Row.'.Length)
+        Invoke-Ui @('invoke', $row.selector)
+        Invoke-Ui @('send-keys', 'f2', '--target', $row.selector, '--via', 'send-input')
+        $editor = "Todo.Row.TitleEdit.$uid"
+        Invoke-Ui @('wait-for', $editor, '-t', '3000')
+        Invoke-Ui @('send-keys', 'ctrl+a text=Renamed\sfirst\stask enter', '--target', $editor, '--via', 'send-input')
+        Invoke-Ui @('wait-for', $editor, '--gone', '-t', '3000')
+        Assert-RowOrder @('Second task','Renamed first task','Third task')
+    }
     Test-UI 'Delete with confirmation off is immediate and undo restores' {
         $row = Get-Row 'Third task'
         Invoke-Ui @('invoke', $row.selector)

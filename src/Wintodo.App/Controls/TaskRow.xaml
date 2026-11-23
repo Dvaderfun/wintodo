@@ -119,16 +119,6 @@
             <ColumnDefinition Width="32" />
         </Grid.ColumnDefinitions>
 
-        <Border
-            Width="3"
-            Height="20"
-            Margin="-8,0,0,0"
-            HorizontalAlignment="Left"
-            VerticalAlignment="Center"
-            Background="{ThemeResource ListAccentBrush}"
-            CornerRadius="{StaticResource ControlCornerRadius}"
-            Visibility="{x:Bind local:TaskRow.BoolToVisibility(ViewModel.IsSelected), Mode=OneWay}" />
-
         <Grid
             x:Name="CompletionHost"
             Grid.Column="0"
