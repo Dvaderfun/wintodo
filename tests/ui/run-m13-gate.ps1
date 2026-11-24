@@ -20,7 +20,9 @@ $artifactDirectory = Join-Path $PSScriptRoot (
 )
 $databasePath = Join-Path $artifactDirectory "m13-gate.db"
 $readyFile = Join-Path $artifactDirectory "server-ready.txt"
+$clockFile = Join-Path $artifactDirectory 'clock.txt'
 New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
+[IO.File]::WriteAllText($clockFile, [DateTime]::new(2026, 11, 20, 12, 0, 0).ToUniversalTime().ToString('O'))
 
 $tcp = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
 $tcp.Start()
@@ -51,7 +53,7 @@ try {
         --detach `
         --json `
         -- `
-        --database-path $databasePath |
+        --database-path $databasePath --clock-file $clockFile |
         ConvertFrom-Json
     if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) {
         throw "Wintodo M13 gate launch failed."
@@ -64,6 +66,7 @@ try {
             -ServerPort $port `
             -AppDirectory $appDirectory `
             -DatabasePath $databasePath `
+            -ClockFile $clockFile `
             -ArtifactDirectory $artifactDirectory
         if ($LASTEXITCODE -ne 0) {
             throw "M13 UI gate failed."

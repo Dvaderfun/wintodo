@@ -21,12 +21,13 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.224** is the
-signed x64 build of `c7400210`. Choosing Repeat now sets an undated task due
-today; checking it off advances its due date. The build keeps the My Day
-changes above and the [owner-tested appearance](design/hybrid-preview.md).
-WintodoTest verified the update from .222 with an existing undated daily task
-and note. See the [installer guide](guides/design-dev-preview.md).
+**Private DEV installer:** Wintodo DEV **1.0.1.236** is the signed x64 Native
+AOT build of `ba0badda`. It includes the Suggestions layout, recurrence and
+editor corrections on top of PR #11 and retains the Repeat changes from #10.
+The installer keeps the separate DEV identity and
+[owner-tested appearance](design/hybrid-preview.md). See the
+[Suggestions walkthrough and sample tasks](guides/my-day-suggestions-preview.md)
+or the [installer guide](guides/design-dev-preview.md).
 
 As of 2026-11-21:
 
@@ -377,6 +378,17 @@ transaction. Completed syncs and source-list deletion refresh the open sidebar;
 switching from detail keeps an unsaved draft visible if its write fails.
 The x64 build passed without warnings; all 749 unit tests passed. See the
 [functional and visual walkthrough](guides/my-day-suggestions-preview.md).
+
+WintodoTest's My Day gate rejected an outdated recurring row, advanced the
+fresh occurrence exactly once and retained a failed note draft for retry.
+The CalDAV gate passed 12/12, including task addition and completion on a
+second client while Suggestions stayed open. All eight signed upgrade checks
+passed from DEV .235 to .236, including preservation of task identity and notes.
+The 640-DIP visual gate measured the same date pixels as at 960 DIPs, both
+empty-state lines fully visible, an 8-DIP Sort/menu gap outside My Day, and
+no gap under the viewport. The expanded scrollbar cleared the Add hitbox by
+10 DIPs; a click on its right edge added the intended task. The freshly
+installed .236 also passed Add/Complete and keyboard focus in Desert contrast.
 
 ### 2026-11-24 — My Day suggestion sections
 

@@ -31,3 +31,7 @@ Create a local list named **Suggestions test**. Add these tasks **in that list**
 5. With Suggestions open, press **Esc**, then **Enter**. Focus should return to the bulb and reopen it. The **×** in the sidebar also closes it.
 
 If you already have a disposable CalDAV test calendar on a second device, leave Suggestions open, create an overdue task and complete a different suggestion on that device. After the next successful sync, the first should appear and the second should disappear without reopening the sidebar.
+
+## Why Suggestions feels quicker than task details
+
+Suggestions reveals a panel that already exists and fills its list asynchronously. Each visible row has a title, metadata and two actions. Task details is an editor: before showing a new task it flushes pending edits, loads the task and steps together, and prepares the editing controls. Its opening transition is configured for 200 ms. This explains a difference in perceived speed; it is not a measured timing comparison. The part worth borrowing for details is the immediate frame: once the old draft is safe, show the new panel while its contents load.
