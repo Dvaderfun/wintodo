@@ -60,6 +60,9 @@ public sealed partial class MainWindow : Window
         // AOT can return the base projection even for the overlapped presenter.
         var presenter = AppWindow.Presenter;
         _presenter = presenter.Kind == AppWindowPresenterKind.Overlapped ? presenter.As<OverlappedPresenter>() : null;
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        PrepareStartupLogo();
+#endif
         _shellPage = new ShellPage(store, clock, stateService, windowsIntegration, startupTaskService, syncService, importEnvironment);
         _shellPage.SearchFocusRequested += TitleSearch.FocusSearch;
         _shellPage.SearchClearRequested += TitleSearch.TryClear;
@@ -81,7 +84,9 @@ public sealed partial class MainWindow : Window
         TitleSearch.IsEnabled = false;
         _shellPage.ViewModel.LoadStartupTheme(state.ThemeSetting);
         OnShellThemeChanged(ShellPage.ThemeForIndex(_shellPage.ViewModel.AppearanceThemeIndex));
+#if !DEBUG && !WINTODO_PRIVATE_PREVIEW
         RootFrame.Content = _shellPage;
+#endif
         ApplyInitialBounds(state.Placement);
         CaptureRestoredBounds();
         _hasPresentedShell = true;
@@ -94,6 +99,10 @@ public sealed partial class MainWindow : Window
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         _externalChangeVersion = await _store.GetExternalChangeVersionAsync(cancellationToken);
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        // The logo is already attached. Measure the shell behind it while the selected data loads.
+        RootFrame.Content = _shellPage;
+#endif
         _isWindowMinimized = _presenter?.State == OverlappedPresenterState.Minimized;
         await _shellPage.SetWindowMinimizedAsync(_isWindowMinimized);
         await _shellPage.InitializeAsync(cancellationToken);
@@ -176,6 +185,10 @@ public sealed partial class MainWindow : Window
             await _shellPage.OpenTaskAsync(notificationTaskUid, cancellationToken);
 
         _isInitialized = true;
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        RemoveStartupLogo();
+        TitleSearch.Visibility = Visibility.Visible;
+#endif
         _shellPage.IsEnabled = true;
         TitleSearch.IsEnabled = true;
         if (focusComposer) _shellPage.FocusComposer();

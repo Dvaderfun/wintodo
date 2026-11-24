@@ -8,8 +8,34 @@ namespace Wintodo;
 
 public sealed partial class MainWindow
 {
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+    private FrameworkElement? _startupLogo;
+
+    private void PrepareStartupLogo()
+    {
+        // Keep the shell in layout with a live XamlRoot, but clip it until navigation is ready.
+        // The title bar still owns drag regions and Windows still owns its caption buttons.
+        RootFrame.Clip = new RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, 0, 0) };
+        TitleSearch.Visibility = Visibility.Collapsed;
+        var template = (DataTemplate)WindowRoot.Resources["StartupLogoTemplate"];
+        _startupLogo = (FrameworkElement)template.LoadContent();
+        WindowRoot.Children.Add(_startupLogo);
+    }
+
+    private void RemoveStartupLogo()
+    {
+        if (_startupLogo is not null) WindowRoot.Children.Remove(_startupLogo);
+        _startupLogo = null;
+        RootFrame.Clip = null;
+    }
+#endif
+
     internal async Task ShowUnsupportedDatabaseAsync()
     {
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        // Validation failed before ShowInitialShell. Only present the recovery dialog.
+        RemoveStartupLogo();
+#endif
         // Store validation now precedes activation. A ContentDialog needs a loaded XamlRoot.
         if (!WindowRoot.IsLoaded)
         {

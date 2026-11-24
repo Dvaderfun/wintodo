@@ -34,6 +34,7 @@ owner's acknowledgement first (`AGENTS.md`, Working style).
 | [023](ADR-023-first-party-rights-and-draft-artwork.md) | Reserve official branding and monetization; retain eight backgrounds in the Store draft | accepted |
 | [024](ADR-024-glide-taskbar-sizing.md) | Enlarge Glide at taskbar sizes | accepted |
 | [025](ADR-025-my-day-suggestions.md) | Add rule-based My Day suggestions | accepted |
+| [026](ADR-026-branded-startup-preview.md) | Try Glide while the first view loads in Debug and private DEV | proposed |
 
 ADR-001…007 were written inline in `PLAN.md` §2 and moved here verbatim by ADR-010.
 

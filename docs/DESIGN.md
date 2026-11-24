@@ -53,8 +53,11 @@
 `MainWindow` converts saved dimensions from DIPs using the destination
 display's scale and fits the window to its work area. The 1180 × 820 DIP size
 is the fallback when no valid saved bounds exist. A maximized session opens
-maximized with its normal rectangle preserved for Restore Down. The shell is
-attached before showing; the saved list fills from local data.
+maximized with its normal rectangle preserved for Restore Down. Store and
+other non-preview Release builds show the shell first and fill the saved
+list from local data. In the [Debug and private DEV trial](adr/ADR-026-branded-startup-preview.md),
+the same window shows Glide while the first view loads. Native caption
+buttons remain available; the logo does not take focus.
 
 Never set `Width`/`Height` on the root `Grid` to size the window — that clips
 content instead.
@@ -943,6 +946,6 @@ to configure the first account.
 - Do not use emoji for product or command icons. User-selected list icons are the
   sole exception; all application glyphs use Segoe Fluent Icons.
 - Do not add a hamburger button at ≥ 640 px; the pane is already visible.
-- Do not show a splash screen or a loading spinner on launch. The app must paint
-  the shell immediately and fill the list asynchronously — a spinner on startup
-  is an admission that the perf budget was missed.
+- Do not show a launch spinner or delay the first view. Store and other
+  non-preview Release builds paint the shell first. The §1 trial allows the
+  existing logo during actual loading in Debug and private DEV only.

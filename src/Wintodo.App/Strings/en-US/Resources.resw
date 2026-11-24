@@ -24,6 +24,9 @@
   <data name="MainWindowTitle" xml:space="preserve">
     <value>Wintodo</value>
   </data>
+  <data name="StartupLogo.AutomationProperties.Name" xml:space="preserve">
+    <value>Opening Wintodo</value>
+  </data>
   <data name="CompactSearchBox.AutomationProperties.Name" xml:space="preserve">
     <value>Search tasks</value>
   </data>
