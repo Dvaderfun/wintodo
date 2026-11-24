@@ -16,10 +16,13 @@ function Set-TestClock([DateTime]$LocalTime) {
     [IO.File]::WriteAllText($staged, $utc.ToString('O'))
     [IO.File]::Move($staged, $clock, $true)
 }
+function Start-GateApp {
+    $launch = winapp run $app --detach --json -- --database-path $database --clock-file $clock --trace-file $trace | ConvertFrom-Json
+    if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) { throw 'My Day gate launch failed.' }
+    [int]$launch.ProcessId
+}
 Set-TestClock ([DateTime]::new(2026, 11, 20, 18, 0, 0))
-$launch = winapp run $app --detach --json -- --database-path $database --clock-file $clock --trace-file $trace | ConvertFrom-Json
-if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) { throw 'My Day gate launch failed.' }
-$appPid = [int]$launch.ProcessId
+$appPid = Start-GateApp
 
 function Ui([string[]]$Command) {
     $output = winapp ui @Command -a $appPid
@@ -49,6 +52,14 @@ function Select-GateRow([string]$Id) {
     Ui @('invoke', $items[0].selector, '--action', 'select') | Out-Null
 }
 
+function Test-MyDayMetadata($Nodes) {
+    foreach ($node in $Nodes) {
+        if ($node.automationId -ceq 'MetadataText' -and (($node.name -split ' · ') -ccontains 'My Day')) { return $true }
+        if ($node.children -and (Test-MyDayMetadata $node.children)) { return $true }
+    }
+    return $false
+}
+
 function Assert-MyDay([bool]$Included) {
     $label = if ($Included) { 'Added to My Day' } else { 'Add to My Day' }
     $navigationName = if ($Included) { 'My Day, 1 tasks' } else { 'My Day' }
@@ -57,7 +68,7 @@ function Assert-MyDay([bool]$Included) {
     $deadline = [DateTime]::UtcNow.AddSeconds(5)
     do {
         $tree = (Ui @('inspect', '--depth', '30', '--hide-offscreen', '--json')) -join "`n"
-        $hasMetadata = $tree -match ' (?:·|\\u00b7) My Day'
+        $hasMetadata = Test-MyDayMetadata ($tree | ConvertFrom-Json).windows.elements
         if ($hasMetadata -eq $Included) { return }
         Start-Sleep -Milliseconds 200
     } while ([DateTime]::UtcNow -lt $deadline)
@@ -73,6 +84,14 @@ function Wait-TimerState([string]$Marker) {
         Start-Sleep -Milliseconds 100
     } while ([DateTime]::UtcNow -lt $deadline)
     throw "Missing timer transition: $Marker"
+}
+
+function Get-GateWindow {
+    $window = (Ui @('list-windows', '--json') | ConvertFrom-Json) |
+        Where-Object title -like 'Wintodo*' | Select-Object -First 1
+    if (-not $window) { throw 'The Wintodo window was not found for rollover.' }
+    if ("$($window.hwnd)" -match '^0x') { return [IntPtr]::new([Convert]::ToInt64("$($window.hwnd)".Substring(2), 16)) }
+    [IntPtr]::new([long]$window.hwnd)
 }
 
 try {
@@ -94,8 +113,7 @@ try {
     Ui @('invoke', 'Todo.Detail.MyDay') | Out-Null
     Assert-MyDay $true
 
-    # Let a day pass while minimized, then restore without activation. A correct
-    # detail, count and row must not depend on another window taking or losing focus.
+    # Restore normally for the editing and keyboard scenarios that follow.
     Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -105,26 +123,20 @@ public static class MyDayGateWindow
     public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hwnd);
 }
 '@
-    $window = (Ui @('list-windows', '--json') | ConvertFrom-Json) |
-        Where-Object title -like 'Wintodo*' | Select-Object -First 1
-    if (-not $window) { throw 'The Wintodo window was not found for rollover.' }
-    $handle = if ("$($window.hwnd)" -match '^0x') {
-        [IntPtr]::new([Convert]::ToInt64("$($window.hwnd)".Substring(2), 16))
-    } else { [IntPtr]::new([long]$window.hwnd) }
+    $handle = Get-GateWindow
     [MyDayGateWindow]::ShowWindowAsync($handle, 6) | Out-Null
     Wait-TimerState 'minimize;SYNC=absent;MIDNIGHT=off'
     Set-TestClock ([DateTime]::new(2026, 11, 21, 0, 1, 0))
-    [MyDayGateWindow]::ShowWindowAsync($handle, 4) | Out-Null # SW_SHOWNOACTIVATE
+    [MyDayGateWindow]::ShowWindowAsync($handle, 9) | Out-Null # SW_RESTORE activates
+    [MyDayGateWindow]::SetForegroundWindow($handle) | Out-Null
     Wait-TimerState 'restore;SYNC=absent;MIDNIGHT=running'
-    if ([MyDayGateWindow]::GetForegroundWindow() -eq $handle) { throw 'Rollover restore unexpectedly activated the window.' }
     Assert-MyDay $false
-    if ([MyDayGateWindow]::GetForegroundWindow() -eq $handle) { throw 'The window gained focus before rollover was verified.' }
 
     # Changing a due date from the row must refresh the same open detail.
-    # winapp focus activates the target window and verifies foreground before physical input.
-    Ui @('focus') | Out-Null
     Ui @('click', $row, '--right') | Out-Null
     Ui @('wait-for', 'Todo.Row.Selection.Due', '-t', '5000') | Out-Null
     Ui @('invoke', 'Todo.Row.Selection.Due') | Out-Null
@@ -376,7 +388,31 @@ END;
     }
     Ui @('invoke', 'Todo.Detail.RetryOpen') | Out-Null
     Ui @('wait-for', 'Todo.Detail.Title', '--value', 'Switch target during rejected draft', '-t', '5000') | Out-Null
-    Write-Host 'My Day UI gate: PASS (membership, undo, rollover, recurrence, pending writes, Suggestions, stale occurrence, saved action with failed refresh, failed-save recovery, detail retry)'
+
+    # A separate fixture ends with a background restore. No subsequent input
+    # should activate this window and accidentally refresh the date for us.
+    Stop-Process -Id $appPid
+    Wait-Process -Id $appPid -Timeout 10 -ErrorAction SilentlyContinue
+    $database = Join-Path $artifacts 'unfocused.db'
+    $trace = Join-Path $artifacts 'unfocused.trace'
+    Set-TestClock ([DateTime]::new(2026, 11, 20, 18, 0, 0))
+    $appPid = Start-GateApp
+    Ui @('wait-for', 'Todo.Nav.DefaultList', '-t', '10000') | Out-Null
+    Ui @('invoke', 'Todo.Nav.DefaultList') | Out-Null
+    $row = Add-GateTask 'Unfocused midnight fixture'
+    Ui @('invoke', $row) | Out-Null
+    Ui @('invoke', 'Todo.Detail.MyDay') | Out-Null
+    Assert-MyDay $true
+    $handle = Get-GateWindow
+    [MyDayGateWindow]::ShowWindowAsync($handle, 6) | Out-Null
+    Wait-TimerState 'minimize;SYNC=absent;MIDNIGHT=off'
+    Set-TestClock ([DateTime]::new(2026, 11, 21, 0, 1, 0))
+    [MyDayGateWindow]::ShowWindowAsync($handle, 4) | Out-Null # SW_SHOWNOACTIVATE
+    Wait-TimerState 'restore;SYNC=absent;MIDNIGHT=running'
+    if ([MyDayGateWindow]::GetForegroundWindow() -eq $handle) { throw 'Rollover restore unexpectedly activated the window.' }
+    Assert-MyDay $false
+    if ([MyDayGateWindow]::GetForegroundWindow() -eq $handle) { throw 'The window gained focus before rollover was verified.' }
+    Write-Host 'My Day UI gate: PASS (membership, undo, foreground and unfocused rollover, recurrence, pending writes, Suggestions, stale occurrence, saved action with failed refresh, failed-save recovery, detail retry)'
 } finally {
     Stop-Process -Id $appPid -ErrorAction SilentlyContinue
 }

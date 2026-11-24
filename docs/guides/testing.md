@@ -144,6 +144,10 @@ as both `-Include $candidate` and `-GateArguments '-InputDirectory',$candidate`
 to `Invoke-VmGate.ps1 -NoWarmup`. The gate also checks maximized close/reopen
 and Restore Down. The Debug M13 gate checks sync timer creation/removal on
 account changes; the My Day gate checks rollover after an unfocused restore.
+With the same parameters, `run-startup-targets-gate.ps1` runs the placement
+gate first, then reopens its signed fixture through the packaged New Task
+action. It verifies that the composer has keyboard focus before any interaction,
+commits a task through UI Automation and checks the saved theme selection.
 
 For the schema-compatibility startup gate, create a synthetic schema-8 database
 on the host using the Python standard library, then copy only that fixture into

@@ -21,17 +21,18 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.245** is the signed x64 Native
-AOT build of `486482f5`. The task details pane shows the selected title before enabling
+**Private DEV installer:** Wintodo DEV **1.0.1.249** is the signed x64 Native
+AOT build of `f94416fa`. It applies the saved window bounds, maximized state
+and app theme before first show. The sync timer exists only with a connected
+CalDAV account; minimizing stops the local-midnight display timer. See the
+[startup investigation](plans/2026-11-24-startup-and-minimized-work.md).
+The task details pane shows the selected title before enabling
 the editor, keeps step drafts with their tasks and retains a wide pane after
 restart. A focused note uses available space above the footer. See the
 [task details checklist](guides/task-details-preview.md). The preview retains
 DEV .241's My Day date spacing, focus and suggestion error handling, the original
 contribution in [#11](https://github.com/Dvaderfun/wintodo/pull/11), and
 the Repeat changes from #10.
-Known startup issue in `.245`: the window appears at its default size before
-restoring normal bounds, and maximized state does not persist. See the
-[startup investigation](plans/2026-11-24-startup-and-minimized-work.md).
 The installer keeps the separate DEV identity and
 [owner-tested appearance](design/hybrid-preview.md). See the
 [Suggestions walkthrough and sample tasks](guides/my-day-suggestions-preview.md)
@@ -375,6 +376,39 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-25 — Restored window placement and account-aware sync (M9/M13)
+
+Startup opens SQLite alongside XAML construction, reads window placement
+and theme in one snapshot, and applies them before first show. Normal bounds
+and maximized state are now saved together before the window is destroyed.
+The selected list loads from local data while the app initializes sync;
+an interrupted import still finishes recovery before the user can change data.
+Packaged jump-list commands read the desktop command line.
+
+A disconnected app no longer creates the 15-minute sync timer. Connecting
+creates it; disconnecting releases it. A connected app can sync while
+minimized. The separate midnight display timer stops on minimize and checks
+the date on restore, even if Windows does not give the window keyboard focus.
+
+The final x64 solution build had zero warnings and errors; all 756 tests
+passed with no skips. On the same source the VM passed the newer-schema
+guard 5/5, navigation startup 4/4, and CalDAV 12/12, including actual
+timer transitions. The full My Day gate passed, including midnight refresh
+on both foreground and unfocused restore (`my-day-retained-20261124-222454.log`).
+Earlier test attempts incorrectly required physical input after a background
+restore or a separator before a lone My Day indicator; the final test checks
+that row directly and keeps the unfocused scenario separate from editing.
+Signed DEV **1.0.1.249** passed signature, structure
+and privacy checks (335 files). The [signed placement measurements](PERF.md#2026-11-25--first-visible-placement-and-task-row-after-the-startup-fix)
+show normal and maximized first-show geometry and correct Restore Down;
+time to the first observable row varied across VM runs. The final installed
+package also restored Completed on normal launch, selected Tasks and focused
+the composer on New Task, committed a task through UI Automation and retained
+the saved Dark theme (`run-startup-targets-gate-20261124-222622.log`). The
+test verifies in-app focus; the scheduled VM runner does not establish physical
+keyboard handoff from the taskbar. The Store package
+and deferred M9 matrix are unchanged.
 
 ### 2026-11-24 — Startup placement and minimized work investigation
 

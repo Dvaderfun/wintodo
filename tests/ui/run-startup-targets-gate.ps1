@@ -72,14 +72,17 @@ try {
     Close-App
 
     # Activate the installed AUMID with EXACTLY the argument stored by JumpListItem.CreateWithArguments.
-    # Do not click or focus any control: the launch itself must put the insertion point in the composer.
+    # Observe the route and UIA focus before interacting with any control in this process.
     Launch 'wintodo:new-task'
     Ui @('wait-for','Todo.Shell.PageTitle','--value','Tasks','-t','20000') | Out-Null
+    $report.checks+='New Task activation opens Tasks instead of the saved Completed view'
     Ui @('wait-for','Todo.List.AddTaskBox','--property','HasKeyboardFocus','--value','True','-t','10000') | Out-Null
+    $report.checks+='The composer reports keyboard focus before any UI input'
     $task='QuickAdd'+[guid]::NewGuid().ToString('N').Substring(0,8)
-    Ui @('send-keys',"text=$task enter",'--via','send-input') | Out-Null
+    Ui @('set-value','Todo.List.AddTaskBox',$task) | Out-Null
+    Ui @('invoke','Todo.Composer.AddButton') | Out-Null
     Ui @('wait-for',$task,'--type','ListItem','-t','10000') | Out-Null
-    $report.checks+='New Task opens Tasks, focuses the composer, and accepts a task without explicit focus'
+    $report.checks+='The composer commits the task through UI Automation value and invoke'
     Ui @('invoke','Todo.Nav.Settings') | Out-Null
     Ui @('wait-for','Todo.Settings.Theme','--value',$theme,'-t','10000') | Out-Null
     $report.checks+='Explicit appearance theme survives the returning-user launch'

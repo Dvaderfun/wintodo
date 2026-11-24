@@ -7,6 +7,13 @@ A first install starts with its own empty task database. Updating DEV keeps that
 For the My Day lightbulb, follow the [Suggestions layout and functional checklist](my-day-suggestions-preview.md).
 For task opening, resizing, and note or step editing, use the [task details checklist](task-details-preview.md).
 
+To try the [startup fix](../plans/2026-11-24-startup-and-minimized-work.md),
+resize the window, close it normally, and reopen it from Start. It should
+appear at that size immediately. Repeat after maximizing: it should open
+maximized, and Restore Down should return to your earlier rectangle. Close
+once in the desired state after updating; DEV .245 could save a maximized
+window as normal.
+
 Use **1.0.1.224** to try Repeat. On a task with no due date, choose **Repeat → Weekly**: it becomes due today. Mark it done and the same task stays open, due next week. If a task from **1.0.1.222** already repeats daily but says **Add due date**, marking it done makes it due tomorrow. You can also choose **Add due date → Today** to give it today's deadline without completing it.
 
 Tasks due today appear automatically in My Day, and a row edit updates the open detail pane. [The appearance notes](../design/hybrid-preview.md) describe the DEV selection marker, list title editor and tested palettes.

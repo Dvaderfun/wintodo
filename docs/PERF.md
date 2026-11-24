@@ -705,3 +705,66 @@ and do not measure wakeups, system/compositor CPU, battery use or restore
 latency. Working set continued to fall after restore; this does not isolate
 a memory saving caused by minimizing. No priority or power policy was changed.
 Local evidence: `tests/ui/artifacts/startup-idle-study/2b47419f23df45f7bb7472911e56c307/idle.json`.
+
+### 2026-11-25 — First visible placement and task row after the startup fix
+
+The signed x64 Native AOT DEV gate uses the same WintodoTest display, one
+local task, no account, warm OS caches and fresh AppsFolder launches as the
+[.245 observations](#2026-11-24--startup-and-minimized-idle-on-signed-dev).
+Placement now comes from an ordinary user resize/maximize and close. The
+probe samples the native window separately from the exact on-screen UI
+Automation row and keeps sampling for two seconds after the row is found.
+It does not time pixels rendered by the compositor, a cold disk, or the first
+accepted keystroke.
+
+Intermediate signed build `.248` (`a02c6b3b`): all four first-visible
+placement checks passed, as did Restore Down to (120, 96), 1432 × 912.
+Launch-to-window/row times (ms) were 596/1170 for normal and 543/883,
+460/830, 402/712 for maximized. Host build activity overlapped this run;
+these figures are diagnostic. Local results:
+`tests/ui/artifacts/startup-placement/194f7226cd0e4f74b1bc7a04eb37c133/`.
+
+**Signed .249** (`f94416fa`, Windows build 26300, no concurrent Wintodo
+build). Times in ms from AppsFolder activation; one normal restart and
+three maximized restarts. All observed visible rectangles already matched
+the saved state, including during the two seconds after the row appeared.
+
+| Saved state | First visible, already at saved size | Task row observable | .245 task row, same fixture |
+|---|---:|---:|---:|
+| Normal | 346 | 613 | 786 |
+| Maximized, run 1 | 321 | 582 | 816 |
+| Maximized, run 2 | 329 | 573 | 840 |
+| Maximized, run 3 | 335 | 582 | 758 |
+
+The normal window measured 1432 × 912 at (120, 96). All three maximized
+windows matched the native maximized reference; Restore Down returned to
+that same normal rectangle. The earlier build didn't maximize, so it drew
+a smaller viewport in those three baseline trials. The first visible window
+and the first row are different milestones: the row became observable
+243–267 ms after the window on .249. This includes UI scheduling, layout and
+one or two accessibility queries. It does not isolate database work. This
+small fixture does not predict cold-cache or large-list launch times.
+Local results: `tests/ui/artifacts/startup-placement/730ea23f919d4c188a1ede0dbab1ce04/`.
+
+A repeat on the same signed .249 package in the guest retained after a Debug
+gate also passed all four placement checks and Restore Down. Window/row
+times were 941/1090 ms (normal), then 343/566, 410/753 and 338/627 ms
+(maximized). The longer normal launch shows why the timing comparison above
+cannot establish a general speedup. Local results:
+`tests/ui/artifacts/startup-placement/0b6156ab325043e6859851560e40d439/`.
+
+The final clean-guest signed gate also passed. Window/row times were
+454/840 ms (normal), then 513/812, 365/606 and 360/633 ms (maximized).
+Across all 12 launches of .249 the first visible window was correctly
+placed **12/12**; the median time to observe the task row was **620 ms**
+(range 566–1090 ms), versus **801 ms** across the four .245 launches.
+This is a descriptive median of the runs above, not a general startup budget.
+Local results: `tests/ui/artifacts/startup-placement/d9d1964458e143f8a9caac0de8aaaf40/`.
+
+The Debug timer trace on the same source showed no sync timer or startup
+attempt on a local-only launch. It recorded a live timer after connecting,
+kept it on minimize, and recorded its removal on disconnect. In local-only
+mode the date timer stopped on minimize and restarted on restore. These are
+observations of which timers were running, not measurements of battery
+savings or CPU wakeups: `tests/ui/artifacts/m13/run-20261124-221557/` and
+`tests/ui/artifacts/my-day/789b6fd8-891c-431e-a8e8-19e07a88fd5d/unfocused.trace`.
