@@ -1,24 +1,31 @@
 # WintodoTest only. Capture the selected synthetic task using the M8 gate's
 # shipped Windows Desert palette, then restore the guest's appearance.
 param(
-    [Parameter(Mandatory)][int]$AppPid,
+    [Parameter(Mandatory,ParameterSetName='Row')][int]$AppPid,
     [Parameter(Mandatory)][string]$ArtifactDirectory,
-    [Parameter(Mandatory)][ValidatePattern('^Todo\.Row\.[a-fA-F0-9-]+$')][string]$SelectedRowId
+    [Parameter(Mandatory,ParameterSetName='Row')][ValidatePattern('^Todo\.Row\.[a-fA-F0-9-]+$')][string]$SelectedRowId,
+    [Parameter(Mandatory,ParameterSetName='Startup')][scriptblock]$StartupCapture
 )
 $ErrorActionPreference = 'Stop'
 if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $PSScriptRoot -ine 'C:\wintodo\tests\ui' -or
     (Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Virtual Machine\Guest\Parameters' VirtualMachineName) -cne 'WintodoTest') {
     throw 'Contrast capture is restricted to the WintodoTest guest.'
 }
-$app = Get-Process -Id $AppPid
 $pkg = Get-AppxPackage -Name Wintodo.Hybrid.Dev
-if ($pkg.PackageFamilyName -cne 'Wintodo.Hybrid.Dev_1z32rh13vfry6' -or
-    $app.Path -ine (Join-Path $pkg.InstallLocation Wintodo.exe) -or $app.MainWindowHandle -eq [IntPtr]::Zero) {
-    throw 'Expected the running signed DEV preview.'
+if ($pkg.PackageFamilyName -cne 'Wintodo.Hybrid.Dev_1z32rh13vfry6' -or $pkg.IsDevelopmentMode -or $pkg.Status -ne 'Ok') {
+    throw 'Expected the installed signed DEV preview.'
 }
-$hwnd = $app.MainWindowHandle
+if ($StartupCapture) {
+    $area='startup-placement'
+    if (Get-Process -Name Wintodo -ErrorAction SilentlyContinue) { throw 'A fresh signed DEV launch is required.' }
+} else {
+    $area='dev-preview'
+    $app = Get-Process -Id $AppPid
+    if ($app.Path -ine (Join-Path $pkg.InstallLocation Wintodo.exe) -or $app.MainWindowHandle -eq [IntPtr]::Zero) { throw 'Expected the running signed DEV preview.' }
+    $hwnd = $app.MainWindowHandle
+}
 $outDir = (Resolve-Path -LiteralPath $ArtifactDirectory).ProviderPath
-if (!$outDir.StartsWith('C:\wintodo\tests\ui\artifacts\dev-preview\', [StringComparison]::OrdinalIgnoreCase)) {
+if (!$outDir.StartsWith("C:\wintodo\tests\ui\artifacts\$area\", [StringComparison]::OrdinalIgnoreCase)) {
     throw 'Expected the guest DEV gate artifact directory.'
 }
 if (!('PreviewContrastNative' -as [type])) {
@@ -100,11 +107,20 @@ try {
     Set-Contrast ($old.flags -bor 1) $name.ToString()
     if (![PreviewContrastNative]::SetSysColors($inds.Count,$inds.ToArray(),$vals.ToArray())) { throw 'Cannot apply shipped contrast colours.' }
     Start-Sleep -Milliseconds 750
-    $details.active = [bool]((Read-Contrast).flags -band 1)
+    $active = Read-Contrast
+    $details.active = [bool]($active.flags -band 1)
+    $details.observedScheme = $active.scheme
+    $details.expectedScheme = $name.ToString()
+    $details.systemColorsCOLORREF = [ordered]@{}
     foreach ($i in 5,8,13,14,15,18) {
+        $details.systemColorsCOLORREF[$names[$i]] = [PreviewContrastNative]::GetSysColor($i)
         if (!$inds.Contains($i) -or [PreviewContrastNative]::GetSysColor($i) -ne $vals[$inds.IndexOf($i)]) { throw "Guest system colour $i did not match Desert." }
     }
     if (!$details.active) { throw 'Windows High Contrast is not active.' }
+    if ($StartupCapture) {
+        & $StartupCapture
+        return # finally always restores and verifies the original guest palette.
+    }
     $png = Join-Path $outDir '05-hc-selected.png'; $crop = Join-Path $outDir '05-hc-row.png'
     & winapp ui screenshot -w $hwnd.ToInt64() -o $png | Out-Null
     if ($LASTEXITCODE -or (Get-Item -LiteralPath $png).Length -lt 1000) { throw 'Cannot capture contrast window.' }
@@ -121,6 +137,6 @@ try {
     $details.restored = $old.flags -eq $after.flags -and ((!$old.scheme -and !($old.flags -band 1)) -or $old.scheme -ceq $after.scheme) -and
         $pref -ceq (Get-ItemPropertyValue -LiteralPath $reg -Name 'High Contrast Scheme') -and
         @($ids | Where-Object { [PreviewContrastNative]::GetSysColor($_) -ne $colors[$_] }).Count -eq 0
-    $details | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $outDir 'contrast-smoke.json')
+    $details | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath (Join-Path $outDir 'contrast-smoke.json')
     if (!$details.restored) { throw 'Guest contrast settings were not restored exactly.' }
 }

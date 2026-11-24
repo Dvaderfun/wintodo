@@ -799,3 +799,42 @@ from a flat client at 20,011 ms to Welcome at 20,182 ms. A WinUI window can
 be composed before the first XAML frame is committed; [a WinUI reproduction](https://github.com/microsoft/microsoft-ui-xaml/issues/10259#issuecomment-5850103403)
 documents this distinction. Local captures:
 `tests/ui/artifacts/startup-placement/301eef7bfaf64f2eab79f07dcc3e2810/`.
+
+**Intermediate .252** (`4d8ab2eb`). The recorder now saw the centered Glide
+on the saved-size window in Light, Dark and Windows Desert High Contrast.
+In the Dark run the branded background was already `#202020` at 514 and
+558 ms. A second problem became visible after the logo: the navigation/list
+backgrounds rose to RGB gray 216/169 at 626 ms and fell to 32/39 by 878 ms.
+The task list was present throughout that fade. This fails the smooth Dark
+handoff despite passing geometry and Restore Down. The 2,048-file diagnostic
+overlapped an uncloaked window by only 26 ms, too short to establish a logo
+in that interval. The subsequent activation test restored Completed but could
+not verify the executable returned for New Task. Local captures:
+`tests/ui/artifacts/startup-placement/62c73ab18b9f4ff9ade7c6413b32ddab/`.
+
+**Signed .253** (`ca32f963`, Windows build 26300). In all eight recordings
+the first sampled app surface contained the package's Glide artwork, followed
+by Welcome or the populated list. No empty client or intermediate resize was
+observed. The ordinary saved-size launches had one task and warm OS caches.
+Times below are milliseconds from requesting AppsFolder activation:
+
+| Launch | First logo pixels | First frame sampled after the logo |
+|---|---:|---|
+| First install | 22,697 | Welcome at 23,049 |
+| Saved normal, system Light | 537 | Light list at 668 |
+| Saved normal, explicit Dark | 523 | Dark list at 667 |
+| Windows Desert High Contrast | 505 | Desert list at 632 |
+| Interrupted import, 16,384 staged files | 518 | Populated list at 2,526 |
+
+The three maximized restarts first showed the logo at 493, 523 and 427 ms;
+Restore Down returned to the saved 1432 × 912 rectangle. In Dark, navigation
+and list backgrounds were already RGB gray 32/39 at the first post-logo sample
+and stayed there. In Desert the window remained `#FFFAEF` across the handoff.
+During import recovery the recorded logo and independently checked staging
+directory overlapped; the directory was still present at 2,213 ms. No delay
+was added to the app to obtain these samples. On the clean first-install run,
+Windows showed the desktop until the app appeared; the long pre-window
+interval is not a blank app screen. These measurements do not establish a
+general speedup, battery savings, or the deferred M9 budgets. Local captures,
+including `startup-handoff.png`:
+`tests/ui/artifacts/startup-placement/c105ee6be0c64a6fb724b851e477b447/`.

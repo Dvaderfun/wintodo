@@ -7,6 +7,12 @@ A first install starts with its own empty task database. Updating DEV keeps that
 For the My Day lightbulb, follow the [Suggestions layout and functional checklist](my-day-suggestions-preview.md).
 For task opening, resizing, and note or step editing, use the [task details checklist](task-details-preview.md).
 
+To compare the [logo-to-list startup trial](../adr/ADR-026-branded-startup-preview.md),
+set the app theme to the opposite of Windows, leave a list with a recognizable
+task selected, close normally, and open **Wintodo DEV** from Start. Look at the
+first visible window and the moment the list replaces the logo: both should
+use the saved theme. A very fast launch need not hold the logo on screen.
+
 To try the [startup fix](../plans/2026-11-24-startup-and-minimized-work.md),
 resize the window, close it normally, and reopen it from Start. It should
 appear at that size immediately. Repeat after maximizing: it should open

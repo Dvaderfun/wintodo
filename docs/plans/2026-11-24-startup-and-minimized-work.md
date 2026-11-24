@@ -16,6 +16,10 @@ Maximized sessions had a second problem. The code deferred maximizing until afte
 
 The [signed startup gate](../../tests/ui/run-startup-placement-gate.ps1) creates a task and saves a distinct normal rectangle through an ordinary close. On reopen it checks the first observed visible window, any subsequent bounds changes, and the exact onscreen row. It also checks maximized close/reopen and the Restore Down rectangle. This is native window and accessibility evidence, not a timestamp for pixels on screen or for the first accepted keystroke. [ADR-008](../adr/ADR-008-perf-budget-rebaseline.md) still defines the performance budgets.
 
+### The blank interval after the window appeared
+
+The [guest desktop recordings](../PERF.md#2026-11-25--what-the-installed-app-actually-paints-during-launch) showed that restoring placement did not fix the first paint. Windows could show the empty native client before WinUI had drawn anything. In the [private preview trial](../adr/ADR-026-branded-startup-preview.md), the window decodes the local Glide artwork while SQLite opens, applies the saved theme and bounds, and lets Windows compose a branded frame. The shell then takes over when the local view is ready. There is no fixed splash duration. On a cold first install the desktop can still remain visible before the app has a window; the saved placement and theme cannot be known until SQLite has opened.
+
 ## What happens when minimized
 
 | Task Manager status | Meaning |

@@ -1,6 +1,6 @@
 # Run with Invoke-VmGate.ps1 -NoWarmup -Include $candidate -GateArguments '-InputDirectory',$candidate
 # $candidate is a repo-relative directory with Build-DevPreview.ps1's signed x64 MSIX and build.json.
-param([Parameter(Mandatory)][string]$InputDirectory, [switch]$CaptureFrames, [switch]$CaptureRecovery)
+param([Parameter(Mandatory)][string]$InputDirectory, [switch]$CaptureFrames, [switch]$CaptureRecovery, [switch]$CaptureHighContrast)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $root -ine 'C:\wintodo' -or
@@ -8,11 +8,13 @@ if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $root -ine 'C:\wintodo' -or
     throw 'This gate requires the clean WintodoTest VM.'
 }
 if ($CaptureRecovery -and -not $CaptureFrames) { throw 'The recovery diagnostic requires -CaptureFrames.' }
+if ($CaptureHighContrast -and -not $CaptureFrames) { throw 'The High Contrast diagnostic requires -CaptureFrames.' }
 # UI Automation's desktop assemblies are available in Windows PowerShell on the guest.
 if ($PSVersionTable.PSEdition -ne 'Desktop') {
     $captureArgs = @()
     if ($CaptureFrames) { $captureArgs += '-CaptureFrames' }
     if ($CaptureRecovery) { $captureArgs += '-CaptureRecovery' }
+    if ($CaptureHighContrast) { $captureArgs += '-CaptureHighContrast' }
     if ($CaptureFrames) { Write-Host 'Starting signed placement and desktop-pixel capture in Windows PowerShell.' }
     & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $PSCommandPath -InputDirectory $InputDirectory @captureArgs
     exit $LASTEXITCODE
@@ -25,6 +27,7 @@ $build = Get-Content -LiteralPath (Join-Path (Join-Path $root $InputDirectory) '
 $msix = Join-Path (Join-Path $root $InputDirectory) "Wintodo-DEV-$($build.version)-x64.msix"
 $report = [ordered]@{Status='FAIL'; Version=$build.version; Source=$build.source; Sha256=$build.sha256; OS=[Environment]::OSVersion.Version.ToString(); Launches=@()}
 $app = $null
+$recoveryFileCount = 16384 # Enough real cleanup for more than one desktop sample on a warm VM.
 $shell = New-Object -ComObject Shell.Application
 $env:WINAPP_UI_WORKFLOW_ID = [guid]::NewGuid().ToString('N')
 function Ui([string[]]$Arguments) {
@@ -111,7 +114,7 @@ function Measure-Launch([string]$Name, $Expected, [string]$RecoveryStaging) {
     if ($RecoveryStaging) {
         if ($null -eq $probe.LastStagingPresentMs -or $null -eq $probe.FirstStagingRemovedMs -or
             (Test-Path -LiteralPath $RecoveryStaging)) { $failure='Did not observe the staged import files being recovered.' }
-        $record.Recovery = [ordered]@{FixtureFiles=2048; LastStagingPresentMs=$probe.LastStagingPresentMs
+        $record.Recovery = [ordered]@{FixtureFiles=$recoveryFileCount; LastStagingPresentMs=$probe.LastStagingPresentMs
             FirstStagingRemovedMs=$probe.FirstStagingRemovedMs
             ObservedUncloakedBeforeCleanupEnded=($uncloaked.Count -gt 0 -and $uncloaked[0].Ms -lt $probe.LastStagingPresentMs)}
         $record.Status = if ($failure) { 'FAIL' } else { 'PASS' }
@@ -203,9 +206,16 @@ try {
         }
         $null = [IO.Directory]::CreateDirectory($staging)
         $empty = New-Object byte[] 0
-        for ($i=0; $i -lt 2048; $i++) { [IO.File]::WriteAllBytes((Join-Path $staging "$i.fixture"),$empty) }
+        for ($i=0; $i -lt $recoveryFileCount; $i++) { [IO.File]::WriteAllBytes((Join-Path $staging "$i.fixture"),$empty) }
         Measure-Launch 'interrupted-import-diagnostic' $normal $staging
         Close-Fixture
+    }
+    if ($CaptureHighContrast) {
+        & (Join-Path $PSScriptRoot 'DevPreviewContrast.ps1') -ArtifactDirectory $output -StartupCapture {
+            Measure-Launch 'high-contrast' $normal
+            Close-Fixture
+        }
+        $report.HighContrastPalette = 'contrast-smoke.json'
     }
     $report.Status='PASS'
 } catch { $report.Error=$_.Exception.Message; throw } finally {

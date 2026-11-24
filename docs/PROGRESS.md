@@ -21,9 +21,12 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.249** is the signed x64 Native
-AOT build of `f94416fa`. It applies the saved window bounds, maximized state
-and app theme before first show. The sync timer exists only with a connected
+**Private DEV installer:** Wintodo DEV **1.0.1.253** is the signed x64 Native
+AOT build of `ca32f963`. The correctly sized window shows Glide while the
+local view loads. In eight [recorded launches](PERF.md#2026-11-25--what-the-installed-app-actually-paints-during-launch)
+the first sampled app surface showed the logo; Light, Dark and Windows Desert
+retained their colors as the list appeared. The [trial](adr/ADR-026-branded-startup-preview.md)
+is limited to Debug and private DEV. The sync timer exists only with a connected
 CalDAV account; minimizing stops the local-midnight display timer. See the
 [startup investigation](plans/2026-11-24-startup-and-minimized-work.md).
 The task details pane shows the selected title before enabling
@@ -376,6 +379,29 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-25 — Branded startup verified on the signed DEV installer (M9/M13)
+
+Recordings on .249 and .251 exposed a plain native window before the first
+XAML frame. The preview decodes the package artwork while SQLite opens,
+applies the saved bounds and theme, and exposes the committed frame while
+recovery and list initialization proceed. A ready shell can still open when
+Windows suppresses frame notifications. A separate .252 recording caught a
+bright flash between a dark logo and dark controls; .253 configures Mica with
+the saved app theme before attaching it. No splash timer or fixed delay.
+
+The final x64 solution and non-preview Release app built with no warnings;
+all 756 unit tests passed. The signed x64 Native AOT package passed signature,
+structure and privacy checks. WintodoTest passed the installed placement and
+activation gate: Welcome, normal and maximized restores, New Task focus and
+entry, and explicit theme persistence. The desktop pixel check passed for
+the dark handoff and for a real 16,384-file interrupted-import recovery. The
+guest confirmed and restored the actual Desert High Contrast palette. The
+newer-schema gate passed 5/5, including the warning and read-only close
+(`run-schema-guard-gate-20261124-230730.log`). The Debug CalDAV gate passed
+12/12, including account and minimize transitions (`run-m13-gate-20261124-230248.log`).
+See [the timings and capture IDs](PERF.md#2026-11-25--what-the-installed-app-actually-paints-during-launch).
+The Store release and deferred M9 budgets are unchanged.
 
 ### 2026-11-25 — Restored window placement and account-aware sync (M9/M13)
 

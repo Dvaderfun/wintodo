@@ -119,10 +119,14 @@ superseding a selection cancels the read, never an outgoing draft write.
 
 - Switching lists swaps the bound data on the single `TaskListViewModel`;
   there is no page navigation between lists.
-- Normal launch overlaps SQLite initialization with building the shell. The
-  window applies its saved normal bounds and presenter state before showing;
-  commands become available after import recovery and initial selection. The
-  placement settings are read from one snapshot and saved as one transaction.
+- Normal launch opens SQLite while constructing the main window. One settings
+  snapshot supplies the saved bounds, presenter state and theme before the
+  window appears. Store builds construct the shell immediately. The
+  [private startup trial](docs/adr/ADR-026-branded-startup-preview.md) starts
+  with packaged artwork in that same window and defers the full page. The
+  selected local view can accept input after import recovery and initial
+  navigation, independently of network sync. Closing saves placement in one
+  transaction.
 - Settings is `SettingsView`, an `x:Load`-deferred control inside `ShellPage`
   toggled by `ShellViewModel.IsSettingsVisible` (the `NavigationView`'s built-in
   settings item is off).

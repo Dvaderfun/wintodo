@@ -155,8 +155,21 @@ or the saved list, plus a relaunch with the opposite app theme. The per-launch
 `*-screen/frames.csv` identifies the PNGs and their times; HWND visibility,
 DWM cloak state and UI Automation row times are separate observations. Add
 `'-CaptureRecovery'` to exercise a real interrupted-import cleanup in the
-disposable DEV fixture. Keep that diagnostic separate from ordinary startup
-timings. The observer samples frames and can miss shorter-lived changes.
+disposable DEV fixture, and `'-CaptureHighContrast'` for a launch under the
+Windows Desert contrast theme. The latter records and restores the actual
+guest palette. Keep these diagnostics separate from ordinary startup timings.
+The observer samples frames and can miss shorter-lived changes.
+
+After copying the captures back, compare the packaged logo with the desktop
+pixels and check for a light/dark flash after the logo (Python with Pillow):
+
+```powershell
+py -3.13 tests/ui/check-startup-logo.py <capture-directory> <signed-candidate.msix>
+```
+
+Exit `0` confirms a logo during observed recovery with no detected handoff
+failure; `1` means failure; `2` means insufficient evidence. Inspect the
+sequence for blank frames and theme changes even when the logo matches.
 
 For the schema-compatibility startup gate, create a synthetic schema-8 database
 on the host using the Python standard library, then copy only that fixture into
