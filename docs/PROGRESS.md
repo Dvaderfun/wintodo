@@ -15,16 +15,18 @@ Row completion and My Day edits update the list and open detail; all-day tasks
 keep their calendar date in Planned and in accessible row labels. The Store
 version below predates these changes.
 
-My Day Suggestions (UX-19) is implemented in the working copy under ADR-025.
+My Day Suggestions (UX-19) is implemented under ADR-025.
 The right-hand sidebar opens from the header beside the overflow menu and lists overdue
 tasks under Earlier and future tasks under Later. Recently added appears immediately
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.238** is the signed x64 Native
-AOT build of `80ace690`. It restores 16 DIPs between the My Day date and
-the Add a task box. It also includes the Suggestions layout, recurrence and
-editor corrections on top of PR #11 and retains the Repeat changes from #10.
+**Private DEV installer:** Wintodo DEV **1.0.1.241** is the signed x64 Native
+AOT build of `041880a`. My Day keeps 16 DIPs between the date and the Add a
+task box. This build also preserves focus when opening task details and
+distinguishes a saved suggestion from a failed write. It includes the original
+contribution in [#11](https://github.com/Dvaderfun/wintodo/pull/11) and retains
+the Repeat changes from #10.
 The installer keeps the separate DEV identity and
 [owner-tested appearance](design/hybrid-preview.md). See the
 [Suggestions walkthrough and sample tasks](guides/my-day-suggestions-preview.md)
@@ -368,6 +370,26 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-24 — Final Suggestions review (UX-19)
+
+Completing a suggestion can commit even if the detail read that follows fails.
+The sidebar now reports the saved change in that case; retry guidance is
+reserved for a failed write. Explicit dismissal restores focus to the lightbulb,
+while opening a task from the main list leaves focus on that task.
+
+The x64 build passed with zero warnings. A unit run during compilation passed
+748/749: the My Day query took 5.036 ms against its 5 ms budget. After the
+build finished, all 749 passed and the same query measured 3.078 ms.
+[Hosted CI](https://github.com/Dvaderfun/wintodo/actions/runs/45477805694)
+also passed all 749 tests. The VM layout gate confirmed that explicit
+dismissal and opening a task give focus to the appropriate control. My Day's
+first VM run lost an automation peer in the existing row-completion check.
+The unchanged gate passed from a clean checkpoint, including confirmation of
+a saved recurring completion after a failed read and Undo restoring the prior
+date and history. The x64 DEV .241 MSIX passed signature, structure and payload
+privacy checks. See [PR #13](https://github.com/Dvaderfun/wintodo/pull/13)
+for the signed installer update check.
 
 ### 2026-11-24 — My Day date spacing (UX-19)
 
