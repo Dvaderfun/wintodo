@@ -276,6 +276,34 @@ public sealed partial class TaskListView : UserControl
         {
             ApplyUndoState();
         }
+        else if (args.PropertyName == nameof(TaskListViewModel.HasSubtitle) && !ViewModel.HasSubtitle)
+        {
+            ViewModel.CloseSuggestions();
+        }
+        else if (args.PropertyName == nameof(TaskListViewModel.IsSuggestionsOpen))
+        {
+            bool opening = ViewModel.IsSuggestionsOpen;
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                if (!ViewModel.HasSubtitle || opening != ViewModel.IsSuggestionsOpen) return;
+                if (opening) CloseSuggestionsButton.Focus(FocusState.Keyboard);
+                else if (ViewModel.SuggestionsDismissedByUser) SuggestionsButton.Focus(FocusState.Keyboard);
+            });
+        }
+    }
+
+    public static GridLength SuggestionsColumnWidth(bool open) =>
+        open ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
+
+    private bool IsSuggestionActionFocused()
+    {
+        if (!ViewModel.IsSuggestionsOpen || XamlRoot is null) return false;
+        for (var element = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+            element is not null; element = VisualTreeHelper.GetParent(element))
+        {
+            if (ReferenceEquals(element, SuggestionsSidebar)) return true;
+        }
+        return false;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs args)
@@ -881,7 +909,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAcceleratorInvokedEventArgs args)
     {
 
-        if (IsTextInputFocused()) return;
+        if (IsTextInputFocused() || IsSuggestionActionFocused()) return;
         ViewModel.ToggleSelectedCompletionCommand.Execute(null);
         args.Handled = ViewModel.SelectionCount > 0;
     }
@@ -890,7 +918,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
-        if (ViewModel.SelectedTask is null || IsTextInputFocused())
+        if (ViewModel.SelectedTask is null || IsTextInputFocused() || IsSuggestionActionFocused())
         {
             return;
         }
@@ -1003,7 +1031,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAcceleratorInvokedEventArgs args)
     {
 
-        if (IsTextInputFocused()) return;
+        if (IsTextInputFocused() || IsSuggestionActionFocused()) return;
         ViewModel.ToggleSelectedImportanceCommand.Execute(null);
         args.Handled = ViewModel.SelectionCount > 0;
     }
@@ -1013,7 +1041,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAcceleratorInvokedEventArgs args)
     {
 
-        if (IsTextInputFocused()) return;
+        if (IsTextInputFocused() || IsSuggestionActionFocused()) return;
         ViewModel.ToggleSelectedMyDayCommand.Execute(null);
         args.Handled = ViewModel.SelectionCount > 0;
     }
@@ -1023,7 +1051,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAcceleratorInvokedEventArgs args)
     {
 
-        if (IsTextInputFocused()) return;
+        if (IsTextInputFocused() || IsSuggestionActionFocused()) return;
         ViewModel.DeleteSelectedTaskCommand.Execute(null);
         args.Handled = ViewModel.SelectionCount > 0;
     }
@@ -1043,6 +1071,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+        if (IsSuggestionActionFocused()) return;
         if (ViewModel.SelectedTask is not null)
         {
             ViewModel.BeginEditSelectedTaskCommand.Execute(null);
@@ -1059,6 +1088,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+        if (IsSuggestionActionFocused()) return;
         ViewModel.MoveSelectedUpCommand.Execute(null);
         args.Handled = ViewModel.SelectedTask is not null;
     }
@@ -1067,6 +1097,7 @@ public sealed partial class TaskListView : UserControl
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+        if (IsSuggestionActionFocused()) return;
         ViewModel.MoveSelectedDownCommand.Execute(null);
         args.Handled = ViewModel.SelectedTask is not null;
     }
@@ -1087,7 +1118,7 @@ public sealed partial class TaskListView : UserControl
 
     private bool MoveSelection(int offset)
     {
-        if (IsTextInputFocused() || TasksList.Items.Count == 0)
+        if (IsTextInputFocused() || IsSuggestionActionFocused() || TasksList.Items.Count == 0)
         {
             return false;
         }

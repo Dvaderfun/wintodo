@@ -173,7 +173,9 @@ Width `*`, horizontal padding **24**, top padding **16**, bottom padding **0**
   choices. User-list sort settings, including reset, persist; smart-list sorts
   retain their existing session/navigation behavior.
   Owner acknowledged UX-14 on 2026-10-18; see ADR-014.
-- Header spacing to composer: **16**.
+- Header spacing to composer: **16**. On My Day, measure from the bottom of
+  the last date line to the top of the composer (or the sort chip when shown).
+  The date and its margin collapse together on lists without a subtitle.
 
 ### 3.2 Add-task composer
 
@@ -238,11 +240,30 @@ Smart lists prefill the new task so it lands where it was typed:
 
 | List | Prefill |
 |---|---|
-| My Day | `MyDayDate = today` |
+| My Day | Pinned today or due today, respecting same-day removal |
 | Important | `Priority = High` |
 | Planned | Due chip preset to **Today** |
 | All / user list | Nothing |
 | Completed | Composer hidden — a completed task cannot be composed |
+
+The **Suggestions** lightbulb sits immediately before the My Day overflow menu.
+Header actions have 8 DIPs between visible buttons; on other lists, Sort and
+the overflow menu are adjacent. The My Day date has its own row across the
+list header so the actions cannot crop it when Suggestions is open.
+The sidebar shares the My Day theme background. Its list scrolls to the
+bottom and right edges; row actions stay 20 DIPs inside the right edge to
+leave room for the expanded scrollbar. Overdue dates use the theme's
+critical text color.
+The sidebar lists overdue tasks under **Earlier**, future tasks in due-date
+order under **Later**, due-today tasks removed from My Day, and undated tasks
+pinned yesterday. **Recently added** shows remaining tasks created today or
+up to three local calendar days ago. Other undated tasks appear under
+**No Due Date**. Tasks already in
+My Day, completed tasks, cancelled tasks, and steps are excluded. Each row can
+add the task to My Day or complete it with the empty completion circle without
+closing the sidebar. Escape and the close button return keyboard focus to the
+lightbulb. Selecting a task from the main list closes Suggestions and leaves
+focus on the selected task.
 
 My Day shows tasks manually added today and tasks due today in the local
 calendar. Removing a task hides it from My Day for the current day and keeps

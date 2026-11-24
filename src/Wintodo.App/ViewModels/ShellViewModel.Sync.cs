@@ -283,6 +283,7 @@ public sealed partial class ShellViewModel
     {
         SyncRunResult result = await _syncService.SyncAllAsync(cancellationToken);
         await RefreshNavigationAsync(cancellationToken);
+        TaskList.RefreshOpenSuggestions();
         if (promptConflicts && result.Conflicts.Count > 0)
         {
             SyncConflictsRequested?.Invoke(result.Conflicts);

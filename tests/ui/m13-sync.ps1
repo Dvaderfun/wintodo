@@ -8,6 +8,8 @@ param(
     [Parameter(Mandatory)]
     [string]$DatabasePath,
     [Parameter(Mandatory)]
+    [string]$ClockFile,
+    [Parameter(Mandatory)]
     [string]$ArtifactDirectory
 )
 # Local desktop input requires explicit owner permission for this session.
@@ -60,6 +62,16 @@ function Take-Screenshot {
 
     winapp ui screenshot -a $AppPid -o (Join-Path $ArtifactDirectory $Name) 2>$null |
         Out-Null
+}
+
+function Set-RemoteSuggestion([string]$Uid, [switch]$Completed) {
+    $status = if ($Completed) { 'COMPLETED' } else { 'NEEDS-ACTION' }
+    $sequence = if ($Completed) { 2 } else { 1 }
+    $calendar = @('BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Wintodo//M13 Fixture//EN',
+        'BEGIN:VTODO', "UID:$Uid", 'DTSTAMP:20261120T120000Z', "SUMMARY:$Uid", "SEQUENCE:$sequence",
+        "STATUS:$status", 'END:VTODO', 'END:VCALENDAR', '') -join "`r`n"
+    Invoke-RestMethod -Method Put -Uri "http://127.0.0.1:$ServerPort/cal/tasks/$Uid.ics" `
+        -ContentType 'text/calendar; charset=utf-8' -Body $calendar | Out-Null
 }
 
 Test-UI "Fresh database hides the navigation sync status" {
@@ -128,8 +140,43 @@ Test-UI "Per-list sync toggle changes" {
     winapp ui wait-for $toggle.selector -w $mainHwnd -p IsEnabled --value "True" -t 10000
 }
 Test-UI "Manual Sync now succeeds" {
+    Set-RemoteSuggestion 'suggestion-original'
     winapp ui invoke "Todo.Settings.Sync.Now" -w $mainHwnd
     winapp ui wait-for "Todo.Settings.Sync.Status" -w $mainHwnd --value "Up to date" -t 10000
+}
+Test-UI 'Open Suggestions reflects a remote add and completion after background sync' {
+    winapp ui invoke 'Todo.Nav.MyDay' -w $mainHwnd
+    winapp ui wait-for 'Todo.Suggestions.Open' -w $mainHwnd -p IsOffscreen --value 'False' -t 5000
+    winapp ui invoke 'Todo.Suggestions.Open' -w $mainHwnd
+    winapp ui wait-for 'Todo.Suggestions.Add.suggestion-original' -w $mainHwnd -t 10000
+    winapp ui wait-for 'Todo.Suggestions.Add.suggestion-new' -w $mainHwnd --gone -t 3000
+
+    Set-RemoteSuggestion 'suggestion-original' -Completed
+    Set-RemoteSuggestion 'suggestion-new'
+    # Activation syncs after one minute; advance only the app's clock within the same day.
+    # The gate makes no SQLite writes and leaves the same My Day pane open throughout.
+    Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class M13GateWindow {
+    [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
+}
+'@
+    $handle = if ("$mainHwnd" -match '^0x') { [IntPtr]::new([Convert]::ToInt64("$mainHwnd".Substring(2), 16)) }
+        else { [IntPtr]::new([long]$mainHwnd) }
+    [M13GateWindow]::ShowWindowAsync($handle, 6) | Out-Null
+    Start-Sleep -Milliseconds 500
+    $time = [DateTime]::new(2026, 11, 20, 12, 2, 0).ToUniversalTime()
+    [IO.File]::WriteAllText("$ClockFile.next", $time.ToString('O'))
+    [IO.File]::Move("$ClockFile.next", $ClockFile, $true)
+    [M13GateWindow]::ShowWindowAsync($handle, 9) | Out-Null
+    [M13GateWindow]::SetForegroundWindow($handle) | Out-Null
+
+    winapp ui wait-for 'Todo.Suggestions.Add.suggestion-new' -w $mainHwnd -t 15000
+    winapp ui wait-for 'Todo.Suggestions.Add.suggestion-original' -w $mainHwnd --gone -t 5000
+    winapp ui wait-for 'Todo.Suggestions.Close' -w $mainHwnd -p IsOffscreen --value 'False' -t 3000
+    Take-Screenshot '02a-open-suggestions-after-sync.png'
 }
 Test-UI "Restart restores account and resumes sync" {
     Stop-Process -Id $script:AppPid -ErrorAction Stop
@@ -138,7 +185,7 @@ Test-UI "Restart restores account and resumes sync" {
         --detach `
         --json `
         -- `
-        --database-path $DatabasePath |
+        --database-path $DatabasePath --clock-file $ClockFile |
         ConvertFrom-Json
     if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) {
         throw "Wintodo restart failed."

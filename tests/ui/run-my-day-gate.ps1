@@ -217,11 +217,131 @@ public static class MyDayGateWriteLock
     Ui @('wait-for', $otherRow, '-t', '5000') | Out-Null
     Ui @('invoke', $otherRow) | Out-Null
     $otherComplete = $otherRow.Replace('Todo.Row.', 'Todo.Row.CompleteToggle.')
-    Ui @('invoke', $otherComplete, '--action', 'toggle-on') | Out-Null
-    Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'On', '-t', '5000') | Out-Null
-    Ui @('invoke', $otherComplete, '--action', 'toggle-off') | Out-Null
+    # Selecting the task can rebind its row. Wait for that selection, then click
+    # once: a TogglePattern call can retain the recycled checkbox peer.
+    Ui @('wait-for', 'Todo.Detail.Title', '--value', $otherTitle, '-t', '5000') | Out-Null
     Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'Off', '-t', '5000') | Out-Null
-    Write-Host 'My Day UI gate: PASS (inclusion, dismissal, undo, pin, rollover, row due date, recurring completion, switch during save)'
+    Ui @('click', $otherComplete) | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'On', '-t', '5000') | Out-Null
+    # A completed row may move under a collapsed group. The same task stays in detail.
+    Ui @('click', 'Todo.Detail.Complete') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'Off', '-t', '5000') | Out-Null
+    Ui @('wait-for', $otherRow, '--property', 'Name', '--value', 'not completed', '--contains', '-t', '5000') | Out-Null
+
+    Ui @('wait-for', 'Todo.Suggestions.Open', '--gone', '-t', '5000') | Out-Null
+    $overdueRow = Add-GateTask 'Overdue suggestion gate task'
+    Ui @('invoke', $overdueRow) | Out-Null
+    Ui @('invoke', 'Todo.Detail.Due') | Out-Null
+    Ui @('invoke', 'Todo.Detail.Due.Today') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Today', '-t', '5000') | Out-Null
+    Set-TestClock ([DateTime]::new(2026, 11, 22, 12, 0, 0))
+    $futureRow = Add-GateTask 'Upcoming suggestion gate task'
+    Ui @('invoke', $futureRow) | Out-Null
+    Ui @('invoke', 'Todo.Detail.Due') | Out-Null
+    Ui @('invoke', 'Todo.Detail.Due.Tomorrow') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Tomorrow', '-t', '5000') | Out-Null
+    $recentRow = Add-GateTask 'Recently added suggestion gate task'
+    Ui @('invoke', 'Todo.Nav.MyDay') | Out-Null
+    Ui @('invoke', 'Todo.Suggestions.Open') | Out-Null
+    Ui @('wait-for', 'Todo.Suggestions.Close', '-t', '5000') | Out-Null
+    $addOverdue = $overdueRow.Replace('Todo.Row.', 'Todo.Suggestions.Add.')
+    $completeFuture = $futureRow.Replace('Todo.Row.', 'Todo.Suggestions.Complete.')
+    $addRecent = $recentRow.Replace('Todo.Row.', 'Todo.Suggestions.Add.')
+    Ui @('wait-for', $addOverdue, '-t', '5000') | Out-Null
+    Ui @('wait-for', $completeFuture, '-t', '5000') | Out-Null
+    Ui @('wait-for', $addRecent, '-t', '5000') | Out-Null
+    $suggestionTree = (Ui @('inspect', '--depth', '30', '--json')) -join "`n"
+    $overdueIndex = $suggestionTree.IndexOf($addOverdue, [StringComparison]::Ordinal)
+    $futureIndex = $suggestionTree.IndexOf($completeFuture, [StringComparison]::Ordinal)
+    $recentIndex = $suggestionTree.IndexOf($addRecent, [StringComparison]::Ordinal)
+    if ($overdueIndex -lt 0 -or $futureIndex -le $overdueIndex -or $recentIndex -le $futureIndex) {
+        throw 'Expected earlier, future, and recently added suggestions in that order.'
+    }
+    foreach ($heading in @('Earlier', 'Later', 'Recently added')) {
+        if (-not $suggestionTree.Contains('"' + $heading + '"')) {
+            throw "Expected suggestion heading '$heading'."
+        }
+    }
+    Ui @('screenshot', '-o', (Join-Path $artifacts 'suggestions.png')) | Out-Null
+    Ui @('invoke', $addOverdue) | Out-Null
+    Ui @('wait-for', $addOverdue, '--gone', '-t', '5000') | Out-Null
+    Ui @('invoke', $completeFuture) | Out-Null
+    Ui @('wait-for', $completeFuture, '--gone', '-t', '5000') | Out-Null
+    Ui @('send-keys', 'escape', '--via', 'send-input') | Out-Null
+    Ui @('wait-for', 'Todo.Suggestions.Close', '--gone', '-t', '5000') | Out-Null
+    Ui @('wait-for', $overdueRow, '-t', '5000') | Out-Null
+    Ui @('invoke', 'Todo.Nav.DefaultList') | Out-Null
+    Ui @('wait-for', $overdueRow, '-t', '5000') | Out-Null
+
+    . (Join-Path $PSScriptRoot 'SuggestionsFixtureSql.ps1')
+    $repeatRow = Add-GateTask 'Daily suggestion fixture'
+    $seed = "UPDATE tasks SET due_utc='2026-11-23', due_is_date_only=1, rrule='FREQ=DAILY', sequence=sequence+1 WHERE summary='Daily suggestion fixture'; SELECT changes();"
+    if ((Invoke-SuggestionsFixtureSql $database $seed) -ne '1') { throw 'Could not seed the daily occurrence.' }
+    Ui @('invoke', 'Todo.Nav.MyDay') | Out-Null
+    Ui @('invoke', 'Todo.Suggestions.Open') | Out-Null
+    $completeRepeat = $repeatRow.Replace('Todo.Row.', 'Todo.Suggestions.Complete.')
+    Ui @('wait-for', $completeRepeat, '-t', '5000') | Out-Null
+    # Another writer reschedules the task while this exact row is displayed. Both occurrences are eligible.
+    $advance = "UPDATE tasks SET due_utc='2026-11-24', sequence=sequence+1 WHERE summary='Daily suggestion fixture' AND due_utc='2026-11-23'; SELECT changes();"
+    if ((Invoke-SuggestionsFixtureSql $database $advance) -ne '1') { throw 'Could not advance the test occurrence.' }
+    Ui @('invoke', $completeRepeat) | Out-Null
+    Ui @('wait-for', 'Todo.Suggestions.Status', '--property', 'Name', '--contains', '--value', 'try again', '-t', '5000') | Out-Null
+    $occurrenceState = "SELECT t.due_utc || '|' || (SELECT count(*) FROM completion_history h WHERE h.task_uid=t.uid) FROM tasks t WHERE t.summary='Daily suggestion fixture';"
+    if ((Invoke-SuggestionsFixtureSql $database $occurrenceState) -ne '2026-11-24|0') { throw 'The stale action completed the replacement occurrence.' }
+    # An intentional click on the refreshed row must still work.
+    Ui @('wait-for', $completeRepeat, '--property', 'IsEnabled', '--value', 'True', '-t', '5000') | Out-Null
+    Ui @('invoke', $completeRepeat) | Out-Null
+    $retryDeadline = [DateTime]::UtcNow.AddSeconds(5)
+    while ((Invoke-SuggestionsFixtureSql $database $occurrenceState) -ne '2026-11-25|1') {
+        if ([DateTime]::UtcNow -ge $retryDeadline) { throw 'The refreshed occurrence did not advance exactly once.' }
+        Start-Sleep -Milliseconds 100
+    }
+    Ui @('wait-for', $completeRepeat, '--property', 'IsEnabled', '--value', 'True', '-t', '5000') | Out-Null
+
+    # Let the next write commit, then fail its detail read without breaking the list query.
+    $failRead = @'
+CREATE TRIGGER fail_suggestion_read AFTER UPDATE OF due_utc ON tasks
+WHEN NEW.summary='Daily suggestion fixture' AND NEW.due_utc='2026-11-26'
+BEGIN
+    INSERT INTO attachments(task_id,file_name,relative_path,size_bytes,added_utc)
+    VALUES(NEW.id,'read-fixture.txt','suggestions-read-fixture.txt',0,'invalid-fixture-date');
+END;
+'@
+    Invoke-SuggestionsFixtureSql $database $failRead | Out-Null
+    try {
+        Ui @('invoke', $completeRepeat) | Out-Null
+        Ui @('wait-for', 'Todo.Suggestions.Status', '--property', 'Name', '--contains', '--value', 'Your change was saved', '-t', '5000') | Out-Null
+        if ((Invoke-SuggestionsFixtureSql $database $occurrenceState) -ne '2026-11-26|2') { throw 'The saved action did not advance exactly one occurrence.' }
+    } finally {
+        Invoke-SuggestionsFixtureSql $database "DROP TRIGGER fail_suggestion_read; DELETE FROM attachments WHERE relative_path='suggestions-read-fixture.txt';" | Out-Null
+    }
+    Ui @('send-keys', 'ctrl+vk=0x5A', '--via', 'send-input') | Out-Null
+    $undoDeadline = [DateTime]::UtcNow.AddSeconds(5)
+    while ((Invoke-SuggestionsFixtureSql $database $occurrenceState) -ne '2026-11-25|1') {
+        if ([DateTime]::UtcNow -ge $undoDeadline) { throw 'Undo did not restore the prior occurrence and its completion history after the failed refresh.' }
+        Start-Sleep -Milliseconds 100
+    }
+    Ui @('invoke', 'Todo.Suggestions.Close') | Out-Null
+
+    # Reject only this synthetic text write. A failed flush must leave the editor, draft and error visible.
+    Ui @('invoke', $overdueRow) | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Note', '-t', '5000') | Out-Null
+    $reject = "CREATE TRIGGER reject_suggestion_draft BEFORE UPDATE OF description ON tasks WHEN NEW.description='Suggestions recovery fixture' BEGIN SELECT RAISE(ABORT, 'fixture write failure'); END;"
+    Invoke-SuggestionsFixtureSql $database $reject | Out-Null
+    try {
+        Ui @('set-value', 'Todo.Detail.Note', 'Suggestions recovery fixture') | Out-Null
+        Ui @('invoke', 'Todo.Suggestions.Open') | Out-Null
+        Ui @('wait-for', 'Todo.Detail.Error', '-t', '5000') | Out-Null
+        Ui @('wait-for', 'Todo.Detail.Note', '--value', 'Suggestions recovery fixture', '-t', '5000') | Out-Null
+        Ui @('wait-for', 'Todo.Suggestions.Close', '--gone', '-t', '3000') | Out-Null
+        if ((Invoke-SuggestionsFixtureSql $database "SELECT count(*) FROM tasks WHERE description='Suggestions recovery fixture';") -ne '0') { throw 'Expected a failed write.' }
+    } finally {
+        Invoke-SuggestionsFixtureSql $database 'DROP TRIGGER reject_suggestion_draft;' | Out-Null
+    }
+    Ui @('invoke', 'Todo.Suggestions.Open') | Out-Null
+    Ui @('wait-for', 'Todo.Suggestions.Close', '-t', '5000') | Out-Null
+    if ((Invoke-SuggestionsFixtureSql $database "SELECT count(*) FROM tasks WHERE summary='Overdue suggestion gate task' AND description='Suggestions recovery fixture';") -ne '1') { throw 'Retry did not persist the draft to its original task.' }
+    Write-Host 'My Day UI gate: PASS (membership, undo, rollover, recurrence, pending writes, Suggestions, stale occurrence, saved action with failed refresh, failed-save recovery)'
 } finally {
     Stop-Process -Id $appPid -ErrorAction SilentlyContinue
 }

@@ -1289,4 +1289,23 @@ xunit.v3 4.0.3 — Apache-2.0</value></data>
   <data name="Database_NewerSchemaTitle" xml:space="preserve"><value>A newer version of Wintodo is needed</value></data>
   <data name="Database_NewerSchemaMessage" xml:space="preserve"><value>This database was updated by a newer version of Wintodo. Update Wintodo to open it. Your tasks have not been changed.</value></data>
   <data name="Database_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="SuggestionsButton.AutomationProperties.Name" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="SuggestionsButton.ToolTipService.ToolTip" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="CloseSuggestionsButton.AutomationProperties.Name" xml:space="preserve"><value>Close suggestions</value></data>
+  <data name="CloseSuggestionsButton.ToolTipService.ToolTip" xml:space="preserve"><value>Close suggestions</value></data>
+  <data name="SuggestionsTitle.Text" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="SuggestionsList.AutomationProperties.Name" xml:space="preserve"><value>Suggested tasks</value></data>
+  <data name="Suggestions_Overdue" xml:space="preserve"><value>Earlier</value></data>
+  <data name="Suggestions_Today" xml:space="preserve"><value>Due today</value></data>
+  <data name="Suggestions_Upcoming" xml:space="preserve"><value>Later</value></data>
+  <data name="Suggestions_Yesterday" xml:space="preserve"><value>From yesterday</value></data>
+  <data name="Suggestions_RecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
+  <data name="Suggestions_Undated" xml:space="preserve"><value>No Due Date</value></data>
+  <data name="Suggestions_Loading" xml:space="preserve"><value>Loading suggestions…</value></data>
+  <data name="Suggestions_Empty" xml:space="preserve"><value>You have no suggested tasks.</value></data>
+  <data name="Suggestions_LoadFailed" xml:space="preserve"><value>Suggestions couldn’t load. Reopen Suggestions to retry.</value></data>
+  <data name="Suggestions_ActionFailed" xml:space="preserve"><value>The task couldn’t be updated. Review the suggestions and try again.</value></data>
+  <data name="Suggestions_SavedRefreshFailed" xml:space="preserve"><value>Your change was saved. Switch lists and return to My Day to refresh.</value></data>
+  <data name="Suggestions_AddTask" xml:space="preserve"><value>Add {0} to My Day</value></data>
+  <data name="Suggestions_CompleteTask" xml:space="preserve"><value>Complete {0}</value></data>
 </root>

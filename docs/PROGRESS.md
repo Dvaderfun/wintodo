@@ -15,12 +15,22 @@ Row completion and My Day edits update the list and open detail; all-day tasks
 keep their calendar date in Planned and in accessible row labels. The Store
 version below predates these changes.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.224** is the
-signed x64 build of `c7400210`. Choosing Repeat now sets an undated task due
-today; checking it off advances its due date. The build keeps the My Day
-changes above and the [owner-tested appearance](design/hybrid-preview.md).
-WintodoTest verified the update from .222 with an existing undated daily task
-and note. See the [installer guide](guides/design-dev-preview.md).
+My Day Suggestions (UX-19) is implemented under ADR-025.
+The right-hand sidebar opens from the header beside the overflow menu and lists overdue
+tasks under Earlier and future tasks under Later. Recently added appears immediately
+above No Due Date. Add and complete actions preserve the source
+list and use existing undo and recurrence paths.
+
+**Private DEV installer:** Wintodo DEV **1.0.1.241** is the signed x64 Native
+AOT build of `041880a`. My Day keeps 16 DIPs between the date and the Add a
+task box. This build also preserves focus when opening task details and
+distinguishes a saved suggestion from a failed write. It includes the original
+contribution in [#11](https://github.com/Dvaderfun/wintodo/pull/11) and retains
+the Repeat changes from #10.
+The installer keeps the separate DEV identity and
+[owner-tested appearance](design/hybrid-preview.md). See the
+[Suggestions walkthrough and sample tasks](guides/my-day-suggestions-preview.md)
+or the [installer guide](guides/design-dev-preview.md).
 
 As of 2026-11-21:
 
@@ -360,6 +370,92 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-24 — Final Suggestions review (UX-19)
+
+Completing a suggestion can commit even if the detail read that follows fails.
+The sidebar now reports the saved change in that case; retry guidance is
+reserved for a failed write. Explicit dismissal restores focus to the lightbulb,
+while opening a task from the main list leaves focus on that task.
+
+The x64 build passed with zero warnings. A unit run during compilation passed
+748/749: the My Day query took 5.036 ms against its 5 ms budget. After the
+build finished, all 749 passed and the same query measured 3.078 ms.
+[Hosted CI](https://github.com/Dvaderfun/wintodo/actions/runs/45477805694)
+also passed all 749 tests. The VM layout gate confirmed that explicit
+dismissal and opening a task give focus to the appropriate control. My Day's
+first VM run lost an automation peer in the existing row-completion check.
+The unchanged gate passed from a clean checkpoint, including confirmation of
+a saved recurring completion after a failed read and Undo restoring the prior
+date and history. The x64 DEV .241 MSIX passed signature, structure and payload
+privacy checks. See [PR #13](https://github.com/Dvaderfun/wintodo/pull/13)
+for the signed installer update check.
+
+### 2026-11-24 — My Day date spacing (UX-19)
+
+In DEV .236 the date line box ended immediately against the Add a task border.
+The My Day subtitle now reserves the 16 DIPs specified for the header; its margin
+collapses with the subtitle on other lists. The x64 build passed with zero warnings.
+All 749 unit tests passed. WintodoTest measured 16 DIPs from the date line box
+to the rendered border with Suggestions open and closed at both 640 and 960
+DIPs; the same measurement on .236 was zero. The existing narrow-date, empty
+state, scrolling and Add-button checks also passed. Updating the signed DEV
+installer from .236 to .238 in WintodoTest preserved the test task's UID and note.
+
+### 2026-11-24 — UX-19 owner review corrections
+
+The My Day header gives the full date its own row and reserves gaps only for
+visible controls. The empty prompt can grow around its existing 40% anchor.
+The Suggestions viewport reaches the bottom edge and leaves a separate gutter
+for its scrollbar. Add and Complete now carry the displayed occurrence into the
+transaction. Completed syncs and source-list deletion refresh the open sidebar;
+switching from detail keeps an unsaved draft visible if its write fails.
+The x64 build passed without warnings; all 749 unit tests passed. See the
+[functional and visual walkthrough](guides/my-day-suggestions-preview.md).
+
+WintodoTest's My Day gate rejected an outdated recurring row, advanced the
+fresh occurrence exactly once and retained a failed note draft for retry.
+The CalDAV gate passed 12/12, including task addition and completion on a
+second client while Suggestions stayed open. All eight signed upgrade checks
+passed from DEV .235 to .236, including preservation of task identity and notes.
+The 640-DIP visual gate measured the same date pixels as at 960 DIPs, both
+empty-state lines fully visible, an 8-DIP Sort/menu gap outside My Day, and
+no gap under the viewport. The expanded scrollbar cleared the Add hitbox by
+10 DIPs; a click on its right edge added the intended task. The freshly
+installed .236 also passed Add/Complete and keyboard focus in Desert contrast.
+
+### 2026-11-24 — My Day suggestion sections
+
+- Renamed the overdue and future headings to Earlier and Later. Added Recently
+  added for eligible tasks created today or up to three local calendar days ago.
+- The x64 build passed with zero warnings and all 746 tests passed. The My Day
+  UI gate could not start because the Hyper-V `Get-VMCheckpoint` cmdlet was unavailable.
+
+### 2026-11-24 — UX-19 Suggestions sidebar
+
+- Moved Suggestions into a right-hand sidebar with a close button and Escape
+  support. Opening task details replaces the sidebar.
+- Aligned the sidebar to the top and right edges of the My Day surface and
+  kept the header actions beside the sidebar.
+- Shared My Day's theme background and used empty completion circles with the
+  selected list accent.
+- Colored overdue dates in Suggestions with the same critical brush as task rows.
+- Made the My Day header lightbulb icon-only, with a tooltip and accessible name.
+- Included other unfinished tasks without a due date in a No Due Date section.
+- Kept task-list shortcuts from acting on a selection while focus is in the
+  sidebar and discarded pending actions when their sidebar session closes.
+- The x64 warnings-as-errors build and all 745 unit tests passed. The updated
+  My Day UI gate could not start because `Get-VMCheckpoint` was unavailable.
+
+### 2026-11-23 — UX-19 My Day Suggestions
+
+- Added the native lightbulb and labeled header trigger, ordered sections,
+  and one-click add and complete actions.
+- Added tests for local-date ordering, carry-over, excluded tasks, and stale
+  suggestion writes. All 745 x64 tests passed.
+- Extended the My Day UI gate with suggestion ordering, add, complete, and
+  source-list verification. The VM gate could not start because the host
+  session lacks the Hyper-V PowerShell module (`Get-VMCheckpoint`).
 
 One entry per milestone or change. Append, never rewrite history.
 
