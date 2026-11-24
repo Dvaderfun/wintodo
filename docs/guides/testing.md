@@ -160,6 +160,10 @@ Windows Desert contrast theme. The latter records and restores the actual
 guest palette. Keep these diagnostics separate from ordinary startup timings.
 The observer samples frames and can miss shorter-lived changes.
 
+Add `'-CaptureMotion'` to record two fresh launches with the same saved list,
+theme and bounds. The guest verifies Windows client animations are enabled in
+`motion-on`, disables them for `motion-off`, and restores the original setting.
+
 After copying the captures back, compare the packaged logo with the desktop
 pixels and check for a light/dark flash after the logo (Python with Pillow):
 
@@ -170,6 +174,9 @@ py -3.13 tests/ui/check-startup-logo.py <capture-directory> <signed-candidate.ms
 Exit `0` confirms a logo during observed recovery with no detected handoff
 failure; `1` means failure; `2` means insufficient evidence. Inspect the
 sequence for blank frames and theme changes even when the logo matches.
+For a run with `-CaptureMotion`, also pass `--check-fade` to the pixel checker.
+It looks for intermediate frames where the logo fades and the controls appear
+together, then checks that the same launch cuts directly with animations off.
 
 For the schema-compatibility startup gate, create a synthetic schema-8 database
 on the host using the Python standard library, then copy only that fixture into

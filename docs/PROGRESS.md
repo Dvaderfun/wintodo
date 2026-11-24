@@ -21,11 +21,12 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.253** is the signed x64 Native
-AOT build of `ca32f963`. The correctly sized window shows Glide while the
-local view loads. In eight [recorded launches](PERF.md#2026-11-25--what-the-installed-app-actually-paints-during-launch)
-the first sampled app surface showed the logo; Light, Dark and Windows Desert
-retained their colors as the list appeared. The [trial](adr/ADR-026-branded-startup-preview.md)
+**Private DEV installer:** Wintodo DEV **1.0.1.255** is the signed x64 Native
+AOT build of `8e02e57e`. The window opens at its saved size, shows Glide while
+the local view loads, then fades the artwork over the ready list for 240 ms.
+Windows users with animation effects turned off get the immediate handoff.
+See the [recorded launches](PERF.md#2026-11-25--what-the-installed-app-actually-paints-during-launch).
+The [trial](adr/ADR-026-branded-startup-preview.md)
 is limited to Debug and private DEV. The sync timer exists only with a connected
 CalDAV account; minimizing stops the local-midnight display timer. See the
 [startup investigation](plans/2026-11-24-startup-and-minimized-work.md).
@@ -379,6 +380,23 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-25 — Fade the startup logo into the ready list (M9)
+
+DEV .253 removed the whole logo surface in the same UI turn that exposed
+the list. DEV .255 fades it over the ready, interactive shell for 240 ms.
+The normal path does not await the animation. Turning off Windows animation
+effects skips it; minimizing or closing stops an active fade. The newer-schema
+warning continues to open directly. No new timer or fixed logo hold.
+
+The x64 build passed with zero warnings or errors and all 756 unit tests passed.
+The signed Native AOT preview passed the structure, signature and privacy checks.
+In WintodoTest the newer-schema gate passed 5/5, and the signed startup gate
+passed placement, New Task, theme and recovery checks. A paired screen recording
+showed both partially faded artwork and emerging task controls with animations
+on, and a direct cut with animations off. A first run missed a window observer
+sample on a maximized launch; the unmodified repeat passed. See the
+[pixel measurements and recording IDs](PERF.md#2026-11-25--what-the-installed-app-actually-paints-during-launch).
 
 ### 2026-11-25 — Branded startup verified on the signed DEV installer (M9/M13)
 

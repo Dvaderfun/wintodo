@@ -838,3 +838,24 @@ interval is not a blank app screen. These measurements do not establish a
 general speedup, battery savings, or the deferred M9 budgets. Local captures,
 including `startup-handoff.png`:
 `tests/ui/artifacts/startup-placement/c105ee6be0c64a6fb724b851e477b447/`.
+
+**Fade trial .255** (`8e02e57e`). In .253 the normal-size recording went
+from the opaque logo to the finished list in adjacent samples 64 ms apart.
+In the first .255 normal-size recording, two separate regions of each image
+showed the blend: at 658, 718 and 772 ms the logo region was 16%, 55% and
+91% of the way to its final appearance, and the list controls were 16%, 56%
+and 91% visible. This measures displayed pixels, not input latency. The full
+first run did not pass: the window observer had a 546 ms gap on the second
+maximized restart and missed the hidden-to-visible boundary. Local captures:
+`tests/ui/artifacts/startup-placement/48f6d8ab188b4d11a1a71b17c7eceb11/`.
+
+The repeat on the same signed .255 package passed placement, Restore Down,
+New Task focus and entry, and saved-theme restoration. Two fresh processes
+used the same saved Dark window, list and task, changing only the verified
+Windows client-animation setting. With animations **on**, the logo/list
+regions progressed together: 17%/16% at 683 ms, 45%/45% at 732 ms and
+84%/83% at 795 ms. With animations **off**, the last opaque logo and first
+settled list were adjacent samples, 65 ms apart. Windows' original setting
+was restored. The dark handoff and real interrupted-import pixel checks also
+passed. Capture directory and natural-speed `startup-fade.gif`:
+`tests/ui/artifacts/startup-placement/c9f619a3fe0842819618a3ebe107b955/`.

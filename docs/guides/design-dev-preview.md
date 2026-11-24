@@ -10,8 +10,10 @@ For task opening, resizing, and note or step editing, use the [task details chec
 To compare the [logo-to-list startup trial](../adr/ADR-026-branded-startup-preview.md),
 set the app theme to the opposite of Windows, leave a list with a recognizable
 task selected, close normally, and open **Wintodo DEV** from Start. Look at the
-first visible window and the moment the list replaces the logo: both should
-use the saved theme. A very fast launch need not hold the logo on screen.
+first visible window: the logo should dissolve over the list without changing
+the saved theme. With **Settings → Accessibility → Visual effects → Animation
+effects** off in Windows, the handoff should be immediate. A very fast launch
+need not hold the logo on screen.
 
 To try the [startup fix](../plans/2026-11-24-startup-and-minimized-work.md),
 resize the window, close it normally, and reopen it from Start. It should

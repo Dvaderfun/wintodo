@@ -1,6 +1,6 @@
 """Offline signed-DEV pixel check (Python + Pillow); never captures a desktop.
 
-Usage: py -3.13 tests/ui/check-startup-logo.py <startup-placement/run-id> <candidate.msix>
+Usage: py -3.13 tests/ui/check-startup-logo.py <startup-placement/run-id> <candidate.msix> [--check-fade]
 0: recovery and applicable handoff checks passed; 1: a check failed; 2: inconclusive.
 Ordinary launches can go straight to content. Pixel sampling cannot rule out a flash
 between captures. Inspect the PNGs for other blank frames or visual defects.
@@ -12,6 +12,7 @@ import json
 import sys
 import zipfile
 from pathlib import Path
+from statistics import median
 
 from PIL import Image, ImageChops, ImageStat
 
@@ -119,7 +120,68 @@ def saved_theme_handoff(name, samples, visible_ms, max_gap_ms):
     return "PASS", "no sampled opposite-theme flash after the established logo"
 
 
-def check(root, package):
+def classify_fade(folder, frames, logo_hits, bounds, visible_ms):
+    # Use two disjoint regions of the *same* frame. A dimming logo alone does
+    # not establish a crossfade: the final list text/icons must also be emerging.
+    def pixels(row):
+        with Image.open(folder/row["image"]) as source:
+            return source.convert("RGB").crop(rect)
+
+    x,y,w,h = (bounds[k]/4 for k in ("X","Y","Width","Height"))
+    rect = tuple(round(v) for v in (x,y,x+w,y+h))
+    ready = pixels(frames[-1])
+    w,h = ready.size
+    for start, row in enumerate(frames):
+        if row["image"] in logo_hits and float(row["lastMs"]) >= visible_ms:
+            logo = pixels(row)
+            # Require the unblended package colors at the center, not an image
+            # still compositing over the desktop in the opening animation.
+            mark = [(i,j) for j in range(h//2-24,h//2+24) for i in range(w//2-24,w//2+24)
+                    if any(max(abs(a-b) for a,b in zip(logo.getpixel((i,j)), rgb)) < 6 for rgb in COLORS)]
+            if len(mark) >= 35:
+                break
+    else:
+        return "INCONCLUSIVE", "no established opaque logo"
+    controls = [(i,j) for j in range(h//10,h*2//5) for i in range(6,w-6)]
+    def contrasts(points):
+        result = []
+        for p in points:
+            a,b = logo.getpixel(p), ready.getpixel(p)
+            channel = max(range(3), key=lambda k: abs(b[k]-a[k]))
+            delta = b[channel] - a[channel]
+            if abs(delta) >= 55:
+                result.append((p,channel,a[channel],delta))
+        return result
+    regions = [contrasts(points) for points in (mark,controls)]
+    if min(map(len, regions)) < 35:
+        return "INCONCLUSIVE", "too few independently distinguishable logo or list pixels"
+
+    progress, last_opaque, cut_gap = [], None, None
+    for row in frames[start:]:
+        image = pixels(row)
+        # For each high-contrast pixel, estimate how much of its settled color
+        # is now present. Require agreement across the mark and real controls.
+        levels = [median((image.getpixel(p)[k]-a)/delta for p,k,a,delta in region) for region in regions]
+        first,last = float(row["firstMs"]), float(row["lastMs"])
+        if max(abs(v) for v in levels) <= .05:
+            last_opaque = last
+        elif max(abs(1-v) for v in levels) <= .05:
+            cut_gap = None if last_opaque is None else first-last_opaque
+            break
+        else:
+            last_opaque = None
+            if min(levels) >= .07 and max(levels) <= .93 and abs(levels[0]-levels[1]) <= .20:
+                progress.append((first,*levels))
+    else:
+        return "INCONCLUSIVE", "no settled end of handoff"
+    if progress:
+        return "FADE", ", ".join(f"{t:.0f} ms: {a:.0%}/{b:.0%}" for t,a,b in progress) + " (logo/list progress)"
+    if cut_gap is not None and 0 < cut_gap <= 100:
+        return "CUT", f"opaque logo to settled list in adjacent samples {cut_gap:.0f} ms apart"
+    return "INCONCLUSIVE", "missing or ambiguous intermediate samples"
+
+
+def check(root, package, require_fade=False):
     summary = read_json(root/"summary.json")
     with package.open("rb") as handle:
         digest = hashlib.file_digest(handle, "sha256").hexdigest()
@@ -138,6 +200,7 @@ def check(root, package):
 
     outcome, code = "INCONCLUSIVE: no separate recovery diagnostic", 2
     handoffs = []
+    motion = {}
     recordings = ["first-install"] + [Path(n).stem for n in summary["Launches"]]
     recovery_name = Path(summary["SeparateRecoveryDiagnostic"]).stem if summary.get("SeparateRecoveryDiagnostic") else None
     if recovery_name:
@@ -159,7 +222,7 @@ def check(root, package):
             cx,cy = installed_window_center(desktop, pixels(frames[-1]))
         box = (cx-48,cy-48,cx+48,cy+48)
         back = desktop.crop(box)
-        hits, recovery_samples, recovery_hits = [], [], []
+        hits, logo_hits, recovery_samples, recovery_hits = [], set(), [], []
         handoff_samples = []
         for frame in frames:
             first,last = float(frame["firstMs"]), float(frame["lastMs"])
@@ -167,6 +230,7 @@ def check(root, package):
             detected = first > 0 and score(image.crop(box),back,marks) >= 65
             if detected:
                 hits.append(f"{frame['image']}@{first:.0f}ms")
+                logo_hits.add(frame["image"])
             if name in ("saved-dark", "saved-light"):
                 levels = surface_levels(image, r)
                 handoff_samples.append((first, frame["image"], detected, levels))
@@ -182,6 +246,10 @@ def check(root, package):
                         if detected:
                             recovery_hits.append(frame["image"])
         print(f"{name}: {len(hits)} matching changed image(s); first {hits[0] if hits else 'none'}, last {hits[-1] if hits else 'none'}")
+        if require_fade and name in ("normal-1","motion-on","motion-off"):
+            kind, message = classify_fade(folder, frames, logo_hits, r, record["FirstVisibleUncloakedMs"])
+            print(f"{name} transition: {kind}: {message}")
+            motion[name] = (kind, record)
         if handoff_samples:
             status, message = saved_theme_handoff(name, handoff_samples,
                 record.get("FirstVisibleUncloakedMs") or record["FirstVisibleMs"], read_json(folder/"sampling.json")["maxSampleGapMs"])
@@ -195,13 +263,32 @@ def check(root, package):
             else:
                 outcome, code = "INCONCLUSIVE: no sufficiently sampled visible recovery interval", 2
     print("Recovery:", outcome)
+    if require_fade:
+        if not {"motion-on","motion-off"} <= motion.keys():
+            # Older signed baseline captures have only the normal animation setting.
+            print("Missing paired motion captures; normal-1 above is diagnostic only.")
+            handoffs.append("INCONCLUSIVE")
+        else:
+            state = read_json(root/"motion.json")
+            if state["Restored"] is not True or state["RestoredAnimationsEnabled"] != state["OriginalAnimationsEnabled"]:
+                raise ValueError("Windows client-animation state was not restored.")
+            if any(motion["motion-on"][1]["ExpectedWindow"][key] != motion["motion-off"][1]["ExpectedWindow"][key]
+                   for key in ("X","Y","Width","Height","Maximized")):
+                raise ValueError("Motion samples did not use the same window bounds.")
+            for name, wanted in (("motion-on","FADE"),("motion-off","CUT")):
+                kind, record = motion[name]
+                if record["ClientAnimationsEnabled"] is not (wanted == "FADE"):
+                    raise ValueError(f"{name}: Windows client-animation state is inconsistent.")
+                status = "PASS" if kind == wanted else "INCONCLUSIVE" if kind == "INCONCLUSIVE" else "FAIL"
+                handoffs.append(status)
+                print(f"{name}: {status} (expected {wanted}, observed {kind})")
     return 1 if code == 1 or "FAIL" in handoffs else 2 if code == 2 or "INCONCLUSIVE" in handoffs else 0
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) not in (3,4) or len(sys.argv) == 4 and sys.argv[3] != "--check-fade":
         sys.exit(__doc__)
     try:
-        sys.exit(check(Path(sys.argv[1]), Path(sys.argv[2])))
+        sys.exit(check(Path(sys.argv[1]), Path(sys.argv[2]), len(sys.argv) == 4))
     except (OSError, ValueError, KeyError, IndexError, TypeError, zipfile.BadZipFile) as error:
         sys.exit(f"ERROR: {error}")
