@@ -18,8 +18,6 @@ internal readonly record struct NotificationActivationResult(
 internal sealed class WindowsIntegrationService : IAsyncDisposable
 {
     private const string RecentListsSetting = "windows.recent_lists";
-    private const string NewTaskArgument = "wintodo:new-task";
-    private const string OpenListArgumentPrefix = "wintodo:list:";
 #if DEBUG
     internal const string DebugDatabasePathArgument = "debugDatabasePath";
     private readonly string? _debugDatabasePath;
@@ -49,13 +47,9 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
 #endif
     }
 
-    internal static string JumpListNewTaskArgument => NewTaskArgument;
-
     internal NotificationPreferences NotificationPreferences { get; }
 
     internal event Action<Exception>? NotificationSettingsFailed;
-
-    internal static string JumpListOpenListPrefix => OpenListArgumentPrefix;
 
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -499,7 +493,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
             jumpList.Items.Clear();
 
             JumpListItem newTask = JumpListItem.CreateWithArguments(
-                NewTaskArgument,
+                LaunchOptions.NewTaskArgument,
                 _resources.GetString("JumpList_NewTask"));
             newTask.Description = _resources.GetString("JumpList_NewTaskDescription");
             newTask.Logo = new Uri(
@@ -514,7 +508,7 @@ internal sealed class WindowsIntegrationService : IAsyncDisposable
                 }
 
                 JumpListItem item = JumpListItem.CreateWithArguments(
-                    OpenListArgumentPrefix + uid,
+                    LaunchOptions.OpenListArgumentPrefix + uid,
                     list.DisplayName);
                 item.GroupName = _resources.GetString("JumpList_RecentLists");
                 item.Description = string.Format(

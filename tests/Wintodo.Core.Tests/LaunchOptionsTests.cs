@@ -5,6 +5,21 @@ namespace Wintodo.Core.Tests;
 
 public sealed class LaunchOptionsTests
 {
+    [Theory]
+    [InlineData("wintodo:new-task")]
+    [InlineData("wintodo:list:67c2f4dc-3084-4f01-8177-eecfc0ad9446")]
+    public void JumpList_RecognizesPublishedDesktopArguments(string token) =>
+        Assert.Equal(token, LaunchOptions.GetJumpListArgument(["Wintodo.exe", token]));
+
+    [Fact]
+    public void JumpList_RejectsOtherLaunchesAndOptionValues()
+    {
+        Assert.Null(LaunchOptions.GetJumpListArgument(["wintodo:new-task"]));
+        Assert.Null(LaunchOptions.GetJumpListArgument(["Wintodo.exe", "--database-path", "wintodo:new-task"]));
+        Assert.Null(LaunchOptions.GetJumpListArgument(["Wintodo.exe", "WINTODO:NEW-TASK"]));
+        Assert.Null(LaunchOptions.GetJumpListArgument(["Wintodo.exe", "wintodo:list:not-a-list-uid"]));
+    }
+
     [Fact]
     public void Value_UsesTheFirstExactOptionAndPreservesSpaces()
     {

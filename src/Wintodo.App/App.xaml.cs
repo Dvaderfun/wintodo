@@ -157,8 +157,9 @@ public partial class App : Application
             Task integrationTask = windowsIntegration.InitializeAsync();
             await shellTask;
             TraceStartupStage("window", launchStartTimestamp);
+            // WinUI desktop LaunchActivatedEventArgs.Arguments is always empty.
             await window.CompleteInitialNavigationAsync(
-                activation.Kind == ExtendedActivationKind.Launch ? args.Arguments : null,
+                activation.Kind == ExtendedActivationKind.Launch ? LaunchOptions.GetJumpListArgument(Environment.GetCommandLineArgs()) : null,
                 notificationResult?.TaskUid);
             ObserveStartupFrame(window, launchStartTimestamp, interactive: true);
 

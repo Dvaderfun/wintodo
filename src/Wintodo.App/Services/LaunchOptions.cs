@@ -5,6 +5,21 @@ namespace Wintodo.Services;
 /// <summary>Shared, platform-free decisions for the existing local launch controls.</summary>
 internal static class LaunchOptions
 {
+    internal const string NewTaskArgument = "wintodo:new-task";
+    internal const string OpenListArgumentPrefix = "wintodo:list:";
+
+    internal static string? GetJumpListArgument(string[] arguments)
+    {
+        // Each published JumpListItem carries a single token. An option value in a
+        // development launch (or a token-looking executable name) is not a jump-list action.
+        if (arguments.Length != 2) return null;
+        string token = arguments[1];
+        if (token == NewTaskArgument) return token;
+        return token.StartsWith(OpenListArgumentPrefix, StringComparison.Ordinal)
+            && token.Length == OpenListArgumentPrefix.Length + 36
+            && Guid.TryParseExact(token.AsSpan(OpenListArgumentPrefix.Length), "D", out _) ? token : null;
+    }
+
     internal static string? GetValue(string[] arguments, string option)
     {
         for (int index = 1; index < arguments.Length; index++)

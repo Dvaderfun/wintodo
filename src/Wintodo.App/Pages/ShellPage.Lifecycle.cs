@@ -110,7 +110,7 @@ public sealed partial class ShellPage
     {
         if (string.Equals(
             argument,
-            WindowsIntegrationService.JumpListNewTaskArgument,
+            LaunchOptions.NewTaskArgument,
             StringComparison.Ordinal))
         {
             if (!ViewModel.TaskList.CanCreateTask)
@@ -128,13 +128,13 @@ public sealed partial class ShellPage
         }
 
         if (!argument.StartsWith(
-            WindowsIntegrationService.JumpListOpenListPrefix,
+            LaunchOptions.OpenListArgumentPrefix,
             StringComparison.Ordinal))
         {
             return false;
         }
 
-        string uid = argument[WindowsIntegrationService.JumpListOpenListPrefix.Length..];
+        string uid = argument[LaunchOptions.OpenListArgumentPrefix.Length..];
         ShellListItemViewModel? list = ViewModel.UserLists.FirstOrDefault(
             candidate => string.Equals(candidate.Uid, uid, StringComparison.Ordinal));
         if (list is not null)

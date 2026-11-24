@@ -104,8 +104,6 @@ public static class MyDayGateWindow
     [DllImport("user32.dll")]
     public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
     [DllImport("user32.dll")]
-    public static extern bool SetForegroundWindow(IntPtr hwnd);
-    [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
 }
 '@
@@ -122,9 +120,11 @@ public static class MyDayGateWindow
     Wait-TimerState 'restore;SYNC=absent;MIDNIGHT=running'
     if ([MyDayGateWindow]::GetForegroundWindow() -eq $handle) { throw 'Rollover restore unexpectedly activated the window.' }
     Assert-MyDay $false
-    [MyDayGateWindow]::SetForegroundWindow($handle) | Out-Null
+    if ([MyDayGateWindow]::GetForegroundWindow() -eq $handle) { throw 'The window gained focus before rollover was verified.' }
 
     # Changing a due date from the row must refresh the same open detail.
+    # winapp focus activates the target window and verifies foreground before physical input.
+    Ui @('focus') | Out-Null
     Ui @('click', $row, '--right') | Out-Null
     Ui @('wait-for', 'Todo.Row.Selection.Due', '-t', '5000') | Out-Null
     Ui @('invoke', 'Todo.Row.Selection.Due') | Out-Null
