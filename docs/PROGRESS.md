@@ -21,8 +21,9 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.236** is the signed x64 Native
-AOT build of `ba0badda`. It includes the Suggestions layout, recurrence and
+**Private DEV installer:** Wintodo DEV **1.0.1.238** is the signed x64 Native
+AOT build of `80ace690`. It restores 16 DIPs between the My Day date and
+the Add a task box. It also includes the Suggestions layout, recurrence and
 editor corrections on top of PR #11 and retains the Repeat changes from #10.
 The installer keeps the separate DEV identity and
 [owner-tested appearance](design/hybrid-preview.md). See the
@@ -373,8 +374,11 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 In DEV .236 the date line box ended immediately against the Add a task border.
 The My Day subtitle now reserves the 16 DIPs specified for the header; its margin
 collapses with the subtitle on other lists. The x64 build passed with zero warnings.
-The layout gate now measures the rendered composer edge with Suggestions open and
-closed at both 640 and 960 DIPs.
+All 749 unit tests passed. WintodoTest measured 16 DIPs from the date line box
+to the rendered border with Suggestions open and closed at both 640 and 960
+DIPs; the same measurement on .236 was zero. The existing narrow-date, empty
+state, scrolling and Add-button checks also passed. Updating the signed DEV
+installer from .236 to .238 in WintodoTest preserved the test task's UID and note.
 
 ### 2026-11-24 — UX-19 owner review corrections
 
