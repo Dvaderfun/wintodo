@@ -304,10 +304,25 @@ SELECT count(*) FROM tasks WHERE uid LIKE 'a0000000-0000-4000-8000-%';
     Capture '08-added' | Out-Null
     Ui @('click','Todo.Suggestions.Close') | Out-Null
     Ui @('wait-for','Todo.Suggestions.Close','--gone','-t','5000') | Out-Null
+    Ui @('wait-for','Todo.Suggestions.Open','--property','HasKeyboardFocus','--value','True','-t','5000') | Out-Null
     Check-DateComposerGap (Snapshot '09-narrow-closed') (Capture '09-narrow-closed') 640 $false
+
+    # Dismissal returns to the bulb. Choosing a main-list row instead must keep keyboard focus there.
+    Set-Width 960
+    Ui @('send-keys','enter','--via','send-input') | Out-Null
+    Ui @('wait-for','Todo.Suggestions.Close','--property','HasKeyboardFocus','--value','True','-t','5000') | Out-Null
+    Ui @('send-keys','escape','--via','send-input') | Out-Null
+    Ui @('wait-for','Todo.Suggestions.Open','--property','HasKeyboardFocus','--value','True','-t','5000') | Out-Null
+    Ui @('send-keys','enter','--via','send-input') | Out-Null
+    Ui @('wait-for','Todo.Suggestions.Close','--property','HasKeyboardFocus','--value','True','-t','5000') | Out-Null
+    Ui @('click',$row) | Out-Null
+    Ui @('wait-for','Todo.Detail.Close','-t','5000') | Out-Null
+    Ui @('wait-for','Todo.Suggestions.Close','--gone','-t','5000') | Out-Null
+    Ui @('wait-for',$row,'--property','HasKeyboardFocus','--value','True','-t','5000') | Out-Null
+    $report.measurements.focus = [ordered]@{afterDismissal='Todo.Suggestions.Open'; afterOpeningTask=$row}
     if ($report.issues.Count) { throw ($report.issues -join ' ') }
     $report.status = 'PASS'
-    Write-Host "Suggestions layout: PASS (16 DIP date/composer gap at both widths with Suggestions open/closed, 8 DIP toolbar gap, full date, flush viewport, working scrolled Add)."
+    Write-Host "Suggestions layout: PASS (date and toolbar spacing, full date, flush viewport, scrolled Add, dismissal and task-row focus)."
 } catch {
     $report.error = "$_"
     if ($appPid) {

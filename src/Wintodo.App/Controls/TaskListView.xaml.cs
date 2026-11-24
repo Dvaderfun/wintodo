@@ -282,11 +282,12 @@ public sealed partial class TaskListView : UserControl
         }
         else if (args.PropertyName == nameof(TaskListViewModel.IsSuggestionsOpen))
         {
+            bool opening = ViewModel.IsSuggestionsOpen;
             DispatcherQueue.TryEnqueue(() =>
             {
-                if (!ViewModel.HasSubtitle) return;
-                (ViewModel.IsSuggestionsOpen ? CloseSuggestionsButton : SuggestionsButton)
-                    .Focus(FocusState.Keyboard);
+                if (!ViewModel.HasSubtitle || opening != ViewModel.IsSuggestionsOpen) return;
+                if (opening) CloseSuggestionsButton.Focus(FocusState.Keyboard);
+                else if (ViewModel.SuggestionsDismissedByUser) SuggestionsButton.Focus(FocusState.Keyboard);
             });
         }
     }

@@ -1305,6 +1305,7 @@ xunit.v3 4.0.3 — Apache-2.0</value></data>
   <data name="Suggestions_Empty" xml:space="preserve"><value>You have no suggested tasks.</value></data>
   <data name="Suggestions_LoadFailed" xml:space="preserve"><value>Suggestions couldn’t load. Reopen Suggestions to retry.</value></data>
   <data name="Suggestions_ActionFailed" xml:space="preserve"><value>The task couldn’t be updated. Review the suggestions and try again.</value></data>
+  <data name="Suggestions_SavedRefreshFailed" xml:space="preserve"><value>Your change was saved. Switch lists and return to My Day to refresh.</value></data>
   <data name="Suggestions_AddTask" xml:space="preserve"><value>Add {0} to My Day</value></data>
   <data name="Suggestions_CompleteTask" xml:space="preserve"><value>Complete {0}</value></data>
 </root>

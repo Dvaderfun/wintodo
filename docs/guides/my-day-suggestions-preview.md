@@ -31,6 +31,7 @@ Create a local list named **Suggestions test**. Add these tasks **in that list**
 3. In **Suggestions test**, set **Future sample** to **Repeat → Daily**, keeping tomorrow’s due date. Complete it once in Suggestions. It should stay unfinished and advance exactly one day.
 4. Open **Today sample** from the main My Day list. Type a note, immediately click the lightbulb, then reopen the task. The note should still be there. If Wintodo reports that it cannot save, the editor should stay open with your draft.
 5. With Suggestions open, press **Esc**, then **Enter**. Focus should return to the bulb and reopen it. The **×** in the sidebar also closes it.
+6. With Suggestions open again, use the keyboard to select **Today sample** in the main list. The task details should replace Suggestions. The focus outline should stay with the task instead of jumping back to the lightbulb.
 
 If you already have a disposable CalDAV test calendar on a second device, leave Suggestions open, create an overdue task and complete a different suggestion on that device. After the next successful sync, the first should appear and the second should disappear without reopening the sidebar.
 

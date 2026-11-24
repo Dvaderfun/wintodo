@@ -261,7 +261,9 @@ up to three local calendar days ago. Other undated tasks appear under
 **No Due Date**. Tasks already in
 My Day, completed tasks, cancelled tasks, and steps are excluded. Each row can
 add the task to My Day or complete it with the empty completion circle without
-closing the sidebar.
+closing the sidebar. Escape and the close button return keyboard focus to the
+lightbulb. Selecting a task from the main list closes Suggestions and leaves
+focus on the selected task.
 
 My Day shows tasks manually added today and tasks due today in the local
 calendar. Removing a task hides it from My Day for the current day and keeps

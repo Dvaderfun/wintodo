@@ -27,6 +27,7 @@ public sealed partial class TaskListViewModel
     private int _suggestionsSession;
     private Task _suggestionsRefresh = Task.CompletedTask;
     internal Func<Task<bool>>? PrepareSuggestionsAsync { get; set; }
+    internal bool SuggestionsDismissedByUser { get; private set; }
 
     [ObservableProperty]
     public partial bool IsSuggestionsOpen { get; private set; }
@@ -42,7 +43,7 @@ public sealed partial class TaskListViewModel
     [RelayCommand]
     private async Task ToggleSuggestionsAsync()
     {
-        if (IsSuggestionsOpen) { CloseSuggestions(); return; }
+        if (IsSuggestionsOpen) { CloseSuggestions(dismissedByUser: true); return; }
         if (!HasSubtitle || _currentQuery?.Kind != ListQueryKind.MyDay) return;
         int session = _suggestionsSession;
         if (PrepareSuggestionsAsync is not null && !await PrepareSuggestionsAsync()) return;
@@ -64,9 +65,10 @@ public sealed partial class TaskListViewModel
         }
     }
 
-    internal void CloseSuggestions()
+    internal void CloseSuggestions(bool dismissedByUser = false)
     {
         ++_suggestionsSession;
+        SuggestionsDismissedByUser = dismissedByUser;
         IsSuggestionsOpen = false;
     }
 
@@ -133,6 +135,7 @@ public sealed partial class TaskListViewModel
     {
         if (row is null || !CanApplySuggestion(row)) return;
         int session = _suggestionsSession;
+        bool taskSaved = false;
         _applyingSuggestion = true;
         NotifySuggestionCommands();
         try
@@ -147,6 +150,7 @@ public sealed partial class TaskListViewModel
                 return;
             }
             await _taskStore.ApplyTaskBatchAsync(uids, action, expectedSuggestion: row.Snapshot);
+            taskSaved = true;
             RecordTaskUndo(states, action == TaskBatchAction.Complete ? "Undo_TaskCompleted" : "Undo_TasksChanged");
             if (action == TaskBatchAction.Complete)
             {
@@ -164,7 +168,8 @@ public sealed partial class TaskListViewModel
             Debug.WriteLine(exception.GetType().Name);
             await RefreshSuggestionsAsync();
             if (IsSuggestionsOpen && session == _suggestionsSession)
-                SuggestionStatus = _resources.GetString("Suggestions_ActionFailed");
+                SuggestionStatus = _resources.GetString(taskSaved
+                    ? "Suggestions_SavedRefreshFailed" : "Suggestions_ActionFailed");
         }
         finally
         {

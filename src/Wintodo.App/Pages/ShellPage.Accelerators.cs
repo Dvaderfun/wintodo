@@ -262,7 +262,7 @@ public sealed partial class ShellPage
     {
         if (ViewModel.TaskList.IsSuggestionsOpen)
         {
-            ViewModel.TaskList.CloseSuggestions();
+            ViewModel.TaskList.CloseSuggestions(dismissedByUser: true);
             args.Handled = true;
             return;
         }

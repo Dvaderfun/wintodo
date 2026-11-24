@@ -296,6 +296,31 @@ public static class MyDayGateWriteLock
         if ([DateTime]::UtcNow -ge $retryDeadline) { throw 'The refreshed occurrence did not advance exactly once.' }
         Start-Sleep -Milliseconds 100
     }
+    Ui @('wait-for', $completeRepeat, '--property', 'IsEnabled', '--value', 'True', '-t', '5000') | Out-Null
+
+    # Let the next write commit, then fail its detail read without breaking the list query.
+    $failRead = @'
+CREATE TRIGGER fail_suggestion_read AFTER UPDATE OF due_utc ON tasks
+WHEN NEW.summary='Daily suggestion fixture' AND NEW.due_utc='2026-11-26'
+BEGIN
+    INSERT INTO attachments(task_id,file_name,relative_path,size_bytes,added_utc)
+    VALUES(NEW.id,'read-fixture.txt','suggestions-read-fixture.txt',0,'invalid-fixture-date');
+END;
+'@
+    Invoke-SuggestionsFixtureSql $database $failRead | Out-Null
+    try {
+        Ui @('invoke', $completeRepeat) | Out-Null
+        Ui @('wait-for', 'Todo.Suggestions.Status', '--property', 'Name', '--contains', '--value', 'Your change was saved', '-t', '5000') | Out-Null
+        if ((Invoke-SuggestionsFixtureSql $database $occurrenceState) -ne '2026-11-26|2') { throw 'The saved action did not advance exactly one occurrence.' }
+    } finally {
+        Invoke-SuggestionsFixtureSql $database "DROP TRIGGER fail_suggestion_read; DELETE FROM attachments WHERE relative_path='suggestions-read-fixture.txt';" | Out-Null
+    }
+    Ui @('send-keys', 'ctrl+vk=0x5A', '--via', 'send-input') | Out-Null
+    $undoDeadline = [DateTime]::UtcNow.AddSeconds(5)
+    while ((Invoke-SuggestionsFixtureSql $database $occurrenceState) -ne '2026-11-25|1') {
+        if ([DateTime]::UtcNow -ge $undoDeadline) { throw 'Undo did not restore the prior occurrence and its completion history after the failed refresh.' }
+        Start-Sleep -Milliseconds 100
+    }
     Ui @('invoke', 'Todo.Suggestions.Close') | Out-Null
 
     # Reject only this synthetic text write. A failed flush must leave the editor, draft and error visible.
@@ -316,7 +341,7 @@ public static class MyDayGateWriteLock
     Ui @('invoke', 'Todo.Suggestions.Open') | Out-Null
     Ui @('wait-for', 'Todo.Suggestions.Close', '-t', '5000') | Out-Null
     if ((Invoke-SuggestionsFixtureSql $database "SELECT count(*) FROM tasks WHERE summary='Overdue suggestion gate task' AND description='Suggestions recovery fixture';") -ne '1') { throw 'Retry did not persist the draft to its original task.' }
-    Write-Host 'My Day UI gate: PASS (membership, undo, rollover, recurrence, pending writes, Suggestions, stale occurrence, failed-save recovery)'
+    Write-Host 'My Day UI gate: PASS (membership, undo, rollover, recurrence, pending writes, Suggestions, stale occurrence, saved action with failed refresh, failed-save recovery)'
 } finally {
     Stop-Process -Id $appPid -ErrorAction SilentlyContinue
 }
