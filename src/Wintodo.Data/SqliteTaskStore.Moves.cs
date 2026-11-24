@@ -7,6 +7,16 @@ namespace Wintodo.Data;
 
 public sealed partial class SqliteTaskStore
 {
+    public Task<bool> HasPendingTaskMovesAsync(CancellationToken cancellationToken = default)
+    {
+        return ExecuteReadAsync(connection =>
+        {
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT EXISTS(SELECT 1 FROM task_move_outbox);";
+            return Convert.ToInt32(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture) != 0;
+        }, cancellationToken);
+    }
+
     public Task<IReadOnlyList<TaskMoveIntent>> GetPendingTaskMovesAsync(
         long? accountId = null, CancellationToken cancellationToken = default)
     {

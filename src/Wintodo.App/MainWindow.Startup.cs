@@ -10,6 +10,17 @@ public sealed partial class MainWindow
 {
     internal async Task ShowUnsupportedDatabaseAsync()
     {
+        // Store validation now precedes activation. A ContentDialog needs a loaded XamlRoot.
+        if (!WindowRoot.IsLoaded)
+        {
+            var loaded = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            void OnLoaded(object sender, RoutedEventArgs args) => loaded.TrySetResult();
+            WindowRoot.Loaded += OnLoaded;
+            Activate();
+            try { await loaded.Task; }
+            finally { WindowRoot.Loaded -= OnLoaded; }
+        }
+        else Activate();
         var resources = new ResourceLoader();
         var dialog = new ContentDialog
         {

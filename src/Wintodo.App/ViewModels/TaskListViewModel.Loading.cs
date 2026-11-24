@@ -237,6 +237,7 @@ public sealed partial class TaskListViewModel
         IReadOnlyList<TodoTask> tasks,
         string highlightText)
     {
+        _hasLoadedRows = true;
         _activeTasks.Clear();
         _completedTasks.Clear();
         foreach (TodoTask task in tasks)

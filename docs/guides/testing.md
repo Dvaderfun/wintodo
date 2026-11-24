@@ -138,6 +138,13 @@ explicit opt-in above. The VM being unavailable does not authorize host automati
 
 ## Running gates in the test VM
 
+`run-startup-placement-gate.ps1` checks the first visible window and task row
+in a signed Native AOT DEV build. Supply the preview's repo-relative directory
+as both `-Include $candidate` and `-GateArguments '-InputDirectory',$candidate`
+to `Invoke-VmGate.ps1 -NoWarmup`. The gate also checks maximized close/reopen
+and Restore Down. The Debug M13 gate checks sync timer creation/removal on
+account changes; the My Day gate checks rollover after an unfocused restore.
+
 For the schema-compatibility startup gate, create a synthetic schema-8 database
 on the host using the Python standard library, then copy only that fixture into
 the guest. The generator preserves any existing seed; keep it for subsequent

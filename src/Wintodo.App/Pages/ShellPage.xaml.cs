@@ -114,7 +114,14 @@ public sealed partial class ShellPage : Page
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
     {
-        if (args.PropertyName == nameof(ShellViewModel.IsCreatingList)
+        if (args.PropertyName == nameof(ShellViewModel.IsSyncConnected) && _backgroundSyncStarted)
+        {
+            // Connect performs its own initial sync. Only arm the recurring timer here.
+            if (ViewModel.IsSyncConnected) _lastSyncAttempt = _clock.UtcNow;
+            UpdateBackgroundSyncTimer();
+            TraceTimerState("account");
+        }
+        else if (args.PropertyName == nameof(ShellViewModel.IsCreatingList)
             && ViewModel.IsCreatingList)
         {
             DispatcherQueue.TryEnqueue(() =>

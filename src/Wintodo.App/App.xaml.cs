@@ -57,6 +57,7 @@ public partial class App : Application
     protected override async void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
     {
         SqliteTaskStore? launchingStore = null;
+        MainWindow? launchingWindow = null;
         try
         {
             long launchStartTimestamp = Stopwatch.GetTimestamp();
@@ -112,11 +113,11 @@ public partial class App : Application
             {
                 await store.InitializeAsync();
                 await windowsIntegration.InitializeAsync();
-                _integrationReady.TrySetResult(windowsIntegration);
                 notificationResult = await windowsIntegration.HandleNotificationAsync(
                     notificationArgs.Arguments);
                 if (!notificationResult.Value.ShowWindow)
                 {
+                    _integrationReady.TrySetResult(windowsIntegration);
                     await windowsIntegration.DisposeAsync();
                     await store.DisposeAsync();
                     UnregisterAppNotifications();
@@ -125,40 +126,37 @@ public partial class App : Application
                 }
             }
 
+            Task openStore = notificationResult.HasValue ? Task.CompletedTask : store.InitializeAsync();
+            var stateService = new ShellStateService(store);
+            ImportEnvironment importEnvironment = CreateImportEnvironment(commandLineDatabasePath, clock);
+            Task<(WindowPlacementState? Placement, Task Recovery)> windowState =
+                PrepareWindowStoreAsync(openStore, store, stateService, importEnvironment.AttachmentRoot, launchStartTimestamp);
             var syncHttpClient = CalDavClient.CreateHttpClient();
             var syncService = new CalDavSyncService(
                 store,
                 new PasswordVaultCredentialStore(),
                 clock,
                 syncHttpClient);
-            ImportEnvironment importEnvironment = CreateImportEnvironment(commandLineDatabasePath, clock);
             var window = new MainWindow(
                 store,
                 clock,
+                stateService,
                 windowsIntegration,
                 startupTaskService,
                 syncService,
                 syncHttpClient,
                 importEnvironment);
             TraceStartupStage("window-created", launchStartTimestamp);
+            launchingWindow = window;
             Window = window;
-            Task firstFrame = ObserveFirstFrameAsync(launchStartTimestamp);
-            Window.Activate();
-            await firstFrame;
-            TraceStartupStage("first-frame", launchStartTimestamp);
-            await store.InitializeAsync();
-            TraceStartupStage("store", launchStartTimestamp);
-            await store.CleanupInterruptedImportsAsync(importEnvironment.AttachmentRoot);
+            var (placement, recovery) = await windowState;
+            ObserveStartupFrame(window, launchStartTimestamp, interactive: false);
+            window.ShowInitialShell(placement);
+            await recovery;
+            Task shellTask = window.InitializeAsync();
             Task integrationTask = windowsIntegration.InitializeAsync();
-            await window.InitializeAsync();
+            await shellTask;
             TraceStartupStage("window", launchStartTimestamp);
-            Trace.WriteLine(string.Create(
-                System.Globalization.CultureInfo.InvariantCulture,
-                $"WINTODO_PERF_INTERACTIVE_MS={Stopwatch.GetElapsedTime(launchStartTimestamp).TotalMilliseconds:F3}"));
-            await integrationTask;
-            TraceStartupStage("integration", launchStartTimestamp);
-            _integrationReady.TrySetResult(windowsIntegration);
-
             if (activation.Kind == ExtendedActivationKind.Launch
                      && !string.IsNullOrWhiteSpace(args.Arguments))
             {
@@ -168,8 +166,11 @@ public partial class App : Application
             {
                 await window.OpenTaskAsync(result.TaskUid);
             }
+            ObserveStartupFrame(window, launchStartTimestamp, interactive: true);
 
-            window.ApplyDeferredPresenterState();
+            await integrationTask;
+            TraceStartupStage("integration", launchStartTimestamp);
+            _integrationReady.TrySetResult(windowsIntegration);
         }
         catch (UnsupportedDatabaseSchemaException exception)
         {
@@ -182,7 +183,7 @@ public partial class App : Application
                 await launchingStore.DisposeAsync();
             }
             UnregisterAppNotifications();
-            if (Window is MainWindow window)
+            if (launchingWindow is { } window)
             {
                 await window.ShowUnsupportedDatabaseAsync();
                 window.Close();
@@ -196,6 +197,31 @@ public partial class App : Application
         {
             _integrationReady.TrySetException(exception);
             Trace.WriteLine($"WINTODO_STARTUP_EXCEPTION={DiagnosticException.Describe(exception)}");
+            throw;
+        }
+        finally
+        {
+            launchingWindow?.CompleteStartup();
+        }
+    }
+
+    private static async Task<(WindowPlacementState? Placement, Task Recovery)> PrepareWindowStoreAsync(
+        Task openStore, SqliteTaskStore store, ShellStateService state, string attachmentRoot, long timestamp)
+    {
+        // Keep this continuation off the UI thread: XAML and the initial SQLite reads can overlap.
+        await openStore.ConfigureAwait(false);
+        TraceStartupStage("store", timestamp);
+        Task<WindowPlacementState?> placement = state.LoadWindowPlacementAsync();
+        // A large recovery may outlast window creation. Paint the shell at the saved bounds
+        // while it runs, but don't admit imports or other writes until it has finished.
+        Task recovery = store.CleanupInterruptedImportsAsync(attachmentRoot);
+        try
+        {
+            return (await placement.ConfigureAwait(false), recovery);
+        }
+        catch
+        {
+            await recovery.ConfigureAwait(false);
             throw;
         }
     }
@@ -290,23 +316,27 @@ public partial class App : Application
         Current.Exit();
     }
 
-    private static Task ObserveFirstFrameAsync(long launchStartTimestamp)
+    private static void ObserveStartupFrame(Window window, long launchStartTimestamp, bool interactive)
     {
-        var completion = new TaskCompletionSource(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-        EventHandler<object>? handler = null;
-        handler = (_, _) =>
+        void Detach()
         {
-            Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= handler;
+            Microsoft.UI.Xaml.Media.CompositionTarget.Rendering -= OnRendering;
+            window.Closed -= OnClosed;
+        }
+        void OnClosed(object sender, WindowEventArgs args) => Detach();
+        void OnRendering(object? sender, object args)
+        {
+            Detach();
             double elapsedMilliseconds =
                 Stopwatch.GetElapsedTime(launchStartTimestamp).TotalMilliseconds;
+            string marker = interactive ? "WINTODO_PERF_INTERACTIVE_MS" : "WINTODO_PERF_FIRST_FRAME_MS";
             Trace.WriteLine(string.Create(
                 System.Globalization.CultureInfo.InvariantCulture,
-                $"WINTODO_PERF_FIRST_FRAME_MS={elapsedMilliseconds:F3}"));
-            completion.TrySetResult();
-        };
-        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += handler;
-        return completion.Task;
+                $"{marker}={elapsedMilliseconds:F3}"));
+            TraceStartupStage(interactive ? "interactive-frame" : "first-frame", launchStartTimestamp);
+        }
+        window.Closed += OnClosed;
+        Microsoft.UI.Xaml.Media.CompositionTarget.Rendering += OnRendering;
     }
 
     private static string ResolveDatabasePath(

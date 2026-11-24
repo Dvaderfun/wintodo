@@ -56,8 +56,11 @@ public sealed partial class TaskMoveStoreTests
         (TodoList source, TodoList target, Account account) = await ListsAsync(fixture.Store);
         TodoTask task = await SyncedTaskAsync(fixture.Store, source, account, "Task");
         IReadOnlyList<TaskUndoState> undo = await fixture.Store.CaptureTaskUndoAsync([task.Uid], TaskUndoFields.List, Token);
+        Assert.False(await fixture.Store.HasPendingTaskMovesAsync(Token));
         await fixture.Store.MoveTaskAsync(task.Uid, target.Id, cancellationToken: Token);
+        Assert.True(await fixture.Store.HasPendingTaskMovesAsync(Token));
         await fixture.Store.RestoreTaskFieldsAsync(undo, Token);
+        Assert.False(await fixture.Store.HasPendingTaskMovesAsync(Token));
         TodoTask restored = (await fixture.Store.GetTaskAsync(task.Uid, Token))!;
         Assert.Equal(source.Id, restored.ListId);
         Assert.Equal(task.RemoteHref, restored.RemoteHref);

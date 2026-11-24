@@ -49,14 +49,12 @@
 | Corner | System default (Windows 11 rounds it) |
 | Persistence | Size, position, maximised state, and last-selected list restored on launch |
 
-`AppWindow.Resize` takes **physical pixels**. There is no `SizeToContent` in
-WinUI. Size in the `MainWindow` constructor:
-
-```csharp
-var hwnd  = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
-var scale = GetDpiForWindow(hwnd) / 96.0;
-AppWindow.Resize(new SizeInt32((int)(1180 * scale), (int)(820 * scale)));
-```
+`AppWindow` placement uses **physical pixels**. Before the first show,
+`MainWindow` converts saved dimensions from DIPs using the destination
+display's scale and fits the window to its work area. The 1180 × 820 DIP size
+is the fallback when no valid saved bounds exist. A maximized session opens
+maximized with its normal rectangle preserved for Restore Down. The shell is
+attached before showing; the saved list fills from local data.
 
 Never set `Width`/`Height` on the root `Grid` to size the window — that clips
 content instead.

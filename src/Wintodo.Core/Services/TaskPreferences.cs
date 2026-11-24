@@ -79,18 +79,21 @@ public sealed class TaskPreferences(ISettingsStore settingsStore) : INotifyPrope
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
+        var settings = await settingsStore.GetSettingsAsync([ISettingsStore.ConfirmBeforeDeleteKey,
+            ISettingsStore.DefaultReminderTimeKey, ISettingsStore.WeekStartKey, ISettingsStore.AddNewToTopKey,
+            ISettingsStore.MoveStarredToTopKey], cancellationToken);
         _loaded = false;
         ConfirmBeforeDelete = !bool.TryParse(
-            await settingsStore.GetSettingAsync(ISettingsStore.ConfirmBeforeDeleteKey, cancellationToken), out bool confirm) || confirm;
-        string? time = await settingsStore.GetSettingAsync(ISettingsStore.DefaultReminderTimeKey, cancellationToken);
+            settings.GetValueOrDefault(ISettingsStore.ConfirmBeforeDeleteKey), out bool confirm) || confirm;
+        string? time = settings.GetValueOrDefault(ISettingsStore.DefaultReminderTimeKey);
         DefaultReminderTime = TimeOnly.TryParseExact(time, "HH:mm", CultureInfo.InvariantCulture,
             DateTimeStyles.None, out TimeOnly parsedTime) ? parsedTime.ToTimeSpan() : TimeSpan.FromHours(9);
-        string? week = await settingsStore.GetSettingAsync(ISettingsStore.WeekStartKey, cancellationToken);
+        string? week = settings.GetValueOrDefault(ISettingsStore.WeekStartKey);
         WeekStartIndex = week is { Length: 1 } && week[0] is >= '0' and <= '6' ? week[0] - '0' + 1 : 0;
         AddNewToTop = bool.TryParse(
-            await settingsStore.GetSettingAsync(ISettingsStore.AddNewToTopKey, cancellationToken), out bool add) && add;
+            settings.GetValueOrDefault(ISettingsStore.AddNewToTopKey), out bool add) && add;
         MoveStarredToTop = bool.TryParse(
-            await settingsStore.GetSettingAsync(ISettingsStore.MoveStarredToTopKey, cancellationToken), out bool move) && move;
+            settings.GetValueOrDefault(ISettingsStore.MoveStarredToTopKey), out bool move) && move;
         _loaded = true;
     }
 

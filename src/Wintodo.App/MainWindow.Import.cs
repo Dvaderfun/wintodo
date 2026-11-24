@@ -14,16 +14,17 @@ public sealed partial class MainWindow
 
     private async void OnWindowClosing(AppWindow sender, AppWindowClosingEventArgs args)
     {
-        var viewModel = _shellPage?.ViewModel;
-        if (viewModel is null || _closeApproved) return;
+        // A rejected database only shows its error dialog. Never write settings to it.
+        if (!_hasPresentedShell || _closeApproved) return;
+        var viewModel = _shellPage.ViewModel;
         var wizard = viewModel.ImportWizard;
-        if (!_closePending && wizard is null && !viewModel.Detail.HasPendingEdits
-            && !viewModel.HasPendingDetailPaneWidth) return;
         args.Cancel = true;
         if (_closePending) return;
         _closePending = true;
         try
         {
+            // A close during initial hydration must not dispose the store under startup.
+            await _startupFinished.Task;
             if (wizard?.IsBusy == true)
             {
                 var resources = new ResourceLoader();
@@ -42,6 +43,16 @@ public sealed partial class MainWindow
             if (wizard is not null) await viewModel.ShutdownImportAsync();
             // Unwind the original Closing event before calling Close ourselves.
             await Task.Yield();
+            try
+            {
+                // Read the live presenter and commit its whole placement before destroying the HWND.
+                await _stateService.SaveWindowPlacementAsync(GetLivePlacement());
+            }
+            catch (Exception exception)
+            {
+                // A failed preference write must not trap the user in the app.
+                System.Diagnostics.Trace.WriteLine($"WINTODO_PLACEMENT_SAVE_EXCEPTION={DiagnosticException.Describe(exception)}");
+            }
             do
             {
                 await viewModel.FlushDetailPaneWidthAsync();

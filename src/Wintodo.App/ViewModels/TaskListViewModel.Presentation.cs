@@ -54,7 +54,7 @@ public sealed partial class TaskListViewModel
             int activeCount = _activeTasks.Count;
             bool activeCountChanged = ActiveCount != activeCount;
             ActiveCount = activeCount;
-            IsEmpty = _activeTasks.Count == 0 && _completedTasks.Count == 0;
+            IsEmpty = _hasLoadedRows && _activeTasks.Count == 0 && _completedTasks.Count == 0;
             SetSelection(preserveViewport ? SelectedTasks.Where(VisibleItems.Contains).ToArray() : []);
             if (activeCountChanged) NavigationDataChanged?.Invoke();
         }

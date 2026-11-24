@@ -12,7 +12,7 @@ public sealed class TaskPreferencesTests
     [InlineData("false!", "09:00:00", "01")]
     public async Task MissingOrMalformedValues_UseDefaults(string? confirm, string? time, string? week)
     {
-        var store = new SettingsStore();
+        var store = new TestSettingsStore();
         store.Values[ISettingsStore.ConfirmBeforeDeleteKey] = confirm;
         store.Values[ISettingsStore.DefaultReminderTimeKey] = time;
         store.Values[ISettingsStore.WeekStartKey] = week;
@@ -34,7 +34,7 @@ public sealed class TaskPreferencesTests
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("uk-UA");
-            var store = new SettingsStore();
+            var store = new TestSettingsStore();
             var preferences = new TaskPreferences(store);
             await preferences.LoadAsync(TestContext.Current.CancellationToken);
             var names = new List<string?>();
@@ -68,7 +68,7 @@ public sealed class TaskPreferencesTests
         try
         {
             CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("uk-UA");
-            var preferences = new TaskPreferences(new SettingsStore());
+            var preferences = new TaskPreferences(new TestSettingsStore());
             await preferences.LoadAsync(TestContext.Current.CancellationToken);
             DateOnly friday = new(2026, 10, 9);
             Assert.Equal(DayOfWeek.Monday, preferences.FirstDayOfWeek);
@@ -90,7 +90,7 @@ public sealed class TaskPreferencesTests
     [Fact]
     public async Task RapidChanges_SaveInOrder_AndReportFailures()
     {
-        var store = new SettingsStore { FailNextWrite = true };
+        var store = new TestSettingsStore { FailNextWrite = true };
         var preferences = new TaskPreferences(store);
         await preferences.LoadAsync(TestContext.Current.CancellationToken);
         int failures = 0;
@@ -101,33 +101,5 @@ public sealed class TaskPreferencesTests
         await preferences.FlushAsync();
         Assert.Equal(1, failures);
         Assert.Equal("False", store.Values[ISettingsStore.ConfirmBeforeDeleteKey]);
-    }
-
-    private sealed class SettingsStore : ISettingsStore
-    {
-        internal Dictionary<string, string?> Values { get; } = [];
-        internal int Writes { get; private set; }
-        internal bool FailNextWrite { get; set; }
-
-        public Task<string?> GetSettingAsync(string key, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Values.GetValueOrDefault(key));
-
-        public async Task SetSettingAsync(string key, string value, CancellationToken cancellationToken = default)
-        {
-            await Task.Yield();
-            if (FailNextWrite)
-            {
-                FailNextWrite = false;
-                throw new IOException("Test save failure");
-            }
-            Writes++;
-            Values[key] = value;
-        }
-
-        public Task DeleteSettingAsync(string key, CancellationToken cancellationToken = default)
-        {
-            Values.Remove(key);
-            return Task.CompletedTask;
-        }
     }
 }

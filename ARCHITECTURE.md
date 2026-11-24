@@ -119,6 +119,10 @@ superseding a selection cancels the read, never an outgoing draft write.
 
 - Switching lists swaps the bound data on the single `TaskListViewModel`;
   there is no page navigation between lists.
+- Normal launch overlaps SQLite initialization with building the shell. The
+  window applies its saved normal bounds and presenter state before showing;
+  commands become available after import recovery and initial selection. The
+  placement settings are read from one snapshot and saved as one transaction.
 - Settings is `SettingsView`, an `x:Load`-deferred control inside `ShellPage`
   toggled by `ShellViewModel.IsSettingsVisible` (the `NavigationView`'s built-in
   settings item is off).
@@ -305,6 +309,10 @@ instance. Turning reminders off cancels scheduled toasts; stored alarms remain.
 Changing snooze rebuilds scheduled payloads with the selected default.
 `StartupTaskService` wraps the optional launch-at-login toggle. Credentials go
 to `PasswordVault` via `PasswordVaultCredentialStore` — never SQLite.
+
+The 15-minute CalDAV timer exists only while an account is connected, including
+when minimized. The separate local-midnight timer updates the visible task list;
+it stops while minimized and checks the date when the window is restored.
 
 ## Known divergences from `PLAN.md`
 

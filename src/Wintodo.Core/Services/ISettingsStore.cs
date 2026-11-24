@@ -14,9 +14,19 @@ public interface ISettingsStore
         string key,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Read the requested keys from one snapshot; missing keys are omitted.</summary>
+    Task<IReadOnlyDictionary<string, string>> GetSettingsAsync(
+        IReadOnlyList<string> keys,
+        CancellationToken cancellationToken = default);
+
     Task SetSettingAsync(
         string key,
         string value,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Commit related settings together so a reader never sees a partial update.</summary>
+    Task SetSettingsAsync(
+        IReadOnlyDictionary<string, string> settings,
         CancellationToken cancellationToken = default);
 
     Task DeleteSettingAsync(

@@ -10,18 +10,59 @@ namespace Wintodo.Pages;
 public sealed partial class ShellPage
 {
     private bool _isActivationRefreshRunning;
+    private bool _isWindowMinimized;
+    private bool _backgroundSyncStarted;
+    private bool _timersStopped;
+
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         string selectedNavigation = await ViewModel.InitializeAsync(cancellationToken);
         PopulateUserListNavigationItems();
         object selectedItem = ResolveNavigationItem(selectedNavigation);
         ShellNavigation.SelectedItem = selectedItem;
-        await ApplySelectionAsync(selectedItem, isSettingsSelected: false, cancellationToken);
+        // Query the selected list before account initialization; the rows can appear independently.
+        Task selection = ApplySelectionAsync(selectedItem, isSettingsSelected: false, cancellationToken);
+        await Task.WhenAll(selection, ViewModel.InitializeSyncAsync(cancellationToken));
         _isNavigationInitialized = true;
         _uiSettings.ColorValuesChanged += OnColorValuesChanged;
         ScheduleMidnightRefresh();
-        ScheduleBackgroundSync();
-        _ = RunBackgroundSyncAsync();
+        StartBackgroundSync();
+    }
+
+    private void StartBackgroundSync()
+    {
+        if (_timersStopped || _backgroundSyncStarted) return;
+        _backgroundSyncStarted = true;
+        UpdateBackgroundSyncTimer();
+        TraceTimerState("startup");
+        if (ViewModel.IsSyncConnected) _ = RunBackgroundSyncAsync();
+    }
+
+    internal async Task SetWindowMinimizedAsync(bool minimized)
+    {
+        if (_isWindowMinimized == minimized) return;
+        _isWindowMinimized = minimized;
+        // Navigation briefly suppresses selection events while it awaits programmatic
+        // list switches. Window visibility still owns these timers during that time.
+        if (_timersStopped || !_backgroundSyncStarted) return;
+        if (minimized)
+        {
+            _midnightTimer?.Stop();
+            TraceTimerState("minimize");
+            return;
+        }
+
+        // A restore need not take keyboard focus. The task list records the new
+        // date before it awaits a reload, so a concurrent activation sees it too.
+        try
+        {
+            await RefreshForDateChangeAsync();
+        }
+        finally
+        {
+            ScheduleMidnightRefresh();
+            TraceTimerState("restore");
+        }
     }
 
     internal Task SearchAsync(
@@ -46,7 +87,8 @@ public sealed partial class ShellPage
             }
             await RefreshForDateChangeAsync(cancellationToken);
             await _windowsIntegration.RefreshAsync(cancellationToken);
-            if (_clock.UtcNow - _lastSyncAttempt >= TimeSpan.FromMinutes(1))
+            if (_backgroundSyncStarted && ViewModel.IsSyncConnected &&
+                _clock.UtcNow - _lastSyncAttempt >= TimeSpan.FromMinutes(1))
             {
                 await RunBackgroundSyncAsync(cancellationToken);
             }
@@ -133,18 +175,15 @@ public sealed partial class ShellPage
 
     internal void StopMidnightRefresh()
     {
+        _timersStopped = true;
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         ViewModel.CancelDetailRead();
         _stoppedPaneResize = true;
         ViewModel.UserListVisited -= OnUserListVisited;
         ViewModel.SyncConflictsRequested -= OnSyncConflictsRequested;
         ViewModel.CustomListIconRequested -= OnCustomListIconRequested;
         ViewModel.DisposeSync();
-        if (_syncTimer is not null)
-        {
-            _syncTimer.Stop();
-            _syncTimer.Tick -= OnSyncTimerTick;
-            _syncTimer = null;
-        }
+        UpdateBackgroundSyncTimer();
 
         if (_midnightTimer is null)
         {
@@ -158,6 +197,7 @@ public sealed partial class ShellPage
 
     private void ScheduleMidnightRefresh()
     {
+        if (_timersStopped || _isWindowMinimized) return;
         _midnightTimer ??= DispatcherQueue.CreateTimer();
         _midnightTimer.Stop();
         _midnightTimer.Tick -= OnMidnightTimerTick;
@@ -172,15 +212,33 @@ public sealed partial class ShellPage
         _midnightTimer.Start();
     }
 
-    private void ScheduleBackgroundSync()
+    private void UpdateBackgroundSyncTimer()
     {
-        _syncTimer ??= DispatcherQueue.CreateTimer();
-        _syncTimer.Stop();
-        _syncTimer.Tick -= OnSyncTimerTick;
+        if (!_backgroundSyncStarted || _timersStopped || !ViewModel.IsSyncConnected)
+        {
+            if (_syncTimer is not null)
+            {
+                _syncTimer.Stop();
+                _syncTimer.Tick -= OnSyncTimerTick;
+                _syncTimer = null;
+            }
+            return;
+        }
+
+        if (_syncTimer is not null) return;
+        _syncTimer = DispatcherQueue.CreateTimer();
         _syncTimer.Tick += OnSyncTimerTick;
         _syncTimer.Interval = TimeSpan.FromMinutes(15);
         _syncTimer.IsRepeating = true;
         _syncTimer.Start();
+    }
+
+    [Conditional("DEBUG")]
+    private void TraceTimerState(string transition)
+    {
+        string sync = _syncTimer is null ? "absent" : _syncTimer.IsRunning ? "running" : "stopped";
+        string midnight = _midnightTimer?.IsRunning == true ? "running" : "off";
+        Trace.WriteLine($"WINTODO_SHELL_TIMERS={transition};SYNC={sync};MIDNIGHT={midnight}");
     }
 
     private async void OnSyncTimerTick(
@@ -193,7 +251,9 @@ public sealed partial class ShellPage
     private async Task RunBackgroundSyncAsync(
         CancellationToken cancellationToken = default)
     {
+        if (_timersStopped || !ViewModel.IsSyncConnected || ViewModel.IsSyncBusy) return;
         _lastSyncAttempt = _clock.UtcNow;
+        TraceTimerState("sync");
         try
         {
             await ViewModel.RunBackgroundSyncAsync(cancellationToken);
@@ -214,6 +274,7 @@ public sealed partial class ShellPage
 
     private async Task RefreshForDateChangeAsync(CancellationToken cancellationToken = default)
     {
+        if (_timersStopped || _isWindowMinimized) return;
         if (await ViewModel.TaskList.RefreshForDateChangeAsync(cancellationToken))
         {
             ViewModel.Detail.RefreshDateLabels();

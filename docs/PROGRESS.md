@@ -29,6 +29,9 @@ restart. A focused note uses available space above the footer. See the
 DEV .241's My Day date spacing, focus and suggestion error handling, the original
 contribution in [#11](https://github.com/Dvaderfun/wintodo/pull/11), and
 the Repeat changes from #10.
+Known startup issue in `.245`: the window appears at its default size before
+restoring normal bounds, and maximized state does not persist. See the
+[startup investigation](plans/2026-11-24-startup-and-minimized-work.md).
 The installer keeps the separate DEV identity and
 [owner-tested appearance](design/hybrid-preview.md). See the
 [Suggestions walkthrough and sample tasks](guides/my-day-suggestions-preview.md)
@@ -372,6 +375,18 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-24 — Startup placement and minimized work investigation
+
+On signed DEV `.245`, the main window showed its default size before the
+saved normal bounds and task row. The saved-normal observation passed; three
+seeded maximized launches and a separate 35-second observation failed to
+maximize. In the signed Native AOT executable the restore path has no call
+to maximize and the close path saves `false`. A disconnected, minimized
+30-second sample recorded no measurable process CPU or I/O. See the
+[VM measurements](PERF.md#2026-11-24--startup-and-minimized-idle-on-signed-dev)
+and [proposed fixes](plans/2026-11-24-startup-and-minimized-work.md).
+Diagnostic only; no app or release change. The full M9 matrix remains deferred.
 
 ### 2026-11-24 — Task details preview (DEV 1.0.1.245)
 

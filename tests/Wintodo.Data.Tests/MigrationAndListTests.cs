@@ -339,6 +339,34 @@ public sealed class MigrationAndListTests
         Assert.Null(await fixture.Store.GetSettingAsync("shell.test", TestContext.Current.CancellationToken));
     }
 
+    [Fact]
+    public async Task SettingsBatch_ReturnsOnlyRequestedKeys_AndRollsBackTheEntireFailedWrite()
+    {
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        var token = TestContext.Current.CancellationToken;
+        const string unusualKey = "key' with punctuation";
+        await fixture.Store.SetSettingsAsync(new Dictionary<string, string>
+        {
+            [unusualKey] = "original", ["unrelated"] = "leave alone",
+        }, token);
+
+        await using var connection = TestSqliteConnections.Create(fixture.DatabasePath);
+        await connection.OpenAsync(token);
+        using var command = connection.CreateCommand();
+        command.CommandText = """
+            CREATE TRIGGER fail_batch BEFORE INSERT ON settings WHEN NEW.key = 'reject'
+            BEGIN SELECT RAISE(ABORT, 'test rollback'); END;
+            """;
+        await command.ExecuteNonQueryAsync(token);
+        await Assert.ThrowsAsync<SqliteException>(() => fixture.Store.SetSettingsAsync(
+            new Dictionary<string, string> { [unusualKey] = "updated", ["reject"] = "fail" }, token));
+
+        var snapshot = await fixture.Store.GetSettingsAsync([unusualKey, "reject", unusualKey, "missing"], token);
+        Assert.Single(snapshot);
+        Assert.Equal("original", snapshot[unusualKey]);
+        Assert.Equal("leave alone", await fixture.Store.GetSettingAsync("unrelated", token));
+    }
+
     private static async Task<long> ScalarLongAsync(
         SqliteConnection connection,
         string sql,

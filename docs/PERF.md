@@ -629,3 +629,79 @@ did not distinguish a layout limit from input that failed to move the
 divider. The screenshots show the resting layout only. Local evidence:
 `tests/ui/artifacts/detail-pane-candidate/drag-photo-overlay.json` and
 `tests/ui/artifacts/detail-pane-overlay/`.
+
+### 2026-11-24 — Startup and minimized idle on signed DEV
+
+WintodoTest, Windows 11 build 26300, 4 vCPUs, signed x64 Native AOT DEV
+`1.0.1.245` (`486482f5`). Clean private DEV profile, onboarding completed,
+one local task and no CalDAV account. See the [startup and idle investigation](plans/2026-11-24-startup-and-minimized-work.md)
+for the launch sequence and proposed changes. These are observations of the
+installed preview, not Store or ARM64 measurements or a new M9 gate.
+
+**Startup with known saved placement.** Each row is a fresh process launched
+as from Start after the setup run, with warm OS file caches. Before launch
+the observer wrote and verified a normal rectangle of (120, 96), 1432 × 912,
+and the requested maximized flag in the stopped synthetic fixture. Times in
+milliseconds start immediately before AppsFolder activation. A separate thread
+sampled the package process's native main window (visibility, rectangle and
+`IsZoomed`), while UI Automation waited for the exact task row with positive
+onscreen bounds. These are observed HWND/UIA states, not compositor frames
+or time to the first accepted keystroke. The probe itself has scheduling and
+provider overhead; the VM figures are not a comparison with the Store or M9.
+
+| Saved state | First visible (1180 × 820) | First observed at 1432 × 912 | Task row observable | Maximized by 2 s after row? |
+|---|---:|---:|---:|---|
+| Normal | 411 | 726 | 786 | No, as expected |
+| Maximized, run 1 | 372 | 747 | 816 | No |
+| Maximized, run 2 | 408 | 750 | 840 | No |
+| Maximized, run 3 | 343 | 664 | 758 | No |
+
+All four showed the default size, then the saved *normal* size 315–375 ms
+later, then the row another 61–94 ms later. The normal-size assertion passed;
+all three maximization assertions **failed**. Local JSON: `normal-1.json`,
+`max-{1,2,3}.json` and `summary.json` under
+`tests/ui/artifacts/startup-idle-study/4789cc75fa004e72869eda5904fe4db0/`.
+
+Two independent fixture setups also found a persistence problem. With native
+maximization verified before an ordinary close request, the initial run did
+not reopen maximized; the fixture DB read `shell.window.maximized=False`.
+The next setup used the system maximize command, verified `IsZoomed`, sent
+Alt+F4 and checked the DB **before** relaunch: it also read `False`. Seeding
+the verified flag for the table above isolates restoration from that close
+behavior. A fourth seeded-maximized process was still at the saved *normal*
+size 35 seconds after the row appeared. In the same process a subsequent
+system maximize command changed `IsZoomed` from false to true; normal close
+again persisted `False`. This extended maximization assertion also failed.
+Local JSON: `max-extended.json` and `summary.json` under
+`tests/ui/artifacts/startup-idle-study/ef4edb167a42430c828bd728091847d3/`.
+
+**Binary check, same installed build.** `Wintodo.exe` extracted from the signed
+DEV MSIX and the retained native link output both have SHA-256
+`b807bd381687672f9368a760b196f0158075fa4aa09a028c185e61c37eb2b1e6`.
+Disassembly with the retained Native AOT object's symbols identified
+`MainWindow.ApplyDeferredPresenterState` at executable RVA `0x46f6f0`: the
+saved-true branch gets the presenter and returns without calling `Maximize`.
+`ConfigurePresenter` at `0x46f730` likewise has no minimum-size setters. The
+`OnClosed` state machine writes zero to the placement's `IsMaximized` byte at
+RVA `0x4cbc79`, then calls the save method. The corresponding bytes matched
+the signed executable. This confirms the managed presenter type tests in
+those paths did not survive AOT compilation as intended. It does not establish
+the behavior of every WinUI app or untested Wintodo release.
+
+**Idle process counters.** One process, one interval per state, in the order
+shown. The observer verified the HWND's owner and actual foreground/minimized
+state before and after each interval. Each sample started five seconds after
+the transition; the observer made no UI calls during the 30-second interval.
+
+| Window state | Process CPU delta | Process read/write bytes | Working set at end | Private bytes at end |
+|---|---:|---:|---:|---:|
+| Visible, foreground | 0 ms | 0 / 0 | 126.39 MiB | 44.59 MiB |
+| Minimized | 0 ms | 0 / 0 | 121.65 MiB | 44.34 MiB |
+| Restored, foreground | 0 ms | 0 / 0 | 116.82 MiB | 44.51 MiB |
+
+Zero means no increment at process-counter resolution. The samples exclude
+the transitions, did not span the 15-minute sync timer or local midnight,
+and do not measure wakeups, system/compositor CPU, battery use or restore
+latency. Working set continued to fall after restore; this does not isolate
+a memory saving caused by minimizing. No priority or power policy was changed.
+Local evidence: `tests/ui/artifacts/startup-idle-study/2b47419f23df45f7bb7472911e56c307/idle.json`.

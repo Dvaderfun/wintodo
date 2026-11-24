@@ -76,11 +76,6 @@ public sealed partial class ShellViewModel
 
         try
         {
-            if (await _taskStore.GetSettingAsync(OnboardingCompletedSetting, cancellationToken) is not null)
-            {
-                return;
-            }
-
             StoreStats stats = await _taskStore.GetStatsAsync(cancellationToken);
             if (stats.TaskCount == 0 && stats.ListCount <= 1)
             {

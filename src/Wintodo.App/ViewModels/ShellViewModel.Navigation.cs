@@ -107,7 +107,7 @@ public sealed partial class ShellViewModel
         await Task.WhenAll(listsTask, groupsTask, smartCountsTask);
         LoadNavigationData(await listsTask, await groupsTask);
         ApplySmartListTaskCounts(await smartCountsTask);
-        await RefreshSyncOptionsAsync(cancellationToken);
+        LoadSyncListOptions(await listsTask);
         NavigationStructureChanged?.Invoke();
     }
 

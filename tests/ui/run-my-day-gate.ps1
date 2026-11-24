@@ -9,6 +9,7 @@ $artifacts = Join-Path $PSScriptRoot "artifacts/my-day/$([guid]::NewGuid())"
 New-Item -ItemType Directory -Path $artifacts | Out-Null
 $database = Join-Path $artifacts 'my-day.db'
 $clock = Join-Path $artifacts 'clock.txt'
+$trace = Join-Path $artifacts 'my-day.trace'
 function Set-TestClock([DateTime]$LocalTime) {
     $utc = [TimeZoneInfo]::ConvertTimeToUtc($LocalTime)
     $staged = "$clock.next"
@@ -16,7 +17,7 @@ function Set-TestClock([DateTime]$LocalTime) {
     [IO.File]::Move($staged, $clock, $true)
 }
 Set-TestClock ([DateTime]::new(2026, 11, 20, 18, 0, 0))
-$launch = winapp run $app --detach --json -- --database-path $database --clock-file $clock | ConvertFrom-Json
+$launch = winapp run $app --detach --json -- --database-path $database --clock-file $clock --trace-file $trace | ConvertFrom-Json
 if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) { throw 'My Day gate launch failed.' }
 $appPid = [int]$launch.ProcessId
 
@@ -64,6 +65,16 @@ function Assert-MyDay([bool]$Included) {
     throw "Expected My Day row metadata visibility to be $Included."
 }
 
+function Wait-TimerState([string]$Marker) {
+    $deadline = [DateTime]::UtcNow.AddSeconds(5)
+    do {
+        if ((Test-Path -LiteralPath $trace) -and
+            (Select-String -LiteralPath $trace -SimpleMatch "WINTODO_SHELL_TIMERS=$Marker" -Quiet)) { return }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Missing timer transition: $Marker"
+}
+
 try {
     Ui @('wait-for', 'Todo.Nav.DefaultList', '-t', '10000') | Out-Null
     Ui @('invoke', 'Todo.Nav.DefaultList') | Out-Null
@@ -83,7 +94,8 @@ try {
     Ui @('invoke', 'Todo.Detail.MyDay') | Out-Null
     Assert-MyDay $true
 
-    # Re-activate the same window to exercise the date-change path with detail still open.
+    # Let a day pass while minimized, then restore without activation. A correct
+    # detail, count and row must not depend on another window taking or losing focus.
     Add-Type @'
 using System;
 using System.Runtime.InteropServices;
@@ -93,9 +105,10 @@ public static class MyDayGateWindow
     public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
     [DllImport("user32.dll")]
     public static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
 }
 '@
-    Set-TestClock ([DateTime]::new(2026, 11, 21, 0, 1, 0))
     $window = (Ui @('list-windows', '--json') | ConvertFrom-Json) |
         Where-Object title -like 'Wintodo*' | Select-Object -First 1
     if (-not $window) { throw 'The Wintodo window was not found for rollover.' }
@@ -103,10 +116,13 @@ public static class MyDayGateWindow
         [IntPtr]::new([Convert]::ToInt64("$($window.hwnd)".Substring(2), 16))
     } else { [IntPtr]::new([long]$window.hwnd) }
     [MyDayGateWindow]::ShowWindowAsync($handle, 6) | Out-Null
-    Start-Sleep -Milliseconds 500
-    [MyDayGateWindow]::ShowWindowAsync($handle, 9) | Out-Null
-    [MyDayGateWindow]::SetForegroundWindow($handle) | Out-Null
+    Wait-TimerState 'minimize;SYNC=absent;MIDNIGHT=off'
+    Set-TestClock ([DateTime]::new(2026, 11, 21, 0, 1, 0))
+    [MyDayGateWindow]::ShowWindowAsync($handle, 4) | Out-Null # SW_SHOWNOACTIVATE
+    Wait-TimerState 'restore;SYNC=absent;MIDNIGHT=running'
+    if ([MyDayGateWindow]::GetForegroundWindow() -eq $handle) { throw 'Rollover restore unexpectedly activated the window.' }
     Assert-MyDay $false
+    [MyDayGateWindow]::SetForegroundWindow($handle) | Out-Null
 
     # Changing a due date from the row must refresh the same open detail.
     Ui @('click', $row, '--right') | Out-Null

@@ -72,14 +72,13 @@ public sealed partial class ShellViewModel
         SetSyncStatus(SyncRunStatus.Idle);
     }
 
-    private async Task InitializeSyncAsync(CancellationToken cancellationToken)
+    internal async Task InitializeSyncAsync(CancellationToken cancellationToken)
     {
         IReadOnlyList<Account> accounts = await _taskStore.GetAccountsAsync(cancellationToken);
         _syncAccount = accounts.FirstOrDefault();
         IsSyncConnected = _syncAccount is not null;
         SyncAccountDisplayName = _syncAccount?.DisplayName ?? string.Empty;
-        await RefreshSyncOptionsAsync(cancellationToken);
-        bool hasPendingMoves = (await _taskStore.GetPendingTaskMovesAsync(cancellationToken: cancellationToken)).Count > 0;
+        bool hasPendingMoves = await _taskStore.HasPendingTaskMovesAsync(cancellationToken);
         if (hasPendingMoves && _syncAccount is null)
         {
             ShowPendingTaskMoveGuidance();
@@ -91,9 +90,8 @@ public sealed partial class ShellViewModel
         }
     }
 
-    private async Task RefreshSyncOptionsAsync(CancellationToken cancellationToken)
+    private void LoadSyncListOptions(IReadOnlyList<TodoList> lists)
     {
-        IReadOnlyList<TodoList> lists = await _taskStore.GetListsAsync(cancellationToken);
         SyncListOptions = lists
             .Where(list => !list.IsDeleted)
             .OrderByDescending(list => list.IsDefault)

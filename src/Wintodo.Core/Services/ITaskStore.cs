@@ -11,6 +11,8 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IImportStore, IAsyncDi
 
     Task InitializeAsync(CancellationToken cancellationToken = default);
 
+    Task<bool> HasPendingTaskMovesAsync(CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<TodoList>> GetListsAsync(CancellationToken cancellationToken = default);
 
     Task<IReadOnlyDictionary<long, int>> GetIncompleteTaskCountsAsync(

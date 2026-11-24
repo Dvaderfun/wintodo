@@ -10,7 +10,8 @@ param(
     [Parameter(Mandatory)]
     [string]$ClockFile,
     [Parameter(Mandatory)]
-    [string]$ArtifactDirectory
+    [string]$ArtifactDirectory,
+    [switch]$VerifyTimers
 )
 # Local desktop input requires explicit owner permission for this session.
 if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1') {
@@ -25,6 +26,23 @@ $fail = 0
 $results = @()
 $mainHwnd = $null
 $initialAppPid = $AppPid
+$firstTrace = Join-Path $ArtifactDirectory 'first.trace'
+$restartTrace = Join-Path $ArtifactDirectory 'restart.trace'
+
+# The Debug gate observes the live dispatcher timers; AOT has no file listener.
+function Assert-TimerTrace([string]$TraceFile, [string]$Marker, [int]$Count = 1) {
+    if (-not $VerifyTimers) { return }
+    $deadline = [DateTime]::UtcNow.AddSeconds(5)
+    do {
+        if (Test-Path -LiteralPath $TraceFile) {
+            $matchesFound = @(Select-String -LiteralPath $TraceFile -SimpleMatch "WINTODO_SHELL_TIMERS=$Marker").Count
+            if ($matchesFound -eq $Count) { return }
+            if ($matchesFound -gt $Count) { break }
+        }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw "Expected $Count '$Marker' timer trace(s), found $matchesFound."
+}
 
 for ($attempt = 0; $attempt -lt 30 -and -not $mainHwnd; $attempt++) {
     Start-Sleep -Milliseconds 250
@@ -78,6 +96,8 @@ Test-UI "Fresh database hides the navigation sync status" {
     winapp ui wait-for "Todo.Nav.Settings" -w $mainHwnd -t 5000
     winapp ui wait-for "Todo.Nav.SyncStatus" -w $mainHwnd --gone -t 5000
     winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $mainHwnd --gone -t 5000
+    Assert-TimerTrace $firstTrace 'startup;SYNC=absent;MIDNIGHT=running'
+    Assert-TimerTrace $firstTrace 'sync;' 0
 }
 Test-UI "Open Settings" {
     winapp ui invoke "Todo.Nav.Settings" -w $mainHwnd
@@ -124,6 +144,8 @@ Test-UI "Connect and discover VTODO list" {
         Select-Object -First 1
     if (-not $toggle) { throw "The per-list sync toggle was not found." }
     winapp ui wait-for $toggle.selector -w $mainHwnd --value "On" -t 3000
+    Assert-TimerTrace $firstTrace 'account;SYNC=running;MIDNIGHT=running'
+    Assert-TimerTrace $firstTrace 'sync;' 0 # Connect performs its own initial sync.
 }
 Take-Screenshot "02-sync-connected.png"
 
@@ -167,6 +189,7 @@ public static class M13GateWindow {
         else { [IntPtr]::new([long]$mainHwnd) }
     [M13GateWindow]::ShowWindowAsync($handle, 6) | Out-Null
     Start-Sleep -Milliseconds 500
+    Assert-TimerTrace $firstTrace 'minimize;SYNC=running;MIDNIGHT=off'
     $time = [DateTime]::new(2026, 11, 20, 12, 2, 0).ToUniversalTime()
     [IO.File]::WriteAllText("$ClockFile.next", $time.ToString('O'))
     [IO.File]::Move("$ClockFile.next", $ClockFile, $true)
@@ -176,16 +199,19 @@ public static class M13GateWindow {
     winapp ui wait-for 'Todo.Suggestions.Add.suggestion-new' -w $mainHwnd -t 15000
     winapp ui wait-for 'Todo.Suggestions.Add.suggestion-original' -w $mainHwnd --gone -t 5000
     winapp ui wait-for 'Todo.Suggestions.Close' -w $mainHwnd -p IsOffscreen --value 'False' -t 3000
+    Assert-TimerTrace $firstTrace 'restore;SYNC=running;MIDNIGHT=running'
     Take-Screenshot '02a-open-suggestions-after-sync.png'
 }
 Test-UI "Restart restores account and resumes sync" {
     Stop-Process -Id $script:AppPid -ErrorAction Stop
     Wait-Process -Id $script:AppPid -Timeout 10 -ErrorAction SilentlyContinue
+    $traceArgs = @()
+    if ($VerifyTimers) { $traceArgs = @('--trace-file', $restartTrace) }
     $launch = winapp run $AppDirectory `
         --detach `
         --json `
         -- `
-        --database-path $DatabasePath --clock-file $ClockFile |
+        --database-path $DatabasePath --clock-file $ClockFile @traceArgs |
         ConvertFrom-Json
     if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) {
         throw "Wintodo restart failed."
@@ -208,6 +234,8 @@ Test-UI "Restart restores account and resumes sync" {
     winapp ui invoke "Todo.Nav.Settings" -w $script:mainHwnd
     winapp ui wait-for "Todo.Settings.Sync.Account" -w $script:mainHwnd --value "alice" -t 5000
     winapp ui wait-for "Todo.Settings.Sync.Status" -w $script:mainHwnd --value "Up to date" -t 5000
+    Assert-TimerTrace $restartTrace 'startup;SYNC=running;MIDNIGHT=running'
+    Assert-TimerTrace $restartTrace 'sync;' 1
 }
 Test-UI "New sync controls expose AutomationIds" {
     $required = @(
@@ -227,6 +255,7 @@ Test-UI "Disconnect removes the account surface and navigation sync status" {
     winapp ui wait-for "Todo.Settings.Sync.Configure" -w $mainHwnd -t 5000
     winapp ui wait-for "Todo.Nav.SyncStatus" -w $mainHwnd --gone -t 5000
     winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $mainHwnd --gone -t 5000
+    Assert-TimerTrace $restartTrace 'account;SYNC=absent;MIDNIGHT=running'
 }
 Take-Screenshot "03-sync-disconnected-again.png"
 

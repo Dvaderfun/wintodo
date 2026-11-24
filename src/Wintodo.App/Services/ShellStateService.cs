@@ -10,7 +10,8 @@ internal sealed class ShellStateService
     private const string WindowWidthKey = "shell.window.width";
     private const string WindowHeightKey = "shell.window.height";
     private const string WindowMaximizedKey = "shell.window.maximized";
-    private const string SelectedNavigationKey = "shell.navigation.selected";
+    internal const string SelectedNavigationKey = "shell.navigation.selected";
+    private static readonly string[] PlacementKeys = [WindowXKey, WindowYKey, WindowWidthKey, WindowHeightKey, WindowMaximizedKey];
 
     private readonly ISettingsStore _settingsStore;
 
@@ -22,18 +23,14 @@ internal sealed class ShellStateService
     internal async Task<WindowPlacementState?> LoadWindowPlacementAsync(
         CancellationToken cancellationToken = default)
     {
-        string? xText = await _settingsStore.GetSettingAsync(WindowXKey, cancellationToken);
-        string? yText = await _settingsStore.GetSettingAsync(WindowYKey, cancellationToken);
-        string? widthText = await _settingsStore.GetSettingAsync(WindowWidthKey, cancellationToken);
-        string? heightText = await _settingsStore.GetSettingAsync(WindowHeightKey, cancellationToken);
-        string? maximizedText = await _settingsStore.GetSettingAsync(WindowMaximizedKey, cancellationToken);
+        var values = await _settingsStore.GetSettingsAsync(PlacementKeys, cancellationToken).ConfigureAwait(false);
 
-        if (!int.TryParse(xText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int x)
-            || !int.TryParse(yText, NumberStyles.Integer, CultureInfo.InvariantCulture, out int y)
-            || !double.TryParse(widthText, NumberStyles.Float, CultureInfo.InvariantCulture, out double width)
-            || !double.TryParse(heightText, NumberStyles.Float, CultureInfo.InvariantCulture, out double height)
-            || width < 640
-            || height < 480)
+        if (!int.TryParse(values.GetValueOrDefault(WindowXKey), NumberStyles.Integer, CultureInfo.InvariantCulture, out int x)
+            || !int.TryParse(values.GetValueOrDefault(WindowYKey), NumberStyles.Integer, CultureInfo.InvariantCulture, out int y)
+            || !double.TryParse(values.GetValueOrDefault(WindowWidthKey), NumberStyles.Float, CultureInfo.InvariantCulture, out double width)
+            || !double.TryParse(values.GetValueOrDefault(WindowHeightKey), NumberStyles.Float, CultureInfo.InvariantCulture, out double height)
+            || !double.IsFinite(width) || width <= 0
+            || !double.IsFinite(height) || height <= 0)
         {
             return null;
         }
@@ -43,40 +40,21 @@ internal sealed class ShellStateService
             y,
             width,
             height,
-            bool.TryParse(maximizedText, out bool maximized) && maximized);
+            bool.TryParse(values.GetValueOrDefault(WindowMaximizedKey), out bool maximized) && maximized);
     }
 
     internal Task SaveWindowPlacementAsync(
         WindowPlacementState state,
         CancellationToken cancellationToken = default)
     {
-        return Task.WhenAll(
-            _settingsStore.SetSettingAsync(
-                WindowXKey,
-                state.X.ToString(CultureInfo.InvariantCulture),
-                cancellationToken),
-            _settingsStore.SetSettingAsync(
-                WindowYKey,
-                state.Y.ToString(CultureInfo.InvariantCulture),
-                cancellationToken),
-            _settingsStore.SetSettingAsync(
-                WindowWidthKey,
-                state.WidthDip.ToString("R", CultureInfo.InvariantCulture),
-                cancellationToken),
-            _settingsStore.SetSettingAsync(
-                WindowHeightKey,
-                state.HeightDip.ToString("R", CultureInfo.InvariantCulture),
-                cancellationToken),
-            _settingsStore.SetSettingAsync(
-                WindowMaximizedKey,
-                state.IsMaximized.ToString(CultureInfo.InvariantCulture),
-                cancellationToken));
-    }
-
-    internal Task<string?> LoadSelectedNavigationAsync(
-        CancellationToken cancellationToken = default)
-    {
-        return _settingsStore.GetSettingAsync(SelectedNavigationKey, cancellationToken);
+        return _settingsStore.SetSettingsAsync(new Dictionary<string, string>
+        {
+            [WindowXKey] = state.X.ToString(CultureInfo.InvariantCulture),
+            [WindowYKey] = state.Y.ToString(CultureInfo.InvariantCulture),
+            [WindowWidthKey] = state.WidthDip.ToString("R", CultureInfo.InvariantCulture),
+            [WindowHeightKey] = state.HeightDip.ToString("R", CultureInfo.InvariantCulture),
+            [WindowMaximizedKey] = state.IsMaximized.ToString(CultureInfo.InvariantCulture),
+        }, cancellationToken);
     }
 
     internal Task SaveSelectedNavigationAsync(

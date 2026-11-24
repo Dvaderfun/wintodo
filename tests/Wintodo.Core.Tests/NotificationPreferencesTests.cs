@@ -11,7 +11,7 @@ public sealed class NotificationPreferencesTests
     [InlineData("true", "tomorrow", true, 2)]
     public async Task StoredValues_ParseWithSafeDefaults(string? enabled, string? snooze, bool expected, int index)
     {
-        var store = new SettingsStore();
+        var store = new TestSettingsStore();
         store.Values[ISettingsStore.NotificationsEnabledKey] = enabled;
         store.Values[ISettingsStore.DefaultSnoozeKey] = snooze;
         var preferences = new NotificationPreferences(store);
@@ -25,7 +25,7 @@ public sealed class NotificationPreferencesTests
     [Fact]
     public async Task RapidUpdates_PersistInOrderAndRoundTrip()
     {
-        var store = new SettingsStore();
+        var store = new TestSettingsStore();
         var preferences = new NotificationPreferences(store);
         await preferences.LoadAsync(TestContext.Current.CancellationToken);
         int notifications = 0;
@@ -40,24 +40,5 @@ public sealed class NotificationPreferencesTests
         Assert.Equal("tomorrow", restored.DefaultSnooze);
         Assert.Equal(3, notifications);
         Assert.Throws<ArgumentOutOfRangeException>(() => preferences.DefaultSnoozeIndex = 3);
-    }
-
-    private sealed class SettingsStore : ISettingsStore
-    {
-        internal Dictionary<string, string?> Values { get; } = [];
-        internal int Writes { get; private set; }
-        public Task<string?> GetSettingAsync(string key, CancellationToken cancellationToken = default) =>
-            Task.FromResult(Values.GetValueOrDefault(key));
-        public async Task SetSettingAsync(string key, string value, CancellationToken cancellationToken = default)
-        {
-            await Task.Yield();
-            Writes++;
-            Values[key] = value;
-        }
-        public Task DeleteSettingAsync(string key, CancellationToken cancellationToken = default)
-        {
-            Values.Remove(key);
-            return Task.CompletedTask;
-        }
     }
 }

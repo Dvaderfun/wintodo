@@ -32,6 +32,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     private string _searchText = string.Empty;
     private bool _completedExpanded;
     private int _loadVersion;
+    private bool _hasLoadedRows;
     private readonly UndoService _undo;
     private CancellationTokenSource? _undoCancellation;
     private DateTimeOffset? _composerDue;
@@ -53,11 +54,8 @@ public sealed partial class TaskListViewModel : ObservableObject
         _undo.Changed += OnUndoChanged;
         preferences.PropertyChanged += OnPreferencesChanged;
         _lastObservedToday = clock.Today;
-        Title = _resources.GetString("Shell_MyDayTitle");
-        Subtitle = FormatToday();
-        EmptyGlyph = "\uE706";
-        EmptyTitle = _resources.GetString("Empty_MyDayTitle");
-        EmptySubtitle = _resources.GetString("Empty_MyDaySubtitle");
+        // The saved list is not known yet. Its loader supplies the header and empty state.
+        Title = Subtitle = EmptyGlyph = EmptyTitle = EmptySubtitle = string.Empty;
         SortLabel = _resources.GetString("TaskList_Sort");
         ShowCompletedMenuLabel = _resources.GetString("TaskList_HideCompleted");
         ComposerDueLabel = _resources.GetString("Composer_DueDate");
@@ -112,7 +110,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial string Subtitle { get; set; }
 
     [ObservableProperty]
-    public partial bool HasSubtitle { get; set; } = true;
+    public partial bool HasSubtitle { get; set; }
 
     [ObservableProperty]
     public partial int ActiveCount { get; set; }
@@ -121,7 +119,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial string FixedHeaderGlyph { get; set; } = "\uE706";
 
     [ObservableProperty]
-    public partial bool HasFixedHeaderGlyph { get; set; } = true;
+    public partial bool HasFixedHeaderGlyph { get; set; }
 
     [ObservableProperty]
     public partial bool CanChangeSelectedBackground { get; set; }
@@ -148,10 +146,10 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial bool IsTaskListVisible { get; set; } = true;
 
     [ObservableProperty]
-    public partial bool IsComposerVisible { get; set; } = true;
+    public partial bool IsComposerVisible { get; set; }
 
     [ObservableProperty]
-    public partial bool AreListCommandsVisible { get; set; } = true;
+    public partial bool AreListCommandsVisible { get; set; }
 
     [ObservableProperty]
     public partial bool CanReorderTasks { get; set; }
@@ -195,7 +193,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial bool HasComposerRepeat { get; set; }
 
     [ObservableProperty]
-    public partial bool IsEmpty { get; set; } = true;
+    public partial bool IsEmpty { get; set; }
 
     [ObservableProperty]
     public partial string EmptyGlyph { get; set; }

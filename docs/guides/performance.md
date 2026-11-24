@@ -58,7 +58,9 @@ often broken:
   scrolling. `TaskRow` stays ≤ 12 elements.
 - `FontIcon` glyphs, not bitmaps, in rows.
 - No LINQ in per-item render or per-keystroke paths.
-- One `DispatcherQueueTimer` in the app; reminders are OS-scheduled.
+- A one-shot local-midnight timer for the visible list, plus the M13 15-minute
+  sync timer only while a CalDAV account is connected. A minimized local-only
+  window has neither timer running. Reminders are OS-scheduled.
 - No reflection anywhere — it breaks Native AOT.
 
 UX-07 replaces task-list resets with keyed collection diffs. Its before/after

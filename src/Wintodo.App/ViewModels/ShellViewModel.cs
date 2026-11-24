@@ -279,92 +279,42 @@ public sealed partial class ShellViewModel : ObservableObject
 
     internal async Task<string> InitializeAsync(CancellationToken cancellationToken = default)
     {
-        await Preferences.LoadAsync(cancellationToken);
-        await _taskStore.EnsureDefaultListAsync(
-            _resources.GetString("DefaultList_Name"),
-            cancellationToken);
+        Task preferences = Preferences.LoadAsync(cancellationToken);
+        Task<IReadOnlyDictionary<string, string>> appearance = _taskStore.GetSettingsAsync(
+            [AppearanceThemeSetting, DensitySetting, ShowListBackgroundsSetting, TintFixedCategoryIconsSetting,
+             GetFixedBackgroundSettingKey(MyDayNavigationKey), GetFixedBackgroundSettingKey(ImportantNavigationKey),
+             GetFixedBackgroundSettingKey(PlannedNavigationKey), GetFixedBackgroundSettingKey(AllNavigationKey),
+             GetFixedBackgroundSettingKey(CompletedNavigationKey), DetailPaneWidthSetting,
+             ShellStateService.SelectedNavigationKey, OnboardingCompletedSetting], cancellationToken);
+        await _taskStore.EnsureDefaultListAsync(_resources.GetString("DefaultList_Name"), cancellationToken);
         Task<IReadOnlyList<TodoList>> listsTask = _taskStore.GetListsAsync(cancellationToken);
         Task<IReadOnlyList<ListGroup>> groupsTask = _taskStore.GetGroupsAsync(cancellationToken);
         Task<IReadOnlyDictionary<ListQueryKind, int>> smartCountsTask =
             _taskStore.GetSmartListTaskCountsAsync(cancellationToken);
-        Task<string?> themeTask = _taskStore.GetSettingAsync(
-            AppearanceThemeSetting,
-            cancellationToken);
-        Task<string?> densityTask = _taskStore.GetSettingAsync(
-            DensitySetting,
-            cancellationToken);
-        Task<string?> backgroundsTask = _taskStore.GetSettingAsync(
-            ShowListBackgroundsSetting,
-            cancellationToken);
-        Task<string?> tintFixedIconsTask = _taskStore.GetSettingAsync(
-            TintFixedCategoryIconsSetting,
-            cancellationToken);
-        Task<string?> myDayBackgroundTask = _taskStore.GetSettingAsync(
-            GetFixedBackgroundSettingKey(MyDayNavigationKey),
-            cancellationToken);
-        Task<string?> importantBackgroundTask = _taskStore.GetSettingAsync(
-            GetFixedBackgroundSettingKey(ImportantNavigationKey),
-            cancellationToken);
-        Task<string?> plannedBackgroundTask = _taskStore.GetSettingAsync(
-            GetFixedBackgroundSettingKey(PlannedNavigationKey),
-            cancellationToken);
-        Task<string?> allBackgroundTask = _taskStore.GetSettingAsync(
-            GetFixedBackgroundSettingKey(AllNavigationKey),
-            cancellationToken);
-        Task<string?> completedBackgroundTask = _taskStore.GetSettingAsync(
-            GetFixedBackgroundSettingKey(CompletedNavigationKey),
-            cancellationToken);
-        Task<string?> detailWidthTask = _taskStore.GetSettingAsync(
-            DetailPaneWidthSetting,
-            cancellationToken);
-        Task<string?> selectedNavigationTask =
-            _stateService.LoadSelectedNavigationAsync(cancellationToken);
-        Task<StartupTaskSettingState> startupTask = LoadStartupTaskStateAsync();
-        await Task.WhenAll(
-            listsTask,
-            groupsTask,
-            smartCountsTask,
-            themeTask,
-            densityTask,
-            backgroundsTask,
-            tintFixedIconsTask,
-            myDayBackgroundTask,
-            importantBackgroundTask,
-            plannedBackgroundTask,
-            allBackgroundTask,
-            completedBackgroundTask,
-            detailWidthTask,
-            selectedNavigationTask);
+        await Task.WhenAll(preferences, appearance, listsTask, groupsTask, smartCountsTask);
+        var settings = await appearance;
         LoadNavigationData(await listsTask, await groupsTask);
         ApplySmartListTaskCounts(await smartCountsTask);
-        _fixedCategoryBackgrounds[MyDayNavigationKey] =
-            NormalizeBackgroundTheme(await myDayBackgroundTask);
-        _fixedCategoryBackgrounds[ImportantNavigationKey] =
-            NormalizeBackgroundTheme(await importantBackgroundTask);
-        _fixedCategoryBackgrounds[PlannedNavigationKey] =
-            NormalizeBackgroundTheme(await plannedBackgroundTask);
-        _fixedCategoryBackgrounds[AllNavigationKey] =
-            NormalizeBackgroundTheme(await allBackgroundTask);
-        _fixedCategoryBackgrounds[CompletedNavigationKey] =
-            NormalizeBackgroundTheme(await completedBackgroundTask);
+        LoadSyncListOptions(await listsTask);
 
-        AppearanceThemeIndex = ParseChoice(await themeTask, maximum: 2);
-        DensityIndex = ParseChoice(await densityTask, maximum: 1);
-        ShowListBackgrounds = bool.TryParse(await backgroundsTask, out bool show)
-            && show;
-        TintFixedCategoryIcons =
-            !bool.TryParse(await tintFixedIconsTask, out bool tintFixedIcons)
-            || tintFixedIcons;
-        _queuedDetailPaneWidth = DetailPaneWidth = ParseDetailPaneWidth(await detailWidthTask);
+        foreach (string key in new[] { MyDayNavigationKey, ImportantNavigationKey, PlannedNavigationKey,
+            AllNavigationKey, CompletedNavigationKey })
+        {
+            _fixedCategoryBackgrounds[key] = NormalizeBackgroundTheme(settings.GetValueOrDefault(GetFixedBackgroundSettingKey(key)));
+        }
+        AppearanceThemeIndex = ParseChoice(settings.GetValueOrDefault(AppearanceThemeSetting), maximum: 2);
+        DensityIndex = ParseChoice(settings.GetValueOrDefault(DensitySetting), maximum: 1);
+        ShowListBackgrounds = bool.TryParse(settings.GetValueOrDefault(ShowListBackgroundsSetting), out bool show) && show;
+        TintFixedCategoryIcons = !bool.TryParse(settings.GetValueOrDefault(TintFixedCategoryIconsSetting), out bool tint) || tint;
+        _queuedDetailPaneWidth = DetailPaneWidth = ParseDetailPaneWidth(settings.GetValueOrDefault(DetailPaneWidthSetting));
         TaskList.IsCompactDensity = DensityIndex == 1;
         _areAppearanceSettingsLoaded = true;
         AppearanceSettingsChanged?.Invoke();
 
-        _ = ApplyStartupTaskStateWhenReadyAsync(startupTask);
+        _ = ApplyStartupTaskStateWhenReadyAsync(LoadStartupTaskStateAsync());
 
-        await InitializeOnboardingAsync(cancellationToken);
-        await InitializeSyncAsync(cancellationToken);
+        if (!settings.ContainsKey(OnboardingCompletedSetting)) await InitializeOnboardingAsync(cancellationToken);
 
-        return await selectedNavigationTask ?? MyDayNavigationKey;
+        return settings.GetValueOrDefault(ShellStateService.SelectedNavigationKey) ?? MyDayNavigationKey;
     }
 }

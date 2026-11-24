@@ -21,6 +21,8 @@ $artifactDirectory = Join-Path $PSScriptRoot (
 $databasePath = Join-Path $artifactDirectory "m13-gate.db"
 $readyFile = Join-Path $artifactDirectory "server-ready.txt"
 $clockFile = Join-Path $artifactDirectory 'clock.txt'
+$traceArgs = @()
+if (-not $Aot) { $traceArgs = @('--trace-file', (Join-Path $artifactDirectory 'first.trace')) }
 New-Item -ItemType Directory -Force -Path $artifactDirectory | Out-Null
 [IO.File]::WriteAllText($clockFile, [DateTime]::new(2026, 11, 20, 12, 0, 0).ToUniversalTime().ToString('O'))
 
@@ -53,7 +55,7 @@ try {
         --detach `
         --json `
         -- `
-        --database-path $databasePath --clock-file $clockFile |
+        --database-path $databasePath --clock-file $clockFile @traceArgs |
         ConvertFrom-Json
     if ($LASTEXITCODE -ne 0 -or -not $launch.ProcessId) {
         throw "Wintodo M13 gate launch failed."
@@ -67,6 +69,7 @@ try {
             -AppDirectory $appDirectory `
             -DatabasePath $databasePath `
             -ClockFile $clockFile `
+            -VerifyTimers:(-not $Aot) `
             -ArtifactDirectory $artifactDirectory
         if ($LASTEXITCODE -ne 0) {
             throw "M13 UI gate failed."
