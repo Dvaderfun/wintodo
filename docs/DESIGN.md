@@ -610,6 +610,7 @@ setting automatically. For explicit animations, check
 
 | Interaction | Animation |
 |---|---|
+| Startup logo → ready view (private trial) | Fade the full logo surface away over **240 ms** with sine ease-in-out. Enable input immediately. Skip the fade when Windows animations are off. |
 | Switch list | Content fade 0 → 1 over **150 ms** + 8 px upward translate, `CubicBezier(0.1, 0.9, 0.2, 1)`. **Not** `NavigationThemeTransition` — no `Frame` involved |
 | Detail pane open | After protecting any outgoing draft, show the selected row's title and completion/importance state immediately, without an entrance delay. Only the editor for that same task may replace this read-only header. |
 | Detail pane close | Content reverses over **150 ms** while the surface stays opaque, then the pane collapses |

@@ -201,7 +201,11 @@ public sealed partial class MainWindow : Window
         }
         bool minimized = state == OverlappedPresenterState.Minimized;
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
-        if (minimized) _releaseStartupCloak?.Invoke();
+        if (minimized)
+        {
+            _releaseStartupCloak?.Invoke();
+            if (_startupFade is not null) RemoveStartupLogo();
+        }
 #endif
         if (!minimized) _lastNonMinimizedWasMaximized = state == OverlappedPresenterState.Maximized;
         if (_isWindowMinimized == minimized) return;
@@ -232,8 +236,8 @@ public sealed partial class MainWindow : Window
             await Shell.OpenTaskAsync(notificationTaskUid, cancellationToken);
 
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
-        RemoveStartupLogo();
         TitleSearch.Visibility = Visibility.Visible;
+        RevealStartupShell();
 #endif
         _isInitialized = true;
         Shell.IsEnabled = true;
@@ -309,6 +313,7 @@ public sealed partial class MainWindow : Window
     {
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
         _releaseStartupCloak?.Invoke();
+        if (_startupFade is not null) RemoveStartupLogo();
 #endif
         WindowRoot.SizeChanged -= OnWindowRootSizeChanged;
         AppWindow.Changed -= OnAppWindowChanged;

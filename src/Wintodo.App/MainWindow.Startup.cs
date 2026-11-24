@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.ApplicationModel.Resources;
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Storage;
 using Wintodo.Core.Services;
@@ -16,6 +17,7 @@ public sealed partial class MainWindow
 {
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
     private Grid? _startupLogo;
+    private Storyboard? _startupFade;
     internal Task StartupArtwork { get; }
 
     private async Task PrepareStartupLogoAsync()
@@ -69,11 +71,50 @@ public sealed partial class MainWindow
         ((Image)sender).ImageOpened -= OnStartupLogoOpened;
     }
 
+    private void RevealStartupShell()
+    {
+        RootFrame.Clip = null; // The ready shell accepts input under the hit-test-transparent logo.
+        if (_startupLogo is not { IsLoaded: true } surface || !_startupLogoDecoded ||
+            _releaseStartupCloak is not null || _isWindowMinimized || _closePending || !Shell.AreAnimationsEnabled)
+        {
+            RemoveStartupLogo();
+            return;
+        }
+
+        // Fading just the opaque surface dissolves the mark over the ready list.
+        try
+        {
+            var opacity = new DoubleAnimation
+            {
+                From = 1, To = 0, Duration = TimeSpan.FromMilliseconds(240),
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+            };
+            Storyboard.SetTarget(opacity, surface);
+            Storyboard.SetTargetProperty(opacity, nameof(UIElement.Opacity));
+            _startupFade = new Storyboard();
+            _startupFade.Children.Add(opacity);
+            _startupFade.Completed += OnStartupFadeCompleted;
+            _startupFade.Begin();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"WINTODO_STARTUP_FADE_EXCEPTION={DiagnosticException.Describe(ex)}");
+            RemoveStartupLogo();
+        }
+    }
+
+    private void OnStartupFadeCompleted(object? sender, object args) => RemoveStartupLogo();
+
     private void RemoveStartupLogo()
     {
         if (_startupLogo is not null) WindowRoot.Children.Remove(_startupLogo);
         _startupLogo = null;
-        RootFrame.Clip = null;
+        if (_startupFade is not null)
+        {
+            _startupFade.Completed -= OnStartupFadeCompleted;
+            _startupFade.Stop();
+            _startupFade = null;
+        }
     }
 #endif
 
@@ -82,6 +123,7 @@ public sealed partial class MainWindow
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
         // Validation failed before ShowInitialShell. Only present the recovery dialog.
         RemoveStartupLogo();
+        RootFrame.Clip = null;
         SystemBackdrop ??= new MicaBackdrop();
 #endif
         // Store validation now precedes activation. A ContentDialog needs a loaded XamlRoot.

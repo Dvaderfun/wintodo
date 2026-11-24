@@ -25,6 +25,7 @@ public sealed partial class ShellPage : Page
     private const uint HighContrastOn = 0x0001;
     private readonly ResourceLoader _resources = new();
     private readonly UISettings _uiSettings = new();
+    internal bool AreAnimationsEnabled => _uiSettings.AnimationsEnabled;
     private readonly Dictionary<string, NavigationViewItem> _navigationItems =
         new(StringComparer.Ordinal);
     private readonly IClock _clock;
@@ -192,7 +193,7 @@ public sealed partial class ShellPage : Page
     private async Task CloseDetailVisualAsync()
     {
         VisualStateManager.GoToState(this, "DetailClosing", useTransitions: true);
-        if (new UISettings().AnimationsEnabled)
+        if (AreAnimationsEnabled)
         {
             await Task.Delay(TimeSpan.FromMilliseconds(150));
         }

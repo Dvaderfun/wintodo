@@ -1,5 +1,5 @@
 # Supply the signed candidate as for run-startup-placement-gate.ps1. Reuse its returning-user fixture.
-param([Parameter(Mandatory)][string]$InputDirectory, [switch]$CaptureFrames, [switch]$CaptureRecovery, [switch]$CaptureHighContrast)
+param([Parameter(Mandatory)][string]$InputDirectory, [switch]$CaptureFrames, [switch]$CaptureRecovery, [switch]$CaptureHighContrast, [switch]$CaptureMotion)
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $root -ine 'C:\wintodo' -or
@@ -11,6 +11,7 @@ $placementArgs = @('-InputDirectory', $InputDirectory)
 if ($CaptureFrames) { $placementArgs += '-CaptureFrames' }
 if ($CaptureRecovery) { $placementArgs += '-CaptureRecovery' }
 if ($CaptureHighContrast) { $placementArgs += '-CaptureHighContrast' }
+if ($CaptureMotion) { $placementArgs += '-CaptureMotion' }
 & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $placementGate @placementArgs
 if ($LASTEXITCODE -ne 0) { throw 'Signed startup placement gate failed; see its summary.' }
 $build=Get-Content -LiteralPath (Join-Path (Join-Path $root $InputDirectory) 'build.json') -Raw | ConvertFrom-Json

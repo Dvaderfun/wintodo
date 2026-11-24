@@ -39,6 +39,26 @@ public sealed class StartupWindowProbe
     [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
     [DllImport("user32.dll")] static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+    [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+    static extern bool GetClientAnimationSetting(uint action, uint parameter, out int value, uint flags);
+    [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+    static extern bool SetClientAnimationSetting(uint action, uint parameter, IntPtr value, uint flags);
+
+    public static bool ClientAnimationsEnabled()
+    {
+        int value;
+        if (!GetClientAnimationSetting(0x1042 /* SPI_GETCLIENTAREAANIMATION */, 0, out value, 0))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        return value != 0;
+    }
+
+    public static void SetClientAnimations(bool enabled)
+    {
+        if (ClientAnimationsEnabled() == enabled) return;
+        if (!SetClientAnimationSetting(0x1043 /* SPI_SETCLIENTAREAANIMATION */, 0, new IntPtr(enabled ? 1 : 0), 2 /* SPIF_SENDCHANGE */))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        if (ClientAnimationsEnabled() != enabled) throw new InvalidOperationException("Guest animation setting did not change.");
+    }
     [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out uint value, int size);
 
     public static StartupWindowSample Read(IntPtr hwnd) { return Read(hwnd, false); }

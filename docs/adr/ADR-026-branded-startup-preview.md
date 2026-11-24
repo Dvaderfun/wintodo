@@ -13,6 +13,8 @@ DEV .249 restores the window before showing it, but the owner still sees a blank
 
 Center the existing Glide artwork on a theme-aware surface in the real, correctly placed main window. Keep the native caption buttons usable. Reveal the initial view as soon as it is ready, whether that is Welcome, the user's list, or an activation target. Do not wait for network sync or delay the reveal to make the logo visible. There is no separate splash window, spinner, minimum display time, or new timer.
 
+Following the owner's review of DEV .253's abrupt handoff, fade the logo and its background together over the ready view for 240 ms. The shell accepts input from the start of the fade. With Windows animations disabled, or when there is no visible logo to transition from, reveal the view immediately.
+
 Respect Light, Dark and High Contrast. The logo must not receive keyboard focus or obscure an error or recovery dialog. Headless activations remain headless, and sharing keeps its own window.
 
 To cover the native window's empty paint as well as the XAML load, try withholding the main window from desktop composition until WinUI commits a usable frame. Windows can continue rendering and the app can continue loading. The cost is that Windows may skip its normal window-open animation. Once the shell is ready, missing compositor notifications must not leave an otherwise usable app hidden.

@@ -1,6 +1,6 @@
 # Run with Invoke-VmGate.ps1 -NoWarmup -Include $candidate -GateArguments '-InputDirectory',$candidate
 # $candidate is a repo-relative directory with Build-DevPreview.ps1's signed x64 MSIX and build.json.
-param([Parameter(Mandatory)][string]$InputDirectory, [switch]$CaptureFrames, [switch]$CaptureRecovery, [switch]$CaptureHighContrast)
+param([Parameter(Mandatory)][string]$InputDirectory, [switch]$CaptureFrames, [switch]$CaptureRecovery, [switch]$CaptureHighContrast, [switch]$CaptureMotion)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $root -ine 'C:\wintodo' -or
@@ -9,12 +9,14 @@ if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $root -ine 'C:\wintodo' -or
 }
 if ($CaptureRecovery -and -not $CaptureFrames) { throw 'The recovery diagnostic requires -CaptureFrames.' }
 if ($CaptureHighContrast -and -not $CaptureFrames) { throw 'The High Contrast diagnostic requires -CaptureFrames.' }
+if ($CaptureMotion -and -not $CaptureFrames) { throw 'The animation diagnostic requires -CaptureFrames.' }
 # UI Automation's desktop assemblies are available in Windows PowerShell on the guest.
 if ($PSVersionTable.PSEdition -ne 'Desktop') {
     $captureArgs = @()
     if ($CaptureFrames) { $captureArgs += '-CaptureFrames' }
     if ($CaptureRecovery) { $captureArgs += '-CaptureRecovery' }
     if ($CaptureHighContrast) { $captureArgs += '-CaptureHighContrast' }
+    if ($CaptureMotion) { $captureArgs += '-CaptureMotion' }
     if ($CaptureFrames) { Write-Host 'Starting signed placement and desktop-pixel capture in Windows PowerShell.' }
     & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $PSCommandPath -InputDirectory $InputDirectory @captureArgs
     exit $LASTEXITCODE
@@ -57,6 +59,7 @@ function Wait-WindowState([bool]$Maximized, [switch]$CheckNormalBounds) {
 
 function Measure-Launch([string]$Name, $Expected, [string]$RecoveryStaging) {
     if (Get-Process -Name Wintodo -ErrorAction SilentlyContinue) { throw 'Fresh process required before launch.' }
+    $clientAnimations = if ($CaptureFrames) { [StartupWindowProbe]::ClientAnimationsEnabled() }
     $uia = [System.Windows.Automation.AutomationElement]
     $condition = [System.Windows.Automation.PropertyCondition]::new($uia::AutomationIdProperty,$rowId)
     $probe = [StartupWindowProbe]::new($exe,$CaptureFrames.IsPresent,$RecoveryStaging)
@@ -111,6 +114,7 @@ function Measure-Launch([string]$Name, $Expected, [string]$RecoveryStaging) {
         ProcessSeenMs=$probe.ProcessSeenMs; ShellExecuteReturnedMs=$returned; ObservationEndedMs=$probe.Ms; AfterRowSeconds=2
         ExpectedWindow=$Expected; WindowChanges=$changes; WindowPollSleepMs=5; WindowPolls=$probe.Polls; MaxWindowPollGapMs=$probe.MaxWindowPollGapMs
         UiaQueries=$queries; UiaPollSleepMs=10}
+    if ($CaptureFrames) { $record.ClientAnimationsEnabled = $clientAnimations }
     if ($RecoveryStaging) {
         if ($null -eq $probe.LastStagingPresentMs -or $null -eq $probe.FirstStagingRemovedMs -or
             (Test-Path -LiteralPath $RecoveryStaging)) { $failure='Did not observe the staged import files being recovered.' }
@@ -195,6 +199,28 @@ try {
         Measure-Launch ('saved-'+$theme.ToLowerInvariant()) $normal
     }
     Close-Fixture
+    if ($CaptureMotion) {
+        # Same signed app, saved theme/geometry and task. Only Windows client animations change.
+        $originalAnimations = [StartupWindowProbe]::ClientAnimationsEnabled()
+        $motion = [ordered]@{OriginalAnimationsEnabled=$originalAnimations; SavedTheme=$theme; Restored=$false}
+        try {
+            [StartupWindowProbe]::SetClientAnimations($true)
+            Measure-Launch 'motion-on' $normal
+            Close-Fixture
+            [StartupWindowProbe]::SetClientAnimations($false)
+            Measure-Launch 'motion-off' $normal
+            Close-Fixture
+        } finally {
+            try {
+                [StartupWindowProbe]::SetClientAnimations($originalAnimations)
+                $motion.RestoredAnimationsEnabled = [StartupWindowProbe]::ClientAnimationsEnabled()
+                $motion.Restored = $motion.RestoredAnimationsEnabled -eq $originalAnimations
+                if (-not $motion.Restored) { throw 'Guest animation setting did not restore.' }
+            } finally {
+                $motion | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $output 'motion.json') -Encoding UTF8
+            }
+        }
+    }
     if ($CaptureRecovery) {
         # Isolated private DEV registration above; never add content to an existing staging folder.
         # The supported store deletes import-staging during its real interrupted-import recovery.
