@@ -4,6 +4,8 @@ Open the signed x64 MSIX and choose **Update** (or **Install** on a first instal
 
 ## Check the layout
 
+![My Day at minimum width with Suggestions open: the gap below the date increased from 0 DIPs in DEV .236 to 16 DIPs in DEV .238.](samples/My-Day-date-spacing.png)
+
 | What to do | What you should see |
 |---|---|
 | Open **Tasks**, with the sidebar closed. Compare with the Store app at the same window width and display scale. Then switch to **My Day**. | In Tasks, **Sort** and **…** are one normal button gap apart, with no empty slot between them. In My Day, the lightbulb occupies that slot, even when there are no eligible tasks. |
