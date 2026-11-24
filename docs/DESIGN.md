@@ -247,9 +247,11 @@ Smart lists prefill the new task so it lands where it was typed:
 The **Suggestions** lightbulb sits immediately before the My Day overflow menu.
 The sidebar reaches the top and right edge of the list surface and shares the
 My Day theme background. Overdue dates use the theme's critical text color.
-The sidebar lists overdue tasks, upcoming tasks in due-date order, due-today
-tasks removed from My Day, undated tasks pinned yesterday, and other undated
-tasks. Tasks already in
+The sidebar lists overdue tasks under **Earlier**, future tasks in due-date
+order under **Later**, due-today tasks removed from My Day, and undated tasks
+pinned yesterday. **Recently added** shows remaining tasks created today or
+up to three local calendar days ago. Other undated tasks appear under
+**No Due Date**. Tasks already in
 My Day, completed tasks, cancelled tasks, and steps are excluded. Each row can
 add the task to My Day or complete it with the empty completion circle without
 closing the sidebar.

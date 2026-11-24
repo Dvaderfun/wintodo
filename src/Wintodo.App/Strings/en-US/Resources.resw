@@ -1295,10 +1295,11 @@ xunit.v3 4.0.3 — Apache-2.0</value></data>
   <data name="CloseSuggestionsButton.ToolTipService.ToolTip" xml:space="preserve"><value>Close suggestions</value></data>
   <data name="SuggestionsTitle.Text" xml:space="preserve"><value>Suggestions</value></data>
   <data name="SuggestionsList.AutomationProperties.Name" xml:space="preserve"><value>Suggested tasks</value></data>
-  <data name="Suggestions_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="Suggestions_Overdue" xml:space="preserve"><value>Earlier</value></data>
   <data name="Suggestions_Today" xml:space="preserve"><value>Due today</value></data>
-  <data name="Suggestions_Upcoming" xml:space="preserve"><value>Upcoming</value></data>
+  <data name="Suggestions_Upcoming" xml:space="preserve"><value>Later</value></data>
   <data name="Suggestions_Yesterday" xml:space="preserve"><value>From yesterday</value></data>
+  <data name="Suggestions_RecentlyAdded" xml:space="preserve"><value>Recently added</value></data>
   <data name="Suggestions_Undated" xml:space="preserve"><value>No Due Date</value></data>
   <data name="Suggestions_Loading" xml:space="preserve"><value>Loading suggestions…</value></data>
   <data name="Suggestions_Empty" xml:space="preserve"><value>You have no suggested tasks.</value></data>

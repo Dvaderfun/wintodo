@@ -234,18 +234,27 @@ public static class MyDayGateWriteLock
     Ui @('invoke', 'Todo.Detail.Due') | Out-Null
     Ui @('invoke', 'Todo.Detail.Due.Tomorrow') | Out-Null
     Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Tomorrow', '-t', '5000') | Out-Null
+    $recentRow = Add-GateTask 'Recently added suggestion gate task'
     Ui @('invoke', 'Todo.Nav.MyDay') | Out-Null
     Ui @('invoke', 'Todo.Suggestions.Open') | Out-Null
     Ui @('wait-for', 'Todo.Suggestions.Close', '-t', '5000') | Out-Null
     $addOverdue = $overdueRow.Replace('Todo.Row.', 'Todo.Suggestions.Add.')
     $completeFuture = $futureRow.Replace('Todo.Row.', 'Todo.Suggestions.Complete.')
+    $addRecent = $recentRow.Replace('Todo.Row.', 'Todo.Suggestions.Add.')
     Ui @('wait-for', $addOverdue, '-t', '5000') | Out-Null
     Ui @('wait-for', $completeFuture, '-t', '5000') | Out-Null
+    Ui @('wait-for', $addRecent, '-t', '5000') | Out-Null
     $suggestionTree = (Ui @('inspect', '--depth', '30', '--json')) -join "`n"
     $overdueIndex = $suggestionTree.IndexOf($addOverdue, [StringComparison]::Ordinal)
     $futureIndex = $suggestionTree.IndexOf($completeFuture, [StringComparison]::Ordinal)
-    if ($overdueIndex -lt 0 -or $futureIndex -le $overdueIndex) {
-        throw 'Expected the overdue suggestion before the upcoming suggestion.'
+    $recentIndex = $suggestionTree.IndexOf($addRecent, [StringComparison]::Ordinal)
+    if ($overdueIndex -lt 0 -or $futureIndex -le $overdueIndex -or $recentIndex -le $futureIndex) {
+        throw 'Expected earlier, future, and recently added suggestions in that order.'
+    }
+    foreach ($heading in @('Earlier', 'Later', 'Recently added')) {
+        if (-not $suggestionTree.Contains('"' + $heading + '"')) {
+            throw "Expected suggestion heading '$heading'."
+        }
     }
     Ui @('screenshot', '-o', (Join-Path $artifacts 'suggestions.png')) | Out-Null
     Ui @('invoke', $addOverdue) | Out-Null

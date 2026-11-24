@@ -42,6 +42,29 @@ public sealed class MyDaySuggestionsTests
     }
 
     [Fact]
+    public void RecentlyAddedUsesLocalCalendarAndFollowsExistingSections()
+    {
+        IClock clock = new TestClock(new DateTimeOffset(2026, 11, 23, 20, 0, 0, TimeSpan.Zero));
+        var cutoff = new DateTimeOffset(2026, 11, 20, 18, 30, 0, TimeSpan.Zero);
+        var older = new TodoTask { Uid = "older", Created = cutoff.AddMinutes(-1) };
+        var recent = new TodoTask { Uid = "recent", Created = cutoff };
+        var today = new TodoTask { Uid = "today", Created = clock.UtcNow };
+        var carryOver = new TodoTask { Uid = "carry", Created = cutoff, MyDayDate = clock.Today.AddDays(-1) };
+        TodoTask earlier = Dated("earlier", 23);
+        earlier.Created = cutoff;
+        TodoTask later = Dated("later", 25);
+        later.Created = cutoff;
+
+        var result = MyDaySuggestions.Build([older, recent, today, carryOver, earlier, later], clock);
+
+        Assert.Equal(
+            new[] { ("earlier", SuggestionSection.Overdue), ("later", SuggestionSection.Upcoming),
+                ("carry", SuggestionSection.Yesterday), ("recent", SuggestionSection.RecentlyAdded),
+                ("today", SuggestionSection.RecentlyAdded), ("older", SuggestionSection.Undated) },
+            result.Select(item => (item.Task.Uid, item.Section)));
+    }
+
+    [Fact]
     public void RolloverExpiresOldPinsAndReclassifiesDatedSuggestions()
     {
         IClock before = new TestClock(new DateTimeOffset(2026, 11, 23, 18, 29, 0, TimeSpan.Zero));

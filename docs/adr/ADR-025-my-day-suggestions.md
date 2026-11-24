@@ -22,3 +22,7 @@ Cover empty and first-run lists, rollover and resume, all-day and timed due date
 ## Amendment — Undated tasks
 
 Show other unfinished tasks without a due date in a **No Due Date** section after the existing groups. Tasks that were never in My Day can be added directly from this section.
+
+## Amendment — Section labels and recent additions
+
+The owner's 2026-11-24 request names the overdue and future sections **Earlier** and **Later**. Show remaining tasks created today or up to three local calendar days ago under **Recently added**, immediately above **No Due Date**.

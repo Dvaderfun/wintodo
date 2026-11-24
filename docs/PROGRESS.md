@@ -17,7 +17,8 @@ version below predates these changes.
 
 My Day Suggestions (UX-19) is implemented in the working copy under ADR-025.
 The right-hand sidebar opens from the header beside the overflow menu and lists overdue
-tasks before upcoming ones. Add and complete actions preserve the source
+tasks under Earlier and future tasks under Later. Recently added appears immediately
+above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
 **Private DEV installer:** Wintodo DEV **1.0.1.224** is the
@@ -365,6 +366,13 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-24 — My Day suggestion sections
+
+- Renamed the overdue and future headings to Earlier and Later. Added Recently
+  added for eligible tasks created today or up to three local calendar days ago.
+- The x64 build passed with zero warnings and all 746 tests passed. The My Day
+  UI gate could not start because the Hyper-V `Get-VMCheckpoint` cmdlet was unavailable.
 
 ### 2026-11-24 — UX-19 Suggestions sidebar
 
