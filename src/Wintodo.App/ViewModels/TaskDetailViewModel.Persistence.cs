@@ -14,24 +14,30 @@ public sealed partial class TaskDetailViewModel
         int loadVersion = ++_loadVersion;
         int revision;
         int attachmentRevision;
+        int stepRevision;
         Task<TodoTask?> taskRequest;
         Task<IReadOnlyList<TodoTask>> stepsRequest;
         do
         {
             if (!await FlushPendingEditsAsync() || loadVersion != _loadVersion) return false;
+            cancellationToken.ThrowIfCancellationRequested();
             revision = _textSaves.Revision;
             attachmentRevision = _attachmentRevision;
+            stepRevision = _stepRevision;
             taskRequest = _taskStore.GetTaskAsync(uid, cancellationToken);
             stepsRequest = _taskStore.GetChildrenAsync(uid, cancellationToken);
             await Task.WhenAll(taskRequest, stepsRequest);
+            cancellationToken.ThrowIfCancellationRequested();
             if (loadVersion != _loadVersion) return false;
             // The old editor was still available while SQLite read the new selection.
-        } while (HasPendingEdits || attachmentRevision != _attachmentRevision
+        } while (HasPendingEdits || attachmentRevision != _attachmentRevision || stepRevision != _stepRevision
             || (uid == _model?.Uid && revision != _textSaves.Revision));
 
         TodoTask task = await taskRequest
             ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
+        if (_model?.Uid != task.Uid) IsErrorOpen = false;
         _model = task;
+        RestoreStepDraft(task.Uid);
         ApplyModelToEditor(task);
 
         var steps = new ObservableCollection<object>();
@@ -112,7 +118,7 @@ public sealed partial class TaskDetailViewModel
             }
             if (!textOnly || ReferenceEquals(_model, current))
                 TaskChanged?.Invoke(CloneTask(current));
-            IsErrorOpen = false;
+            if (ReferenceEquals(_model, current)) IsErrorOpen = false;
             return true;
         }
         catch (OperationCanceledException)
@@ -122,7 +128,7 @@ public sealed partial class TaskDetailViewModel
         catch (Exception exception)
         {
             Trace.WriteLine($"WINTODO_TASK_SAVE_EXCEPTION={DiagnosticException.Describe(exception)}");
-            ShowError(_resources.GetString("Detail_SaveFailed"));
+            if (ReferenceEquals(_model, current)) ShowError(_resources.GetString("Detail_SaveFailed"));
             return false;
         }
         finally

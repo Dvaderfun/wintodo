@@ -48,6 +48,15 @@ public sealed partial class TaskDetailView : UserControl
         FlyoutBase.ShowAttachedFlyout(DueButton);
     }
 
+    internal void DismissTaskPickers()
+    {
+        DueButton.Flyout?.Hide();
+        ReminderButton.Flyout?.Hide();
+        RepeatButton.Flyout?.Hide();
+        FlyoutBase.GetAttachedFlyout(DueButton)?.Hide();
+        FlyoutBase.GetAttachedFlyout(ReminderButton)?.Hide();
+    }
+
     internal void OpenReminderPicker()
     {
         FlyoutBase.ShowAttachedFlyout(ReminderButton);
@@ -57,6 +66,9 @@ public sealed partial class TaskDetailView : UserControl
     {
         return !value;
     }
+
+    public static bool IsWritingNote(FocusState focus, string text) =>
+        focus != FocusState.Unfocused && !string.IsNullOrEmpty(text);
 
     public static Visibility BoolToVisibility(bool value)
     {

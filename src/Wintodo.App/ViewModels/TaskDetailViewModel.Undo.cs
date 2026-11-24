@@ -17,10 +17,10 @@ public sealed partial class TaskDetailViewModel
             token => _taskStore.RestoreTaskFieldsAsync(states, token));
     }
 
-    private async Task<IReadOnlyList<TaskUndoState>> CaptureUndoAsync(TaskUndoFields fields)
+    private async Task<IReadOnlyList<TaskUndoState>> CaptureUndoAsync(string ownerUid, TaskUndoFields fields)
     {
         // Include pending title/note edits before capturing a destructive field change.
         if (!await FlushPendingEditsAsync()) throw new InvalidOperationException("Cannot capture an unsaved task.");
-        return await _taskStore.CaptureTaskUndoAsync([_model!.Uid], fields);
+        return await _taskStore.CaptureTaskUndoAsync([ownerUid], fields);
     }
 }

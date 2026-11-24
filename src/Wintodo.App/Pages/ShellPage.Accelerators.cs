@@ -213,22 +213,13 @@ public sealed partial class ShellPage
 
     private async void OnDueDateAccelerator(
         KeyboardAccelerator sender,
-        KeyboardAcceleratorInvokedEventArgs args)
-    {
-        TaskItemViewModel? selected = ViewModel.TaskList.SelectedTask;
-        if (selected is null)
-        {
-            return;
-        }
-
-        await ViewModel.OpenDetailAsync(selected);
-        DispatcherQueue.TryEnqueue(TaskDetail.OpenDuePicker);
-        args.Handled = true;
-    }
+        KeyboardAcceleratorInvokedEventArgs args) => await OpenDetailPickerAsync(args, due: true);
 
     private async void OnReminderAccelerator(
         KeyboardAccelerator sender,
-        KeyboardAcceleratorInvokedEventArgs args)
+        KeyboardAcceleratorInvokedEventArgs args) => await OpenDetailPickerAsync(args, due: false);
+
+    private async Task OpenDetailPickerAsync(KeyboardAcceleratorInvokedEventArgs args, bool due)
     {
         TaskItemViewModel? selected = ViewModel.TaskList.SelectedTask;
         if (selected is null)
@@ -236,9 +227,14 @@ public sealed partial class ShellPage
             return;
         }
 
-        await ViewModel.OpenDetailAsync(selected);
-        DispatcherQueue.TryEnqueue(TaskDetail.OpenReminderPicker);
         args.Handled = true;
+        if (!ViewModel.IsEditingSelectedTask(selected.Uid) && !await ViewModel.OpenDetailAsync(selected)) return;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!ViewModel.IsEditingSelectedTask(selected.Uid)) return;
+            if (due) TaskDetail.OpenDuePicker();
+            else TaskDetail.OpenReminderPicker();
+        });
     }
 
     private void OnSmartListAccelerator(

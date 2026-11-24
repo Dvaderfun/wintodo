@@ -103,9 +103,6 @@
             <VisualStateGroup x:Name="DetailPaneStates">
                 <VisualStateGroup.Transitions>
                     <VisualTransition
-                        To="DetailOpen"
-                        GeneratedDuration="0:0:0.2" />
-                    <VisualTransition
                         To="DetailClosing"
                         GeneratedDuration="0:0:0.15" />
                 </VisualStateGroup.Transitions>
@@ -494,10 +491,11 @@
                     x:Name="DetailHost"
                     Grid.Column="1"
                     MinWidth="320"
-                    MaxWidth="720"
+                    MaxWidth="960"
                     Margin="8"
                     HorizontalAlignment="Right"
                     Visibility="Collapsed"
+                    SizeChanged="OnDetailHostSizeChanged"
                     Width="{x:Bind ViewModel.DetailPaneWidth, Mode=TwoWay}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="12" />
@@ -508,6 +506,8 @@
                         Grid.Column="0"
                         AutomationProperties.AutomationId="Todo.Detail.Sizer"
                         IsDragInverted="True"
+                        ManipulationStarted="OnDetailResizeStarted"
+                        ManipulationCompleted="OnDetailResizeCompleted"
                         Orientation="Vertical"
                         TargetControl="{x:Bind DetailHost, Mode=OneTime}" />
                     <Border
@@ -532,8 +532,74 @@
                                 x:Name="TaskDetail"
                                 AutomationProperties.AutomationId="Todo.Detail.View"
                                 Loaded="OnTaskDetailLoaded"
+                                Visibility="{x:Bind local:ShellPage.BoolToVisibility(ViewModel.IsDetailEditorReady), Mode=OneWay}"
                                 ViewModel="{x:Bind ViewModel.Detail, Mode=OneWay}"
                                 x:Load="{x:Bind ViewModel.IsDetailPaneLoaded, Mode=OneWay}" />
+                            <!-- This header can paint without constructing the editor or exposing the previous task. -->
+                            <Grid
+                                Margin="16"
+                                VerticalAlignment="Top"
+                                ColumnSpacing="4"
+                                RowSpacing="8"
+                                Visibility="{x:Bind local:ShellPage.BoolToVisibility(ViewModel.HasDetailPreview), Mode=OneWay}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="32" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="32" />
+                                    <ColumnDefinition Width="32" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <Grid Width="24" Height="24" Margin="0,4,0,0" VerticalAlignment="Top"
+                                      AutomationProperties.AccessibilityView="Raw">
+                                    <Ellipse Stroke="{ThemeResource TextFillColorSecondaryBrush}" StrokeThickness="1" />
+                                    <Grid Visibility="{x:Bind local:ShellPage.BoolToVisibility(ViewModel.IsPreviewCompleted), Mode=OneWay}">
+                                        <Ellipse Fill="{ThemeResource ListAccentBrush}" />
+                                        <FontIcon Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" Glyph="&#xE73E;" />
+                                    </Grid>
+                                </Grid>
+                                <TextBlock
+                                    Grid.Column="1"
+                                    Margin="12,8,8,0"
+                                    MaxLines="3"
+                                    AutomationProperties.AutomationId="Todo.Detail.PreviewTitle"
+                                    Style="{StaticResource BodyTextBlockStyle}"
+                                    Text="{x:Bind ViewModel.DetailPreviewTitle, Mode=OneWay}"
+                                    TextTrimming="CharacterEllipsis"
+                                    TextWrapping="Wrap" />
+                                <FontIcon
+                                    Grid.Column="2"
+                                    Height="32"
+                                    VerticalAlignment="Top"
+                                    AutomationProperties.AccessibilityView="Raw"
+                                    Foreground="{ThemeResource ListAccentBrush}"
+                                    Glyph="{x:Bind controls:TaskDetailView.ImportanceGlyph(ViewModel.IsPreviewImportant), Mode=OneWay}" />
+                                <Button
+                                    x:Uid="DetailCloseButton"
+                                    Grid.Column="3"
+                                    Width="32" Height="32" Padding="0" VerticalAlignment="Top"
+                                    AutomationProperties.AutomationId="Todo.Detail.PreviewClose"
+                                    Command="{x:Bind ViewModel.CloseDetailPreviewCommand, Mode=OneTime}"
+                                    Style="{StaticResource SubtleButtonStyle}">
+                                    <FontIcon Glyph="&#xE711;" />
+                                </Button>
+                                <StackPanel
+                                    Grid.Row="1" Grid.ColumnSpan="4"
+                                    Spacing="8"
+                                    Visibility="{x:Bind local:ShellPage.BoolToVisibility(ViewModel.IsDetailLoadError), Mode=OneWay}">
+                                    <TextBlock
+                                        AutomationProperties.LiveSetting="Polite"
+                                        Style="{StaticResource BodyTextBlockStyle}"
+                                        Text="{x:Bind ViewModel.DetailLoadFailedText, Mode=OneTime}"
+                                        TextWrapping="Wrap" />
+                                    <Button
+                                        x:Uid="DetailLoadRetry"
+                                        AutomationProperties.AutomationId="Todo.Detail.RetryOpen"
+                                        Command="{x:Bind ViewModel.RetryDetailLoadCommand, Mode=OneTime}" />
+                                </StackPanel>
+                            </Grid>
                         </Grid>
                     </Border>
                 </Grid>

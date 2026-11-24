@@ -80,6 +80,7 @@ public sealed partial class ShellPage : Page
         ViewModel.AppearanceSettingsChanged += OnAppearanceSettingsChanged;
         ViewModel.UserListVisited += OnUserListVisited;
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        ViewModel.RestoreDetailSelectionRequested += task => TaskList.SelectTask(task);
         ViewModel.SyncConflictsRequested += OnSyncConflictsRequested;
         ViewModel.CustomListIconRequested += OnCustomListIconRequested;
         ShellRoot.ActualThemeChanged += OnActualThemeChanged;
@@ -145,10 +146,11 @@ public sealed partial class ShellPage : Page
         {
             if (ViewModel.IsDetailPaneOpen)
             {
-                VisualStateManager.GoToState(this, "DetailOpen", useTransitions: true);
+                VisualStateManager.GoToState(this, "DetailOpen", useTransitions: false);
             }
             else
             {
+                if (ViewModel.IsDetailPaneLoaded) TaskDetail?.DismissTaskPickers();
                 if (_taskListEventsAttached && ViewModel.TaskList.SelectionCount <= 1)
                 {
                     TaskList.ClearTaskSelection();
@@ -157,11 +159,15 @@ public sealed partial class ShellPage : Page
                 _ = CloseDetailVisualAsync();
             }
         }
+        else if (args.PropertyName == nameof(ShellViewModel.IsDetailEditorReady) && !ViewModel.IsDetailEditorReady)
+        {
+            TaskDetail?.DismissTaskPickers();
+        }
     }
 
-    private async void OnTaskOpenRequested(TaskItemViewModel task)
+    private async void OnTaskOpenRequested(TaskItemViewModel task, bool explicitlyActivated)
     {
-        await ViewModel.OpenDetailAsync(task);
+        await ViewModel.OpenDetailAsync(task, refresh: explicitlyActivated && ViewModel.IsEditingSelectedTask(task.Uid));
     }
 
     private void OnTaskCloseRequested()

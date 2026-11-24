@@ -126,13 +126,15 @@ public sealed partial class ShellPage
         TaskItemViewModel? item = ViewModel.TaskList.FindTask(uid);
         if (item is not null)
         {
-            await ViewModel.OpenDetailAsync(item, cancellationToken);
             TaskList.SelectTask(item);
+            await ViewModel.OpenDetailAsync(item, cancellationToken);
         }
     }
 
     internal void StopMidnightRefresh()
     {
+        ViewModel.CancelDetailRead();
+        _stoppedPaneResize = true;
         ViewModel.UserListVisited -= OnUserListVisited;
         ViewModel.SyncConflictsRequested -= OnSyncConflictsRequested;
         ViewModel.CustomListIconRequested -= OnCustomListIconRequested;

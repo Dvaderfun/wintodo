@@ -112,7 +112,10 @@ and the [earlier ML provenance review](docs/plans/dep02-vendor-provenance-resolu
 One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
 `ShellPage` is the three-pane layout from `PLAN.md` §6.1: `NavigationView` pane
 (smart lists, default "Tasks" list, user lists and groups, footer composer) →
-`TaskListView` → `TaskDetailView` (`x:Load`-deferred).
+`TaskListView` → `TaskDetailView` (`x:Load`-deferred). While a selection is
+being read, the shell can show its row title and state without constructing
+the editor. It exposes editable fields only for the verified task UID;
+superseding a selection cancels the read, never an outgoing draft write.
 
 - Switching lists swaps the bound data on the single `TaskListViewModel`;
   there is no page navigation between lists.
@@ -148,6 +151,8 @@ One `MainWindow`; its root `Frame` hosts one `ShellPage` for the app's lifetime.
   then refreshes navigation and the open detail pane. The detail editor also
   drains pending title and note edits before replacing its model or closing the
   main window; a write already in progress finishes before newer text is saved.
+  Next-step drafts are scoped by task UID for the editor session. The submit
+  captures both the UID and draft revision before it writes a step.
   Remote StoreChanged events
   invalidate affected entries; local writes and push acknowledgements retain them.
   List deletion records task membership in migration 003; restore retains earlier

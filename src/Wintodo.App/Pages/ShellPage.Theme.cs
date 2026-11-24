@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
@@ -15,6 +16,13 @@ namespace Wintodo.Pages;
 
 public sealed partial class ShellPage
 {
+    private const int ResizeSettleMilliseconds = 500;
+    private string? _displayedBackgroundAsset;
+    private bool _isDraggingDetailSizer;
+    private bool _waitingForPaneResize;
+    private bool _stoppedPaneResize;
+    private long _paneResizeDue;
+
     public static Visibility BoolToVisibility(bool value)
     {
         return value ? Visibility.Visible : Visibility.Collapsed;
@@ -204,37 +212,81 @@ public sealed partial class ShellPage
     private void OnContentGridSizeChanged(object sender, SizeChangedEventArgs args)
     {
         const double listReserve = 320;
-        const double hardMaximum = 960;
         DetailHost.MaxWidth = Math.Clamp(
             args.NewSize.Width - listReserve,
             DetailHost.MinWidth,
-            hardMaximum);
+            ShellViewModel.MaximumDetailPaneWidth);
+    }
+
+    private void OnDetailResizeStarted(object sender, ManipulationStartedRoutedEventArgs args)
+    {
+        _isDraggingDetailSizer = true;
+    }
+
+    private void OnDetailResizeCompleted(object sender, ManipulationCompletedRoutedEventArgs args)
+    {
+        _isDraggingDetailSizer = false;
+        _ = ViewModel.FlushDetailPaneWidthAsync();
+        // The final list layout may not have been arranged yet.
+        QueueSettledPaneResize();
+    }
+
+    private void OnDetailHostSizeChanged(object sender, SizeChangedEventArgs args)
+    {
+        // Width is the user's preference; a change in ActualWidth from a narrower
+        // window must not overwrite it. Keyboard resizing also comes through here.
+        if (args.PreviousSize.Width != args.NewSize.Width && ViewModel.HasPendingDetailPaneWidth)
+            QueueSettledPaneResize();
     }
 
     private void OnListPaneSizeChanged(object sender, SizeChangedEventArgs args)
     {
-        int decodeWidth = GetBackgroundDecodeWidth();
-        if (ListBackgroundImage.Source is not null
-            && Math.Abs(decodeWidth - _backgroundDecodeWidth) >= 64)
-        {
-            ApplyListBackground();
-        }
+        if (!_isDraggingDetailSizer && args.PreviousSize.Width != args.NewSize.Width
+            && ViewModel.ShowListBackgrounds && !_isHighContrast
+            && ResolveBackgroundAsset(ViewModel.TaskList.BackgroundTheme) is not null)
+            QueueSettledPaneResize();
+    }
+
+    private void QueueSettledPaneResize()
+    {
+        if (_isDraggingDetailSizer || _stoppedPaneResize) return;
+        _paneResizeDue = Environment.TickCount64 + ResizeSettleMilliseconds;
+        if (_waitingForPaneResize) return;
+        _waitingForPaneResize = true;
+        _ = FinishPaneResizeWhenIdleAsync();
+    }
+
+    private async Task FinishPaneResizeWhenIdleAsync()
+    {
+        // One delay for each burst, with at most one outstanding wait. Subsequent
+        // size notifications only move the deadline; no cancellation source per pixel.
+        long remaining;
+        while (!_stoppedPaneResize && !_isDraggingDetailSizer
+            && (remaining = _paneResizeDue - Environment.TickCount64) > 0)
+            await Task.Delay(TimeSpan.FromMilliseconds(remaining));
+
+        _waitingForPaneResize = false;
+        if (_stoppedPaneResize || _isDraggingDetailSizer) return;
+        ApplyListBackground();
+        await ViewModel.FlushDetailPaneWidthAsync();
     }
 
     private void ApplyListBackground(bool? isHighContrast = null)
     {
-        ListBackgroundImage.Source = null;
-        _backgroundDecodeWidth = 0;
         string? assetName = ResolveBackgroundAsset(ViewModel.TaskList.BackgroundTheme);
         if (!ViewModel.ShowListBackgrounds
             || assetName is null
             || (isHighContrast ?? _isHighContrast))
         {
+            ListBackgroundImage.Source = null;
+            _displayedBackgroundAsset = null;
+            _backgroundDecodeWidth = 0;
             return;
         }
 
         int decodeWidth = GetBackgroundDecodeWidth();
-        if (decodeWidth <= 0)
+        if (decodeWidth <= 0 || (_displayedBackgroundAsset == assetName
+            && (_isDraggingDetailSizer || Math.Abs(decodeWidth - _backgroundDecodeWidth) < 64)))
         {
             return;
         }
@@ -244,6 +296,7 @@ public sealed partial class ShellPage
             DecodePixelWidth = decodeWidth,
             UriSource = new Uri($"ms-appx:///Assets/ListBackgrounds/{assetName}.jpg"),
         };
+        _displayedBackgroundAsset = assetName;
         _backgroundDecodeWidth = decodeWidth;
         ListBackgroundImage.Source = bitmap;
     }

@@ -56,7 +56,7 @@ public sealed partial class TaskListView : UserControl
         set => SetValue(ViewModelProperty, value);
     }
 
-    internal event Action<TaskItemViewModel>? TaskOpenRequested;
+    internal event Action<TaskItemViewModel, bool>? TaskOpenRequested;
     internal event Action? TaskCloseRequested;
 
     public static Visibility BoolToVisibility(bool value)
@@ -461,7 +461,7 @@ public sealed partial class TaskListView : UserControl
         if (updateDetail)
         {
             if (ViewModel.SelectedTask is { } selected)
-                TaskOpenRequested?.Invoke(selected);
+                TaskOpenRequested?.Invoke(selected, false);
             else TaskCloseRequested?.Invoke();
         }
         AutomationPeer? peer = FrameworkElementAutomationPeer.FromElement(TasksList)
@@ -923,7 +923,8 @@ public sealed partial class TaskListView : UserControl
             return;
         }
 
-        TaskOpenRequested?.Invoke(ViewModel.SelectedTask);
+        // Enter also rereads an open task after a list-only activation/sync refresh.
+        TaskOpenRequested?.Invoke(ViewModel.SelectedTask, true);
         args.Handled = true;
     }
 

@@ -48,19 +48,18 @@ public sealed partial class TaskDetailViewModel
     [RelayCommand]
     private async Task ClearRepeatAsync()
     {
-        if (_model is null)
+        if (_model is not { RRule: not null } owner) return;
+        var states = await CaptureUndoAsync(owner.Uid, Core.Services.TaskUndoFields.Repeat);
+        owner = CurrentVersionOf(owner);
+        owner.RRule = null;
+        if (ReferenceEquals(_model, owner))
         {
-            return;
+            _isLoading = true;
+            RepeatModeIndex = -1;
+            _isLoading = false;
+            UpdateActionLabels();
         }
-
-        if (_model.RRule is null) return;
-        var states = await CaptureUndoAsync(Core.Services.TaskUndoFields.Repeat);
-        _isLoading = true;
-        _model.RRule = null;
-        RepeatModeIndex = -1;
-        _isLoading = false;
-        UpdateActionLabels();
-        if (await PersistModelAsync()) RecordUndo(states, "Undo_RepeatCleared");
+        if (await PersistModelAsync(owner)) RecordUndo(states, "Undo_RepeatCleared");
     }
 
     private void ConfigureRepeatEditor(string? rrule)

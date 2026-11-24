@@ -17,7 +17,8 @@ public sealed partial class MainWindow
         var viewModel = _shellPage?.ViewModel;
         if (viewModel is null || _closeApproved) return;
         var wizard = viewModel.ImportWizard;
-        if (!_closePending && wizard is null && !viewModel.Detail.HasPendingEdits) return;
+        if (!_closePending && wizard is null && !viewModel.Detail.HasPendingEdits
+            && !viewModel.HasPendingDetailPaneWidth) return;
         args.Cancel = true;
         if (_closePending) return;
         _closePending = true;
@@ -41,7 +42,11 @@ public sealed partial class MainWindow
             if (wizard is not null) await viewModel.ShutdownImportAsync();
             // Unwind the original Closing event before calling Close ourselves.
             await Task.Yield();
-            if (!await viewModel.Detail.FlushPendingEditsAsync()) return;
+            do
+            {
+                await viewModel.FlushDetailPaneWidthAsync();
+                if (!await viewModel.Detail.FlushPendingEditsAsync()) return;
+            } while (viewModel.HasPendingDetailPaneWidth);
             _closeApproved = true;
             Close();
         }

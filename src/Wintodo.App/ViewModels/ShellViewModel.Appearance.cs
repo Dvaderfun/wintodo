@@ -224,39 +224,26 @@ public sealed partial class ShellViewModel
         _isApplyingStartupTaskState = false;
     }
 
-    partial void OnDetailPaneWidthChanged(double value)
-    {
-        if (!_areAppearanceSettingsLoaded)
-        {
-            return;
-        }
+    internal bool HasPendingDetailPaneWidth =>
+        (_areAppearanceSettingsLoaded && DetailPaneWidth != _queuedDetailPaneWidth)
+        || !_detailPaneWidthWrite.IsCompleted;
 
-        _detailPaneWidthDebounce?.Cancel();
-        _detailPaneWidthDebounce?.Dispose();
-        _detailPaneWidthDebounce = new CancellationTokenSource();
-        _ = PersistDetailPaneWidthAsync(value, _detailPaneWidthDebounce.Token);
+    internal Task FlushDetailPaneWidthAsync()
+    {
+        if (_areAppearanceSettingsLoaded && DetailPaneWidth != _queuedDetailPaneWidth)
+        {
+            _queuedDetailPaneWidth = DetailPaneWidth;
+            _detailPaneWidthWrite = PersistWidthAfterAsync(_detailPaneWidthWrite, DetailPaneWidth);
+        }
+        return _detailPaneWidthWrite;
     }
 
-    private async Task PersistDetailPaneWidthAsync(
-        double value,
-        CancellationToken cancellationToken)
+    private async Task PersistWidthAfterAsync(Task previous, double width)
     {
-        try
-        {
-            await Task.Delay(TimeSpan.FromMilliseconds(500), cancellationToken);
-            await _taskStore.SetSettingAsync(
-                DetailPaneWidthSetting,
-                value.ToString(
-                    System.Globalization.CultureInfo.InvariantCulture),
-                cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        catch (Exception exception)
-        {
-            Trace.WriteLine($"WINTODO_DETAIL_WIDTH_SETTING_ERROR={DiagnosticException.Describe(exception)}");
-        }
+        // A slower earlier write must not replace the last gesture's width.
+        await previous;
+        await PersistAppearanceSettingAsync(
+            DetailPaneWidthSetting, width.ToString(System.Globalization.CultureInfo.InvariantCulture));
     }
 
     private static double ParseDetailPaneWidth(string? value)
@@ -265,7 +252,7 @@ public sealed partial class ShellViewModel
                 value,
                 System.Globalization.NumberStyles.Float,
                 System.Globalization.CultureInfo.InvariantCulture,
-                out double width)
+                out double width) && double.IsFinite(width)
             ? Math.Clamp(width, MinimumDetailPaneWidth, MaximumDetailPaneWidth)
             : DefaultDetailPaneWidth;
     }

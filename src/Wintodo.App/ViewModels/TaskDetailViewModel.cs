@@ -27,10 +27,12 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     private readonly ResourceLoader _resources = new();
     private readonly SemaphoreSlim _saveGate = new(1, 1);
     private readonly DetailSaveQueue _textSaves = new();
+    private readonly DetailStepDrafts _stepDrafts = new();
     private TodoTask? _model;
     private bool _isLoading;
     private int _loadVersion;
     private int _attachmentRevision;
+    private int _stepRevision;
 
     internal TaskDetailViewModel(ITaskStore taskStore, IClock clock, TaskPreferences preferences, UndoService undo)
     {
@@ -101,6 +103,10 @@ public sealed partial class TaskDetailViewModel : ObservableObject
 
     public string Uid => _model?.Uid ?? string.Empty;
 
+    // A reload may have replaced the instance, but the action still belongs to the task that started it.
+    private TodoTask CurrentVersionOf(TodoTask owner) =>
+        _model is { } current && current.Uid == owner.Uid ? current : owner;
+
     [ObservableProperty]
     public partial string Summary { get; set; } = string.Empty;
 
@@ -140,6 +146,13 @@ public sealed partial class TaskDetailViewModel : ObservableObject
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddStepCommand))]
     public partial string NewStepTitle { get; set; } = string.Empty;
+
+    private void RestoreStepDraft(string uid) => NewStepTitle = _stepDrafts.GetText(uid);
+
+    partial void OnNewStepTitleChanged(string value)
+    {
+        if (_model is { } owner) _stepDrafts.SetText(owner.Uid, value);
+    }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasDue))]

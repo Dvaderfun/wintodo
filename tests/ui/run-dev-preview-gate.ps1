@@ -1,7 +1,7 @@
 # Run with Invoke-VmGate.ps1 -NoWarmup -Include artifacts/hybrid-input.
 # The input folder holds the signed installer and its build.json from Build-DevPreview.ps1.
 # For an update check, place the previous installer and metadata in hybrid-input/previous.
-param([switch]$UpgradeFromPrevious)
+param([switch]$UpgradeFromPrevious, [switch]$DetailProductivity, [string]$InputDirectory = 'artifacts/hybrid-input')
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $guest = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Virtual Machine\Guest\Parameters'
@@ -10,7 +10,7 @@ if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $root -ine 'C:\wintodo' -or $guest.V
 }
 $output = Join-Path $PSScriptRoot ('artifacts/dev-preview/'+[guid]::NewGuid().ToString('N'))
 $null = New-Item -ItemType Directory -Path $output
-$inputDir = Join-Path $root 'artifacts/hybrid-input'
+$inputDir = Join-Path $root $InputDirectory
 $build = Get-Content -LiteralPath (Join-Path $inputDir 'build.json') -Raw | ConvertFrom-Json
 $pkg = Join-Path $inputDir "Wintodo-DEV-$($build.version)-x64.msix"
 $report = [ordered]@{status='FAIL'; source=$build.source; sha256=$build.sha256; checks=@(); screenshots=@()}
@@ -234,6 +234,18 @@ try {
     Assert-Selection @()
     $report.checks += 'Native selection: one row, Ctrl+A selects five, Escape clears'
     if ($report.contrastError) { throw "High Contrast: $($report.contrastError)" }
+    if ($DetailProductivity) {
+        $reviewTitles = $titles[0..1]
+        $test = Join-Path $PSScriptRoot 'DevPreviewDetail.ps1'
+        & $test -AppPid $appPid -Titles $reviewTitles -ArtifactDirectory $output
+        $metrics = Get-Content -LiteralPath (Join-Path $output 'detail-layout.json') -Raw | ConvertFrom-Json
+        $report.checks += 'Separate step drafts, submitted step ownership, focused note space, due/reminder shortcuts and wide keyboard resize'
+        Close-InstalledDev @('send-keys','alt+f4','--via','send-input','--allow-system-keys')
+        Start-InstalledDev $registration
+        Ui @('wait-for','Todo.List.AddTaskBox','-t','30000') | Out-Null
+        & $test -AppPid $appPid -Titles $reviewTitles -ArtifactDirectory $output -RestoredWidth $metrics.wideDip
+        $report.checks += 'Desired pane width above 720 DIPs survived an app restart'
+    }
     $report.status = 'PASS'
 } catch {
     $report.error = "$_"

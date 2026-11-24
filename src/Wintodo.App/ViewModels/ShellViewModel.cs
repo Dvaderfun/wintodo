@@ -30,7 +30,7 @@ public sealed partial class ShellViewModel : ObservableObject
         "appearance.fixed_category_background.";
     private const string DetailPaneWidthSetting = "appearance.detail_pane_width";
     private const double MinimumDetailPaneWidth = 320;
-    private const double MaximumDetailPaneWidth = 720;
+    internal const double MaximumDetailPaneWidth = 960;
     private const double DefaultDetailPaneWidth = 360;
     private readonly ITaskStore _taskStore;
     private readonly ShellStateService _stateService;
@@ -48,7 +48,8 @@ public sealed partial class ShellViewModel : ObservableObject
     private IReadOnlyList<TaskItemViewModel>? _pendingBulkDelete;
     private bool _isDetailDeletePending;
     private int _detailOpenVersion;
-    private CancellationTokenSource? _detailPaneWidthDebounce;
+    private double _queuedDetailPaneWidth = DefaultDetailPaneWidth;
+    private Task _detailPaneWidthWrite = Task.CompletedTask;
     private int _navigationCountRefreshVersion;
 
     internal ShellViewModel(
@@ -354,7 +355,7 @@ public sealed partial class ShellViewModel : ObservableObject
         TintFixedCategoryIcons =
             !bool.TryParse(await tintFixedIconsTask, out bool tintFixedIcons)
             || tintFixedIcons;
-        DetailPaneWidth = ParseDetailPaneWidth(await detailWidthTask);
+        _queuedDetailPaneWidth = DetailPaneWidth = ParseDetailPaneWidth(await detailWidthTask);
         TaskList.IsCompactDensity = DensityIndex == 1;
         _areAppearanceSettingsLoaded = true;
         AppearanceSettingsChanged?.Invoke();

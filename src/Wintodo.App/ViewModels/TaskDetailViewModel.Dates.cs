@@ -53,20 +53,18 @@ public sealed partial class TaskDetailViewModel
     [RelayCommand]
     private async Task ClearDueAsync()
     {
-        if (_model is null)
+        if (_model is not { Due: not null } owner) return;
+        var states = await CaptureUndoAsync(owner.Uid, Core.Services.TaskUndoFields.Due);
+        owner = CurrentVersionOf(owner);
+        owner.Due = null;
+        owner.DueIsDateOnly = false;
+        owner.DueTzid = null;
+        if (ReferenceEquals(_model, owner))
         {
-            return;
+            RefreshPendingDueDate(owner);
+            UpdateActionLabels();
         }
-
-        if (_model.Due is null) return;
-        var states = await CaptureUndoAsync(Core.Services.TaskUndoFields.Due);
-        _model.Due = null;
-        _model.DueIsDateOnly = false;
-        _model.DueTzid = null;
-        PendingDueDate = null;
-        PendingDueTime = TimeSpan.Zero;
-        UpdateActionLabels();
-        if (await PersistModelAsync()) RecordUndo(states, "Undo_DueCleared");
+        if (await PersistModelAsync(owner)) RecordUndo(states, "Undo_DueCleared");
     }
 
     [RelayCommand]
@@ -116,18 +114,16 @@ public sealed partial class TaskDetailViewModel
     [RelayCommand]
     private async Task ClearReminderAsync()
     {
-        if (_model is null)
+        if (_model is not { Alarms.Count: > 0 } owner) return;
+        var states = await CaptureUndoAsync(owner.Uid, Core.Services.TaskUndoFields.Reminder);
+        owner = CurrentVersionOf(owner);
+        owner.Alarms.Clear();
+        if (ReferenceEquals(_model, owner))
         {
-            return;
+            RefreshPendingReminder(owner);
+            UpdateActionLabels();
         }
-
-        if (_model.Alarms.Count == 0) return;
-        var states = await CaptureUndoAsync(Core.Services.TaskUndoFields.Reminder);
-        _model.Alarms.Clear();
-        PendingReminderDate = null;
-        PendingReminderTime = _preferences.DefaultReminderTime;
-        UpdateActionLabels();
-        if (await PersistModelAsync()) RecordUndo(states, "Undo_ReminderCleared");
+        if (await PersistModelAsync(owner)) RecordUndo(states, "Undo_ReminderCleared");
     }
 
     internal void RefreshDateLabels() => UpdateActionLabels();

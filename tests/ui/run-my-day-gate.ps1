@@ -324,12 +324,17 @@ END;
     Ui @('invoke', 'Todo.Suggestions.Close') | Out-Null
 
     # Reject only this synthetic text write. A failed flush must leave the editor, draft and error visible.
+    $switchTarget = Add-GateTask 'Switch target during rejected draft'
     Ui @('invoke', $overdueRow) | Out-Null
     Ui @('wait-for', 'Todo.Detail.Note', '-t', '5000') | Out-Null
     $reject = "CREATE TRIGGER reject_suggestion_draft BEFORE UPDATE OF description ON tasks WHEN NEW.description='Suggestions recovery fixture' BEGIN SELECT RAISE(ABORT, 'fixture write failure'); END;"
     Invoke-SuggestionsFixtureSql $database $reject | Out-Null
     try {
         Ui @('set-value', 'Todo.Detail.Note', 'Suggestions recovery fixture') | Out-Null
+        Select-GateRow $switchTarget
+        Ui @('wait-for', 'Todo.Detail.Error', '-t', '5000') | Out-Null
+        Ui @('wait-for', 'Todo.Detail.Title', '--value', 'Overdue suggestion gate task', '-t', '5000') | Out-Null
+        Ui @('wait-for', 'Todo.Detail.Note', '--value', 'Suggestions recovery fixture', '-t', '5000') | Out-Null
         Ui @('invoke', 'Todo.Suggestions.Open') | Out-Null
         Ui @('wait-for', 'Todo.Detail.Error', '-t', '5000') | Out-Null
         Ui @('wait-for', 'Todo.Detail.Note', '--value', 'Suggestions recovery fixture', '-t', '5000') | Out-Null
@@ -341,7 +346,21 @@ END;
     Ui @('invoke', 'Todo.Suggestions.Open') | Out-Null
     Ui @('wait-for', 'Todo.Suggestions.Close', '-t', '5000') | Out-Null
     if ((Invoke-SuggestionsFixtureSql $database "SELECT count(*) FROM tasks WHERE summary='Overdue suggestion gate task' AND description='Suggestions recovery fixture';") -ne '1') { throw 'Retry did not persist the draft to its original task.' }
-    Write-Host 'My Day UI gate: PASS (membership, undo, rollover, recurrence, pending writes, Suggestions, stale occurrence, saved action with failed refresh, failed-save recovery)'
+    # A detail-only read error must not reveal the last task's note or accept an edit for it.
+    Ui @('invoke', 'Todo.Suggestions.Close') | Out-Null
+    $invalidDetail = "INSERT INTO attachments(task_id,file_name,relative_path,size_bytes,added_utc) SELECT id,'retry.txt','detail-retry-fixture.txt',0,'invalid-fixture-date' FROM tasks WHERE summary='Switch target during rejected draft'; SELECT changes();"
+    if ((Invoke-SuggestionsFixtureSql $database $invalidDetail) -ne '1') { throw 'Expected one retry fixture.' }
+    try {
+        Select-GateRow $switchTarget
+        Ui @('wait-for', 'Todo.Detail.PreviewTitle', '--value', 'Switch target during rejected draft', '-t', '5000') | Out-Null
+        Ui @('wait-for', 'Todo.Detail.RetryOpen', '-t', '5000') | Out-Null
+        Ui @('wait-for', 'Todo.Detail.Note', '--gone', '-t', '5000') | Out-Null
+    } finally {
+        Invoke-SuggestionsFixtureSql $database "DELETE FROM attachments WHERE relative_path='detail-retry-fixture.txt';" | Out-Null
+    }
+    Ui @('invoke', 'Todo.Detail.RetryOpen') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Title', '--value', 'Switch target during rejected draft', '-t', '5000') | Out-Null
+    Write-Host 'My Day UI gate: PASS (membership, undo, rollover, recurrence, pending writes, Suggestions, stale occurrence, saved action with failed refresh, failed-save recovery, detail retry)'
 } finally {
     Stop-Process -Id $appPid -ErrorAction SilentlyContinue
 }

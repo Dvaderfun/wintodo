@@ -5,6 +5,7 @@ Open the signed `Wintodo-DEV-…-x64.msix` using App Installer and choose **Inst
 A first install starts with its own empty task database. Updating DEV keeps that database. Create a list and a few sample tasks, select a row, and rename the list. The card boundaries stay in place; the selected marker and title editor are the changes to compare. No F8 switch is needed. The Store app remains separately available as **Wintodo**.
 
 For the My Day lightbulb, follow the [Suggestions layout and functional checklist](my-day-suggestions-preview.md).
+For task opening, resizing, and note or step editing, use the [task details checklist](task-details-preview.md).
 
 Use **1.0.1.224** to try Repeat. On a task with no due date, choose **Repeat → Weekly**: it becomes due today. Mark it done and the same task stays open, due next week. If a task from **1.0.1.222** already repeats daily but says **Add due date**, marking it done makes it due tomorrow. You can also choose **Add due date → Today** to give it today's deadline without completing it.
 
@@ -41,6 +42,11 @@ dotnet build Wintodo.sln -p:Platform=x64 -warnaserror
 The guest writes a task and note in the old version, installs the update over
 it, and checks that both remain. It also checks a note typed immediately
 before closing the new version and exercises the chosen card and title design.
+For a build containing the task-details changes, add `'-DetailProductivity'`
+to `-GateArguments` to check per-task step drafts, note and footer geometry,
+picker shortcuts, and restoration of a width above 720 DIPs. A dedicated
+input folder can be passed with `'-InputDirectory', 'artifacts/<name>'`
+and the matching VM `-Include`.
 
 ## DEV CI recommendation
 

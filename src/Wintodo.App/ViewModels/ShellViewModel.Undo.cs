@@ -17,7 +17,7 @@ public sealed partial class ShellViewModel
         await TaskList.ReloadAsync();
         if (IsDetailPaneOpen)
         {
-            if (await _taskStore.GetTaskAsync(Detail.Uid) is not null) await Detail.LoadAsync(Detail.Uid);
+            if (TaskList.SelectedTask is { } selected) await OpenDetailAsync(selected, refresh: true);
             else CloseDetail();
         }
     }

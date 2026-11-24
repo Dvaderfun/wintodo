@@ -105,6 +105,21 @@
         Padding="16"
         AutomationProperties.AutomationId="Todo.Detail.Root">
         <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="NoteEditingStates">
+                <VisualState x:Name="WritingNote">
+                    <VisualState.StateTriggers>
+                        <StateTrigger IsActive="{x:Bind local:TaskDetailView.IsWritingNote(NoteEditor.FocusState, NoteEditor.Text), Mode=OneWay}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="NoteEditor.VerticalAlignment" Value="Stretch" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="CompactNote">
+                    <VisualState.StateTriggers>
+                        <StateTrigger IsActive="True" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+            </VisualStateGroup>
             <VisualStateGroup x:Name="MyDayOptionStates">
                 <VisualState x:Name="MyDayUnset">
                     <VisualState.StateTriggers>
@@ -361,12 +376,25 @@
             Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
         <ScrollViewer
+            x:Name="DetailBodyViewport"
             Grid.Row="6"
             HorizontalScrollBarVisibility="Disabled"
             HorizontalScrollMode="Disabled"
             VerticalScrollBarVisibility="Auto"
             VerticalScrollMode="Auto">
-            <StackPanel Spacing="4">
+            <Grid
+                MinHeight="{x:Bind DetailBodyViewport.ViewportHeight, Mode=OneWay}"
+                RowSpacing="4">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
                 <Grid ColumnSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -408,7 +436,7 @@
                     </Button>
                 </Grid>
 
-                <Grid ColumnSpacing="4">
+                <Grid Grid.Row="1" ColumnSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="32" />
@@ -497,7 +525,7 @@
                     </Button>
                 </Grid>
 
-                <Grid ColumnSpacing="4">
+                <Grid Grid.Row="2" ColumnSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="32" />
@@ -586,12 +614,13 @@
                     </Button>
                 </Grid>
 
-                <Grid ColumnSpacing="4">
+                <Grid Grid.Row="3" ColumnSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="32" />
                     </Grid.ColumnDefinitions>
                     <DropDownButton
+                        x:Name="RepeatButton"
                         Grid.Column="0"
                         AutomationProperties.AutomationId="Todo.Detail.Repeat"
                         AutomationProperties.Name="{x:Bind ViewModel.RepeatLabel, Mode=OneWay}"
@@ -721,12 +750,14 @@
                 </Grid>
 
                 <Rectangle
+                    Grid.Row="4"
                     Height="1"
                     Margin="0,12"
                     Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
                 <Button
                     x:Uid="DetailAddFileButton"
+                    Grid.Row="5"
                     AutomationProperties.AutomationId="Todo.Detail.AddFile"
                     Command="{x:Bind ViewModel.RequestAddAttachmentCommand, Mode=OneWay}"
                     Style="{StaticResource DetailActionButtonStyle}">
@@ -744,20 +775,24 @@
                 </Button>
 
                 <ItemsRepeater
+                    Grid.Row="6"
                     AutomationProperties.AutomationId="Todo.Detail.Attachments"
                     ItemTemplate="{StaticResource AttachmentTemplate}"
                     ItemsSource="{x:Bind ViewModel.Attachments, Mode=OneWay}" />
 
                 <TextBox
+                    x:Name="NoteEditor"
                     x:Uid="DetailNoteBox"
+                    Grid.Row="7"
                     MinHeight="88"
                     Margin="0,12,0,0"
+                    VerticalAlignment="Top"
                     AcceptsReturn="True"
                     AutomationProperties.AutomationId="Todo.Detail.Note"
                     Background="{ThemeResource ControlFillColorDefaultBrush}"
                     Text="{x:Bind ViewModel.Note, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                     TextWrapping="Wrap" />
-            </StackPanel>
+            </Grid>
         </ScrollViewer>
 
         <Grid Grid.Row="7" Margin="0,12,0,0">

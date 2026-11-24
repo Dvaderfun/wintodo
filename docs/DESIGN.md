@@ -503,7 +503,10 @@ pane's left edge: drag it, or focus it and use the arrow keys. The width is
 clamped to a **320 px minimum** and an upper limit of
 `min(content width - 320, 960)` recomputed on every `ContentGrid` resize, so the
 drag always leaves the list usable and grows with the window. The width persists
-in `appearance.detail_pane_width` with a 500 ms debounce. The responsive states must **not** set
+in `appearance.detail_pane_width` after the drag or a pause in keyboard resizing;
+an orderly window close flushes the final width. A narrower window constrains
+the visible pane without replacing that preference. During a resize a list photo
+stays visible at its existing decode size until the layout settles. The responsive states must **not** set
 `DetailHost.Width` — that value is a two-way `x:Bind` to the shell view model
 and a `Setter` would fight the binding.
 
@@ -535,7 +538,7 @@ and a `Setter` would fight the binding.
 | Steps | Each: 20 px circle + borderless `TextBox` + `✕` on hover. Height 36. Drag-reorder. Completed steps: 0.6 opacity + strikethrough. "Next step" row has an `Add` glyph and creates a step on `Enter`, keeping focus for the next one |
 | Action rows | Height 40, `Subtle` `Button`, full width, `[20px glyph][12 gap][label *][trailing]`, **4 px apart** so each hover fill reads as its own button. Unset: label is the action ("Remind me"), glyph **and** label `TextFillColorSecondaryBrush`. Set: label is the value ("Due Tomorrow"), glyph and label `ListAccentBrush`, trailing `✕` clears it. Driven by one `VisualStateGroup` per row (`StateTrigger` on `IsMyDay` / `HasReminder` / `HasDue` / `HasRepeat`) so the brushes re-resolve on theme change |
 | Separators | 1 px `DividerStrokeColorDefaultBrush`, 12 px vertical margins |
-| Note | `TextBox`, `MinHeight="88"`, `AcceptsReturn`, `TextWrapping="Wrap"`, `ControlFillColorDefaultBrush`, autosaves 500 ms after the last keystroke |
+| Note | `TextBox`, `MinHeight="88"`, `AcceptsReturn`, `TextWrapping="Wrap"`, `ControlFillColorDefaultBrush`, autosaves 500 ms after the last keystroke. Empty notes stay compact; a focused note with text can occupy spare height above the pinned footer. |
 | Attachments | Row per file: 16 px glyph + name (ellipsised) + size in caption + remove. Click opens with the shell |
 | Footer | Pinned to the bottom, `CaptionTextBlockStyle` / `TextFillColorSecondaryBrush` created-date on the left, `Delete` (`E74D`) 32 × 32 icon button on the right |
 
@@ -543,7 +546,8 @@ The steps `ListView` owns drag initiation and the reorder drop target; do not
 set `CanDrag` or `AllowDrop` on its individual containers. Its source is an
 observable collection so native reorder operations update the displayed order
 before the drag-completed handler persists it. Add/delete updates that collection
-in place.
+in place. An unsubmitted Next step draft belongs to its task for the current
+session and returns when that task is reopened.
 
 Deleting a task confirms first when **Confirm before deleting** is on — from the
 row context menu, the `Delete` key, or the detail footer. One `ContentDialog` (`Todo.Dialog.DeleteTask`) names
@@ -606,7 +610,7 @@ setting automatically. For explicit animations, check
 | Interaction | Animation |
 |---|---|
 | Switch list | Content fade 0 → 1 over **150 ms** + 8 px upward translate, `CubicBezier(0.1, 0.9, 0.2, 1)`. **Not** `NavigationThemeTransition` — no `Frame` involved |
-| Detail pane open | Opaque surface appears immediately; content translates X +32 → 0 and fades 0 → 1 over **200 ms**, same easing |
+| Detail pane open | After protecting any outgoing draft, show the selected row's title and completion/importance state immediately, without an entrance delay. Only the editor for that same task may replace this read-only header. |
 | Detail pane close | Content reverses over **150 ms** while the surface stays opaque, then the pane collapses |
 | Row added | `AddDeleteThemeTransition` on the `ListView` |
 | Row removed | Same, plus a 5 s undo snackbar |

@@ -11,9 +11,11 @@ public sealed partial class TaskDetailViewModel
 
     internal async Task PersistStepOrderAsync(CancellationToken cancellationToken = default)
     {
-        for (int index = 0; index < Steps.Count; index++)
+        // A different task's steps may replace the bound collection while the store writes.
+        var reordered = Steps.Cast<StepItemViewModel>().ToArray();
+        for (int index = 0; index < reordered.Length; index++)
         {
-            var step = (StepItemViewModel)Steps[index];
+            var step = reordered[index];
             double sortOrder = (index + 1) * 1024d;
             step.Model.SortOrder = sortOrder;
             await _taskStore.ReorderStepAsync(step.Uid, sortOrder, cancellationToken);
@@ -158,15 +160,31 @@ public sealed partial class TaskDetailViewModel
     [RelayCommand(CanExecute = nameof(CanAddStep))]
     private async Task AddStepAsync()
     {
-        if (_model is null || string.IsNullOrWhiteSpace(NewStepTitle))
+        if (_model is not { } owner)
         {
             return;
         }
 
-        TodoTask step = await _taskStore.AddStepAsync(_model.Uid, NewStepTitle.Trim());
-        Steps.Add(CreateStepViewModel(step));
-        NewStepTitle = string.Empty;
-        TaskChanged?.Invoke(CloneTask(_model));
+        TodoTask? step;
+        try
+        {
+            step = await _stepDrafts.SubmitAsync(owner.Uid, (uid, title) => _taskStore.AddStepAsync(uid, title));
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.WriteLine($"WINTODO_ADD_STEP_EXCEPTION={DiagnosticException.Describe(exception)}");
+            if (_model?.Uid == owner.Uid) ShowError(_resources.GetString("Detail_SaveFailed"));
+            return;
+        }
+        if (step is null) return;
+        ++_stepRevision;
+        if (_model is not { } current || current.Uid != owner.Uid) return;
+
+        RestoreStepDraft(owner.Uid);
+        // A same-task reload may already have picked up the committed step.
+        if (!Steps.OfType<StepItemViewModel>().Any(item => item.Uid == step.Uid))
+            Steps.Add(CreateStepViewModel(step));
+        TaskChanged?.Invoke(CloneTask(current));
     }
 
     [RelayCommand]
