@@ -173,7 +173,9 @@ Width `*`, horizontal padding **24**, top padding **16**, bottom padding **0**
   choices. User-list sort settings, including reset, persist; smart-list sorts
   retain their existing session/navigation behavior.
   Owner acknowledged UX-14 on 2026-10-18; see ADR-014.
-- Header spacing to composer: **16**.
+- Header spacing to composer: **16**. On My Day, measure from the bottom of
+  the last date line to the top of the composer (or the sort chip when shown).
+  The date and its margin collapse together on lists without a subtitle.
 
 ### 3.2 Add-task composer
 

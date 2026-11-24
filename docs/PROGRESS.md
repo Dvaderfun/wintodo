@@ -368,6 +368,14 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 
 ## History
 
+### 2026-11-24 — My Day date spacing (UX-19)
+
+In DEV .236 the date line box ended immediately against the Add a task border.
+The My Day subtitle now reserves the 16 DIPs specified for the header; its margin
+collapses with the subtitle on other lists. The x64 build passed with zero warnings.
+The layout gate now measures the rendered composer edge with Suggestions open and
+closed at both 640 and 960 DIPs.
+
 ### 2026-11-24 — UX-19 owner review corrections
 
 The My Day header gives the full date its own row and reserves gaps only for

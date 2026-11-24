@@ -47,6 +47,42 @@ function Capture([string]$Name,[string]$Id) {
     $report.screenshots += "$Name.png"
     $path
 }
+function Check-DateComposerGap($Window, [string]$ImagePath, [int]$Width, [bool]$Open) {
+    $origin = $Window.elements[0]
+    $close = @(Nodes $Window.elements | Where-Object { $_.automationId -eq 'Todo.Suggestions.Close' -and !$_.isOffscreen })
+    if ([math]::Abs($origin.width-$Width*$scale) -gt 1 -or ($close.Count -eq 1) -ne $Open) {
+        throw "Cannot verify spacing: unexpected window width or Suggestions visibility."
+    }
+    $date = Element $Window 'Todo.Shell.Subtitle'
+    $box = Element $Window 'Todo.List.AddTaskBox'
+    $bmp = [Drawing.Bitmap]::new($ImagePath)
+    try {
+        if ($origin.width -ne $bmp.Width -or $origin.height -ne $bmp.Height) { throw 'Window bounds do not match the screenshot.' }
+        # Only the inner TextBox is in the UIA tree. Find the actual outer stroke above
+        # its input, using a continuous horizontal segment so glyph pixels cannot count.
+        $x = [int]($box.x-$origin.x+4*$scale)
+        $referenceX = [int]($date.x-$origin.x-4*$scale) # Plain list background outside the left card edge.
+        $sampleWidth = [int](24*$scale)
+        $boxTop = [int]($box.y-$origin.y)
+        $borderY = $null
+        for ($y = [int]($boxTop-24*$scale); $y -lt $boxTop; $y++) {
+            $bg = $bmp.GetPixel($referenceX,$y)
+            for ($i=0; $i -lt $sampleWidth; $i++) {
+                $p = $bmp.GetPixel(($x+$i),$y)
+                if ([math]::Max([math]::Abs($bg.R-$p.R),[math]::Max([math]::Abs($bg.G-$p.G),[math]::Abs($bg.B-$p.B))) -lt 8) { break }
+            }
+            if ($i -eq $sampleWidth) { $borderY = $y+$origin.y; break }
+        }
+        if ($null -eq $borderY) { throw 'Could not locate the composer card stroke above its text input.' }
+        $dateBottom = $date.y+$date.height
+        $gap = $borderY-$dateBottom
+        $report.measurements.dateToComposer += [ordered]@{windowWidthDip=$Width; suggestionsOpen=$Open;
+            dateBottomPx=$dateBottom; composerTopPx=$borderY; gapDip=$gap/$scale; screenshot=[IO.Path]::GetFileName($ImagePath)}
+        if ([math]::Abs($gap-16*$scale) -gt 1) {
+            $report.issues += "My Day date to composer: $gap physical pixels at $Width DIPs (Suggestions open: $Open); expected 16 DIPs."
+        }
+    } finally { $bmp.Dispose() }
+}
 function DateInk([string]$Path) {
     # The TextBlock's accessible name can remain complete even when only 'Tuesday,' is drawn.
     # Measure the rendered glyphs within its screenshot, ignoring the stretched background.
@@ -152,6 +188,7 @@ try {
     $scale = [SuggestionsLayoutNative]::GetDpiForWindow($hwnd)/96.0
     if ($hwnd -eq [IntPtr]::Zero -or $scale -le 0) { throw 'No main window/DPI for layout measurement.' }
     $report.measurements.scale = $scale
+    $report.measurements.dateToComposer = @()
     Set-Width 960
     Ui @('invoke','Todo.Nav.MyDay') | Out-Null
     Ui @('click','Todo.Suggestions.Open') | Out-Null
@@ -193,19 +230,21 @@ SELECT count(*) FROM tasks WHERE uid LIKE 'a0000000-0000-4000-8000-%';
 
     Ui @('invoke','Todo.Nav.MyDay') | Out-Null
     Ui @('wait-for','Todo.Row.a0000000-0000-4000-8000-000000000000','-t','10000') | Out-Null
-    $wideDate = Element (Snapshot '02-my-day') 'Todo.Shell.Subtitle'
+    $wide = Snapshot '02-my-day'
+    $wideDate = Element $wide 'Todo.Shell.Subtitle'
+    Check-DateComposerGap $wide (Capture '02-my-day') 960 $false
     if ($wideDate.name -cne 'Tuesday, November 24, 2026') { throw "Unexpected fixture date: $($wideDate.name)." }
     $wideInk = DateInk (Capture '02-date-wide' 'Todo.Shell.Subtitle')
     $report.measurements.wideDate = $wideInk
     if ($wideInk.inkWidthPx -lt 125*$scale -or $wideInk.inkPixels -lt 150*$scale*$scale) { throw 'Wide reference lacks a full line of rendered date text.' }
     Ui @('click','Todo.Suggestions.Open') | Out-Null
     Ui @('wait-for','Todo.Suggestions.Add.a0000000-0000-4000-8000-000000000001','-t','10000') | Out-Null
-    Capture '03-wide-suggestions' | Out-Null
+    Check-DateComposerGap (Snapshot '03-wide-suggestions') (Capture '03-wide-suggestions') 960 $true
     Set-Width 640
     $narrow = Snapshot '04-narrow'
     if ([math]::Abs($narrow.elements[0].width-640*$scale) -gt 1) { throw 'The inspected window is not 640 DIPs wide.' }
     $date = Element $narrow 'Todo.Shell.Subtitle'
-    Capture '04-narrow' | Out-Null
+    Check-DateComposerGap $narrow (Capture '04-narrow') 640 $true
     $narrowInk = DateInk (Capture '04-date-narrow' 'Todo.Shell.Subtitle')
     $report.measurements.narrowDate = $narrowInk
     if ($date.name -cne $wideDate.name -or [math]::Abs($narrowInk.inkWidthPx-$wideInk.inkWidthPx) -gt 2*$scale -or
@@ -263,9 +302,12 @@ SELECT count(*) FROM tasks WHERE uid LIKE 'a0000000-0000-4000-8000-%';
     Ui @('wait-for',$target.automationId,'--gone','-t','5000') | Out-Null
     Ui @('wait-for',$row,'-t','5000') | Out-Null
     Capture '08-added' | Out-Null
+    Ui @('click','Todo.Suggestions.Close') | Out-Null
+    Ui @('wait-for','Todo.Suggestions.Close','--gone','-t','5000') | Out-Null
+    Check-DateComposerGap (Snapshot '09-narrow-closed') (Capture '09-narrow-closed') 640 $false
     if ($report.issues.Count) { throw ($report.issues -join ' ') }
     $report.status = 'PASS'
-    Write-Host "Suggestions layout: PASS (8 DIP toolbar gap, full date at 640 DIPs, flush viewport, working scrolled Add)."
+    Write-Host "Suggestions layout: PASS (16 DIP date/composer gap at both widths with Suggestions open/closed, 8 DIP toolbar gap, full date, flush viewport, working scrolled Add)."
 } catch {
     $report.error = "$_"
     if ($appPid) {
