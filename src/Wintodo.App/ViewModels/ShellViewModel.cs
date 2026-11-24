@@ -84,7 +84,7 @@ public sealed partial class ShellViewModel : ObservableObject
         TaskList.UndoPreparing += PrepareUndoAsync;
         _taskStore.StoreChanged += OnUndoStoreChanged;
         Detail.CloseRequested += CloseDetail;
-        TaskList.SuggestionsOpened += CloseDetail;
+        TaskList.PrepareSuggestionsAsync = PrepareSuggestionsAsync;
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
         Detail.MyDayMembershipChanged += TaskList.ApplyDetailMyDayUpdateAsync;
         TaskList.TaskDatesChanged += Detail.RefreshTaskDatesAsync;

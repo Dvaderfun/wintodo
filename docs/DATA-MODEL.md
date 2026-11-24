@@ -585,8 +585,10 @@ M11's tree view drops that predicate and builds the hierarchy in memory from a
 single flat query — never one query per node.
 
 `My Day` suggestions use the same local date and due-date interpretation as
-My Day membership. The guarded add and complete batch operations check task
-eligibility again inside the write transaction before changing the task.
+My Day membership. Add and complete carry the occurrence shown in the sidebar
+into the write transaction. The store rechecks eligibility and compares the
+displayed revision, remote ETag, due date, start, recurrence and exclusion
+date before applying the action. An outdated click records no completion or undo.
 
 `My Day` reset: a task's `my_day_date` is not cleared at midnight. The query
 stops matching yesterday's manual additions and deadlines, and picks up the new

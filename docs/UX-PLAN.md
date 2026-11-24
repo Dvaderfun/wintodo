@@ -67,7 +67,7 @@ this dependency exception does not mark those gates passed.
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | skipped for now (owner, 2026-10-18) |
 | UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | skipped for now (owner, 2026-10-18) |
 | UX-18 | Share target (text/URL → task) | D | M | — | Manifest, App | done (ADR-015; x64 AOT real-share 10/10, M0/M7/AOT-M13 PASS; both architectures published) |
-| UX-19 | My Day carry-over and suggestions, rule-based | D | M | UX-12 | Core, TaskListView | implemented, VM verification pending |
+| UX-19 | My Day carry-over and suggestions, rule-based | D | M | UX-12 | Core, TaskListView | in progress: owner review corrections and VM verification |
 | UX-20 | Close the open manual gate rows (owner-run) | C | — | — | — | owner |
 
 Phases: **A** quick fixes and spec gaps (can run in parallel) · **B** interaction

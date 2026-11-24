@@ -116,7 +116,7 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IImportStore, IAsyncDi
         DateOnly? date = null,
         long? destinationListId = null,
         bool moveStarredToTop = false,
-        TodoTask? expectedSuggestion = null);
+        TaskSuggestionSnapshot? expectedSuggestion = null);
 
     Task ReorderTaskAsync(string uid, double sortOrder, CancellationToken cancellationToken = default);
 

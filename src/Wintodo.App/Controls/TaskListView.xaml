@@ -234,7 +234,7 @@
             </VisualStateGroup>
         </VisualStateManager.VisualStateGroups>
         <Grid.RowDefinitions>
-            <RowDefinition Height="64" />
+            <RowDefinition Height="Auto" MinHeight="64" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="12" />
@@ -248,7 +248,11 @@
                 Width="{x:Bind local:TaskListView.SuggestionsColumnWidth(ViewModel.IsSuggestionsOpen), Mode=OneWay}" />
         </Grid.ColumnDefinitions>
 
-        <Grid ColumnSpacing="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -419,18 +423,23 @@
                         Text="{x:Bind ViewModel.RenameListName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                         Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsRenamingList), Mode=OneWay}" />
                 </Grid>
-                <TextBlock
-                    AutomationProperties.AutomationId="Todo.Shell.Subtitle"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                    Style="{StaticResource CaptionTextBlockStyle}"
-                    Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
-                    Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.HasSubtitle), Mode=OneWay}" />
             </StackPanel>
+            <TextBlock
+                Grid.Row="1"
+                Grid.ColumnSpan="4"
+                HorizontalAlignment="Left"
+                AutomationProperties.AutomationId="Todo.Shell.Subtitle"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                Text="{x:Bind ViewModel.Subtitle, Mode=OneWay}"
+                TextWrapping="Wrap"
+                Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.HasSubtitle), Mode=OneWay}" />
 
             <DropDownButton
                 x:Name="SortButton"
                 x:Uid="SortButton"
                 Grid.Column="1"
+                Margin="8,0,0,0"
                 AutomationProperties.AutomationId="Todo.List.SortButton"
                 Style="{StaticResource SubtleButtonStyle}"
                 Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.AreListCommandsVisible), Mode=OneWay}">
@@ -482,6 +491,7 @@
                 Grid.Column="2"
                 Width="32"
                 Height="32"
+                Margin="8,0,0,0"
                 Padding="0"
                 AutomationProperties.AutomationId="Todo.Suggestions.Open"
                 Command="{x:Bind ViewModel.ToggleSuggestionsCommand, Mode=OneTime}"
@@ -496,6 +506,7 @@
                 Grid.Column="3"
                 Width="32"
                 Height="32"
+                Margin="8,0,0,0"
                 Padding="0"
                 AutomationProperties.AutomationId="Todo.List.MenuButton"
                 Style="{StaticResource SubtleButtonStyle}"
@@ -785,13 +796,13 @@
             Grid.Row="4"
             Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}">
             <Grid.RowDefinitions>
-                <RowDefinition Height="3*" />
-                <RowDefinition Height="2*" />
-                <RowDefinition Height="5*" />
+                <!-- Centering in the upper 80% anchors the empty state at 40% without clipping its caption. -->
+                <RowDefinition Height="4*" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <ListView
                 x:Name="TasksList"
-                Grid.RowSpan="3"
+                Grid.RowSpan="2"
                 AutomationProperties.AutomationId="Todo.List.Tasks"
                 AllowDrop="{x:Bind ViewModel.CanReorderTasks, Mode=OneWay}"
                 CanDragItems="True"
@@ -833,7 +844,7 @@
 
             <Border
                 x:Name="TaskInsertionIndicator"
-                Grid.RowSpan="3"
+                Grid.RowSpan="2"
                 Height="4"
                 VerticalAlignment="Top"
                 BorderBrush="{ThemeResource AccentTextFillColorPrimaryBrush}"
@@ -843,9 +854,7 @@
 
             <StackPanel
                 x:Name="EmptyState"
-                Grid.Row="1"
-                Width="320"
-                HorizontalAlignment="Center"
+                MaxWidth="320"
                 VerticalAlignment="Center"
                 Spacing="4"
                 x:Load="{x:Bind ViewModel.IsEmpty, Mode=OneWay}">
@@ -915,23 +924,23 @@
             AutomationProperties.AutomationId="Todo.List.CompletionAnnouncement"
             AutomationProperties.LiveSetting="Assertive"
             Text="{x:Bind ViewModel.CompletionAnnouncement, Mode=OneWay}" />
-        <!-- Extend past the shell's top and right list padding. -->
+        <!-- The scrolling surface reaches the shell edges; inset the content instead. -->
         <Border
             x:Name="SuggestionsSidebar"
             Grid.RowSpan="5"
             Grid.Column="1"
             Margin="12,-16,-24,0"
-            Padding="16,12,16,12"
+            Padding="16,12,0,0"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1,0,0,0"
             Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsSuggestionsOpen), Mode=OneWay}">
-            <Grid RowSpacing="8">
+            <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <Grid ColumnSpacing="4">
+                <Grid Margin="0,0,16,8" ColumnSpacing="4">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
@@ -957,6 +966,7 @@
                 </Grid>
                 <TextBlock
                     Grid.Row="1"
+                    Margin="0,0,16,8"
                     AutomationProperties.AutomationId="Todo.Suggestions.Status"
                     AutomationProperties.LiveSetting="Polite"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -972,7 +982,7 @@
                     <ListView.ItemContainerStyle>
                         <Style TargetType="ListViewItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Padding" Value="0,0,20,0" />
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
@@ -997,7 +1007,7 @@
                                         AutomationProperties.AutomationId="{x:Bind CompleteId, Mode=OneTime}"
                                         AutomationProperties.Name="{x:Bind CompleteName, Mode=OneTime}"
                                         Command="{x:Bind CompleteCommand, Mode=OneTime}"
-                                        CommandParameter="{x:Bind Uid, Mode=OneTime}"
+                                        CommandParameter="{x:Bind Mode=OneTime}"
                                         Style="{StaticResource SubtleButtonStyle}"
                                         ToolTipService.ToolTip="{x:Bind CompleteName, Mode=OneTime}">
                                         <Ellipse
@@ -1033,7 +1043,7 @@
                                         AutomationProperties.AutomationId="{x:Bind AddId, Mode=OneTime}"
                                         AutomationProperties.Name="{x:Bind AddName, Mode=OneTime}"
                                         Command="{x:Bind AddCommand, Mode=OneTime}"
-                                        CommandParameter="{x:Bind Uid, Mode=OneTime}"
+                                        CommandParameter="{x:Bind Mode=OneTime}"
                                         Style="{StaticResource SubtleButtonStyle}"
                                         ToolTipService.ToolTip="{x:Bind AddName, Mode=OneTime}">
                                         <SymbolIcon Symbol="Add" />

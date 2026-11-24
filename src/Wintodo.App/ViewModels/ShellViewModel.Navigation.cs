@@ -136,6 +136,7 @@ public sealed partial class ShellViewModel
         if (current is not null) UserLists.Remove(current);
         RebuildGroups();
         TaskList.SetLists(UserLists);
+        TaskList.RefreshOpenSuggestions();
         NavigationStructureChanged?.Invoke();
         if (_selectedNavigationKey == list.NavigationKey)
         {

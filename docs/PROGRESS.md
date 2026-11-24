@@ -367,6 +367,17 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 
 ## History
 
+### 2026-11-24 — UX-19 owner review corrections
+
+The My Day header gives the full date its own row and reserves gaps only for
+visible controls. The empty prompt can grow around its existing 40% anchor.
+The Suggestions viewport reaches the bottom edge and leaves a separate gutter
+for its scrollbar. Add and Complete now carry the displayed occurrence into the
+transaction. Completed syncs and source-list deletion refresh the open sidebar;
+switching from detail keeps an unsaved draft visible if its write fails.
+The x64 build passed without warnings; all 749 unit tests passed. See the
+[functional and visual walkthrough](guides/my-day-suggestions-preview.md).
+
 ### 2026-11-24 — My Day suggestion sections
 
 - Renamed the overdue and future headings to Earlier and Later. Added Recently

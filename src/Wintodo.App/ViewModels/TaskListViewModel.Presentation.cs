@@ -61,7 +61,7 @@ public sealed partial class TaskListViewModel
         finally
         {
             VisibleItemsUpdated?.Invoke();
-            _ = RefreshSuggestionsAsync();
+            RefreshOpenSuggestions();
         }
     }
 

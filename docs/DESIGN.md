@@ -245,8 +245,13 @@ Smart lists prefill the new task so it lands where it was typed:
 | Completed | Composer hidden — a completed task cannot be composed |
 
 The **Suggestions** lightbulb sits immediately before the My Day overflow menu.
-The sidebar reaches the top and right edge of the list surface and shares the
-My Day theme background. Overdue dates use the theme's critical text color.
+Header actions have 8 DIPs between visible buttons; on other lists, Sort and
+the overflow menu are adjacent. The My Day date has its own row across the
+list header so the actions cannot crop it when Suggestions is open.
+The sidebar shares the My Day theme background. Its list scrolls to the
+bottom and right edges; row actions stay 20 DIPs inside the right edge to
+leave room for the expanded scrollbar. Overdue dates use the theme's
+critical text color.
 The sidebar lists overdue tasks under **Earlier**, future tasks in due-date
 order under **Later**, due-today tasks removed from My Day, and undated tasks
 pinned yesterday. **Recently added** shows remaining tasks created today or

@@ -40,6 +40,15 @@ public sealed partial class ShellViewModel
         IsDetailPaneOpen = true;
     }
 
+    private async Task<bool> PrepareSuggestionsAsync()
+    {
+        int version = _detailOpenVersion;
+        if (IsDetailPaneOpen && !await Detail.FlushPendingEditsAsync()) return false;
+        if (version != _detailOpenVersion) return false;
+        CloseDetail();
+        return true;
+    }
+
     internal void CloseDetail()
     {
         ++_detailOpenVersion;

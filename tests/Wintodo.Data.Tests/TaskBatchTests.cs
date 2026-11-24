@@ -17,17 +17,73 @@ public sealed class TaskBatchTests
             ListId = list.Id,
             Summary = "Suggestion",
         }, token);
+        var displayed = TaskSuggestionSnapshot.FromTask(task);
         await fixture.Store.ApplyTaskBatchAsync([task.Uid], TaskBatchAction.AddToMyDay, token,
-            expectedSuggestion: task);
+            expectedSuggestion: displayed);
         await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Store.ApplyTaskBatchAsync(
-            [task.Uid], TaskBatchAction.Complete, token, expectedSuggestion: task));
+            [task.Uid], TaskBatchAction.Complete, token, expectedSuggestion: displayed));
         var pinned = (await fixture.Store.GetTaskAsync(task.Uid, token))!;
         await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Store.ApplyTaskBatchAsync(
-            [task.Uid], TaskBatchAction.Complete, token, expectedSuggestion: pinned));
+            [task.Uid], TaskBatchAction.Complete, token, expectedSuggestion: TaskSuggestionSnapshot.FromTask(pinned)));
         Assert.Equal(list.Id, pinned.ListId);
         Assert.Equal(fixture.Clock.Today, pinned.MyDayDate);
         Assert.Null(pinned.Due);
         Assert.Equal(Core.Models.TaskStatus.NeedsAction, pinned.Status);
+    }
+
+    [Theory]
+    [InlineData(TaskBatchAction.AddToMyDay)]
+    [InlineData(TaskBatchAction.Complete)]
+    public async Task StaleSuggestionCannotActOnNextRecurringOccurrence(TaskBatchAction staleAction)
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        var list = await fixture.Store.CreateListAsync("Source", cancellationToken: token);
+        DateTimeOffset due = fixture.Clock.UtcNow.AddDays(1);
+        var first = await fixture.Store.CreateTaskAsync(new()
+        {
+            ListId = list.Id, Summary = "Daily appointment", Due = due, RRule = "FREQ=DAILY",
+        }, token);
+        var displayed = TaskSuggestionSnapshot.FromTask(first);
+        string[] uids = [first.Uid];
+        await fixture.Store.CompleteTaskAsync(first.Uid, token);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Store.ApplyTaskBatchAsync(
+            uids, staleAction, token, expectedSuggestion: displayed));
+        var afterStale = Assert.Single(await fixture.Store.CaptureTaskUndoAsync(uids, TaskUndoFields.Completion, token));
+        Assert.Equal(1, afterStale.CompletionCount);
+        Assert.Equal(first.Sequence + 1, afterStale.Task.Sequence);
+        Assert.Equal(due.AddDays(1), afterStale.Task.Due);
+        Assert.Null(afterStale.Task.MyDayDate);
+        Assert.Equal(Core.Models.TaskStatus.NeedsAction, afterStale.Task.Status);
+
+        await fixture.Store.ApplyTaskBatchAsync(uids, TaskBatchAction.Complete, token,
+            expectedSuggestion: TaskSuggestionSnapshot.FromTask(afterStale.Task));
+        var afterFresh = Assert.Single(await fixture.Store.CaptureTaskUndoAsync(uids, TaskUndoFields.Completion, token));
+        Assert.Equal(2, afterFresh.CompletionCount);
+        Assert.Equal(due.AddDays(2), afterFresh.Task.Due);
+    }
+
+    [Fact]
+    public async Task RemoteRescheduleWithoutSequenceBumpInvalidatesDisplayedSuggestion()
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        var list = await fixture.Store.CreateListAsync("Source", cancellationToken: token);
+        DateTimeOffset due = fixture.Clock.UtcNow.AddDays(1);
+        var task = new TodoTask { Uid = "shared", Summary = "Appointment", Due = due, RRule = "FREQ=DAILY", Sequence = 2 };
+        const string href = "https://dav.example/shared.ics";
+        await fixture.Store.ApplyRemoteChangesAsync(list.Id, [new() { Task = task, Href = href, ETag = "v1" }], [], token);
+        var displayed = TaskSuggestionSnapshot.FromTask((await fixture.Store.GetTaskAsync(task.Uid, token))!);
+        task.Due = due.AddDays(1);
+        await fixture.Store.ApplyRemoteChangesAsync(list.Id, [new() { Task = task, Href = href, ETag = "v2" }], [], token);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Store.ApplyTaskBatchAsync(
+            [task.Uid], TaskBatchAction.Complete, token, expectedSuggestion: displayed));
+        var saved = Assert.Single(await fixture.Store.CaptureTaskUndoAsync([task.Uid], TaskUndoFields.Completion, token));
+        Assert.Equal(displayed.Sequence, saved.Task.Sequence);
+        Assert.Equal(due.AddDays(1), saved.Task.Due);
+        Assert.Equal(0, saved.CompletionCount);
     }
 
     [Theory]

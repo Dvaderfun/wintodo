@@ -10,22 +10,23 @@ using Wintodo.Services;
 namespace Wintodo.ViewModels;
 
 public sealed partial record SuggestionRow(
-    string Uid, string Title, string MetadataPrefix, string DueDate, bool IsOverdue,
+    TaskSuggestionSnapshot Snapshot, string Title, string MetadataPrefix, string DueDate, bool IsOverdue,
     string Heading, string AddName, string CompleteName,
     ICommand AddCommand, ICommand CompleteCommand)
 {
     public bool HasHeading => Heading.Length != 0;
     public string RegularDueDate => IsOverdue ? string.Empty : DueDate;
     public string OverdueDueDate => IsOverdue ? DueDate : string.Empty;
-    public string AddId => $"Todo.Suggestions.Add.{Uid}";
-    public string CompleteId => $"Todo.Suggestions.Complete.{Uid}";
+    public string AddId => $"Todo.Suggestions.Add.{Snapshot.Uid}";
+    public string CompleteId => $"Todo.Suggestions.Complete.{Snapshot.Uid}";
 }
 
 public sealed partial class TaskListViewModel
 {
     private int _suggestionsVersion;
     private int _suggestionsSession;
-    internal event Action? SuggestionsOpened;
+    private Task _suggestionsRefresh = Task.CompletedTask;
+    internal Func<Task<bool>>? PrepareSuggestionsAsync { get; set; }
 
     [ObservableProperty]
     public partial bool IsSuggestionsOpen { get; private set; }
@@ -39,25 +40,37 @@ public sealed partial class TaskListViewModel
     public bool HasSuggestionStatus => SuggestionStatus.Length != 0;
 
     [RelayCommand]
-    private void ToggleSuggestions() => IsSuggestionsOpen = HasSubtitle && !IsSuggestionsOpen;
+    private async Task ToggleSuggestionsAsync()
+    {
+        if (IsSuggestionsOpen) { CloseSuggestions(); return; }
+        if (!HasSubtitle || _currentQuery?.Kind != ListQueryKind.MyDay) return;
+        int session = _suggestionsSession;
+        if (PrepareSuggestionsAsync is not null && !await PrepareSuggestionsAsync()) return;
+        if (session == _suggestionsSession && HasSubtitle && _currentQuery?.Kind == ListQueryKind.MyDay)
+            IsSuggestionsOpen = true;
+    }
 
     partial void OnIsSuggestionsOpenChanged(bool value)
     {
         if (value)
         {
-            SuggestionsOpened?.Invoke();
             SuggestionStatus = _resources.GetString("Suggestions_Loading");
-            _ = RefreshSuggestionsAsync();
+            RefreshOpenSuggestions();
         }
         else
         {
-            ++_suggestionsSession;
             ++_suggestionsVersion;
             Suggestions.Clear();
         }
     }
 
-    internal void CloseSuggestions() => IsSuggestionsOpen = false;
+    internal void CloseSuggestions()
+    {
+        ++_suggestionsSession;
+        IsSuggestionsOpen = false;
+    }
+
+    internal void RefreshOpenSuggestions() => _suggestionsRefresh = RefreshSuggestionsAsync();
 
     private async Task RefreshSuggestionsAsync()
     {
@@ -82,7 +95,7 @@ public sealed partial class TaskListViewModel
                 string metadataPrefix = list.Length != 0 && due.Length != 0 ? $"{list} · " : list;
                 string heading = previous == suggestion.Section ? string.Empty
                     : _resources.GetString($"Suggestions_{suggestion.Section}");
-                rows.Add(new SuggestionRow(task.Uid, task.Summary, metadataPrefix, due,
+                rows.Add(new SuggestionRow(TaskSuggestionSnapshot.FromTask(task), task.Summary, metadataPrefix, due,
                     suggestion.Section == SuggestionSection.Overdue, heading,
                     SuggestionActionName("Suggestions_AddTask", task.Summary),
                     SuggestionActionName("Suggestions_CompleteTask", task.Summary),
@@ -104,27 +117,27 @@ public sealed partial class TaskListViewModel
     private string SuggestionActionName(string key, string title) =>
         string.Format(DisplayCulture.Current, _resources.GetString(key), title);
 
-    private bool CanApplySuggestion(string? uid) =>
+    private bool CanApplySuggestion(SuggestionRow? row) =>
         IsSuggestionsOpen && !_applyingSuggestion && _currentQuery?.Kind == ListQueryKind.MyDay
-            && !string.IsNullOrEmpty(uid);
+            && row is not null;
 
     [RelayCommand(CanExecute = nameof(CanApplySuggestion))]
-    private Task AddSuggestionAsync(string? uid) => ApplySuggestionAsync(uid, TaskBatchAction.AddToMyDay);
+    private Task AddSuggestionAsync(SuggestionRow? row) => ApplySuggestionAsync(row, TaskBatchAction.AddToMyDay);
 
     [RelayCommand(CanExecute = nameof(CanApplySuggestion))]
-    private Task CompleteSuggestionAsync(string? uid) => ApplySuggestionAsync(uid, TaskBatchAction.Complete);
+    private Task CompleteSuggestionAsync(SuggestionRow? row) => ApplySuggestionAsync(row, TaskBatchAction.Complete);
 
     private bool _applyingSuggestion;
 
-    private async Task ApplySuggestionAsync(string? uid, TaskBatchAction action)
+    private async Task ApplySuggestionAsync(SuggestionRow? row, TaskBatchAction action)
     {
-        if (!CanApplySuggestion(uid)) return;
+        if (row is null || !CanApplySuggestion(row)) return;
         int session = _suggestionsSession;
         _applyingSuggestion = true;
         NotifySuggestionCommands();
         try
         {
-            string[] uids = [uid!];
+            string[] uids = [row.Snapshot.Uid];
             var states = await _taskStore.CaptureTaskUndoAsync(uids, UndoFields(action));
             if (session != _suggestionsSession || !IsSuggestionsOpen
                 || _currentQuery?.Kind != ListQueryKind.MyDay) return;
@@ -133,16 +146,17 @@ public sealed partial class TaskListViewModel
                 await RefreshSuggestionsAsync();
                 return;
             }
-            await _taskStore.ApplyTaskBatchAsync(uids, action, expectedSuggestion: states[0].Task);
+            await _taskStore.ApplyTaskBatchAsync(uids, action, expectedSuggestion: row.Snapshot);
             RecordTaskUndo(states, action == TaskBatchAction.Complete ? "Undo_TaskCompleted" : "Undo_TasksChanged");
             if (action == TaskBatchAction.Complete)
             {
-                var updated = await _taskStore.GetTaskAsync(uid!);
+                var updated = await _taskStore.GetTaskAsync(row.Snapshot.Uid);
                 if (updated is not null)
                     RowCompletionSaved?.Invoke(updated, updated.Status != Core.Models.TaskStatus.Completed);
             }
             else if (TaskDatesChanged is not null) await TaskDatesChanged(uids);
             await ReloadAsync();
+            await _suggestionsRefresh;
             NavigationDataChanged?.Invoke();
         }
         catch (Exception exception)

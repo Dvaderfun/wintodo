@@ -13,7 +13,7 @@ public sealed partial class SqliteTaskStore
         DateOnly? date = null,
         long? destinationListId = null,
         bool moveStarredToTop = false,
-        TodoTask? expectedSuggestion = null)
+        TaskSuggestionSnapshot? expectedSuggestion = null)
     {
         ArgumentNullException.ThrowIfNull(uids);
         if (!Enum.IsDefined(action)) throw new ArgumentOutOfRangeException(nameof(action));
@@ -47,8 +47,7 @@ public sealed partial class SqliteTaskStore
                     includeDeleted: action == TaskBatchAction.Restore)
                     ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
                 DateOnly today = _clock.Today;
-                if (expectedSuggestion is not null && (task.Sequence != expectedSuggestion.Sequence
-                    || task.MyDayExcludedDate != expectedSuggestion.MyDayExcludedDate
+                if (expectedSuggestion is not null && (TaskSuggestionSnapshot.FromTask(task) != expectedSuggestion
                     || MyDaySuggestions.Classify(task, today, _clock) is null))
                     throw new InvalidOperationException("The task suggestion has changed.");
                 long sourceListId = task.ListId;
