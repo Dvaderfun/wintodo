@@ -577,3 +577,55 @@ geometry, not presented frames or pointer-to-paint latency. The overlay,
 photo/no-photo comparison, and larger task lists are unmeasured.
 Local raw evidence: `tests/ui/artifacts/detail-pane-study/{open,drag,run}.json`.
 See the [proposal and follow-up measurements](plans/2026-11-24-task-detail-responsiveness.md).
+
+### 2026-11-24 — Task detail candidate versus signed DEV baseline
+
+Signed x64 Native AOT DEV `1.0.1.245` (`486482f5`) used the same
+WintodoTest setup and selection-to-title measurement as `1.0.1.241` above:
+one fresh app process per build, two My Day tasks, a maximized window and
+100% scale. Each time includes the UI Automation selection call and polling
+until the exact incoming title is present with onscreen bounds.
+
+| Action | Samples per build | .241 median (range), ms | .245 median (range), ms |
+|---|---:|---:|---:|
+| First open in process | 1 | 488.65 | 236.26 |
+| Reopen after closing Details | 8 | 306.47 (280.19–342.52) | 70.77 (63.67–104.59) |
+| Switch while Details is open | 8 | 63.29 (50.15–77.34) | 61.79 (52.72–91.02) |
+| Switch immediately after changing the outgoing note | 5 | 77.82 (65.20–92.67) | 131.41 (74.20–161.45) |
+
+Every candidate reopen took less time than the fastest baseline reopen.
+Clean switches had similar medians. **Switches after a note edit were slower
+in this run:** the median increased by 53.59 ms, and four of five candidate
+samples exceeded the baseline maximum. Both tasks retained their own note on
+reopening. The probe did not time the save separately or determine whether
+it had begun when selection changed. Repeat that case before attributing the
+difference to the save or the UI. Neither first paint nor time to the first
+accepted keystroke was measured; the first-open figures are single observations.
+
+At a window width of 1,936 DIPs, the candidate completed two one-second
+inline divider drags on My Day without a photo and two on a list with the
+Coast photo. In **both** cases the header moved −98 and +98 DIPs for a
+requested −100 and +100. The no-photo baseline reached the same endpoints.
+Intermediate UI Automation readings showed movement, but did not measure
+frame intervals or pointer-to-paint latency. There was no baseline photo
+run, and these small lists do not establish smoothness on a large list.
+
+Local raw evidence: `tests/ui/artifacts/detail-pane-candidate/open.json`,
+`drag.json` and `drag-photo-inline.json`; the corresponding baseline is in
+`tests/ui/artifacts/detail-pane-study/`.
+
+The signed update gate separately widened the pane by keyboard to 759 DIPs
+between the divider and close button and restored that distance within 3
+DIPs after restarting at the same maximized window size. The first test sent
+all keystrokes in one burst and did not reach the old 720-DIP limit.
+
+**Narrow-window drag remains unverified.** At 960 DIPs with the Coast photo,
+the header did not move on a requested 100-DIP outward drag. Follow-up probes
+attempted to measure available travel first: keyboard input produced no
+observed divider movement at 960 DIPs (expanded navigation) or 880 DIPs
+(compact navigation); the foreground check stopped the test at 1,080 DIPs.
+The layout reserves 320 DIPs for the list even in overlay mode. The probe
+did not distinguish a layout limit from input that failed to move the
+divider. The screenshots show the resting layout only. Local evidence:
+`tests/ui/artifacts/detail-pane-candidate/drag-photo-overlay.json` and
+`tests/ui/artifacts/detail-pane-overlay/`.

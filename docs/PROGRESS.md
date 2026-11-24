@@ -21,11 +21,13 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.241** is the signed x64 Native
-AOT build of `041880a`. My Day keeps 16 DIPs between the date and the Add a
-task box. This build also preserves focus when opening task details and
-distinguishes a saved suggestion from a failed write. It includes the original
-contribution in [#11](https://github.com/Dvaderfun/wintodo/pull/11) and retains
+**Private DEV installer:** Wintodo DEV **1.0.1.245** is the signed x64 Native
+AOT build of `486482f5`. The task details pane shows the selected title before enabling
+the editor, keeps step drafts with their tasks and retains a wide pane after
+restart. A focused note uses available space above the footer. See the
+[task details checklist](guides/task-details-preview.md). The preview retains
+DEV .241's My Day date spacing, focus and suggestion error handling, the original
+contribution in [#11](https://github.com/Dvaderfun/wintodo/pull/11), and
 the Repeat changes from #10.
 The installer keeps the separate DEV identity and
 [owner-tested appearance](design/hybrid-preview.md). See the
@@ -370,6 +372,35 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-24 — Task details preview (DEV 1.0.1.245)
+
+The pane now acknowledges a clean selection from the row, then enables the
+editor only for the selected task. A failed outgoing save keeps its draft;
+a failed incoming read offers Retry. Each task keeps its own unsubmitted
+step while the app is open. The note expands while writing and the divider
+defers photo decoding until resizing settles. The wide-pane setting now uses
+the same upper limit during restore as during a drag.
+
+The x64 build passed with zero warnings and all 752 unit tests passed. The
+M4 and My Day gates passed in WintodoTest, including failed-save recovery and
+retrying an incoming task read without showing another task's content. The
+signed x64 Native AOT DEV MSIX at `486482f5` passed package structure and
+privacy checks. See the [owner's test checklist](guides/task-details-preview.md).
+
+The signed `.241` → `.245` VM update retained the task, note and onboarding
+state and passed the recurrence and High Contrast checks. Separate step drafts,
+step submission, due/reminder shortcuts and the pinned footer passed. The
+focused note grew from 88 to 490 DIPs. Individually paced arrow presses widened
+the pane to 759 DIPs between controls; after a full restart at the same window
+size, that distance returned within 3 DIPs. An earlier single burst of keys
+only reached 367 DIPs and could not exercise the old 720-DIP restore limit.
+The [signed build comparison](PERF.md#2026-11-24--task-detail-candidate-versus-signed-dev-baseline)
+found faster reopens and slower switches immediately after editing a note.
+The wide mouse-drag checks passed with and without a background photo. In
+narrow overlay mode the probes did not establish usable drag travel: no
+movement at 960/880 DIPs and a guest focus refusal at 1,080. That interaction
+remains open for hands-on testing.
 
 ### 2026-11-24 — Task detail responsiveness investigation
 

@@ -1,7 +1,9 @@
 # Make task details faster to open, resize and edit
 
 Proposal, 24 November 2026. Applies to the app code in signed x64 DEV
-`1.0.1.241`. No product changes are part of this investigation.
+`1.0.1.241`. The resulting DEV `1.0.1.245` preview has a
+[manual checklist](../guides/task-details-preview.md) and a
+[measured comparison](../PERF.md#2026-11-24--task-detail-candidate-versus-signed-dev-baseline).
 
 Start with opening from the closed state. In the [VM diagnostic](../PERF.md#2026-11-24--task-detail-opening-and-resizing-on-signed-dev),
 the correct title was observable after 489 ms on the first open (one sample)

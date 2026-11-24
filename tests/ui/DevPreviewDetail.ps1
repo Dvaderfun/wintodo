@@ -89,9 +89,13 @@ foreach ($pair in @(@('ctrl+shift+d','Todo.Detail.DueDatePicker'),@('ctrl+shift+
     Invoke-PaneUi @('wait-for','Todo.Detail.Title','--value',$Titles[1],'-t','5000') | Out-Null
 }
 Invoke-PaneUi @('focus','Todo.Detail.Sizer') | Out-Null
-$keys = (@('left') * 62) -join ' '
-Invoke-PaneUi @('send-keys',$keys,'--via','send-input') | Out-Null
 $wide = Measured-Width
+for ($press = 0; $press -lt 60 -and $wide -le 748; $press++) {
+    # The native sizer reads its arranged width on each key. An entire burst
+    # in one SendInput call runs before the layout from the first key is ready.
+    Invoke-PaneUi @('send-keys','left','--target','Todo.Detail.Sizer','--via','send-input') | Out-Null
+    if ($press % 4 -eq 3) { $wide = Measured-Width }
+}
 if ($wide -le 720) { throw "Keyboard resize did not exceed the old 720-DIP restore limit; measured $wide." }
 [ordered]@{wideDip=$wide;noteCompactDip=$compact.height/$scale;noteExpandedDip=$expanded.height/$scale} |
     ConvertTo-Json | Set-Content -LiteralPath (Join-Path $ArtifactDirectory 'detail-layout.json')
