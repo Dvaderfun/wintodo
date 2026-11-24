@@ -546,3 +546,34 @@ warm reads, each within the 5 ms limit:
 The query merges disjoint index lookups for pins and live deadlines; a task
 that matches both is returned only once. The highest warm FTS read was
 5.553 ms (60 ms limit).
+
+### 2026-11-24 — Task detail opening and resizing on signed DEV
+
+Diagnostic, not a release gate. WintodoTest, signed x64 Native AOT DEV
+`1.0.1.241` (`041880a3`), one launch, fresh My Day with two local tasks,
+maximized wide window at 100% scale. A persistent external UI Automation
+client timed the row's native `SelectionItem.Select` call until the exact
+incoming title was observable in an onscreen editor with nonempty bounds.
+Finding the row and allowing earlier transitions to settle were outside the
+timer; the provider call, title lookup and polling were inside. The original
+physical-click attempt could not validate its hit point, produced no samples,
+and is excluded. These are neither first-paint nor first-keystroke timings.
+
+| Selection | Samples | Median | Range |
+|---|---:|---:|---:|
+| First open in process | 1 | 488.65 ms | single observation |
+| Reopen after closing Details | 8 | 306.47 ms | 280.19–342.52 ms |
+| Switch while Details is open | 8 | 63.29 ms | 50.15–77.34 ms |
+| Switch immediately after changing the outgoing note | 5 | 77.82 ms | 65.20–92.67 ms |
+
+Both tasks retained their own edited note on reopening. Whether each write
+had begun before switching wasn't instrumented. In a separate test an
+*unsubmitted step draft* from Alpha was still in the field on Bravo.
+
+Two one-second drags of the native sizer requested 100 DIPs in opposite
+directions in the inline layout; the detail header moved 98 DIPs each way.
+Intermediate UIA samples showed movement during both drags. This records
+geometry, not presented frames or pointer-to-paint latency. The overlay,
+photo/no-photo comparison, and larger task lists are unmeasured.
+Local raw evidence: `tests/ui/artifacts/detail-pane-study/{open,drag,run}.json`.
+See the [proposal and follow-up measurements](plans/2026-11-24-task-detail-responsiveness.md).

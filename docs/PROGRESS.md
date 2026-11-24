@@ -371,6 +371,15 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 
 ## History
 
+### 2026-11-24 — Task detail responsiveness investigation
+
+The [signed DEV .241 VM diagnostic](PERF.md#2026-11-24--task-detail-opening-and-resizing-on-signed-dev)
+separates opening from switching, verifies note ownership, and reproduces an
+unsubmitted step draft carrying to the next task. The first physical-click
+attempt yielded no timing samples; the reported measurements use native row
+selection. [Proposed changes and validation](plans/2026-11-24-task-detail-responsiveness.md)
+are for review. No app code, design decision or release changed.
+
 ### 2026-11-24 — Final Suggestions review (UX-19)
 
 Completing a suggestion can commit even if the detail read that follows fails.
