@@ -21,7 +21,6 @@ public sealed partial class ShellViewModel : ObservableObject
     internal const string AllNavigationKey = "smart:all";
     internal const string CompletedNavigationKey = "smart:completed";
     private const string UserListNavigationPrefix = "list:";
-    private const string AppearanceThemeSetting = "appearance.theme";
     private const string DensitySetting = "appearance.density";
     private const string ShowListBackgroundsSetting = "appearance.show_list_backgrounds";
     private const string TintFixedCategoryIconsSetting =
@@ -281,7 +280,7 @@ public sealed partial class ShellViewModel : ObservableObject
     {
         Task preferences = Preferences.LoadAsync(cancellationToken);
         Task<IReadOnlyDictionary<string, string>> appearance = _taskStore.GetSettingsAsync(
-            [AppearanceThemeSetting, DensitySetting, ShowListBackgroundsSetting, TintFixedCategoryIconsSetting,
+            [DensitySetting, ShowListBackgroundsSetting, TintFixedCategoryIconsSetting,
              GetFixedBackgroundSettingKey(MyDayNavigationKey), GetFixedBackgroundSettingKey(ImportantNavigationKey),
              GetFixedBackgroundSettingKey(PlannedNavigationKey), GetFixedBackgroundSettingKey(AllNavigationKey),
              GetFixedBackgroundSettingKey(CompletedNavigationKey), DetailPaneWidthSetting,
@@ -302,7 +301,6 @@ public sealed partial class ShellViewModel : ObservableObject
         {
             _fixedCategoryBackgrounds[key] = NormalizeBackgroundTheme(settings.GetValueOrDefault(GetFixedBackgroundSettingKey(key)));
         }
-        AppearanceThemeIndex = ParseChoice(settings.GetValueOrDefault(AppearanceThemeSetting), maximum: 2);
         DensityIndex = ParseChoice(settings.GetValueOrDefault(DensitySetting), maximum: 1);
         ShowListBackgrounds = bool.TryParse(settings.GetValueOrDefault(ShowListBackgroundsSetting), out bool show) && show;
         TintFixedCategoryIcons = !bool.TryParse(settings.GetValueOrDefault(TintFixedCategoryIconsSetting), out bool tint) || tint;

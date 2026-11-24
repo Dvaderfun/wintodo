@@ -73,18 +73,20 @@ public sealed partial class MainWindow : Window
         TitleSearch.SearchRequested += OnSearchRequested;
     }
 
-    internal void ShowInitialShell(WindowPlacementState? placement)
+    internal void ShowInitialShell(WindowStartupState state)
     {
         // The title bar remains usable (including minimize/close); navigation and commands
         // must not run against an unfinished recovery or the wrong initial selection.
         _shellPage.IsEnabled = false;
         TitleSearch.IsEnabled = false;
+        _shellPage.ViewModel.LoadStartupTheme(state.ThemeSetting);
+        OnShellThemeChanged(ShellPage.ThemeForIndex(_shellPage.ViewModel.AppearanceThemeIndex));
         RootFrame.Content = _shellPage;
-        ApplyInitialBounds(placement);
+        ApplyInitialBounds(state.Placement);
         CaptureRestoredBounds();
         _hasPresentedShell = true;
         // Maximize can show the HWND. Attach content and set restore bounds before either call.
-        if (placement?.IsMaximized == true) _presenter?.Maximize();
+        if (state.Placement?.IsMaximized == true) _presenter?.Maximize();
         _lastNonMinimizedWasMaximized = _presenter?.State == OverlappedPresenterState.Maximized;
         Activate();
     }
@@ -95,9 +97,6 @@ public sealed partial class MainWindow : Window
         _isWindowMinimized = _presenter?.State == OverlappedPresenterState.Minimized;
         await _shellPage.SetWindowMinimizedAsync(_isWindowMinimized);
         await _shellPage.InitializeAsync(cancellationToken);
-        _isInitialized = true;
-        _shellPage.IsEnabled = true;
-        TitleSearch.IsEnabled = true;
     }
 
     internal void CompleteStartup() => _startupFinished.TrySetResult();
@@ -166,11 +165,20 @@ public sealed partial class MainWindow : Window
         WindowRoot.RequestedTheme = theme;
     }
 
-    internal Task HandleJumpListArgumentAsync(
-        string argument,
+    internal async Task CompleteInitialNavigationAsync(
+        string? jumpListArgument, string? notificationTaskUid,
         CancellationToken cancellationToken = default)
     {
-        return _shellPage.HandleJumpListArgumentAsync(argument, cancellationToken);
+        bool focusComposer = false;
+        if (!string.IsNullOrWhiteSpace(jumpListArgument))
+            focusComposer = await _shellPage.SelectJumpListTargetAsync(jumpListArgument, cancellationToken);
+        else if (notificationTaskUid is not null)
+            await _shellPage.OpenTaskAsync(notificationTaskUid, cancellationToken);
+
+        _isInitialized = true;
+        _shellPage.IsEnabled = true;
+        TitleSearch.IsEnabled = true;
+        if (focusComposer) _shellPage.FocusComposer();
     }
 
     internal Task OpenTaskAsync(

@@ -10,8 +10,9 @@ internal sealed class ShellStateService
     private const string WindowWidthKey = "shell.window.width";
     private const string WindowHeightKey = "shell.window.height";
     private const string WindowMaximizedKey = "shell.window.maximized";
+    internal const string AppearanceThemeSetting = "appearance.theme";
     internal const string SelectedNavigationKey = "shell.navigation.selected";
-    private static readonly string[] PlacementKeys = [WindowXKey, WindowYKey, WindowWidthKey, WindowHeightKey, WindowMaximizedKey];
+    private static readonly string[] WindowStartupKeys = [WindowXKey, WindowYKey, WindowWidthKey, WindowHeightKey, WindowMaximizedKey, AppearanceThemeSetting];
 
     private readonly ISettingsStore _settingsStore;
 
@@ -20,11 +21,15 @@ internal sealed class ShellStateService
         _settingsStore = settingsStore;
     }
 
-    internal async Task<WindowPlacementState?> LoadWindowPlacementAsync(
+    internal async Task<WindowStartupState> LoadWindowStartupStateAsync(
         CancellationToken cancellationToken = default)
     {
-        var values = await _settingsStore.GetSettingsAsync(PlacementKeys, cancellationToken).ConfigureAwait(false);
+        var values = await _settingsStore.GetSettingsAsync(WindowStartupKeys, cancellationToken).ConfigureAwait(false);
+        return new WindowStartupState(ParsePlacement(values), values.GetValueOrDefault(AppearanceThemeSetting));
+    }
 
+    private static WindowPlacementState? ParsePlacement(IReadOnlyDictionary<string, string> values)
+    {
         if (!int.TryParse(values.GetValueOrDefault(WindowXKey), NumberStyles.Integer, CultureInfo.InvariantCulture, out int x)
             || !int.TryParse(values.GetValueOrDefault(WindowYKey), NumberStyles.Integer, CultureInfo.InvariantCulture, out int y)
             || !double.TryParse(values.GetValueOrDefault(WindowWidthKey), NumberStyles.Float, CultureInfo.InvariantCulture, out double width)
@@ -67,6 +72,8 @@ internal sealed class ShellStateService
             cancellationToken);
     }
 }
+
+internal readonly record struct WindowStartupState(WindowPlacementState? Placement, string? ThemeSetting);
 
 internal readonly record struct WindowPlacementState(
     int X,

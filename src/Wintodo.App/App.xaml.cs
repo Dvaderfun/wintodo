@@ -129,7 +129,7 @@ public partial class App : Application
             Task openStore = notificationResult.HasValue ? Task.CompletedTask : store.InitializeAsync();
             var stateService = new ShellStateService(store);
             ImportEnvironment importEnvironment = CreateImportEnvironment(commandLineDatabasePath, clock);
-            Task<(WindowPlacementState? Placement, Task Recovery)> windowState =
+            Task<(WindowStartupState State, Task Recovery)> windowState =
                 PrepareWindowStoreAsync(openStore, store, stateService, importEnvironment.AttachmentRoot, launchStartTimestamp);
             var syncHttpClient = CalDavClient.CreateHttpClient();
             var syncService = new CalDavSyncService(
@@ -149,23 +149,17 @@ public partial class App : Application
             TraceStartupStage("window-created", launchStartTimestamp);
             launchingWindow = window;
             Window = window;
-            var (placement, recovery) = await windowState;
+            var (state, recovery) = await windowState;
             ObserveStartupFrame(window, launchStartTimestamp, interactive: false);
-            window.ShowInitialShell(placement);
+            window.ShowInitialShell(state);
             await recovery;
             Task shellTask = window.InitializeAsync();
             Task integrationTask = windowsIntegration.InitializeAsync();
             await shellTask;
             TraceStartupStage("window", launchStartTimestamp);
-            if (activation.Kind == ExtendedActivationKind.Launch
-                     && !string.IsNullOrWhiteSpace(args.Arguments))
-            {
-                await window.HandleJumpListArgumentAsync(args.Arguments);
-            }
-            else if (notificationResult is { TaskUid: not null } result)
-            {
-                await window.OpenTaskAsync(result.TaskUid);
-            }
+            await window.CompleteInitialNavigationAsync(
+                activation.Kind == ExtendedActivationKind.Launch ? args.Arguments : null,
+                notificationResult?.TaskUid);
             ObserveStartupFrame(window, launchStartTimestamp, interactive: true);
 
             await integrationTask;
@@ -205,19 +199,19 @@ public partial class App : Application
         }
     }
 
-    private static async Task<(WindowPlacementState? Placement, Task Recovery)> PrepareWindowStoreAsync(
+    private static async Task<(WindowStartupState State, Task Recovery)> PrepareWindowStoreAsync(
         Task openStore, SqliteTaskStore store, ShellStateService state, string attachmentRoot, long timestamp)
     {
         // Keep this continuation off the UI thread: XAML and the initial SQLite reads can overlap.
         await openStore.ConfigureAwait(false);
         TraceStartupStage("store", timestamp);
-        Task<WindowPlacementState?> placement = state.LoadWindowPlacementAsync();
+        Task<WindowStartupState> windowState = state.LoadWindowStartupStateAsync();
         // A large recovery may outlast window creation. Paint the shell at the saved bounds
         // while it runs, but don't admit imports or other writes until it has finished.
         Task recovery = store.CleanupInterruptedImportsAsync(attachmentRoot);
         try
         {
-            return (await placement.ConfigureAwait(false), recovery);
+            return (await windowState.ConfigureAwait(false), recovery);
         }
         catch
         {

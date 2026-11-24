@@ -103,7 +103,8 @@ public sealed partial class ShellPage
         return ViewModel.TaskList.ReloadAsync(cancellationToken);
     }
 
-    internal async Task HandleJumpListArgumentAsync(
+    // Returns true for New Task so the caller can focus the composer once input is enabled.
+    internal async Task<bool> SelectJumpListTargetAsync(
         string argument,
         CancellationToken cancellationToken = default)
     {
@@ -123,15 +124,14 @@ public sealed partial class ShellPage
                 }
             }
 
-            TaskList.FocusComposer();
-            return;
+            return true;
         }
 
         if (!argument.StartsWith(
             WindowsIntegrationService.JumpListOpenListPrefix,
             StringComparison.Ordinal))
         {
-            return;
+            return false;
         }
 
         string uid = argument[WindowsIntegrationService.JumpListOpenListPrefix.Length..];
@@ -143,7 +143,10 @@ public sealed partial class ShellPage
                 ResolveNavigationItem(list.NavigationKey),
                 cancellationToken);
         }
+        return false;
     }
+
+    internal void FocusComposer() => TaskList.FocusComposer();
 
     internal async Task OpenTaskAsync(
         string uid,
