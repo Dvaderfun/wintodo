@@ -6,6 +6,30 @@ namespace Wintodo.Data.Tests;
 
 public sealed class TaskBatchTests
 {
+    [Fact]
+    public async Task UndatedSuggestionCanBeAddedAndRejectsStaleActions()
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        await using StoreFixture fixture = await StoreFixture.CreateAsync();
+        var list = await fixture.Store.CreateListAsync("Source", cancellationToken: token);
+        var task = await fixture.Store.CreateTaskAsync(new()
+        {
+            ListId = list.Id,
+            Summary = "Suggestion",
+        }, token);
+        await fixture.Store.ApplyTaskBatchAsync([task.Uid], TaskBatchAction.AddToMyDay, token,
+            expectedSuggestion: task);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Store.ApplyTaskBatchAsync(
+            [task.Uid], TaskBatchAction.Complete, token, expectedSuggestion: task));
+        var pinned = (await fixture.Store.GetTaskAsync(task.Uid, token))!;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => fixture.Store.ApplyTaskBatchAsync(
+            [task.Uid], TaskBatchAction.Complete, token, expectedSuggestion: pinned));
+        Assert.Equal(list.Id, pinned.ListId);
+        Assert.Equal(fixture.Clock.Today, pinned.MyDayDate);
+        Assert.Null(pinned.Due);
+        Assert.Equal(Core.Models.TaskStatus.NeedsAction, pinned.Status);
+    }
+
     [Theory]
     [InlineData(TaskBatchAction.AddToMyDay)]
     [InlineData(TaskBatchAction.MarkImportant)]

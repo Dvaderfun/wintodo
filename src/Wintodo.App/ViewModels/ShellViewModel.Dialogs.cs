@@ -35,6 +35,7 @@ public sealed partial class ShellViewModel
         int version = ++_detailOpenVersion;
         if (!await Detail.LoadAsync(task.Uid, cancellationToken)
             || version != _detailOpenVersion || TaskList.SelectionCount != 1) return;
+        TaskList.CloseSuggestions();
         IsDetailPaneLoaded = true;
         IsDetailPaneOpen = true;
     }

@@ -1,4 +1,5 @@
 using Wintodo.Core.Models;
+using Wintodo.Core.Presentation;
 using Wintodo.Core.Services;
 
 namespace Wintodo.Data;
@@ -11,7 +12,8 @@ public sealed partial class SqliteTaskStore
         CancellationToken cancellationToken = default,
         DateOnly? date = null,
         long? destinationListId = null,
-        bool moveStarredToTop = false)
+        bool moveStarredToTop = false,
+        TodoTask? expectedSuggestion = null)
     {
         ArgumentNullException.ThrowIfNull(uids);
         if (!Enum.IsDefined(action)) throw new ArgumentOutOfRangeException(nameof(action));
@@ -21,6 +23,10 @@ public sealed partial class SqliteTaskStore
             throw new ArgumentException("A destination list is required.", nameof(destinationListId));
         string[] selection = uids.Distinct(StringComparer.Ordinal).ToArray();
         foreach (string uid in selection) ArgumentException.ThrowIfNullOrWhiteSpace(uid);
+        if (expectedSuggestion is not null && (selection.Length != 1
+            || selection[0] != expectedSuggestion.Uid
+            || action is not (TaskBatchAction.AddToMyDay or TaskBatchAction.Complete)))
+            throw new ArgumentException("A suggestion action requires one matching task.", nameof(expectedSuggestion));
 
         return ExecuteWriteAsync((connection, transaction, context) =>
         {
@@ -40,6 +46,11 @@ public sealed partial class SqliteTaskStore
                 TodoTask task = ReadTaskByUid(connection, transaction, uid,
                     includeDeleted: action == TaskBatchAction.Restore)
                     ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
+                DateOnly today = _clock.Today;
+                if (expectedSuggestion is not null && (task.Sequence != expectedSuggestion.Sequence
+                    || task.MyDayExcludedDate != expectedSuggestion.MyDayExcludedDate
+                    || MyDaySuggestions.Classify(task, today, _clock) is null))
+                    throw new InvalidOperationException("The task suggestion has changed.");
                 long sourceListId = task.ListId;
                 bool wasDeleted = task.IsDeleted;
                 DateOnly? previousPin = task.MyDayDate;
@@ -74,8 +85,8 @@ public sealed partial class SqliteTaskStore
                         task.Priority = (int)TaskPriority.Undefined;
                         break;
                     case TaskBatchAction.AddToMyDay:
-                        changed = task.MyDayDate != _clock.Today || task.MyDayExcludedDate is not null;
-                        task.MyDayDate = _clock.Today;
+                        changed = task.MyDayDate != today || task.MyDayExcludedDate is not null;
+                        task.MyDayDate = today;
                         task.MyDayExcludedDate = null;
                         break;
                     case TaskBatchAction.RemoveFromMyDay:

@@ -221,7 +221,43 @@ public static class MyDayGateWriteLock
     Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'On', '-t', '5000') | Out-Null
     Ui @('invoke', $otherComplete, '--action', 'toggle-off') | Out-Null
     Ui @('wait-for', 'Todo.Detail.Complete', '--value', 'Off', '-t', '5000') | Out-Null
-    Write-Host 'My Day UI gate: PASS (inclusion, dismissal, undo, pin, rollover, row due date, recurring completion, switch during save)'
+
+    Ui @('wait-for', 'Todo.Suggestions.Open', '--gone', '-t', '5000') | Out-Null
+    $overdueRow = Add-GateTask 'Overdue suggestion gate task'
+    Ui @('invoke', $overdueRow) | Out-Null
+    Ui @('invoke', 'Todo.Detail.Due') | Out-Null
+    Ui @('invoke', 'Todo.Detail.Due.Today') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Today', '-t', '5000') | Out-Null
+    Set-TestClock ([DateTime]::new(2026, 11, 22, 12, 0, 0))
+    $futureRow = Add-GateTask 'Upcoming suggestion gate task'
+    Ui @('invoke', $futureRow) | Out-Null
+    Ui @('invoke', 'Todo.Detail.Due') | Out-Null
+    Ui @('invoke', 'Todo.Detail.Due.Tomorrow') | Out-Null
+    Ui @('wait-for', 'Todo.Detail.Due', '--property', 'Name', '--value', 'Due Tomorrow', '-t', '5000') | Out-Null
+    Ui @('invoke', 'Todo.Nav.MyDay') | Out-Null
+    Ui @('invoke', 'Todo.Suggestions.Open') | Out-Null
+    Ui @('wait-for', 'Todo.Suggestions.Close', '-t', '5000') | Out-Null
+    $addOverdue = $overdueRow.Replace('Todo.Row.', 'Todo.Suggestions.Add.')
+    $completeFuture = $futureRow.Replace('Todo.Row.', 'Todo.Suggestions.Complete.')
+    Ui @('wait-for', $addOverdue, '-t', '5000') | Out-Null
+    Ui @('wait-for', $completeFuture, '-t', '5000') | Out-Null
+    $suggestionTree = (Ui @('inspect', '--depth', '30', '--json')) -join "`n"
+    $overdueIndex = $suggestionTree.IndexOf($addOverdue, [StringComparison]::Ordinal)
+    $futureIndex = $suggestionTree.IndexOf($completeFuture, [StringComparison]::Ordinal)
+    if ($overdueIndex -lt 0 -or $futureIndex -le $overdueIndex) {
+        throw 'Expected the overdue suggestion before the upcoming suggestion.'
+    }
+    Ui @('screenshot', '-o', (Join-Path $artifacts 'suggestions.png')) | Out-Null
+    Ui @('invoke', $addOverdue) | Out-Null
+    Ui @('wait-for', $addOverdue, '--gone', '-t', '5000') | Out-Null
+    Ui @('invoke', $completeFuture) | Out-Null
+    Ui @('wait-for', $completeFuture, '--gone', '-t', '5000') | Out-Null
+    Ui @('send-keys', 'escape', '--via', 'send-input') | Out-Null
+    Ui @('wait-for', 'Todo.Suggestions.Close', '--gone', '-t', '5000') | Out-Null
+    Ui @('wait-for', $overdueRow, '-t', '5000') | Out-Null
+    Ui @('invoke', 'Todo.Nav.DefaultList') | Out-Null
+    Ui @('wait-for', $overdueRow, '-t', '5000') | Out-Null
+    Write-Host 'My Day UI gate: PASS (inclusion, dismissal, undo, pin, rollover, row due date, recurring completion, switch during save, suggestions)'
 } finally {
     Stop-Process -Id $appPid -ErrorAction SilentlyContinue
 }

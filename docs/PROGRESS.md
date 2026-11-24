@@ -15,6 +15,11 @@ Row completion and My Day edits update the list and open detail; all-day tasks
 keep their calendar date in Planned and in accessible row labels. The Store
 version below predates these changes.
 
+My Day Suggestions (UX-19) is implemented in the working copy under ADR-025.
+The right-hand sidebar opens from the header beside the overflow menu and lists overdue
+tasks before upcoming ones. Add and complete actions preserve the source
+list and use existing undo and recurrence paths.
+
 **Private DEV installer:** Wintodo DEV **1.0.1.224** is the
 signed x64 build of `c7400210`. Choosing Repeat now sets an undated task due
 today; checking it off advances its due date. The build keeps the My Day
@@ -360,6 +365,32 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-24 — UX-19 Suggestions sidebar
+
+- Moved Suggestions into a right-hand sidebar with a close button and Escape
+  support. Opening task details replaces the sidebar.
+- Aligned the sidebar to the top and right edges of the My Day surface and
+  kept the header actions beside the sidebar.
+- Shared My Day's theme background and used empty completion circles with the
+  selected list accent.
+- Colored overdue dates in Suggestions with the same critical brush as task rows.
+- Made the My Day header lightbulb icon-only, with a tooltip and accessible name.
+- Included other unfinished tasks without a due date in a No Due Date section.
+- Kept task-list shortcuts from acting on a selection while focus is in the
+  sidebar and discarded pending actions when their sidebar session closes.
+- The x64 warnings-as-errors build and all 745 unit tests passed. The updated
+  My Day UI gate could not start because `Get-VMCheckpoint` was unavailable.
+
+### 2026-11-23 — UX-19 My Day Suggestions
+
+- Added the native lightbulb and labeled header trigger, ordered sections,
+  and one-click add and complete actions.
+- Added tests for local-date ordering, carry-over, excluded tasks, and stale
+  suggestion writes. All 745 x64 tests passed.
+- Extended the My Day UI gate with suggestion ordering, add, complete, and
+  source-list verification. The VM gate could not start because the host
+  session lacks the Hyper-V PowerShell module (`Get-VMCheckpoint`).
 
 One entry per milestone or change. Append, never rewrite history.
 

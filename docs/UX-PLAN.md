@@ -67,7 +67,7 @@ this dependency exception does not mark those gates passed.
 | UX-16 | 🔒 Natural-language quick add | D | L | UX-06 | Core, AddTaskComposer | skipped for now (owner, 2026-10-18) |
 | UX-17 | 🔒 Global quick-add hotkey | D | L | UX-16 recommended | App, new window | skipped for now (owner, 2026-10-18) |
 | UX-18 | Share target (text/URL → task) | D | M | — | Manifest, App | done (ADR-015; x64 AOT real-share 10/10, M0/M7/AOT-M13 PASS; both architectures published) |
-| UX-19 | 🔒 My Day carry-over and suggestions, rule-based | D | M | UX-12 | Core, TaskListView | awaiting owner |
+| UX-19 | My Day carry-over and suggestions, rule-based | D | M | UX-12 | Core, TaskListView | implemented, VM verification pending |
 | UX-20 | Close the open manual gate rows (owner-run) | C | — | — | — | owner |
 
 Phases: **A** quick fixes and spec gaps (can run in parallel) · **B** interaction
@@ -675,14 +675,11 @@ graph before saving. UX-18 extends and validates that groundwork.
 
 ### UX-19 — My Day carry-over and suggestions, rule-based
 
-PLAN §1 rules out a "suggestions panel". The ADR proposes a rule-based
-alternative and asks the owner to amend PLAN §1:
-- on the first launch after the reset time (UX-12), offer "Carry over N
-  unfinished tasks from yesterday";
-- a flyout, opened from the My Day header, listing overdue, due-today and
-  yesterday's My Day tasks, each with a one-click "Add to My Day".
-
-No AI, deterministic, `IClock`-driven, with Core-tested selection rules.
+[ADR-025](adr/ADR-025-my-day-suggestions.md) defines the right-hand sidebar.
+Open it from the My Day header to see overdue tasks first and upcoming tasks
+second. Each result can be added to My Day or completed. Undated tasks pinned
+yesterday can be added back from the same sidebar. Other undated tasks appear
+in the No Due Date section.
 
 ---
 

@@ -39,7 +39,7 @@ After parity, we iterate beyond To Do.
 
 - No server. No account system. No cloud of our own.
 - No collaboration/sharing (that's a CalDAV-server concern, arrives with M13).
-- No AI features, no "suggestions" panel.
+- No AI features. My Day suggests tasks using local dates and existing task state (ADR-025).
 - No mobile, no web.
 
 ### v1 scope — Microsoft To Do parity
@@ -495,7 +495,7 @@ IDs; then write XAML from those samples.
 - Sort menu per list: Importance / Due date / Alphabetical / Creation date,
   ascending/descending, persisted per list.
 - Show/hide completed; completed count in the section header.
-- "Add to My Day" suggestions panel is **out of scope** — do not build it.
+- My Day Suggestions offers overdue tasks first, then upcoming tasks, with actions to add to My Day or complete.
 
 **Gate**
 - My Day empties at local midnight while the app stays open (test by moving the

@@ -260,6 +260,13 @@ public sealed partial class ShellPage
         KeyboardAccelerator sender,
         KeyboardAcceleratorInvokedEventArgs args)
     {
+        if (ViewModel.TaskList.IsSuggestionsOpen)
+        {
+            ViewModel.TaskList.CloseSuggestions();
+            args.Handled = true;
+            return;
+        }
+
         if (ViewModel.IsImportVisible)
         {
             if (Controls.ImportWizardView.HasOpenDialog(XamlRoot)) return;
