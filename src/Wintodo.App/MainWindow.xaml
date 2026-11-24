@@ -8,10 +8,6 @@
     xmlns:local="using:Wintodo"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d">
-    <Window.SystemBackdrop>
-        <MicaBackdrop Kind="Base" />
-    </Window.SystemBackdrop>
-
     <Grid x:Name="WindowRoot">
         <Grid.Resources>
             <DataTemplate x:Key="StartupLogoTemplate">

@@ -82,6 +82,7 @@ public sealed partial class MainWindow
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
         // Validation failed before ShowInitialShell. Only present the recovery dialog.
         RemoveStartupLogo();
+        SystemBackdrop ??= new MicaBackdrop();
 #endif
         // Store validation now precedes activation. A ContentDialog needs a loaded XamlRoot.
         if (!WindowRoot.IsLoaded)

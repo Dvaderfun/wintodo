@@ -3,6 +3,7 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Media;
 using Windows.Graphics;
 using WinRT;
 using Wintodo.Core.Services;
@@ -56,6 +57,9 @@ public sealed partial class MainWindow : Window
         _syncHttpClient = syncHttpClient;
 
         InitializeComponent();
+#if !DEBUG && !WINTODO_PRIVATE_PREVIEW
+        SystemBackdrop = new MicaBackdrop(); // Base Mica, as in the shipping window.
+#endif
         Title = new ResourceLoader().GetString("MainWindowTitle");
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -96,6 +100,8 @@ public sealed partial class MainWindow : Window
         _shellModel.AppearanceThemeIndex = themeIndex;
         OnShellThemeChanged(ShellPage.ThemeForIndex(themeIndex));
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
+        SystemBackdrop = WindowRoot.RequestedTheme == ElementTheme.Default
+            ? new MicaBackdrop() : new StartupMicaBackdrop(WindowRoot.RequestedTheme);
         if (_startupLogo is not null) _startupLogo.RequestedTheme = WindowRoot.RequestedTheme;
 #endif
 #if !DEBUG && !WINTODO_PRIVATE_PREVIEW
