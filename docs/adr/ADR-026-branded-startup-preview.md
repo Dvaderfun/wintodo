@@ -7,13 +7,15 @@
 
 ## Context
 
-DEV .249 restores the window before showing it, but the owner still sees a blank surface before the list appears. The package already declares the Glide splash artwork. [WinUI desktop does not provide UWP's automatic splash](https://github.com/microsoft/microsoft-ui-xaml/issues/4055); the app can control what its own window paints once it is running.
+DEV .249 restores the window before showing it, but the owner still sees a blank surface before the list appears. The package already declares the Glide splash artwork. [WinUI desktop does not provide UWP's automatic splash](https://github.com/microsoft/microsoft-ui-xaml/issues/4055). On .251 an app-owned logo alone still left plain window frames on screen in the [signed VM recordings](../PERF.md#2026-11-25--what-the-installed-app-actually-paints-during-launch).
 
 ## Proposed trial
 
 Center the existing Glide artwork on a theme-aware surface in the real, correctly placed main window. Keep the native caption buttons usable. Reveal the initial view as soon as it is ready, whether that is Welcome, the user's list, or an activation target. Do not wait for network sync or delay the reveal to make the logo visible. There is no separate splash window, spinner, minimum display time, or new timer.
 
 Respect Light, Dark and High Contrast. The logo must not receive keyboard focus or obscure an error or recovery dialog. Headless activations remain headless, and sharing keeps its own window.
+
+To cover the native window's empty paint as well as the XAML load, try withholding the main window from desktop composition until WinUI commits a usable frame. Windows can continue rendering and the app can continue loading. The cost is that Windows may skip its normal window-open animation. Once the shell is ready, missing compositor notifications must not leave an otherwise usable app hidden.
 
 ## Review and rollback
 

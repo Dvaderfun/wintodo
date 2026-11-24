@@ -14,9 +14,9 @@ public sealed partial class ShellPage
     private bool _backgroundSyncStarted;
     private bool _timersStopped;
 
-    internal async Task InitializeAsync(CancellationToken cancellationToken = default)
+    internal async Task InitializeAsync(Task<string>? startupNavigation, CancellationToken cancellationToken = default)
     {
-        string selectedNavigation = await ViewModel.InitializeAsync(cancellationToken);
+        string selectedNavigation = await (startupNavigation ?? ViewModel.InitializeAsync(cancellationToken));
         PopulateUserListNavigationItems();
         object selectedItem = ResolveNavigationItem(selectedNavigation);
         ShellNavigation.SelectedItem = selectedItem;

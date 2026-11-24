@@ -150,6 +150,9 @@ public partial class App : Application
             launchingWindow = window;
             Window = window;
             var (state, recovery) = await windowState;
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+            await window.StartupArtwork; // The packaged image loads concurrently with SQLite.
+#endif
             ObserveStartupFrame(window, launchStartTimestamp, interactive: false);
             window.ShowInitialShell(state);
             await recovery;

@@ -46,24 +46,14 @@ public sealed partial class ShellPage : Page
     internal ShellPage(
         ITaskStore taskStore,
         IClock clock,
-        ShellStateService stateService,
         WindowsIntegrationService windowsIntegration,
-        IStartupTaskService startupTaskService,
-        CalDavSyncService syncService,
-        ImportEnvironment importEnvironment)
+        ShellViewModel viewModel)
     {
         _clock = clock;
         _taskStore = taskStore;
         _windowsIntegration = windowsIntegration;
         _isHighContrast = IsSystemHighContrastEnabled();
-        ViewModel = new ShellViewModel(
-            taskStore,
-            clock,
-            stateService,
-            startupTaskService,
-            syncService,
-            windowsIntegration,
-            importEnvironment);
+        ViewModel = viewModel;
         KeyboardShortcuts = CreateKeyboardShortcuts();
         InitializeComponent();
         AddPunctuationAccelerators();

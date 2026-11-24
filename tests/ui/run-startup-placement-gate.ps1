@@ -1,19 +1,25 @@
 # Run with Invoke-VmGate.ps1 -NoWarmup -Include $candidate -GateArguments '-InputDirectory',$candidate
 # $candidate is a repo-relative directory with Build-DevPreview.ps1's signed x64 MSIX and build.json.
-param([Parameter(Mandatory)][string]$InputDirectory)
+param([Parameter(Mandatory)][string]$InputDirectory, [switch]$CaptureFrames, [switch]$CaptureRecovery)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $root -ine 'C:\wintodo' -or
     (Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Virtual Machine\Guest\Parameters' VirtualMachineName) -cne 'WintodoTest') {
     throw 'This gate requires the clean WintodoTest VM.'
 }
+if ($CaptureRecovery -and -not $CaptureFrames) { throw 'The recovery diagnostic requires -CaptureFrames.' }
 # UI Automation's desktop assemblies are available in Windows PowerShell on the guest.
 if ($PSVersionTable.PSEdition -ne 'Desktop') {
-    & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $PSCommandPath -InputDirectory $InputDirectory
+    $captureArgs = @()
+    if ($CaptureFrames) { $captureArgs += '-CaptureFrames' }
+    if ($CaptureRecovery) { $captureArgs += '-CaptureRecovery' }
+    if ($CaptureFrames) { Write-Host 'Starting signed placement and desktop-pixel capture in Windows PowerShell.' }
+    & powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $PSCommandPath -InputDirectory $InputDirectory @captureArgs
     exit $LASTEXITCODE
 }
 Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
 Add-Type -Path (Join-Path $PSScriptRoot 'StartupWindowProbe.cs')
+if ($CaptureFrames) { Add-Type -ReferencedAssemblies System.Drawing -Path (Join-Path $PSScriptRoot 'StartupScreenCapture.cs') }
 $output = (New-Item -ItemType Directory -Force -Path (Join-Path $PSScriptRoot ('artifacts/startup-placement/'+[guid]::NewGuid().ToString('N')))).FullName
 $build = Get-Content -LiteralPath (Join-Path (Join-Path $root $InputDirectory) 'build.json') -Raw | ConvertFrom-Json
 $msix = Join-Path (Join-Path $root $InputDirectory) "Wintodo-DEV-$($build.version)-x64.msix"
@@ -46,12 +52,14 @@ function Wait-WindowState([bool]$Maximized, [switch]$CheckNormalBounds) {
     throw "Expected window maximized=$Maximized (compare normal bounds: $CheckNormalBounds); observed $($s | ConvertTo-Json -Compress)."
 }
 
-function Measure-Launch([string]$Name, $Expected) {
+function Measure-Launch([string]$Name, $Expected, [string]$RecoveryStaging) {
     if (Get-Process -Name Wintodo -ErrorAction SilentlyContinue) { throw 'Fresh process required before launch.' }
     $uia = [System.Windows.Automation.AutomationElement]
     $condition = [System.Windows.Automation.PropertyCondition]::new($uia::AutomationIdProperty,$rowId)
-    $probe = [StartupWindowProbe]::new($exe)
+    $probe = [StartupWindowProbe]::new($exe,$CaptureFrames.IsPresent,$RecoveryStaging)
     $rowMs=$null; $queries=0; $element=$null; $returned=$null; $failure=$null
+    $pixels = if ($CaptureFrames) { [StartupScreenCapture]::new() }
+    if ($pixels) { $pixels.Begin() }
     $probe.Begin()
     try {
         $shell.ShellExecute($launchUri)
@@ -75,8 +83,12 @@ function Measure-Launch([string]$Name, $Expected) {
         }
         if ($null -eq $rowMs) { throw 'The exact fixture task did not become an onscreen ListItem within 30 s.' }
         Start-Sleep -Seconds 2 # Include late resizes; same observation interval as the baseline.
-    } catch { $failure=$_.Exception.Message } finally { $probe.End() }
+    } catch { $failure=$_.Exception.Message } finally {
+        $probe.End()
+        if ($pixels) { try { $pixels.Save((Join-Path $output ($Name+'-screen'))) } finally { $pixels.Dispose() } }
+    }
     $changes=@($probe.Changes); $visible=@($changes | Where-Object Visible); $max=@($visible | Where-Object Maximized)
+    $uncloaked=@($visible | Where-Object { $null -ne $_.DwmCloakFlags -and $_.DwmCloakFlags -eq 0 })
     if (-not $failure) { $failure=$probe.Error }
     if (-not $failure -and (-not $changes.Count -or $changes[0].Visible -or -not $visible.Count)) {
         $failure='Observer missed the hidden-to-visible boundary.'
@@ -86,14 +98,28 @@ function Measure-Launch([string]$Name, $Expected) {
             $failure="Unexpected visible bounds/state at $([Math]::Round($s.Ms)) ms; see WindowChanges."
         }
     }
+    if ($CaptureFrames -and -not $failure -and -not $uncloaked.Count) {
+        $failure='No visible, DWM-uncloaked HWND observed; see WindowChanges for flags and query results.'
+    }
     $record = [ordered]@{SampleName=$Name; Status=$(if($failure){'FAIL'}else{'PASS'}); Error=$failure; PackageVersion=$build.version
         ProcessId=$probe.ProcessId; Hwnd=$probe.Hwnd; FirstVisibleMs=$(if($visible.Count){$visible[0].Ms})
+        FirstVisibleUncloakedMs=$(if($uncloaked.Count){$uncloaked[0].Ms})
         FirstMaximizedMs=$(if($max.Count){$max[0].Ms}); TaskOnscreenMs=$rowMs; TaskLabel=$label; RowAutomationId=$rowId
         ProcessSeenMs=$probe.ProcessSeenMs; ShellExecuteReturnedMs=$returned; ObservationEndedMs=$probe.Ms; AfterRowSeconds=2
         ExpectedWindow=$Expected; WindowChanges=$changes; WindowPollSleepMs=5; WindowPolls=$probe.Polls; MaxWindowPollGapMs=$probe.MaxWindowPollGapMs
         UiaQueries=$queries; UiaPollSleepMs=10}
+    if ($RecoveryStaging) {
+        if ($null -eq $probe.LastStagingPresentMs -or $null -eq $probe.FirstStagingRemovedMs -or
+            (Test-Path -LiteralPath $RecoveryStaging)) { $failure='Did not observe the staged import files being recovered.' }
+        $record.Recovery = [ordered]@{FixtureFiles=2048; LastStagingPresentMs=$probe.LastStagingPresentMs
+            FirstStagingRemovedMs=$probe.FirstStagingRemovedMs
+            ObservedUncloakedBeforeCleanupEnded=($uncloaked.Count -gt 0 -and $uncloaked[0].Ms -lt $probe.LastStagingPresentMs)}
+        $record.Status = if ($failure) { 'FAIL' } else { 'PASS' }
+        $record.Error = $failure
+    }
     $record | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $output "$Name.json") -Encoding UTF8
-    $report.Launches+= "$Name.json"
+    if ($RecoveryStaging) { $report.SeparateRecoveryDiagnostic = "$Name.json" }
+    else { $report.Launches+= "$Name.json" }
     if ($failure) { throw "$Name failed: $failure" }
     $script:app = Get-Process -Id $probe.ProcessId
 }
@@ -110,6 +136,9 @@ try {
         $reg.Publisher -cne $build.publisher -or [string]$reg.Version -cne $build.version) { throw 'Installed registration mismatch.' }
     $exe = Join-Path $reg.InstallLocation Wintodo.exe
     $launchUri = 'shell:AppsFolder\'+$reg.PackageFamilyName+'!App'
+    if ($CaptureFrames) { Write-Host "Capturing installed $($reg.Version) from before its first launch." }
+    $initialPixels = if ($CaptureFrames) { [StartupScreenCapture]::new() }
+    if ($initialPixels) { $initialPixels.Begin() }
     $shell.ShellExecute($launchUri)
     $clock = [Diagnostics.Stopwatch]::StartNew()
     do {
@@ -119,6 +148,10 @@ try {
     } while ($clock.Elapsed.TotalSeconds -lt 90)
     if (-not $app) { throw 'No main window from the installed application.' }
     Ui @('wait-for','Todo.Welcome.StartFresh','-t','30000') | Out-Null
+    if ($initialPixels) {
+        Start-Sleep -Milliseconds 300
+        try { $initialPixels.Save((Join-Path $output 'first-install-screen')) } finally { $initialPixels.Dispose() }
+    }
     Ui @('invoke','Todo.Welcome.StartFresh') | Out-Null
     Ui @('wait-for','Todo.List.AddTaskBox','-t','15000') | Out-Null
     $title = 'Startup observation fixture'
@@ -144,7 +177,36 @@ try {
     }
     [StartupWindowProbe]::RequestMaximized($app.MainWindowHandle,$false)
     $report.RestoreDown = Wait-WindowState $false -CheckNormalBounds
+    if ($CaptureFrames) {
+        $system = Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+        $theme = if ($null -ne $system.AppsUseLightTheme -and $system.AppsUseLightTheme -eq 0) { 'Light' } else { 'Dark' }
+        Ui @('invoke','Todo.Nav.Settings') | Out-Null
+        Ui @('wait-for','Todo.Settings.Theme','-t','10000') | Out-Null
+        Ui @('focus','Todo.Settings.Theme') | Out-Null
+        $keys = if ($theme -eq 'Dark') { 'home down down enter' } else { 'home down enter' }
+        Ui @('send-keys',$keys,'--via','send-input') | Out-Null
+        Ui @('wait-for','Todo.Settings.Theme','--value',$theme,'-t','5000') | Out-Null
+        Ui @('invoke','Todo.Nav.DefaultList') | Out-Null
+        Ui @('wait-for',$rowId,'--type','ListItem','-t','5000') | Out-Null
+        Close-Fixture
+        Measure-Launch ('saved-'+$theme.ToLowerInvariant()) $normal
+    }
     Close-Fixture
+    if ($CaptureRecovery) {
+        # Isolated private DEV registration above; never add content to an existing staging folder.
+        # The supported store deletes import-staging during its real interrupted-import recovery.
+        $local = Join-Path $env:LOCALAPPDATA ('Packages\'+$reg.PackageFamilyName+'\LocalState')
+        $staging = Join-Path $local 'import-staging'
+        if (-not (Test-Path -LiteralPath (Join-Path $local 'wintodo.db') -PathType Leaf) -or
+            (Test-Path -LiteralPath $staging) -or ((Get-Item -LiteralPath $local).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+            throw 'Expected prepared private DEV LocalState with no existing staging files.'
+        }
+        $null = [IO.Directory]::CreateDirectory($staging)
+        $empty = New-Object byte[] 0
+        for ($i=0; $i -lt 2048; $i++) { [IO.File]::WriteAllBytes((Join-Path $staging "$i.fixture"),$empty) }
+        Measure-Launch 'interrupted-import-diagnostic' $normal $staging
+        Close-Fixture
+    }
     $report.Status='PASS'
 } catch { $report.Error=$_.Exception.Message; throw } finally {
     $report | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $output 'summary.json') -Encoding UTF8

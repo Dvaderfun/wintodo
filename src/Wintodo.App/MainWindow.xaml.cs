@@ -10,6 +10,7 @@ using Wintodo.Data;
 using Wintodo.Pages;
 using Wintodo.Services;
 using Wintodo.Sync;
+using Wintodo.ViewModels;
 
 namespace Wintodo;
 
@@ -25,7 +26,9 @@ public sealed partial class MainWindow : Window
     private readonly WindowsIntegrationService _windowsIntegration;
     private readonly CalDavSyncService _syncService;
     private readonly HttpClient _syncHttpClient;
-    private readonly ShellPage _shellPage;
+    private readonly ShellViewModel _shellModel;
+    private readonly Lazy<ShellPage> _shell;
+    private ShellPage Shell => _shell.Value;
     private readonly OverlappedPresenter? _presenter;
     private readonly TaskCompletionSource _startupFinished = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private WindowPlacementState _restoredPlacement;
@@ -61,12 +64,20 @@ public sealed partial class MainWindow : Window
         var presenter = AppWindow.Presenter;
         _presenter = presenter.Kind == AppWindowPresenterKind.Overlapped ? presenter.As<OverlappedPresenter>() : null;
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
-        PrepareStartupLogo();
+        StartupArtwork = PrepareStartupLogoAsync();
 #endif
-        _shellPage = new ShellPage(store, clock, stateService, windowsIntegration, startupTaskService, syncService, importEnvironment);
-        _shellPage.SearchFocusRequested += TitleSearch.FocusSearch;
-        _shellPage.SearchClearRequested += TitleSearch.TryClear;
-        _shellPage.ThemeChanged += OnShellThemeChanged;
+        _shellModel = new ShellViewModel(store, clock, stateService, startupTaskService, syncService, windowsIntegration, importEnvironment);
+        _shell = new Lazy<ShellPage>(() =>
+        {
+            var page = new ShellPage(store, clock, windowsIntegration, _shellModel);
+            page.SearchFocusRequested += TitleSearch.FocusSearch;
+            page.SearchClearRequested += TitleSearch.TryClear;
+            page.ThemeChanged += OnShellThemeChanged;
+            return page;
+        });
+#if !DEBUG && !WINTODO_PRIVATE_PREVIEW
+        _ = Shell; // Production still constructs the page while SQLite opens.
+#endif
 
         WindowRoot.SizeChanged += OnWindowRootSizeChanged;
         AppWindow.Changed += OnAppWindowChanged;
@@ -80,16 +91,22 @@ public sealed partial class MainWindow : Window
     {
         // The title bar remains usable (including minimize/close); navigation and commands
         // must not run against an unfinished recovery or the wrong initial selection.
-        _shellPage.IsEnabled = false;
         TitleSearch.IsEnabled = false;
-        _shellPage.ViewModel.LoadStartupTheme(state.ThemeSetting);
-        OnShellThemeChanged(ShellPage.ThemeForIndex(_shellPage.ViewModel.AppearanceThemeIndex));
+        int themeIndex = ShellViewModel.ParseStartupTheme(state.ThemeSetting);
+        _shellModel.AppearanceThemeIndex = themeIndex;
+        OnShellThemeChanged(ShellPage.ThemeForIndex(themeIndex));
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        if (_startupLogo is not null) _startupLogo.RequestedTheme = WindowRoot.RequestedTheme;
+#endif
 #if !DEBUG && !WINTODO_PRIVATE_PREVIEW
-        RootFrame.Content = _shellPage;
+        AttachInitialShell();
 #endif
         ApplyInitialBounds(state.Placement);
         CaptureRestoredBounds();
         _hasPresentedShell = true;
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        HideNativeEraseUntilFirstFrame();
+#endif
         // Maximize can show the HWND. Attach content and set restore bounds before either call.
         if (state.Placement?.IsMaximized == true) _presenter?.Maximize();
         _lastNonMinimizedWasMaximized = _presenter?.State == OverlappedPresenterState.Maximized;
@@ -98,17 +115,38 @@ public sealed partial class MainWindow : Window
 
     internal async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
+        Task<string>? navigation = null;
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        // Local preferences, navigation counts and onboarding can load without constructing the page.
+        navigation = _shellModel.InitializeAsync(cancellationToken);
+#endif
         _externalChangeVersion = await _store.GetExternalChangeVersionAsync(cancellationToken);
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
-        // The logo is already attached. Measure the shell behind it while the selected data loads.
-        RootFrame.Content = _shellPage;
+        // Yield expensive template construction to pending first-window layout. Never require
+        // a rendering event for real work: a minimized/occluded window must initialize too.
+        await Task.WhenAny(_firstCommittedSurface.Task, navigation);
+        await YieldToWindowLayoutAsync();
+        AttachInitialShell();
 #endif
         _isWindowMinimized = _presenter?.State == OverlappedPresenterState.Minimized;
-        await _shellPage.SetWindowMinimizedAsync(_isWindowMinimized);
-        await _shellPage.InitializeAsync(cancellationToken);
+        await Shell.SetWindowMinimizedAsync(_isWindowMinimized);
+        await Shell.InitializeAsync(navigation, cancellationToken);
     }
 
-    internal void CompleteStartup() => _startupFinished.TrySetResult();
+    private void AttachInitialShell()
+    {
+        Shell.IsEnabled = false;
+        RootFrame.Content = Shell;
+    }
+
+    internal void CompleteStartup()
+    {
+        _startupFinished.TrySetResult();
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        // Also release if startup exited before it could present the local screen.
+        _releaseStartupCloak?.Invoke();
+#endif
+    }
 
     private void ApplyInitialBounds(WindowPlacementState? placement)
     {
@@ -156,10 +194,13 @@ public sealed partial class MainWindow : Window
             CaptureRestoredBounds();
         }
         bool minimized = state == OverlappedPresenterState.Minimized;
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        if (minimized) _releaseStartupCloak?.Invoke();
+#endif
         if (!minimized) _lastNonMinimizedWasMaximized = state == OverlappedPresenterState.Maximized;
         if (_isWindowMinimized == minimized) return;
         _isWindowMinimized = minimized;
-        await _shellPage.SetWindowMinimizedAsync(minimized);
+        if (_shell.IsValueCreated) await Shell.SetWindowMinimizedAsync(minimized);
     }
 
     private void OnWindowRootSizeChanged(object sender, SizeChangedEventArgs args)
@@ -180,38 +221,47 @@ public sealed partial class MainWindow : Window
     {
         bool focusComposer = false;
         if (!string.IsNullOrWhiteSpace(jumpListArgument))
-            focusComposer = await _shellPage.SelectJumpListTargetAsync(jumpListArgument, cancellationToken);
+            focusComposer = await Shell.SelectJumpListTargetAsync(jumpListArgument, cancellationToken);
         else if (notificationTaskUid is not null)
-            await _shellPage.OpenTaskAsync(notificationTaskUid, cancellationToken);
+            await Shell.OpenTaskAsync(notificationTaskUid, cancellationToken);
 
-        _isInitialized = true;
 #if DEBUG || WINTODO_PRIVATE_PREVIEW
         RemoveStartupLogo();
         TitleSearch.Visibility = Visibility.Visible;
 #endif
-        _shellPage.IsEnabled = true;
+        _isInitialized = true;
+        Shell.IsEnabled = true;
         TitleSearch.IsEnabled = true;
-        if (focusComposer) _shellPage.FocusComposer();
+        if (focusComposer) Shell.FocusComposer();
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        // If the logo never committed, give the ready shell one layout opportunity.
+        // A missing frame notification or slow OS integration must not keep it hidden.
+        if (_releaseStartupCloak is not null)
+        {
+            await Task.WhenAny(_firstCommittedSurface.Task, YieldToWindowLayoutAsync());
+            _releaseStartupCloak?.Invoke();
+        }
+#endif
     }
 
     internal Task OpenTaskAsync(
         string uid,
         CancellationToken cancellationToken = default)
     {
-        return _shellPage.OpenTaskAsync(uid, cancellationToken);
+        return Shell.OpenTaskAsync(uid, cancellationToken);
     }
 
     internal Task RefreshForExternalChangeAsync(
         CancellationToken cancellationToken = default)
     {
-        return _isInitialized ? _shellPage.RefreshForExternalChangeAsync(cancellationToken) : Task.CompletedTask;
+        return _isInitialized ? Shell.RefreshForExternalChangeAsync(cancellationToken) : Task.CompletedTask;
     }
 
     private async void OnSearchRequested(string text)
     {
         if (_isInitialized)
         {
-            await _shellPage.SearchAsync(text);
+            await Shell.SearchAsync(text);
         }
     }
 
@@ -225,7 +275,7 @@ public sealed partial class MainWindow : Window
             {
                 long version = await _store.GetExternalChangeVersionAsync();
                 System.Diagnostics.Trace.WriteLine($"WINTODO_EXTERNAL_VERSION={_externalChangeVersion}->{version}");
-                await _shellPage.RefreshForActivationAsync(reloadExternalChanges: version != _externalChangeVersion);
+                await Shell.RefreshForActivationAsync(reloadExternalChanges: version != _externalChangeVersion);
                 _externalChangeVersion = version;
             }
             finally { _isActivationRefreshRunning = false; }
@@ -251,15 +301,21 @@ public sealed partial class MainWindow : Window
 
     private async void OnClosed(object sender, WindowEventArgs args)
     {
+#if DEBUG || WINTODO_PRIVATE_PREVIEW
+        _releaseStartupCloak?.Invoke();
+#endif
         WindowRoot.SizeChanged -= OnWindowRootSizeChanged;
         AppWindow.Changed -= OnAppWindowChanged;
         AppWindow.Closing -= OnWindowClosing;
         Activated -= OnActivated;
         TitleSearch.SearchRequested -= OnSearchRequested;
-        _shellPage.SearchFocusRequested -= TitleSearch.FocusSearch;
-        _shellPage.SearchClearRequested -= TitleSearch.TryClear;
-        _shellPage.ThemeChanged -= OnShellThemeChanged;
-        _shellPage.StopMidnightRefresh();
+        if (_shell.IsValueCreated)
+        {
+            Shell.SearchFocusRequested -= TitleSearch.FocusSearch;
+            Shell.SearchClearRequested -= TitleSearch.TryClear;
+            Shell.ThemeChanged -= OnShellThemeChanged;
+            Shell.StopMidnightRefresh();
+        }
         await _windowsIntegration.DisposeAsync();
         _syncService.Dispose();
         _syncHttpClient.Dispose();

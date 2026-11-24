@@ -1,12 +1,16 @@
 # Supply the signed candidate as for run-startup-placement-gate.ps1. Reuse its returning-user fixture.
-param([Parameter(Mandatory)][string]$InputDirectory)
+param([Parameter(Mandatory)][string]$InputDirectory, [switch]$CaptureFrames, [switch]$CaptureRecovery)
 $ErrorActionPreference='Stop'
 $root=Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $root -ine 'C:\wintodo' -or
     (Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Virtual Machine\Guest\Parameters' VirtualMachineName) -cne 'WintodoTest') {
     throw 'This test requires the WintodoTest guest.'
 }
-& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'run-startup-placement-gate.ps1') -InputDirectory $InputDirectory
+$placementGate = Join-Path $PSScriptRoot 'run-startup-placement-gate.ps1'
+$placementArgs = @('-InputDirectory', $InputDirectory)
+if ($CaptureFrames) { $placementArgs += '-CaptureFrames' }
+if ($CaptureRecovery) { $placementArgs += '-CaptureRecovery' }
+& powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $placementGate @placementArgs
 if ($LASTEXITCODE -ne 0) { throw 'Signed startup placement gate failed; see its summary.' }
 $build=Get-Content -LiteralPath (Join-Path (Join-Path $root $InputDirectory) 'build.json') -Raw | ConvertFrom-Json
 $reg=Get-AppxPackage -Name Wintodo.Hybrid.Dev

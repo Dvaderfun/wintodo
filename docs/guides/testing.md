@@ -149,6 +149,15 @@ gate first, then reopens its signed fixture through the packaged New Task
 action. It verifies that the composer has keyboard focus before any interaction,
 commits a task through UI Automation and checks the saved theme selection.
 
+To investigate a flash, pass `'-CaptureFrames'` after the candidate directory.
+This records actual guest desktop pixels from before activation through Welcome
+or the saved list, plus a relaunch with the opposite app theme. The per-launch
+`*-screen/frames.csv` identifies the PNGs and their times; HWND visibility,
+DWM cloak state and UI Automation row times are separate observations. Add
+`'-CaptureRecovery'` to exercise a real interrupted-import cleanup in the
+disposable DEV fixture. Keep that diagnostic separate from ordinary startup
+timings. The observer samples frames and can miss shorter-lived changes.
+
 For the schema-compatibility startup gate, create a synthetic schema-8 database
 on the host using the Python standard library, then copy only that fixture into
 the guest. The generator preserves any existing seed; keep it for subsequent

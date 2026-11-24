@@ -149,7 +149,7 @@ public sealed partial class ShellViewModel
         AppearanceSettingsChanged?.Invoke();
     }
 
-    internal void LoadStartupTheme(string? setting) => AppearanceThemeIndex = ParseChoice(setting, maximum: 2);
+    internal static int ParseStartupTheme(string? setting) => ParseChoice(setting, maximum: 2);
 
     partial void OnAppearanceThemeIndexChanged(int value)
     {

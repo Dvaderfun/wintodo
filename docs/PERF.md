@@ -768,3 +768,34 @@ mode the date timer stopped on minimize and restarted on restore. These are
 observations of which timers were running, not measurements of battery
 savings or CPU wakeups: `tests/ui/artifacts/m13/run-20261124-221557/` and
 `tests/ui/artifacts/my-day/789b6fd8-891c-431e-a8e8-19e07a88fd5d/unfocused.trace`.
+
+### 2026-11-25 — What the installed app actually paints during launch
+
+WintodoTest, signed x64 Native AOT private DEV. The opt-in desktop recorder
+starts before AppsFolder activation. It samples the composited guest desktop
+at quarter resolution, timestamps samples, and retains each changed image.
+The placement and task-row checks run independently. The times below are
+observations of sampled pixels, not exact DWM presentation timestamps.
+Screen capture itself adds overhead. A desktop that is still visible before
+the first app window is not counted as time spent looking at a blank app.
+
+**Baseline .249** (`f94416fa`). The Light-theme normal restart showed
+four plain white client samples at 718, 791, 859 and 942 ms; the selected
+list and task were visible at 1,019 ms. A fresh install also showed a white
+client at 15,612 ms before Welcome appeared at 16,171 ms. Most of that
+fresh-install time was spent on the desktop before any app window appeared.
+All three maximized restarts included a plain client; the saved Dark run
+did not reproduce a solid black screen in the captured samples. This
+reproduces the empty-window symptom, not its exact color on the owner's PC.
+Local captures and sheets: `tests/ui/artifacts/startup-placement/024bd9de8c224ae6bd0091a3b35c1941/`.
+
+**Intermediate .251** (`6a5ca0bf`). An opaque XAML layer and packaged PNG
+alone passed placement, Restore Down and activation checks but **failed the
+visual check**: none of the six recordings contained a recognizable centered
+Glide mark. On maximized run 2 the client was still flat at 571 and 635 ms
+and the shell appeared at 698 ms. A saved Dark launch showed a light client
+at 592 ms before switching to the dark shell. The first-install capture went
+from a flat client at 20,011 ms to Welcome at 20,182 ms. A WinUI window can
+be composed before the first XAML frame is committed; [a WinUI reproduction](https://github.com/microsoft/microsoft-ui-xaml/issues/10259#issuecomment-5850103403)
+documents this distinction. Local captures:
+`tests/ui/artifacts/startup-placement/301eef7bfaf64f2eab79f07dcc3e2810/`.

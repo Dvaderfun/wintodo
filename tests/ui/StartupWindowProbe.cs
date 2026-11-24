@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -11,6 +12,9 @@ public sealed class StartupWindowSample
     public double Ms { get; set; }
     public long Hwnd { get; set; }
     public bool Visible { get; set; }
+    // Win32 WS_VISIBLE and DWM visibility are independent. Null if not requested/available.
+    public uint? DwmCloakFlags { get; set; }
+    public int? DwmCloakQueryHResult { get; set; }
     public bool Maximized { get; set; }
     public int X { get; set; }
     public int Y { get; set; }
@@ -35,15 +39,24 @@ public sealed class StartupWindowProbe
     [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
     [DllImport("user32.dll")] static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr w, IntPtr l);
     [DllImport("user32.dll")] static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+    [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr hwnd, int attribute, out uint value, int size);
 
-    public static StartupWindowSample Read(IntPtr hwnd)
+    public static StartupWindowSample Read(IntPtr hwnd) { return Read(hwnd, false); }
+    static StartupWindowSample Read(IntPtr hwnd, bool inspectCloaking)
     {
         var previous = SetThreadDpiAwarenessContext(new IntPtr(-4)); // Physical pixels.
         try
         {
             var visible = IsWindowVisible(hwnd); var zoomed = IsZoomed(hwnd); Rect r;
+            int? result = null; uint? flags = null;
+            if (inspectCloaking) {
+                uint value;
+                result = DwmGetWindowAttribute(hwnd, 14 /* DWMWA_CLOAKED */, out value, sizeof(uint));
+                if (result >= 0) flags = value;
+            }
             if (!GetWindowRect(hwnd, out r) || visible != IsWindowVisible(hwnd) || zoomed != IsZoomed(hwnd)) return null;
             return new StartupWindowSample { Hwnd = hwnd.ToInt64(), Visible = visible, Maximized = zoomed,
+                DwmCloakFlags = flags, DwmCloakQueryHResult = result,
                 X = r.Left, Y = r.Top, Width = r.Right - r.Left, Height = r.Bottom - r.Top };
         }
         finally { SetThreadDpiAwarenessContext(previous); }
@@ -67,6 +80,8 @@ public sealed class StartupWindowProbe
     }
 
     readonly string exe;
+    readonly bool inspectCloaking;
+    readonly string recoveryStaging;
     readonly Thread thread;
     readonly Stopwatch watch = new Stopwatch();
     readonly ManualResetEventSlim ready = new ManualResetEventSlim(), start = new ManualResetEventSlim();
@@ -79,12 +94,16 @@ public sealed class StartupWindowProbe
     public double Ms { get { return watch.Elapsed.TotalMilliseconds; } }
     public double ProcessSeenMs { get; private set; }
     public double MaxWindowPollGapMs { get; private set; }
+    public double? LastStagingPresentMs { get; private set; }
+    public double? FirstStagingRemovedMs { get; private set; }
     public int Polls { get; private set; }
     public string Error { get; private set; }
     public StartupWindowSample[] Changes { get { return changes.ToArray(); } } // Read only after End().
-    public StartupWindowProbe(string exe)
+    public StartupWindowProbe(string exe, bool inspectCloaking, string recoveryStaging)
     {
         this.exe = exe;
+        this.inspectCloaking = inspectCloaking;
+        this.recoveryStaging = recoveryStaging;
         thread = new Thread(Observe) { IsBackground = true };
         thread.Start(); ready.Wait();
     }
@@ -104,6 +123,11 @@ public sealed class StartupWindowProbe
                 double now = Ms;
                 if (Polls++ > 0) MaxWindowPollGapMs = Math.Max(MaxWindowPollGapMs, now - last);
                 last = now;
+                if (!String.IsNullOrEmpty(recoveryStaging) && !FirstStagingRemovedMs.HasValue)
+                {
+                    if (Directory.Exists(recoveryStaging)) LastStagingPresentMs = Ms;
+                    else FirstStagingRemovedMs = Ms;
+                }
                 if (app == null)
                 {
                     foreach (var candidate in Process.GetProcessesByName("Wintodo"))
@@ -128,12 +152,13 @@ public sealed class StartupWindowProbe
                             if (name.ToString() != "WinUIDesktopWin32WindowClass") return true;
                             hwnd = h; return false;
                         }, IntPtr.Zero);
-                    var sample = hwnd == IntPtr.Zero ? null : Read(hwnd);
+                    var sample = hwnd == IntPtr.Zero ? null : Read(hwnd, inspectCloaking);
                     if (sample != null)
                     {
                         sample.Ms = Ms;
                         var prior = changes.Count == 0 ? null : changes[changes.Count - 1];
-                        if (!sample.SameRect(prior) || prior.Visible != sample.Visible || prior.Maximized != sample.Maximized)
+                        if (!sample.SameRect(prior) || prior.Visible != sample.Visible || prior.Maximized != sample.Maximized ||
+                            prior.DwmCloakFlags != sample.DwmCloakFlags || prior.DwmCloakQueryHResult != sample.DwmCloakQueryHResult)
                             changes.Add(sample);
                         if (sample.Visible) Interlocked.Exchange(ref visibleHwnd, sample.Hwnd);
                     }

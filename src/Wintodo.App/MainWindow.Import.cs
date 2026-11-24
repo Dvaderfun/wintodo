@@ -16,8 +16,6 @@ public sealed partial class MainWindow
     {
         // A rejected database only shows its error dialog. Never write settings to it.
         if (!_hasPresentedShell || _closeApproved) return;
-        var viewModel = _shellPage.ViewModel;
-        var wizard = viewModel.ImportWizard;
         args.Cancel = true;
         if (_closePending) return;
         _closePending = true;
@@ -25,6 +23,8 @@ public sealed partial class MainWindow
         {
             // A close during initial hydration must not dispose the store under startup.
             await _startupFinished.Task;
+            var viewModel = Shell.ViewModel;
+            var wizard = viewModel.ImportWizard;
             if (wizard?.IsBusy == true)
             {
                 var resources = new ResourceLoader();
