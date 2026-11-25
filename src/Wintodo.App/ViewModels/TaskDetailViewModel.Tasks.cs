@@ -39,8 +39,8 @@ public sealed partial class TaskDetailViewModel
     {
         if (_model is not { } owner || !await FlushPendingEditsAsync()) return;
 
-        int editRevision = _textSaves.Revision;
-        if (owner.Status == Core.Models.TaskStatus.Completed)
+        bool wasCompleted = owner.Status == Core.Models.TaskStatus.Completed;
+        if (wasCompleted)
         {
             await _taskStore.UncompleteTaskAsync(owner.Uid);
         }
@@ -51,21 +51,10 @@ public sealed partial class TaskDetailViewModel
 
         TodoTask updated = await _taskStore.GetTaskAsync(owner.Uid)
             ?? throw new InvalidOperationException("The edited task no longer exists.");
-        if (!ReferenceEquals(_model, owner))
-        {
-            TaskChanged?.Invoke(CloneTask(updated));
-            return;
-        }
-        if (editRevision != _textSaves.Revision)
-        {
-            updated.Summary = owner.Summary;
-            updated.Description = owner.Description;
-        }
-        _model = updated;
-        ApplyModelToEditor(updated);
-        OnPropertyChanged(nameof(IsCompleted));
-        RebuildAttachments();
-        TaskChanged?.Invoke(CloneTask(updated));
+        // Keep the owner of any title, note or repeat draft typed during the write.
+        ApplyRowCompletion(updated, !wasCompleted && updated.Status != Core.Models.TaskStatus.Completed);
+        if (_model?.Uid == updated.Uid) OnPropertyChanged(nameof(IsCompleted));
+        TaskChanged?.Invoke(updated);
     }
 
     [RelayCommand]
@@ -80,7 +69,7 @@ public sealed partial class TaskDetailViewModel
             ? (int)TaskPriority.Undefined
             : (int)TaskPriority.High;
         IsImportant = !IsImportant;
-        await PersistModelAsync();
+        await PersistFieldsAsync(_model, TaskDetailFields.Importance);
     }
 
     [RelayCommand]
@@ -119,6 +108,23 @@ public sealed partial class TaskDetailViewModel
         if (current is null || !uids.Contains(current.Uid)) return;
         TodoTask? updated = await _taskStore.GetTaskAsync(current.Uid);
         if (updated is not null && ReferenceEquals(_model, current)) ApplyTaskDates(current, updated);
+    }
+
+    internal void ApplyRowFields(TodoTask updated, TaskDetailFields fields)
+    {
+        if (_model is not { } current || current.Uid != updated.Uid) return;
+        if (fields.HasFlag(TaskDetailFields.Summary) && !_textSaves.IsSaving(TaskDetailFields.Summary))
+        {
+            _isLoading = true;
+            Summary = current.Summary = updated.Summary;
+            _isLoading = false;
+        }
+        if (fields.HasFlag(TaskDetailFields.Importance))
+        {
+            current.Priority = updated.Priority;
+            current.SortOrder = updated.SortOrder;
+            IsImportant = current.Priority is >= 1 and <= 4;
+        }
     }
 
     internal void ApplyRowCompletion(TodoTask updated, bool occurrenceAdvanced)
@@ -236,7 +242,7 @@ public sealed partial class TaskDetailViewModel
         }
 
         item.Model.Summary = summary.Trim();
-        await _taskStore.UpdateTaskAsync(item.Model);
+        await _taskStore.RenameTaskAsync(item.Uid, item.Model.Summary);
     }
 
     private async Task ToggleStepCompletionAsync(StepItemViewModel item)

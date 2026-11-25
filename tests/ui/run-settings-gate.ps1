@@ -67,27 +67,43 @@ function Save-Screenshot {
     }
     $screenshots.Add($path)
 }
+function Get-CardBottomGap([Drawing.Bitmap]$Image, [double]$Scale, [Drawing.Color[]]$Background) {
+    # Measure from the viewport edge to the last painted card pixel. Three interior
+    # columns avoid glyphs and rounded corners; the reference is this page's own fill.
+    $gaps = for ($i = 0; $i -lt 3; $i++) {
+        $x = [int]((40 + 24 * $i) * $Scale)
+        for ($gap = 1; $gap -lt [Math]::Min($Image.Height, 80 * $Scale); $gap++) {
+            $c = $Image.GetPixel($x, $Image.Height - 1 - $gap)
+            $bg = $Background[$i]
+            if ([Math]::Max([Math]::Abs($c.R-$bg.R), [Math]::Max([Math]::Abs($c.G-$bg.G), [Math]::Abs($c.B-$bg.B))) -gt 2) { break }
+        }
+        $gap / $Scale
+    }
+    ($gaps | Sort-Object)[1]
+}
 function Get-Nodes {
     param([object[]]$Nodes)
     foreach ($node in $Nodes) { $node; if ($node.children) { Get-Nodes @($node.children) } }
 }
-function Get-Tree {
-    $inspection = Invoke-Ui @('inspect', '--json', '--depth', '16') | ConvertFrom-Json
+function Get-Tree([string]$Window) {
+    $inspection = Invoke-Ui @('inspect', '--json', '--depth', '16') -Window $Window | ConvertFrom-Json
     $inspection | ConvertTo-Json -Depth 50 | Set-Content -LiteralPath (Join-Path $artifactDirectory 'latest-tree.json')
     @(Get-Nodes @($inspection.windows | ForEach-Object { $_.elements }))
 }
 function Get-Row {
     param([string]$Name)
-    $row = Get-Tree | Where-Object { $_.type -eq 'ListItem' -and
+    $row = Get-Tree $mainHwnd | Where-Object { $_.type -eq 'ListItem' -and
         $_.automationId -match '^Todo\.Row\.' -and $_.name.StartsWith($Name) } | Select-Object -First 1
     if (-not $row) { throw "Missing task row: $Name" }
     $row
 }
 function Add-Task {
     param([string]$Name)
-    Invoke-Ui @('set-value', 'Todo.List.AddTaskBox', $Name) | Out-Null
-    Invoke-Ui @('invoke', 'Todo.Composer.AddButton') | Out-Null
-    Invoke-Ui @('wait-for', $Name, '-t', '5000') | Out-Null
+    Invoke-Ui @('wait-for', 'Todo.List.AddTaskBox', '-p', 'IsOffscreen', '--value', 'False', '-t', '5000') -Window $mainHwnd | Out-Null
+    Invoke-Ui @('set-value', 'Todo.List.AddTaskBox', $Name) -Window $mainHwnd | Out-Null
+    Invoke-Ui @('wait-for', 'Todo.Composer.AddButton', '-p', 'IsEnabled', '--value', 'True', '-t', '5000') -Window $mainHwnd | Out-Null
+    Invoke-Ui @('invoke', 'Todo.Composer.AddButton') -Window $mainHwnd | Out-Null
+    Invoke-Ui @('wait-for', $Name, '-t', '5000') -Window $mainHwnd | Out-Null
 }
 function Open-Settings {
     Invoke-Ui @('invoke', 'Todo.Nav.Settings') | Out-Null
@@ -115,7 +131,7 @@ function Set-Toggle {
 }
 function Assert-RowOrder {
     param([string[]]$Expected)
-    $actual = @(Get-Tree | Where-Object { $_.type -eq 'ListItem' -and $_.automationId -match '^Todo\.Row\.' } |
+    $actual = @(Get-Tree $mainHwnd | Where-Object { $_.type -eq 'ListItem' -and $_.automationId -match '^Todo\.Row\.' } |
         ForEach-Object { ($_.name -split ',')[0] })
     if (($actual -join '|') -ne ($Expected -join '|')) { throw "Expected $Expected; actual $actual" }
 }
@@ -153,7 +169,8 @@ try {
         Save-Screenshot '02-preferences.png'
     }
     Test-UI 'Add new and star from row/detail move tasks to top' {
-        Invoke-Ui @('invoke', 'Todo.Nav.DefaultList')
+        Invoke-Ui @('invoke', 'Todo.Nav.DefaultList') -Window $mainHwnd
+        Invoke-Ui @('wait-for', 'Todo.Settings.Title', '--gone', '-t', '5000') -Window $mainHwnd
         Add-Task 'First task'
         Add-Task 'Second task'
         Add-Task 'Third task'
@@ -209,6 +226,7 @@ try {
     }
     Test-UI 'Reminder picker uses configured time' {
         Invoke-Ui @('invoke', 'Todo.Nav.DefaultList')
+        Invoke-Ui @('wait-for', 'Third task, in Tasks, not completed', '--type', 'ListItem', '-t', '5000') -Window $mainHwnd
         $row = Get-Row 'Third task'
         Invoke-Ui @('invoke', $row.selector)
         Invoke-Ui @('wait-for', 'Todo.Detail.Title', '-t', '3000')
@@ -315,6 +333,67 @@ BEGIN SELECT RAISE(ABORT, 'fixture write failure'); END;
         Invoke-Ui @('wait-for', $backgrounds, '--value', 'Off', '-t', '3000') -Window $mainHwnd
         Invoke-Ui @('wait-for', $errorBar, '--gone', '-t', '5000')
         if ((Invoke-SuggestionsFixtureSql $databasePath $readBackgrounds) -cne 'False') { throw 'Recovered preference did not reach SQLite.' }
+    }
+    Test-UI 'Settings cards use the viewport edge while scrolling and leave 12 DIPs only at the end' {
+        Add-Type -AssemblyName System.Drawing
+        $viewer = 'Todo.Settings.ScrollViewer'
+        Open-Settings
+        Invoke-Ui @('scroll', $viewer, '--to', 'bottom') -Window $mainHwnd
+        Invoke-Ui @('wait-for', 'Todo.Settings.About.ReadLicences', '-p', 'IsOffscreen', '--value', 'False', '-t', '3000') -Window $mainHwnd
+        $window = (Invoke-Ui @('inspect', '--depth', '1', '--json') -Window $mainHwnd | ConvertFrom-Json).windows[0]
+        $scale = [double]$window.scale
+        if ($scale -le 0) { throw 'No guest window DPI scale.' }
+        $origin = $window.elements[0]
+        $heading = (Invoke-Ui @('inspect', 'Todo.Settings.Heading.About', '--depth', '1', '--json') -Window $mainHwnd | ConvertFrom-Json).windows[0].elements[0]
+        if ($heading.automationId -ne 'Todo.Settings.Heading.About' -or $heading.isOffscreen) { throw 'Cannot locate visible About section.' }
+        # An element crop can extend outside the viewport when content scrolls. Sample
+        # from a full HWND capture, anchored to the client bottom (not the DWM shadow).
+        Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class SettingsGateClient {
+    [StructLayout(LayoutKind.Sequential)] private struct Rect { public int L,T,R,B; }
+    [StructLayout(LayoutKind.Sequential)] private struct Point { public int X,Y; }
+    [DllImport("user32.dll")] private static extern bool GetClientRect(IntPtr hwnd, out Rect rect);
+    [DllImport("user32.dll")] private static extern bool ClientToScreen(IntPtr hwnd, ref Point point);
+    public static int Bottom(IntPtr hwnd) {
+        if (!GetClientRect(hwnd, out var rect)) throw new InvalidOperationException("No client bounds.");
+        var point = new Point { Y=rect.B };
+        if (!ClientToScreen(hwnd, ref point)) throw new InvalidOperationException("No client origin.");
+        return point.Y;
+    }
+}
+'@
+        $mainHandleValue = if ($mainHwnd -like '0x*') { [Convert]::ToInt64($mainHwnd.Substring(2),16) } else { [long]$mainHwnd }
+        $bottom = [SettingsGateClient]::Bottom([IntPtr]::new($mainHandleValue)) - $origin.y
+        $strip = [Drawing.Rectangle]::new([int]($heading.x-$origin.x), [int]($bottom-100*$scale), [int](110*$scale), [int](100*$scale))
+        $capture = {
+            param($Name)
+            $path = Join-Path $artifactDirectory $Name
+            Invoke-Ui @('screenshot', '--capture-screen', '-o', $path) -Window $mainHwnd | Out-Null
+            if (!$screenshots.Contains($path)) { $screenshots.Add($path) }
+            $screen = [Drawing.Bitmap]::new($path)
+            try {
+                if ($screen.Width -ne $origin.width -or $screen.Height -ne $origin.height) { throw 'Screen capture does not match HWND bounds.' }
+                $screen.Clone($strip,$screen.PixelFormat)
+            } finally { $screen.Dispose() }
+        }
+        $end = & $capture '12-settings-end.png'
+        try {
+            $background = @(40,64,88 | ForEach-Object { $end.GetPixel([int]($_*$scale), $end.Height-3) })
+            $gap = Get-CardBottomGap $end $scale $background
+            if ([Math]::Abs($gap - 12) -gt 2) { throw "Expected a 12-DIP end inset, measured $gap." }
+        } finally { $end.Dispose() }
+        Invoke-Ui @('scroll', $viewer, '--to', 'top') -Window $mainHwnd
+        # A section gap may coincide with the edge at one offset; the old fixed band
+        # stays unpainted at every offset. No click, focus, or popup is involved.
+        for ($step=0; $step -lt 5; $step++) {
+            Invoke-Ui @('scroll', $viewer, '--direction', 'down') -Window $mainHwnd
+            $mid = & $capture '13-settings-scrolling.png'
+            try { $gap = Get-CardBottomGap $mid $scale $background } finally { $mid.Dispose() }
+            if ($gap -le 4) { break }
+        }
+        if ($gap -gt 4) { throw "Cards never reached the viewport edge while scrolling (last gap: $gap DIPs)." }
     }
 } catch {
     $results.Add(@{ name = 'Gate setup'; status = 'FAIL'; detail = "$_" })

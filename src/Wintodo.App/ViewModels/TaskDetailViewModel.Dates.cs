@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Wintodo.Core.Models;
 using Wintodo.Core.Presentation;
+using Wintodo.Core.Services;
 using Wintodo.Services;
 
 namespace Wintodo.ViewModels;
@@ -33,7 +34,7 @@ public sealed partial class TaskDetailViewModel
         PendingDueDate = _model.Due;
         PendingDueTime = TimeSpan.Zero;
         UpdateActionLabels();
-        await PersistModelAsync();
+        await PersistFieldsAsync(_model, TaskDetailFields.Due);
     }
 
     [RelayCommand]
@@ -47,7 +48,7 @@ public sealed partial class TaskDetailViewModel
         _model.Due = CombineLocal(PendingDueDate.Value, PendingDueTime);
         _model.DueIsDateOnly = PendingDueTime == TimeSpan.Zero;
         UpdateActionLabels();
-        await PersistModelAsync();
+        await PersistFieldsAsync(_model, TaskDetailFields.Due);
     }
 
     [RelayCommand]
@@ -64,7 +65,7 @@ public sealed partial class TaskDetailViewModel
             RefreshPendingDueDate(owner);
             UpdateActionLabels();
         }
-        if (await PersistModelAsync(owner)) RecordUndo(states, "Undo_DueCleared");
+        if (await PersistFieldsAsync(owner, TaskDetailFields.Due)) RecordUndo(states, "Undo_DueCleared");
     }
 
     [RelayCommand]
@@ -95,7 +96,7 @@ public sealed partial class TaskDetailViewModel
 
         SetReminder(reminder.Value);
         UpdateActionLabels();
-        await PersistModelAsync();
+        await PersistFieldsAsync(_model, TaskDetailFields.Reminder);
     }
 
     [RelayCommand]
@@ -108,7 +109,7 @@ public sealed partial class TaskDetailViewModel
 
         SetReminder(CombineLocal(PendingReminderDate.Value, PendingReminderTime));
         UpdateActionLabels();
-        await PersistModelAsync();
+        await PersistFieldsAsync(_model, TaskDetailFields.Reminder);
     }
 
     [RelayCommand]
@@ -123,7 +124,7 @@ public sealed partial class TaskDetailViewModel
             RefreshPendingReminder(owner);
             UpdateActionLabels();
         }
-        if (await PersistModelAsync(owner)) RecordUndo(states, "Undo_ReminderCleared");
+        if (await PersistFieldsAsync(owner, TaskDetailFields.Reminder)) RecordUndo(states, "Undo_ReminderCleared");
     }
 
     internal void RefreshDateLabels() => UpdateActionLabels();

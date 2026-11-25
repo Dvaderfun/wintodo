@@ -213,7 +213,7 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         }
 
         _model.Summary = value;
-        ScheduleSave(TimeSpan.FromMilliseconds(300));
+        ScheduleSave(TimeSpan.FromMilliseconds(300), TaskDetailFields.Summary);
     }
 
     partial void OnNoteChanged(string value)
@@ -224,6 +224,6 @@ public sealed partial class TaskDetailViewModel : ObservableObject
         }
 
         _model.Description = string.IsNullOrEmpty(value) ? null : value;
-        ScheduleSave(TimeSpan.FromMilliseconds(500));
+        ScheduleSave(TimeSpan.FromMilliseconds(500), TaskDetailFields.Description);
     }
 }

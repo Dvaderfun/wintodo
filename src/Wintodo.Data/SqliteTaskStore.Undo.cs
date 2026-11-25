@@ -109,9 +109,7 @@ public sealed partial class SqliteTaskStore
                 if ((fields & TaskUndoFields.Reminder) != 0 ||
                     ((fields & TaskUndoFields.Completion) != 0 && !string.IsNullOrWhiteSpace(before.RRule)))
                 {
-                    task.Alarms.Clear();
-                    task.Alarms.AddRange(before.Alarms);
-                    ReplaceTaskCollections(connection, transaction, task);
+                    ReplaceTaskAlarms(connection, transaction, task.Id, before.Alarms);
                 }
                 if (fields != TaskUndoFields.MyDay || task.MyDayDate != membershipBefore.MyDayDate)
                 {

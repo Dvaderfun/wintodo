@@ -1,4 +1,5 @@
 using Wintodo.Core.Models;
+using Wintodo.Core.Services;
 using Wintodo.ViewModels;
 
 namespace Wintodo.Data.Tests;
@@ -35,13 +36,15 @@ public sealed class DetailSaveQueueTests
 
         if (olderSaveInFlight)
         {
-            queue.Schedule(TimeSpan.FromMilliseconds(300), () => SaveAsync(a, "Older A", "Older note", true));
+            queue.Schedule(TimeSpan.FromMilliseconds(300), TaskDetailFields.Summary | TaskDetailFields.Description,
+                _ => SaveAsync(a, "Older A", "Older note", true));
             delay.SetResult();
             await olderSaveStarted.Task.WaitAsync(ct);
             delay = NewSignal();
         }
 
-        queue.Schedule(TimeSpan.FromMilliseconds(500), () => SaveAsync(a, "Latest A", "Latest note", false));
+        queue.Schedule(TimeSpan.FromMilliseconds(500), TaskDetailFields.Summary | TaskDetailFields.Description,
+            _ => SaveAsync(a, "Latest A", "Latest note", false));
         Task<bool> drain = queue.FlushAsync();
         bool waitedForOlderSave = !drain.IsCompleted;
         releaseOlderSave.SetResult();
@@ -78,19 +81,16 @@ public sealed class DetailSaveQueueTests
         var delay = NewSignal();
         var queue = new DetailSaveQueue { DelayAsync = (_, token) => delay.Task.WaitAsync(token) };
         owner.RRule = "FREQ=WEEKLY;INTERVAL=2;BYDAY=TU";
-        queue.Schedule(TimeSpan.FromMilliseconds(200), async () =>
+        async Task<bool> SaveAsync(TaskDetailFields fields)
         {
-            await fixture.Store.UpdateTaskAsync(owner, ct);
+            await fixture.Store.UpdateTaskDetailAsync(owner, fields, cancellationToken: ct);
             return true;
-        }, writesWholeTask: true);
+        }
+        queue.Schedule(TimeSpan.FromMilliseconds(200), TaskDetailFields.Repeat, SaveAsync);
 
-        owner.Summary = "Latest title";
         owner.Description = "Latest note";
-        queue.Schedule(TimeSpan.FromMilliseconds(500), async () =>
-        {
-            await fixture.Store.SetTaskTextAsync(owner.Uid, owner.Summary, owner.Description, ct);
-            return true;
-        });
+        queue.Schedule(TimeSpan.FromMilliseconds(500), TaskDetailFields.Description, SaveAsync);
+        await fixture.Store.RenameTaskAsync(owner.Uid, "Latest title", ct);
         Assert.True(await queue.FlushAsync());
         var saved = (await fixture.Store.GetTaskAsync(owner.Uid, ct))!;
         Assert.Equal("Latest title", saved.Summary);

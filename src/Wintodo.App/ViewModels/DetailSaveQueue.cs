@@ -1,3 +1,5 @@
+using Wintodo.Core.Services;
+
 namespace Wintodo.ViewModels;
 
 // Accessed on the editor's synchronization context. Only the delay is cancellable;
@@ -7,18 +9,20 @@ internal sealed class DetailSaveQueue
     private CancellationTokenSource? _delay;
     private PendingSave? _pending;
     private Task<bool>? _writing;
+    private TaskDetailFields _writingFields;
 
     internal Func<TimeSpan, CancellationToken, Task> DelayAsync { get; init; } = Task.Delay;
     internal int Revision { get; private set; }
     internal bool HasPendingEdits => _pending is not null || _writing is not null;
 
-    internal void Schedule(TimeSpan delay, Func<Task<bool>> save, bool writesWholeTask = false)
+    internal bool IsSaving(TaskDetailFields field) =>
+        ((_writingFields | (_pending?.Fields ?? TaskDetailFields.None)) & field) != 0;
+
+    internal void Schedule(TimeSpan delay, TaskDetailFields fields, Func<TaskDetailFields, Task<bool>> save)
     {
         Revision++;
-        // A whole-task save also reads the latest title and note. Do not
-        // replace a pending repeat edit with a later text-only write.
-        if (writesWholeTask || _pending is not { WritesWholeTask: true })
-            _pending = new PendingSave(save, writesWholeTask);
+        // A selection change drains this queue. Coalesce only the fields edited by this owner.
+        _pending = new PendingSave(save, fields | (_pending?.Fields ?? TaskDetailFields.None));
         CancelDelay();
         _delay = new CancellationTokenSource();
         _ = SaveAfterDelayAsync(delay, _delay.Token);
@@ -66,8 +70,13 @@ internal sealed class DetailSaveQueue
             while (_delay is null && _pending is { } save)
             {
                 _pending = null;
-                if (await save.WriteAsync()) continue;
-                if (save.WritesWholeTask || _pending is null) _pending = save;
+                _writingFields = save.Fields;
+                bool saved = await save.WriteAsync(save.Fields);
+                _writingFields = TaskDetailFields.None;
+                if (saved) continue;
+                _pending = _pending is { } newer
+                    ? newer with { Fields = newer.Fields | save.Fields }
+                    : save;
                 _writing = null;
                 completion.SetResult(false);
                 return;
@@ -77,12 +86,13 @@ internal sealed class DetailSaveQueue
         }
         catch (Exception exception)
         {
+            _writingFields = TaskDetailFields.None;
             _writing = null;
             completion.SetException(exception);
         }
     }
 
-    private sealed record PendingSave(Func<Task<bool>> WriteAsync, bool WritesWholeTask);
+    private sealed record PendingSave(Func<TaskDetailFields, Task<bool>> WriteAsync, TaskDetailFields Fields);
 
     private void CancelDelay()
     {

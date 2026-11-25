@@ -21,8 +21,11 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.255** is the signed x64 Native
-AOT build of `8e02e57e`. The window opens at its saved size, shows Glide while
+**Private DEV installer:** Wintodo DEV **1.0.1.257** is the signed x64 Native
+AOT build of `71bf90e0`. It uses Windows App SDK 2.7.0 and has the
+[Settings viewport correction](#2026-11-25--settings-scroll-viewport-m8).
+Do not use .257 with important tasks: a detail edit can overwrite a saved row edit.
+The window opens at its saved size, shows Glide while
 the local view loads, then fades the artwork over the ready list for 240 ms.
 Windows users with animation effects turned off get the immediate handoff.
 See the [recorded launches](PERF.md#2026-11-25--what-the-installed-app-actually-paints-during-launch).
@@ -385,6 +388,23 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 
 ## History
 
+### 2026-11-25 — Preserve row edits when saving from the open detail pane (M8)
+
+The Settings/SDK validation exposed a data-loss bug in the detail editor.
+It now changes only the fields the user edited, in a transaction against the
+latest row. It publishes the committed result to the task list. Debounced
+title, note and repeat edits share a write without taking ownership of
+unmodified fields. Applying Tomorrow, clearing and undoing a date, setting a
+reminder, or removing an attachment no longer rewrites unrelated fields or
+collections. No schema change.
+
+The x64 Debug solution built with warnings as errors (zero warnings/errors).
+All 763 unit cases passed with zero skips, including seven new SQLite tests.
+The focused UI gate checks the same task UID in SQLite before and after the
+Tomorrow action. The first attempt to rerun the Settings and CalDAV harness
+checks stopped before deployment because PowerShell Direct did not become
+available within five minutes.
+
 ### 2026-11-25 — Settings scroll viewport (M8)
 
 In the saved Settings capture a card cut off 48 DIPs above the bottom of the
@@ -395,6 +415,39 @@ gutter is unchanged. The unsigned package hashes in the earlier SDK entry
 predate this viewport correction. The corrected self-contained x64 Debug
 solution built without warnings or errors; all 756 unit tests passed with
 no skips. Source review found no issue with the viewport change.
+
+The corrected guest build rendered cards through the final content row in
+both the defaults and appearance-error captures (0 DIPs of fixed blank space,
+previously 48). At the physical end of the list it left exactly 12 DIPs below
+the last About card. The same run passed the corrected heading and
+appearance-save/recovery checks. Its full Settings suite was 6/13: a stale
+composer element prevented fixture tasks from being created and the viewport
+test rejected a pane capture whose dimensions differed from the UIA bounds.
+The measurements above are from the returned pixels, independently of that
+test. Evidence: `tests/ui/artifacts/settings/run-20261125-015934/`.
+The same-scale comparison is at
+`artifacts/settings-sdk27/settings-bottom-spacing-before-after.png`.
+
+A follow-up guest run passed the automated viewport check and all the new
+Settings behavior checks. Settings was 12/13: the reminder case looked for
+its task before the row appeared in the UI tree. M13 was 12/14; its two new
+width checks exited from WinApp before evaluating geometry. M8 was 13/17.
+All four M8 failures depended on finding a task by its new title. Replaying
+the guest database's SQLite WAL showed that commit 18 saved the star and
+commit 20 saved the renamed title. Commit 21 (Tomorrow in the still-open detail
+pane) restored both the original title and the old priority. The detail editor
+had written a stale task snapshot over the current row. Results:
+`tests/ui/artifacts/settings/run-20261125-020449/`,
+`tests/ui/artifacts/m13/run-20261125-020619/` and
+`tests/ui/artifacts/m8/run-20261125-020645/`.
+
+Signed private x64 DEV `1.0.1.257` (`71bf90e0`) has the same identity and
+signer as .255 and a valid signature. Its 336 package entries passed structure
+and privacy checks with zero findings. The packaged Settings XBF matches the
+compiled viewport fix, and the changed Settings strings were read from the
+actual PRI. Package SHA-256:
+`1e49762b559e9ac76e0847b5664d7a77e6b7e0b9a0bae784c7a0b8484153bc03`.
+The installer and verification are under `artifacts/dev-preview/1.0.1.257-71bf90e0/`.
 
 ### 2026-11-25 — Settings accessibility, save feedback and Windows App SDK 2.7.0
 

@@ -10,7 +10,7 @@ public sealed partial class TaskItemViewModel : TaskListEntryViewModel
     private readonly Func<TaskItemViewModel, Task> _toggleImportance;
     private readonly Func<TaskItemViewModel, Task> _delete;
     private readonly Func<TaskItemViewModel, long, Task> _move;
-    private readonly Func<TaskItemViewModel, Task> _rename;
+    private readonly Func<TaskItemViewModel, Task<bool>> _rename;
 
     internal TaskItemViewModel(
         TodoTask task,
@@ -18,7 +18,7 @@ public sealed partial class TaskItemViewModel : TaskListEntryViewModel
         Func<TaskItemViewModel, Task> toggleImportance,
         Func<TaskItemViewModel, Task> delete,
         Func<TaskItemViewModel, long, Task> move,
-        Func<TaskItemViewModel, Task> rename)
+        Func<TaskItemViewModel, Task<bool>> rename)
         : base($"Todo.Row.{task.Uid}")
     {
         Model = task;
@@ -111,8 +111,7 @@ public sealed partial class TaskItemViewModel : TaskListEntryViewModel
     private async Task CommitTitleEditAsync()
     {
         EditTitle = EditTitle.Trim();
-        await _rename(this);
-        IsEditingTitle = false;
+        if (await _rename(this)) IsEditingTitle = false;
     }
 
     [RelayCommand]

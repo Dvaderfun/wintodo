@@ -9,8 +9,9 @@ namespace Wintodo.ViewModels;
 
 public sealed partial class TaskListViewModel
 {
-    internal Func<string, Task<bool>>? PrepareRowCompletionAsync { get; set; }
+    internal Func<string, Task<bool>>? FlushDetailEditsAsync { get; set; }
     internal event Action<TodoTask, bool>? RowCompletionSaved;
+    internal event Action<TodoTask, TaskDetailFields>? RowFieldsSaved;
 
     internal async Task ReorderActiveTaskAsync(string taskUid, string targetUid, bool insertAfter)
     {
@@ -231,7 +232,7 @@ public sealed partial class TaskListViewModel
     {
         await Task.Yield();
         // A just-selected repeat rule and its first due date may still be in the detail editor.
-        if (PrepareRowCompletionAsync is { } prepare && !await prepare(item.Uid))
+        if (FlushDetailEditsAsync is { } prepare && !await prepare(item.Uid))
         {
             item.RefreshCompletionToggle();
             return;
@@ -323,6 +324,7 @@ public sealed partial class TaskListViewModel
         double sortOrder = await _taskStore.SetTaskImportanceAsync(item.Uid, isImportant, _preferences.MoveStarredToTop);
         item.Model.Priority = isImportant ? (int)TaskPriority.High : (int)TaskPriority.Undefined;
         item.Model.SortOrder = sortOrder;
+        RowFieldsSaved?.Invoke(item.Model, TaskDetailFields.Importance);
         item.IsImportant = isImportant;
         UpdateItemDisplay(item);
         if (_currentQuery?.SortMode == SortMode.Manual && _preferences.MoveStarredToTop && item.IsImportant)
@@ -366,14 +368,17 @@ public sealed partial class TaskListViewModel
         NavigationDataChanged?.Invoke();
     }
 
-    private async Task RenameTaskAsync(TaskItemViewModel item)
+    private async Task<bool> RenameTaskAsync(TaskItemViewModel item)
     {
         await Task.Yield();
         string title = item.EditTitle;
+        if (FlushDetailEditsAsync is { } flush && !await flush(item.Uid)) return false;
         await _taskStore.RenameTaskAsync(item.Uid, title);
         item.Model.Summary = title;
+        RowFieldsSaved?.Invoke(item.Model, TaskDetailFields.Summary);
         UpdateItemDisplay(item);
         RebuildVisibleItems();
+        return true;
     }
 
     private async Task MoveSelectedByAsync(int offset)

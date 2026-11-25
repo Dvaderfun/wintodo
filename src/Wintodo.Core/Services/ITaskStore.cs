@@ -87,6 +87,11 @@ public interface ITaskStore : ISettingsStore, ISyncStore, IImportStore, IAsyncDi
 
     Task UpdateTaskAsync(TodoTask task, CancellationToken cancellationToken = default, bool moveStarredToTop = false);
 
+    /// <summary>Applies only the selected edits to the current task and returns its committed details.</summary>
+    Task<TodoTask> UpdateTaskDetailAsync(
+        TodoTask edits, TaskDetailFields fields, bool moveStarredToTop = false,
+        long? removedAttachmentId = null, CancellationToken cancellationToken = default);
+
     Task RenameTaskAsync(string uid, string summary, CancellationToken cancellationToken = default);
 
     Task SetTaskTextAsync(string uid, string summary, string? description, CancellationToken cancellationToken = default);

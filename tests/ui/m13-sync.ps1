@@ -77,12 +77,17 @@ public static class M13GateWindow {
 '@
 $handle = [IntPtr]::new([long]$mainHwnd)
 
-function Get-LayoutElement([string]$Id) {
-    $selector = if ($Id) { @($Id) } else { @() }
-    $tree = winapp ui inspect @selector -w $mainHwnd --depth 1 --json | ConvertFrom-Json
-    $items = @($tree.windows | Where-Object hwnd -eq $handle.ToInt64() | ForEach-Object { $_.elements })
-    if ($items.Count -ne 1 -or ($Id -and $items[0].automationId -cne $Id)) { throw "No unique layout element for '$Id'." }
-    return $items[0]
+function Get-LayoutPeer([string]$Id) {
+    $condition = [System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::AutomationIdProperty, $Id)
+    $peer = $windowPeer.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $condition)
+    if (!$peer) { throw "Missing layout peer '$Id' in window $mainHwnd." }
+    $peer
+}
+function Get-LayoutBounds($Peer) {
+    $current = $Peer.Current
+    $rect = $current.BoundingRectangle
+    [pscustomobject]@{ automationId = $current.AutomationId; isOffscreen = $current.IsOffscreen
+        x = $rect.X; y = $rect.Y; width = $rect.Width; height = $rect.Height }
 }
 
 function Test-UI {
@@ -99,7 +104,7 @@ function Test-UI {
         }
     } catch {
         $script:fail++
-        $script:results += @{ name = $Name; status = "FAIL"; detail = "$_" }
+        $script:results += @{ name = $Name; status = "FAIL"; detail = "$($_.Exception.Message) [$(([string]$_.InvocationInfo.Line).Trim())]" }
     } finally {
         $global:LASTEXITCODE = 0
     }
@@ -180,24 +185,35 @@ Test-UI "Connect and discover VTODO list" {
 Take-Screenshot "02-sync-connected.png"
 
 function Assert-SyncLayout([int]$WindowWidth) {
-    $original = Get-LayoutElement
+    Add-Type -AssemblyName UIAutomationClient,UIAutomationTypes
+    $windowPeer = [System.Windows.Automation.AutomationElement]::FromHandle($handle)
+    $original = Get-LayoutBounds $windowPeer
     $scale = [M13GateWindow]::GetDpiForWindow($handle) / 96.0
     if ($scale -le 0 -or $original.width -le 0 -or $original.height -le 0) { throw 'Window bounds or DPI unavailable.' }
     $targetWidth = [int][Math]::Round($WindowWidth * $scale)
     try {
         [M13GateWindow]::Resize($handle, $targetWidth, $original.height)
-        winapp ui scroll 'Todo.Settings.ScrollViewer' --to top -w $mainHwnd | Out-Null
-        $actual = Get-LayoutElement
+        $actual = Get-LayoutBounds $windowPeer
         if ([Math]::Abs($actual.width - $targetWidth) -gt 1) { throw "Expected $WindowWidth DIPs, got $($actual.width / $scale)." }
-        $viewport = Get-LayoutElement 'Todo.Settings.ScrollViewer'
-        # Bring the entire action group into the viewport without invoking either command.
-        for ($step = 0; $step -lt 40; $step++) {
-            $disconnect = Get-LayoutElement 'Todo.Settings.Sync.Disconnect'
-            if (!$disconnect.isOffscreen -and $disconnect.height -gt 0 -and
-                $disconnect.y + $disconnect.height -le $viewport.y + $viewport.height) { break }
-            winapp ui scroll 'Todo.Settings.ScrollViewer' --wheel -2 -w $mainHwnd | Out-Null
+        $viewer = Get-LayoutPeer 'Todo.Settings.ScrollViewer'
+        $scroll = $viewer.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
+        $nowPeer = Get-LayoutPeer 'Todo.Settings.Sync.Now'
+        $disconnectPeer = Get-LayoutPeer 'Todo.Settings.Sync.Disconnect'
+        # Use the ScrollViewer's own pattern and raw UIA bounds, including offscreen
+        # controls. Both actions must be fully within the same live viewport.
+        for ($percent = 0; $percent -le 100; $percent += 5) {
+            $scroll.SetScrollPercent([System.Windows.Automation.ScrollPattern]::NoScroll, $percent)
+            $until = [DateTime]::UtcNow.AddSeconds(2)
+            while ([Math]::Abs($scroll.Current.VerticalScrollPercent - $percent) -gt 1 -and [DateTime]::UtcNow -lt $until) {
+                Start-Sleep -Milliseconds 50
+            }
+            $viewport = Get-LayoutBounds $viewer
+            $now = Get-LayoutBounds $nowPeer
+            $disconnect = Get-LayoutBounds $disconnectPeer
+            if (!$now.isOffscreen -and !$disconnect.isOffscreen -and $now.height -gt 0 -and $disconnect.height -gt 0 -and
+                $now.y -ge $viewport.y -and $disconnect.y -ge $viewport.y -and
+                [Math]::Max(($now.y + $now.height), ($disconnect.y + $disconnect.height)) -le $viewport.y + $viewport.height) { break }
         }
-        $now = Get-LayoutElement 'Todo.Settings.Sync.Now'
         Take-Screenshot "02b-sync-account-${WindowWidth}dip.png"
         foreach ($button in @($now, $disconnect)) {
             if ($button.isOffscreen -or $button.width -lt (152 * $scale - 1) -or $button.height -lt (32 * $scale - 1) -or

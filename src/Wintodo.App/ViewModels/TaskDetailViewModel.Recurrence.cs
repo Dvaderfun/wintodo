@@ -1,6 +1,7 @@
 using System.Globalization;
 using CommunityToolkit.Mvvm.Input;
 using Wintodo.Core.Recurrence;
+using Wintodo.Core.Services;
 using Wintodo.Services;
 
 namespace Wintodo.ViewModels;
@@ -59,7 +60,7 @@ public sealed partial class TaskDetailViewModel
             _isLoading = false;
             UpdateActionLabels();
         }
-        if (await PersistModelAsync(owner)) RecordUndo(states, "Undo_RepeatCleared");
+        if (await PersistFieldsAsync(owner, TaskDetailFields.Repeat)) RecordUndo(states, "Undo_RepeatCleared");
     }
 
     private void ConfigureRepeatEditor(string? rrule)
@@ -138,7 +139,7 @@ public sealed partial class TaskDetailViewModel
             RefreshPendingDueDate(_model);
         }
         UpdateActionLabels();
-        ScheduleSave(TimeSpan.FromMilliseconds(200), writesWholeTask: true);
+        ScheduleSave(TimeSpan.FromMilliseconds(200), TaskDetailFields.Repeat);
     }
 
     private string BuildCustomRepeatRule()

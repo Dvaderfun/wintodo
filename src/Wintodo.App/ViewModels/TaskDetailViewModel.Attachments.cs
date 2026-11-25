@@ -129,27 +129,20 @@ public sealed partial class TaskDetailViewModel
 
     private async Task RemoveAttachmentAsync(AttachmentItemViewModel item)
     {
-        if (_model is null)
+        if (_model is not { } owner)
         {
             return;
         }
 
-        int index = _model.Attachments.IndexOf(item.Model);
-        if (index < 0)
+        if (!owner.Attachments.Contains(item.Model)
+            || !await PersistFieldsAsync(owner, TaskDetailFields.RemoveAttachment, item.Model.Id)) return;
+        ++_attachmentRevision;
+        owner.Attachments.Remove(item.Model);
+        if (_model is { } current && current.Uid == owner.Uid)
         {
-            return;
+            current.Attachments.RemoveAll(attachment => attachment.Id == item.Model.Id);
+            RebuildAttachments();
         }
-
-        _model.Attachments.RemoveAt(index);
-        if (!await PersistModelAsync())
-        {
-            _model.Attachments.Insert(index, item.Model);
-            return;
-        }
-
-        var attachments = new List<object>(Attachments);
-        attachments.Remove(item);
-        Attachments = attachments;
         if (!TryResolveAttachmentPath(item.Model.RelativePath, out string path))
         {
             return;

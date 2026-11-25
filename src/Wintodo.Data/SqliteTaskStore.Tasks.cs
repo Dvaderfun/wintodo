@@ -172,14 +172,19 @@ public sealed partial class SqliteTaskStore
         string uid, bool isImportant, bool moveStarredToTop, CancellationToken cancellationToken = default)
     {
         return UpdateTaskFieldsAsync(uid, (connection, transaction, task) =>
+            SetPriority(connection, transaction, task,
+                isImportant ? (int)TaskPriority.High : (int)TaskPriority.Undefined, moveStarredToTop), cancellationToken);
+    }
+
+    private static void SetPriority(
+        SqliteConnection connection, SqliteTransaction transaction, TodoTask task, int priority, bool moveStarredToTop)
+    {
+        if (moveStarredToTop && priority is >= 1 and <= 4 && task.Priority is not (>= 1 and <= 4)
+            && task.ParentUid is null && IsManualList(connection, transaction, task.ListId))
         {
-            if (moveStarredToTop && isImportant && task.Priority is not (>= 1 and <= 4)
-                && task.ParentUid is null && IsManualList(connection, transaction, task.ListId))
-            {
-                task.SortOrder = GetFirstTaskSortOrder(connection, transaction, task.ListId, uid);
-            }
-            task.Priority = isImportant ? (int)TaskPriority.High : (int)TaskPriority.Undefined;
-        }, cancellationToken);
+            task.SortOrder = GetFirstTaskSortOrder(connection, transaction, task.ListId, task.Uid);
+        }
+        task.Priority = priority;
     }
 
     public Task<bool> TryAddTaskAttachmentAsync(
@@ -202,12 +207,7 @@ public sealed partial class SqliteTaskStore
             attachment.TaskId = task.Id;
             if (attachment.Added == default) attachment.Added = _clock.UtcNow;
             attachment.Id = InsertAttachment(connection, transaction, attachment);
-            task.LastModified = _clock.UtcNow;
-            task.Sequence++;
-            task.IsDirty = true;
-            UpdateTaskRow(connection, transaction, task);
-            LogChange(connection, transaction, TaskEntityType, uid, ChangeOperation.Update);
-            context.AddTask(task.ListId, uid);
+            CommitTaskEdit(connection, transaction, context, task);
             return true;
         }, cancellationToken);
     }
@@ -222,14 +222,20 @@ public sealed partial class SqliteTaskStore
             TodoTask task = ReadTaskByUid(connection, transaction, uid, includeDeleted: false)
                 ?? throw new KeyNotFoundException($"Task '{uid}' was not found.");
             update(connection, transaction, task);
-            task.LastModified = _clock.UtcNow;
-            task.Sequence++;
-            task.IsDirty = true;
-            UpdateTaskRow(connection, transaction, task);
-            LogChange(connection, transaction, TaskEntityType, uid, ChangeOperation.Update);
-            context.AddTask(task.ListId, uid);
+            CommitTaskEdit(connection, transaction, context, task);
             return task.SortOrder;
         }, cancellationToken);
+    }
+
+    private void CommitTaskEdit(
+        SqliteConnection connection, SqliteTransaction transaction, WriteContext context, TodoTask task)
+    {
+        task.LastModified = _clock.UtcNow;
+        task.Sequence++;
+        task.IsDirty = true;
+        UpdateTaskRow(connection, transaction, task);
+        LogChange(connection, transaction, TaskEntityType, task.Uid, ChangeOperation.Update);
+        context.AddTask(task.ListId, task.Uid);
     }
 
     public Task CompleteTaskAsync(string uid, CancellationToken cancellationToken = default)
@@ -871,13 +877,7 @@ public sealed partial class SqliteTaskStore
             insertLink.ExecuteNonQuery();
         }
 
-        foreach (TaskAlarm alarm in task.Alarms)
-        {
-            alarm.TaskId = task.Id;
-            alarm.Uid = string.IsNullOrWhiteSpace(alarm.Uid) ? Guid.NewGuid().ToString("D") : alarm.Uid;
-            ValidateAlarm(alarm);
-            alarm.Id = InsertAlarm(connection, transaction, alarm);
-        }
+        InsertTaskAlarms(connection, transaction, task.Id, task.Alarms);
 
         foreach (TaskAttachment attachment in task.Attachments)
         {
@@ -885,6 +885,18 @@ public sealed partial class SqliteTaskStore
             attachment.TaskId = task.Id;
             attachment.Added = attachment.Added == default ? _clock.UtcNow : attachment.Added;
             attachment.Id = InsertAttachment(connection, transaction, attachment);
+        }
+    }
+
+    private static void InsertTaskAlarms(
+        SqliteConnection connection, SqliteTransaction transaction, long taskId, List<TaskAlarm> alarms)
+    {
+        foreach (TaskAlarm alarm in alarms)
+        {
+            alarm.TaskId = taskId;
+            alarm.Uid = string.IsNullOrWhiteSpace(alarm.Uid) ? Guid.NewGuid().ToString("D") : alarm.Uid;
+            ValidateAlarm(alarm);
+            alarm.Id = InsertAlarm(connection, transaction, alarm);
         }
     }
 

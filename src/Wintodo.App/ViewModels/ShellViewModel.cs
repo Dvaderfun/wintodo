@@ -88,9 +88,10 @@ public sealed partial class ShellViewModel : ObservableObject
         Detail.TaskChanged += TaskList.ApplyDetailTaskUpdate;
         Detail.MyDayMembershipChanged += TaskList.ApplyDetailMyDayUpdateAsync;
         TaskList.TaskDatesChanged += Detail.RefreshTaskDatesAsync;
-        TaskList.PrepareRowCompletionAsync = uid => uid == Detail.Uid
+        TaskList.FlushDetailEditsAsync = uid => uid == Detail.Uid
             ? Detail.FlushPendingEditsAsync() : Task.FromResult(true);
         TaskList.RowCompletionSaved += Detail.ApplyRowCompletion;
+        TaskList.RowFieldsSaved += Detail.ApplyRowFields;
         Detail.TaskDeleted += TaskList.ApplyDetailTaskDeleted;
         Detail.DeleteRequested += OnDetailDeleteRequested;
         InitializeImport(taskStore, clock, importEnvironment);

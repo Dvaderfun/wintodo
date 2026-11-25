@@ -82,43 +82,49 @@ public sealed partial class TaskDetailViewModel
 
     internal Task<bool> FlushPendingEditsAsync() => _textSaves.FlushAsync();
 
-    private void ScheduleSave(TimeSpan delay, bool writesWholeTask = false)
+    private void ScheduleSave(TimeSpan delay, TaskDetailFields fields)
     {
         if (_model is { } owner)
         {
-            _textSaves.Schedule(delay, () => PersistModelAsync(owner, textOnly: !writesWholeTask), writesWholeTask);
+            _textSaves.Schedule(delay, fields, pending => PersistFieldsAsync(owner, pending));
         }
     }
 
-    private Task<bool> PersistModelAsync(CancellationToken cancellationToken = default) =>
-        _model is { } current ? PersistModelAsync(current, cancellationToken) : Task.FromResult(false);
-
-    private async Task<bool> PersistModelAsync(
-        TodoTask current, CancellationToken cancellationToken = default, bool textOnly = false)
+    private async Task<bool> PersistFieldsAsync(TodoTask current, TaskDetailFields fields, long? removedAttachmentId = null)
     {
-        if (string.IsNullOrWhiteSpace(current.Summary)) return false;
-
-        await _saveGate.WaitAsync(cancellationToken);
+        var edits = new TodoTask
+        {
+            Uid = current.Uid, Summary = current.Summary, Description = current.Description,
+            Due = current.Due, DueIsDateOnly = current.DueIsDateOnly, DueTzid = current.DueTzid,
+            RRule = current.RRule, Priority = current.Priority,
+        };
+        if (fields.HasFlag(TaskDetailFields.Reminder)) edits.Alarms.AddRange(current.Alarms.Select(CloneAlarm));
+        var pendingDue = (PendingDueDate, PendingDueTime);
+        await _saveGate.WaitAsync();
         try
         {
-            if (textOnly)
+            TodoTask saved = await _taskStore.UpdateTaskDetailAsync(edits, fields, _preferences.MoveStarredToTop, removedAttachmentId);
+            if (ReferenceEquals(_model, current))
             {
-                await _taskStore.SetTaskTextAsync(current.Uid, current.Summary.Trim(), current.Description, cancellationToken);
+                // The user may already be typing the next edit; never replace the editor with this snapshot.
+                current.Sequence = saved.Sequence;
+                current.LastModified = saved.LastModified;
+                if (fields.HasFlag(TaskDetailFields.Importance)) current.SortOrder = saved.SortOrder;
+                if (fields.HasFlag(TaskDetailFields.Reminder)) CopyAlarmIdentities(saved, current);
+                var submittedDue = (edits.Due, edits.DueIsDateOnly, edits.DueTzid);
+                if (fields.HasFlag(TaskDetailFields.Repeat)
+                    && (current.Due, current.DueIsDateOnly, current.DueTzid) == submittedDue
+                    && (saved.Due, saved.DueIsDateOnly, saved.DueTzid) != submittedDue)
+                {
+                    current.Due = saved.Due;
+                    current.DueIsDateOnly = saved.DueIsDateOnly;
+                    current.DueTzid = saved.DueTzid;
+                    if ((PendingDueDate, PendingDueTime) == pendingDue) RefreshPendingDueDate(current);
+                    UpdateActionLabels();
+                }
+                IsErrorOpen = false;
             }
-            else
-            {
-                TodoTask snapshot = CloneTask(current);
-                snapshot.Summary = snapshot.Summary.Trim();
-                await _taskStore.UpdateTaskAsync(snapshot, cancellationToken, moveStarredToTop: _preferences.MoveStarredToTop);
-                current.MyDayExcludedDate = snapshot.MyDayExcludedDate;
-                current.SortOrder = snapshot.SortOrder;
-                current.Sequence = snapshot.Sequence;
-                current.LastModified = snapshot.LastModified;
-                CopyCollectionIdentities(snapshot, current);
-            }
-            if (!textOnly || ReferenceEquals(_model, current))
-                TaskChanged?.Invoke(CloneTask(current));
-            if (ReferenceEquals(_model, current)) IsErrorOpen = false;
+            TaskChanged?.Invoke(saved);
             return true;
         }
         catch (OperationCanceledException)
@@ -179,20 +185,7 @@ public sealed partial class TaskDetailViewModel
             IsDeleted = source.IsDeleted,
         };
         clone.Categories.AddRange(source.Categories);
-        clone.Alarms.AddRange(source.Alarms.Select(alarm => new TaskAlarm
-        {
-            Id = alarm.Id,
-            TaskId = alarm.TaskId,
-            Uid = alarm.Uid,
-            Action = alarm.Action,
-            Trigger = alarm.Trigger,
-            TriggerOffsetSeconds = alarm.TriggerOffsetSeconds,
-            TriggerRelated = alarm.TriggerRelated,
-            Description = alarm.Description,
-            SnoozedUntil = alarm.SnoozedUntil,
-            IsAcknowledged = alarm.IsAcknowledged,
-            ScheduledToastTag = alarm.ScheduledToastTag,
-        }));
+        clone.Alarms.AddRange(source.Alarms.Select(CloneAlarm));
         clone.Attachments.AddRange(source.Attachments.Select(attachment => new TaskAttachment
         {
             Id = attachment.Id,
@@ -206,7 +199,22 @@ public sealed partial class TaskDetailViewModel
         return clone;
     }
 
-    private static void CopyCollectionIdentities(TodoTask source, TodoTask destination)
+    private static TaskAlarm CloneAlarm(TaskAlarm alarm) => new()
+    {
+        Id = alarm.Id,
+        TaskId = alarm.TaskId,
+        Uid = alarm.Uid,
+        Action = alarm.Action,
+        Trigger = alarm.Trigger,
+        TriggerOffsetSeconds = alarm.TriggerOffsetSeconds,
+        TriggerRelated = alarm.TriggerRelated,
+        Description = alarm.Description,
+        SnoozedUntil = alarm.SnoozedUntil,
+        IsAcknowledged = alarm.IsAcknowledged,
+        ScheduledToastTag = alarm.ScheduledToastTag,
+    };
+
+    private static void CopyAlarmIdentities(TodoTask source, TodoTask destination)
     {
         foreach (TaskAlarm destinationAlarm in destination.Alarms)
         {
@@ -228,22 +236,6 @@ public sealed partial class TaskDetailViewModel
             destinationAlarm.Uid = sourceAlarm.Uid;
         }
 
-        foreach (TaskAttachment destinationAttachment in destination.Attachments)
-        {
-            TaskAttachment? sourceAttachment = source.Attachments.FirstOrDefault(
-                attachment => string.Equals(
-                    attachment.RelativePath,
-                    destinationAttachment.RelativePath,
-                    StringComparison.Ordinal));
-            if (sourceAttachment is null)
-            {
-                continue;
-            }
-
-            destinationAttachment.Id = sourceAttachment.Id;
-            destinationAttachment.TaskId = sourceAttachment.TaskId;
-            destinationAttachment.Added = sourceAttachment.Added;
-        }
     }
 
 }
