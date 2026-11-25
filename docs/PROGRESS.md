@@ -21,10 +21,10 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.258** is the signed x64 Native
-AOT build of `1f56f770`. It uses Windows App SDK 2.7.0 and has the
-[Settings viewport correction](#2026-11-25--settings-scroll-viewport-m8).
-It supersedes .257, fixing the [loss of saved row edits from the open detail
+**Private DEV installer:** Wintodo DEV **1.0.1.261** is the signed x64 Native
+AOT build of `f84cd54c`. It [hides view-wide shortcut tooltips on hover](#2026-11-25--hide-view-wide-keyboard-shortcuts-on-hover-m8).
+It retains .258's Windows App SDK 2.7.0, the [Settings viewport correction](#2026-11-25--settings-scroll-viewport-m8)
+and the fix for [loss of saved row edits from the open detail
 pane](#2026-11-25--preserve-row-edits-when-saving-from-the-open-detail-pane-m8).
 The window opens at its saved size, shows Glide while
 the local view loads, then fades the artwork over the ready list for 240 ms.
@@ -398,7 +398,14 @@ The composer gate checks row and button hover, the Task options tooltip, and
 that `Ctrl+N` moves keyboard focus from a task to the composer.
 
 The x64 Debug solution built with zero warnings or errors. All 763 unit tests
-passed with no skips. WinUI source review found no issues.
+passed with no skips. WinUI source review found no issues. The composer gate
+did not run: PowerShell Direct could not connect to WintodoTest within 300 s.
+Live hover and keyboard verification on this build remain pending.
+
+Private DEV `1.0.1.261` (`f84cd54c`) passed signature, structure and privacy
+checks. Its resource index contains the three rebuilt XAML files byte for byte;
+the previous .258 package does not contain these versions. The installer is in
+`artifacts/dev-preview/1.0.1.261-f84cd54c/`.
 
 ### 2026-11-25 — Preserve row edits when saving from the open detail pane (M8)
 
