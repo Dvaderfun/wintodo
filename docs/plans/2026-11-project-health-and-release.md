@@ -15,6 +15,10 @@ These four fixes are implemented and included in signed DEV 1.0.1.188. See the [
 
 ## 2. Protect releases and keep tools serviced
 
+November 25: `dev` now targets Windows App SDK 2.7.0. Both new unsigned
+packages passed the [updated package checks](2026-11-21-dependency-servicing.md#november-25-development-upgrade).
+The items below retain the prior release evidence and outstanding production work.
+
 - [ ] **Require passing CI for changes to main and enforce release-tag protection.** At audit time GitHub returned `protected: false` on main and listed no repository rulesets. Verify effective enforcement after configuring it; a passing workflow is not enforcement.
 - [ ] **Review the tested dependency updates in the normal dependency PR.** After the four data-integrity fixes, target Windows App SDK 2.7.0 or the then-current stable patch alongside SQLite, BuildTools, analyzer, test tool, notices and locks. The [servicing note](2026-11-21-dependency-servicing.md#recommendation-for-the-next-production-decision-21-november) distinguishes the known Microsoft build account from private paths; carry that distinction into the package checks and run them on x64 and ARM64. No separate SDK release, vendor ticket or December deadline. The owner-tested DEV build stays as it was tested.
 - [ ] **Resolve the search timing miss before treating the fallback as green.** In the single full fallback run, 706/707 tests passed. Smart-list queries passed, but worst warm full-text search at 10,000 tasks took **428.653 ms** against **60 ms**. The same Data/Test inputs measured 13.707 ms in the isolated 2.7.0 evaluation. Measure both engines under the same idle conditions, capture query plans and disk/CPU contention, then change the queries or test only if the evidence warrants it. The threshold remains unchanged.

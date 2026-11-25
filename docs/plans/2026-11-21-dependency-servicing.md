@@ -1,5 +1,10 @@
 # November 2026 release fallback for dependency servicing
 
+**November 25 update:** The owner selected 2.7.0 for development. The
+[Settings and SDK verification record](../PROGRESS.md#2026-11-25--settings-accessibility-save-feedback-and-windows-app-sdk-270)
+tracks the new working copy; the November 21 results below describe the
+original artifacts and scanner.
+
 Two local archive refs preserve the tested revisions. `refs/archive/branches/maintenance/nov21-review` (`cb362c6`) keeps Windows App SDK 2.5.1 and takes the other updates: 21 of 22 tracked checks matched their stable targets. `refs/archive/branches/maintenance/nov21-sdk27-evaluation` (`6cf6451`) preserves the 2.7.0 evaluation: 22 of 22 matched, but both packages failed the privacy gate. “Current” is a version comparison; it does not certify an update for release.
 
 **Priority:** The four [data-integrity fixes](2026-11-sol-integrity-handoff.md) are in DEV 1.0.1.188. Treat the Windows App SDK update as routine work for the next dependency PR. The finding is a generic Microsoft build-account path in unmodified Microsoft DLLs; the evidence does not indicate exposure of a Wintodo user or developer path.
@@ -76,7 +81,7 @@ Use **2.7.0** (or the then-current supported stable patch) in the next routine d
 
 [DEP-14](deployment-readiness.md#dep-14--remove-identifying-binary-and-metadata-paths) protects against identifying build paths. The [packaging guide](../guides/packaging.md#release-artifact-privacy-dep-14) already distinguishes nonidentifying vendor metadata. Its current scanner makes that distinction for vendor CodeView records; it still reports the profile prefix in the body of these DLLs as a failure. Recognizing the verified generic marker applies the existing privacy rule; it does not require an architectural decision or a blanket exception for Microsoft files.
 
-- [ ] In the dependency PR, report this exact marker as **informational** only for the reviewed DLL bytes from the signed, catalog-hash-verified SDK archives, matched by package version, architecture, archive entry and DLL hash. Keep scanning the same files for private roots and all other findings. Cover a matching input, different bytes and a separate identifying marker in regression tests.
+- [x] The development scanner now reports the exact marker as **informational** for the [reviewed supplier entries](../../scripts/windowsappsdk-2.7.0-vendor-profile.json) from the signed, catalog-hash-verified SDK archives. Other profile paths and explicit private markers still fail. Regression tests cover the exact match, changed bytes, wrong entry or architecture, and additional private markers.
 - [ ] Run the normal build, tests, package scans on both x64 and ARM64, and the normal release checks on the final artifacts before shipping. The historical packages below still **failed** their actual gate; this documentation does not turn that result into a pass.
 
 [Microsoft support and release channels](https://learn.microsoft.com/windows/apps/windows-app-sdk/release-channels) · [Windows App SDK 2.7.0 release notes](https://github.com/microsoft/WindowsAppSDK/releases/tag/v2.7.0). The open search timing failure is a separate acceptance issue; changing SDKs does not establish that it is fixed.
@@ -174,3 +179,34 @@ preserve the exact reviewed SDK, SQLite and supplier notice bytes.
 These package checks do not close the failed store timing gate or test
 installation, Store certification, user data migration, UI behavior, or
 ARM64 runtime behavior. No package was signed, installed or published.
+
+## November 25 development upgrade
+
+Development now selects the previously evaluated 2.7.0 graph. All twenty
+supported lockfiles match the archived evaluation; four app lockfiles changed
+from the 2.5.1 fallback. The other direct dependencies retain their prior pins.
+The updated notice contains all eleven original supplier documents; its
+SHA-256 is `4f0675a126ee4d8a66bbe4426df58a3517e1624eaafc2e953aebcf28c7f13c8d`.
+
+The scanner reports the generic marker in exactly sixteen Microsoft DLLs per
+architecture as informational. The two NuGet archives were verified against
+the official catalog SHA-512 and their signatures. The [provenance manifest](../../scripts/windowsappsdk-2.7.0-vendor-profile.json)
+records their archive entries and the 32 unmodified DLL hashes. All 245
+Python regressions passed, including changed bytes, wrong entry/architecture,
+another identifying profile path, and an explicitly supplied private marker.
+This does not change the historical failures recorded above.
+
+Fresh unsigned Native AOT packages from the working tree:
+
+| Target | MSIX bytes | Entries | SHA-256 |
+|---|---:|---:|---|
+| x64 | 60,724,999 | 334 | `2ba6a44196b3a9f132cdd9a9138165dd735175d2d0dd4c60a8106342bac308f7` |
+| ARM64 | 59,584,698 | 329 | `a2168161de3190c84d3dac6478810ea8bf4237cffed654c6125c331329694f7c` |
+
+Both passed identity, architecture, MSIX structure and independent checkout-root
+privacy checks; the resolved dependency graphs had zero NuGet advisories. The
+packaged English resources contain the new Settings messages and all 14 expected
+package versions. Both packages contain notices identical to source. Local
+evidence: `artifacts/settings-sdk27/release-validation/summary.json`. These
+unsigned outputs were not installed or submitted to the Store. Native ARM64
+execution and final signed-package acceptance are separate checks.

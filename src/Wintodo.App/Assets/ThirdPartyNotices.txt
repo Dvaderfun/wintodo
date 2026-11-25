@@ -9,7 +9,7 @@ Microsoft.Testing.Extensions.TrxReport 2.5.3 — MIT
 Microsoft.Windows.SDK.BuildTools 10.0.28000.2957 — Microsoft Windows SDK licence terms
 Microsoft.Windows.SDK.BuildTools.WinApp 0.8.0 — MIT
 Microsoft.Windows.SDK.BuildTools.WinUIAnalyzer 0.8.0 — MIT
-Microsoft.WindowsAppSDK 2.5.1 — Microsoft software licence terms
+Microsoft.WindowsAppSDK 2.7.0 — Microsoft software licence terms
 Microsoft.Windows.AI.MachineLearning 2.5.96 — Windows ML licence terms
 SQLite 3.54.1 — public domain
 SQLitePCLRaw.bundle_e_sqlite3 3.0.5 — Apache-2.0
@@ -564,12 +564,11 @@ Component associations for the licence texts retained above and below:
   Apache-2.0 licence retained above. SQLite 3.54.1 (e_sqlite3.dll): the public
   domain statement and original SQLite declaration retained here. These associations
   supplement the original bundle package entry.
-- Microsoft.WindowsAppSDK Runtime 2.5.1, Base 2.0.4, Foundation 2.3.12,
-  InteractiveExperiences 2.1.9, AI and Search 2.5.5, DWrite 2.1.0,
-  Widgets 2.0.5 and WinUI 2.3.9: existing Windows App SDK licence terms
+- Microsoft.WindowsAppSDK Runtime, Base, Foundation, InteractiveExperiences,
+  AI, Search, DWrite, Widgets and WinUI 2.7.0: existing Windows App SDK licence terms
   retained above; shared Runtime NOTICE retained below, including WinUI's
   complete root NOTICE. This association includes RestartAgent.exe.
-- Microsoft.WindowsAppSDK.ML 2.1.94: the SDK module supplies distinct Windows
+- Microsoft.WindowsAppSDK.ML 2.7.0: the SDK module supplies distinct Windows
   App SDK / Windows ML licence terms, retained below.
 - Microsoft.Windows.AI.MachineLearning 2.5.96: distinct Windows ML licence
   and supplied third-party notices retained below for the Windows ML,
@@ -2183,9 +2182,9 @@ You are solely responsible for determining the appropriateness of using and dist
 
 
 
-===== Windows App SDK Runtime/2.5.1, Base/2.0.4 and WinUI/2.3.9 =====
-Source: Microsoft.WindowsAppSDK.Runtime/2.5.1, package file NOTICE.txt
-Package: https://www.nuget.org/packages/Microsoft.WindowsAppSDK.Runtime/2.5.1
+===== Windows App SDK Runtime, Base and WinUI 2.7.0 =====
+Source: Microsoft.WindowsAppSDK.Runtime/2.7.0, package file NOTICE.txt
+Package: https://www.nuget.org/packages/Microsoft.WindowsAppSDK.Runtime/2.7.0
 
 NOTICES AND INFORMATION
 Do Not Translate or Localize
@@ -16132,11 +16131,11 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-===== Microsoft.WindowsAppSDK.ML/2.1.94 =====
-Source: Microsoft.WindowsAppSDK.ML/2.1.94, package file license.txt
-Package: https://www.nuget.org/packages/Microsoft.WindowsAppSDK.ML/2.1.94
+===== Microsoft.WindowsAppSDK.ML/2.7.0 =====
+Source: Microsoft.WindowsAppSDK.ML/2.7.0, package file license.txt
+Package: https://www.nuget.org/packages/Microsoft.WindowsAppSDK.ML/2.7.0
 
-MICROSOFT SOFTWARE LICENSE TERMS 
+MICROSOFT SOFTWARE LICENSE TERMS
 
 1. MICROSOFT WINDOWS APP SDK
 2. WINDOWS MACHINE LEARNING (ML)
@@ -16148,7 +16147,7 @@ These license terms are an agreement between you and Microsoft Corporation (or o
         a) General. Subject to the terms of this agreement, you may install and use any number of copies of the software to develop and test your applications, solely for use on Windows. When building Generative AI applications follow the guidelines in https://learn.microsoft.com/windows/ai/rai.
         b) Included Microsoft Applications. The software may include other Microsoft applications. These license terms apply to those included applications, if any, unless other license terms are provided with the other Microsoft applications.
         c) Microsoft Platforms. The software may include components from Microsoft Windows. These components are governed by separate agreements and their own product support policies, as described in the license terms found in the installation directory for that component or in the “Licenses” folder accompanying the software.
-        d) Third Party Materials. The software may use or include source code, object code, or data available under an open source or open data license (“Open Source Materials”) or a proprietary license from a third party (with Open Source Materials, collectively, “Third Party Materials”) that are licensed under the specific license terms applicable to the Third Party Materials (an “Third Party License Agreement”). To the extent that any Third Party License Agreement requires that the corresponding Third Party Materials be licensed under terms that are different from the terms set forth in this Agreement, then such Third Party Materials are licensed under the terms of that Third Party License Agreement and the other terms and conditions in this Agreement will not apply with respect to those Third Party Materials. You (a) acknowledge that any such Third Party License Agreement is solely between Licensee and the applicable licensor of the Third Party Materials, and (b) will comply with the terms of any such Third Party License Agreement. Without limitation to the foregoing, the licenses referenced on this website (https://learn.microsoft.com/en-us/windows/ai/new-windows-ml/supported-execution-providers) are deemed to be “Third Party Materials.”
+        d) Third Party Materials. The software may use or include source code, object code, or data available under an open source or open data license (“Open Source Materials”) or a proprietary license from a third party (with Open Source Materials, collectively, “Third Party Materials”) that are licensed under the specific license terms applicable to the Third Party Materials (an “Third Party License Agreement”). To the extent that any Third Party License Agreement requires that the corresponding Third Party Materials be licensed under terms that are different from the terms set forth in this Agreement, then such Third Party Materials are licensed under the terms of that Third Party License Agreement and the other terms and conditions in this Agreement will not apply with respect to those Third Party Materials. You (a) acknowledge that any such Third Party License Agreement is solely between Licensee and the applicable licensor of the Third Party Materials, and (b) will comply with the terms of any such Third Party License Agreement. Without limitation to the foregoing, the licenses referenced on these websites (https://learn.microsoft.com/en-us/windows/ai/new-windows-ml/supported-execution-providers and https://aka.ms/winml-licenses) are deemed to be “Third Party Materials.”
     2. DATA.
         a) Data Collection. The software may collect information about you and your use of the software, and send that to Microsoft. Microsoft may use this information to provide services and improve our products and services. You may opt-out of many of these scenarios, but not all, as described in the product documentation. There are also some features in the software that may enable you to collect data from users of your applications. If you use these features to enable data collection in your applications, you must comply with applicable law, including providing appropriate notices to users of your applications. You can learn more about data collection and use in the help documentation and the privacy statement at https://aka.ms/privacy. Your use of the software operates as your consent to these practices.
         b) Processing of Personal Data. To the extent Microsoft is a processor or subprocessor of personal data in connection with the software, Microsoft makes the commitments in the European Union General Data Protection Regulation Terms of the Online Services Terms to all customers effective May 25, 2018, at https://docs.microsoft.com/en-us/legal/gdpr.

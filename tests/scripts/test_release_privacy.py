@@ -2,6 +2,7 @@
 
 import importlib.util
 import contextlib
+import hashlib
 import io
 import json
 import struct
@@ -98,6 +99,51 @@ class ReleasePrivacyTests(unittest.TestCase):
         result = self.scan(native_pe(r"D:\a\_work\1\s\vendor.pdb"), "vendor.dll")
         self.assertEqual("PASS", result["status"])
         self.assertEqual(1, result["vendor_codeview_path_records"])
+
+    def test_reviewed_vendor_profile_requires_exact_entry_hash_and_pe_architecture(self):
+        name = "Synthetic.Supplier.dll"
+        blob = native_pe("supplier.pdb") + privacy.VENDOR_PREFIX + b"component\\header.h"
+        digest = hashlib.sha256(blob).hexdigest()
+        approved = {(name, "x64", digest): ("Synthetic.Supplier", "2.7.0")}
+        with patch.object(privacy, "reviewed_vendor_entries", return_value=approved):
+            with tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                layout = root / "layout"
+                layout.mkdir()
+                (layout / name).write_bytes(blob)
+                package = root / "fixture.msix"
+                with zipfile.ZipFile(package, "w") as archive:
+                    archive.writestr(name, blob)
+                result = privacy.scan_inputs([layout, package])
+                self.assertEqual("PASS", result["status"])
+                self.assertEqual([(0, 0), (1, 0)], [(r["input"], r["entry"]) for r in result["informational"]])
+                self.assertTrue(all(r["package"] == "Synthetic.Supplier" and r["version"] == "2.7.0"
+                                    and r["architecture"] == "x64" for r in result["informational"]))
+                (layout / "nested").mkdir()
+                (layout / name).rename(layout / "nested" / name)
+                with zipfile.ZipFile(package, "w") as archive:
+                    archive.writestr("nested/" + name, blob)
+                result = privacy.scan_inputs([layout, package])
+                self.assertEqual(["identifying_profile_path"] * 2, [r["category"] for r in result["findings"]])
+                self.assertFalse(result["informational"])
+            self.assertEqual("FAIL", self.scan(blob + b"changed", name)["status"])
+            self.assertEqual("FAIL", self.scan(blob, "other.dll")["status"])
+        with patch.object(privacy, "reviewed_vendor_entries",
+                          return_value={(name, "arm64", digest): ("Synthetic.Supplier", "2.7.0")}):
+            self.assertEqual("FAIL", self.scan(blob, name)["status"])
+
+    def test_even_verified_bytes_keep_unrelated_profiles_and_explicit_markers(self):
+        name = "Synthetic.Supplier.dll"
+        blob = (native_pe("supplier.pdb") + privacy.VENDOR_PREFIX + b"component\\header.h\0"
+                + r"D:\Users\synthetic-owner\private".encode("utf-16-le"))
+        approved = {(name, "x64", hashlib.sha256(blob).hexdigest()): ("Synthetic.Supplier", "2.7.0")}
+        with patch.object(privacy, "reviewed_vendor_entries", return_value=approved):
+            # The explicit marker overlaps the vendor bytes that the profile-only check masks.
+            result = self.scan(blob, name, markers=["containeradministrator"])
+        self.assertEqual("FAIL", result["status"])
+        self.assertEqual({"private_marker", "identifying_profile_path"}, {r["category"] for r in result["findings"]})
+        self.assertEqual(1, len(result["informational"]))
+        self.assertNotIn("synthetic-owner", json.dumps(result))
 
     def test_packaged_resources_and_symbols_scanned_without_extracting(self):
         with tempfile.TemporaryDirectory() as directory:

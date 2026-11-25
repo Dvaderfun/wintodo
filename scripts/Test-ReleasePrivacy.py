@@ -6,6 +6,7 @@ outside these inputs; this is an artifact gate, not a repository secret scanner.
 
 import argparse
 import hashlib
+import io
 import json
 import re
 import struct
@@ -15,6 +16,18 @@ import zlib
 from pathlib import Path
 
 PROFILE_PATH = re.compile(r"(?:[a-z]:[\\/]+users[\\/]+|/home/|/users/)", re.IGNORECASE)
+# Only this literal, case-sensitive ASCII sequence occurs in the reviewed signed DLLs.
+VENDOR_PREFIX = b"C:\\Users\\ContainerAdministrator\\.nuget\\packages\\"
+ARCHITECTURES = {0x8664: "x64", 0xAA64: "ARM64"}
+
+
+def reviewed_vendor_entries():
+    # The checked-in manifest binds each output name and digest to its exact signed
+    # NuGet archive/version and source entry. Do not learn exceptions from the input.
+    manifest = Path(__file__).with_name("windowsappsdk-2.7.0-vendor-profile.json")
+    return {(name, arch, digest): (origin["package"], origin["version"])
+            for origin in json.loads(manifest.read_text(encoding="utf-8"))
+            for name, targets in origin["files"].items() for arch, digest in targets.items()}
 
 
 def read_at(stream, offset, length):
@@ -116,10 +129,12 @@ def marker_variants(values):
 
 def scan_inputs(paths, private_markers=(), required_architectures=()):
     markers = marker_variants(private_markers)
+    reviewed = reviewed_vendor_entries()
     findings = []
     records = []
     first_party = []
     vendor_path_records = 0
+    informational = []
 
     def inspect(stream, name, input_index, entry_index):
         nonlocal vendor_path_records
@@ -148,6 +163,21 @@ def scan_inputs(paths, private_markers=(), required_architectures=()):
                     vendor_path_records += sum(
                         "/" in value or "\\" in value for value in pe["codeview_paths"]
                     )
+                    arch = ARCHITECTURES.get(pe["machine"], "unsupported")
+                    source = reviewed.get((name, arch.lower(), sha256))
+                    if (source and "identifying_profile_path" in categories
+                            and (not required_architectures or arch in required_architectures)):
+                        # All hash-pinned files are <4 MiB. Mask only the known bytes
+                        # in a separate profile check. Never mask supplied markers.
+                        original = read_at(stream, 0, size)
+                        if VENDOR_PREFIX in original and hashlib.sha256(original).hexdigest() == sha256:
+                            masked = original.replace(VENDOR_PREFIX, bytes(len(VENDOR_PREFIX)))
+                            _, _, remaining = scan_stream(io.BytesIO(masked), ())
+                            informational.append({"input": input_index, "entry": entry_index,
+                                                  "category": "verified_vendor_build_profile", "architecture": arch,
+                                                  "package": source[0], "version": source[1]})
+                            if "identifying_profile_path" not in remaining:
+                                categories.remove("identifying_profile_path")
             except (ValueError, UnicodeError, struct.error, OverflowError):
                 categories.add("unreadable_pe")
         records.append({"input": input_index, "entry": entry_index, "bytes": size, "sha256": sha256})
@@ -161,7 +191,7 @@ def scan_inputs(paths, private_markers=(), required_architectures=()):
             files = sorted(item for item in path.rglob("*") if item.is_file())
             for entry_index, item in enumerate(files):
                 with item.open("rb") as stream:
-                    inspect(stream, item.name, input_index, entry_index)
+                    inspect(stream, item.relative_to(path).as_posix(), input_index, entry_index)
         elif path.suffix.lower() in (".msix", ".appx"):
             with zipfile.ZipFile(path) as package:
                 for entry_index, item in enumerate(package.infolist()):
@@ -183,10 +213,11 @@ def scan_inputs(paths, private_markers=(), required_architectures=()):
         "status": "FAIL" if findings else "PASS",
         "files_scanned": sum("entry" in record for record in records),
         "findings": findings,
+        "informational": informational,
         "first_party_binaries": first_party,
         "vendor_codeview_path_records": vendor_path_records,
         "files": records,
-        "limits": "Identifying profile paths and supplied markers; vendor build paths counted separately. Private symbols/logs are excluded inputs. Final signed packages must be scanned separately.",
+        "limits": "Identifying profile paths and supplied markers; exact reviewed vendor build profiles and vendor CodeView paths reported separately. Private symbols/logs are excluded inputs. Final signed packages must be scanned separately.",
     }
 
 

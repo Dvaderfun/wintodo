@@ -5,6 +5,7 @@ if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1') {
 }
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'SuggestionsFixtureSql.ps1')
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $appDirectory = Join-Path $repositoryRoot 'src/Wintodo.App/bin/x64/Debug/net10.0-windows10.0.26100.0/win-x64'
 $artifactDirectory = Join-Path $PSScriptRoot ('artifacts/settings/run-' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss'))
@@ -127,6 +128,10 @@ try {
         }
         Invoke-Ui @('wait-for', 'Todo.Settings.Tasks.WeekStart', '--value', 'Use system setting', '-t', '3000')
         Save-Screenshot '01-defaults.png'
+    }
+    Test-UI 'Settings title and groups expose named screen reader headings' {
+        & powershell.exe -NoProfile -NonInteractive -File (Join-Path $PSScriptRoot 'check-settings-headings.ps1') -Window $mainHwnd
+        if ($LASTEXITCODE -ne 0) { throw 'Native UI Automation heading check failed.' }
     }
     Test-UI 'Set every Tasks preference' {
         Set-Toggle 'ConfirmBeforeDelete' $false
@@ -284,6 +289,32 @@ try {
         @{ controls = $controls.Count; errors = 0 } | ConvertTo-Json |
             Set-Content -LiteralPath (Join-Path $artifactDirectory 'accessibility.json')
         Save-Screenshot '10-settings-audit.png'
+    }
+    Test-UI 'An appearance write failure is visible, and resaving clears it and persists' {
+        Open-Settings
+        Invoke-Ui @('scroll', 'Todo.Settings.ScrollViewer', '--to', 'top')
+        $backgrounds = 'Todo.Settings.ShowBackgrounds'
+        $errorBar = 'Todo.Settings.Appearance.Error'
+        Invoke-Ui @('wait-for', $backgrounds, '--value', 'Off', '-t', '3000') -Window $mainHwnd
+        $readBackgrounds = "SELECT value FROM settings WHERE key='appearance.show_list_backgrounds'"
+        $original = Invoke-SuggestionsFixtureSql $databasePath $readBackgrounds
+        Invoke-SuggestionsFixtureSql $databasePath @'
+CREATE TRIGGER reject_backgrounds BEFORE INSERT ON settings WHEN NEW.key='appearance.show_list_backgrounds'
+BEGIN SELECT RAISE(ABORT, 'fixture write failure'); END;
+'@
+        try {
+            Invoke-Ui @('invoke', $backgrounds, '--action', 'toggle-on') -Window $mainHwnd
+            Invoke-Ui @('wait-for', $backgrounds, '--value', 'On', '-t', '3000') -Window $mainHwnd
+            Invoke-Ui @('wait-for', $errorBar, '-p', 'IsOffscreen', '--value', 'False', '-t', '5000')
+            if ((Invoke-SuggestionsFixtureSql $databasePath $readBackgrounds) -ne $original) { throw 'Rejected preference was persisted.' }
+            Save-Screenshot '11-appearance-save-error.png'
+        } finally {
+            Invoke-SuggestionsFixtureSql $databasePath 'DROP TRIGGER reject_backgrounds'
+        }
+        Invoke-Ui @('invoke', $backgrounds, '--action', 'toggle-off') -Window $mainHwnd
+        Invoke-Ui @('wait-for', $backgrounds, '--value', 'Off', '-t', '3000') -Window $mainHwnd
+        Invoke-Ui @('wait-for', $errorBar, '--gone', '-t', '5000')
+        if ((Invoke-SuggestionsFixtureSql $databasePath $readBackgrounds) -cne 'False') { throw 'Recovered preference did not reach SQLite.' }
     }
 } catch {
     $results.Add(@{ name = 'Gate setup'; status = 'FAIL'; detail = "$_" })

@@ -194,6 +194,7 @@ def inspect_package(path, architecture, expected_identity=None, expected_publish
                     result["vendor_binaries_with_other_architectures"] += 1
         privacy_result = privacy.scan_inputs([path], required_architectures=[architecture])
         result["privacy_status"] = privacy_result["status"]
+        result["verified_vendor_profile_entries"] = len(privacy_result["informational"])
         privacy_hash = next((r["package_sha256"] for r in privacy_result["files"] if "package_sha256" in r), None)
         with Path(path).open("rb") as stream:
             final_hash = hashlib.file_digest(stream, "sha256").hexdigest()

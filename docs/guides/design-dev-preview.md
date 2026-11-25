@@ -7,6 +7,9 @@ A first install starts with its own empty task database. Updating DEV keeps that
 For the My Day lightbulb, follow the [Suggestions layout and functional checklist](my-day-suggestions-preview.md).
 For task opening, resizing, and note or step editing, use the [task details checklist](task-details-preview.md).
 
+In Settings, scroll partway through the cards: the list should reach the bottom
+of the pane. At the very end, a small inset follows the last About card.
+
 To compare the [logo-to-list startup trial](../adr/ADR-026-branded-startup-preview.md),
 set the app theme to the opposite of Windows, leave a list with a recognizable
 task selected, close normally, and open **Wintodo DEV** from Start. Look at the

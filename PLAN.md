@@ -93,7 +93,7 @@ by ADR-010). Index and template: [`docs/adr/README.md`](docs/adr/README.md).
 
 | Layer | Choice | Why |
 |---|---|---|
-| UI framework | **WinUI (WinUI 3)**, Windows App SDK **2.3.1+ stable** (2.5.1 since 2026-10-10) | Current native Windows stack. Microsoft now writes "WinUI" for what was WinUI 3. |
+| UI framework | **WinUI (WinUI 3)**, Windows App SDK **2.3.1+ stable** (2.7.0 since 2026-11-25) | Current native Windows stack. Microsoft now writes "WinUI" for what was WinUI 3. |
 | Runtime | **.NET 10** (`net10.0-windows10.0.26100.0`) | Current LTS. Pin the exact SDK with its lockfiles ([ADR-020](docs/adr/ADR-020-pin-sdk-with-lockfiles.md)). |
 | Language | C# 14 | Partial properties (required by the modern `[ObservableProperty]` pattern), collection expressions. |
 | Packaging | **Packaged MSIX**, x64 + ARM64 | Required for `winapp run`, toasts, jump lists, badges, Store. |
@@ -751,7 +751,7 @@ reminders become untestable.
 
 | Risk | Mitigation |
 |---|---|
-| ~~XAML compiler under `dotnet build` gives no diagnostic on malformed XAML~~ | Retired by ADR-010: fixed in Windows App SDK 2.1.3; we are on 2.5.1. |
+| ~~XAML compiler under `dotnet build` gives no diagnostic on malformed XAML~~ | Retired by ADR-010: fixed in Windows App SDK 2.1.3. |
 | `win-dev-skills` is preview v0.x; skill names and tooling can change (0.7 removed `BuildAndRun.ps1` and the bundled analyzer) | Skills are vendored at a pinned tag; bump deliberately with `scripts/Update-AgentSkills.ps1` after reading the changelog. Map by description if a name doesn't resolve. |
 | Native AOT surfaces a broken dependency late | `IsAotCompatible` + analyzers from M0; a weekly `dotnet publish -p:PublishAot=true` check from M1. |
 | Scheduled toasts are a UWP-API workaround, not a first-class WinAppSDK feature | Isolate behind `IReminderScheduler`; if the SDK ships a real scheduling API, swap one implementation. |

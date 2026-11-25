@@ -56,8 +56,9 @@ public sealed partial class MainWindow
             do
             {
                 await viewModel.FlushDetailPaneWidthAsync();
+                await viewModel.AppearancePreferenceWrites;
                 if (!await viewModel.Detail.FlushPendingEditsAsync()) return;
-            } while (viewModel.HasPendingDetailPaneWidth);
+            } while (viewModel.HasPendingDetailPaneWidth || !viewModel.AppearancePreferenceWrites.IsCompleted);
             _closeApproved = true;
             Close();
         }

@@ -28,6 +28,7 @@ $mainHwnd = $null
 $initialAppPid = $AppPid
 $firstTrace = Join-Path $ArtifactDirectory 'first.trace'
 $restartTrace = Join-Path $ArtifactDirectory 'restart.trace'
+$accountName = 'long-account-for-responsive-settings-' + ('w' * 38) + '@example.test'
 
 # The Debug gate observes the live dispatcher timers; AOT has no file listener.
 function Assert-TimerTrace([string]$TraceFile, [string]$Marker, [int]$Count = 1) {
@@ -53,6 +54,35 @@ for ($attempt = 0; $attempt -lt 30 -and -not $mainHwnd; $attempt++) {
 }
 if (-not $mainHwnd) {
     throw "The Wintodo main window was not found."
+}
+
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class M13GateWindow {
+    [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
+    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr hwnd);
+    [DllImport("user32.dll")] private static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+    [DllImport("user32.dll")] private static extern bool SetWindowPos(IntPtr hwnd, IntPtr after, int x, int y, int w, int h, uint flags);
+    public static void Resize(IntPtr hwnd, int widthPx, int heightPx) {
+        var previous = SetThreadDpiAwarenessContext(new IntPtr(-4)); // UIA reports physical screen pixels.
+        if (previous == IntPtr.Zero) throw new InvalidOperationException("Cannot select per-monitor DPI awareness.");
+        try {
+            if (!SetWindowPos(hwnd, IntPtr.Zero, 0, 0, widthPx, heightPx, 0x16)) // No move, z-order change or activation.
+                throw new InvalidOperationException("Could not resize the test window.");
+        } finally { SetThreadDpiAwarenessContext(previous); }
+    }
+}
+'@
+$handle = [IntPtr]::new([long]$mainHwnd)
+
+function Get-LayoutElement([string]$Id) {
+    $selector = if ($Id) { @($Id) } else { @() }
+    $tree = winapp ui inspect @selector -w $mainHwnd --depth 1 --json | ConvertFrom-Json
+    $items = @($tree.windows | Where-Object hwnd -eq $handle.ToInt64() | ForEach-Object { $_.elements })
+    if ($items.Count -ne 1 -or ($Id -and $items[0].automationId -cne $Id)) { throw "No unique layout element for '$Id'." }
+    return $items[0]
 }
 
 function Test-UI {
@@ -129,12 +159,12 @@ Test-UI "Failed connect remains in the dialog and allows retry" {
 }
 Test-UI "Enter CalDAV account" {
     winapp ui set-value "Todo.Settings.Sync.Server" "http://127.0.0.1:$ServerPort/" -w $mainHwnd
-    winapp ui set-value "Todo.Settings.Sync.Username" "alice" -w $mainHwnd
+    winapp ui set-value "Todo.Settings.Sync.Username" $accountName -w $mainHwnd
     winapp ui wait-for "Todo.Settings.Sync.Connect" -w $mainHwnd -p IsEnabled --value "True" -t 3000
 }
 Test-UI "Connect and discover VTODO list" {
     winapp ui invoke "Todo.Settings.Sync.Connect" -w $mainHwnd
-    winapp ui wait-for "Todo.Settings.Sync.Account" -w $mainHwnd --value "alice" -t 10000
+    winapp ui wait-for "Todo.Settings.Sync.Account" -w $mainHwnd --value $accountName -t 10000
     winapp ui wait-for "Todo.Settings.Sync.Status" -w $mainHwnd --value "Up to date" -t 10000
     winapp ui wait-for "Todo.Nav.SyncStatus" -w $mainHwnd -p IsOffscreen --value "False" -t 5000
     winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $mainHwnd --value "Up to date" -t 5000
@@ -148,6 +178,48 @@ Test-UI "Connect and discover VTODO list" {
     Assert-TimerTrace $firstTrace 'sync;' 0 # Connect performs its own initial sync.
 }
 Take-Screenshot "02-sync-connected.png"
+
+function Assert-SyncLayout([int]$WindowWidth) {
+    $original = Get-LayoutElement
+    $scale = [M13GateWindow]::GetDpiForWindow($handle) / 96.0
+    if ($scale -le 0 -or $original.width -le 0 -or $original.height -le 0) { throw 'Window bounds or DPI unavailable.' }
+    $targetWidth = [int][Math]::Round($WindowWidth * $scale)
+    try {
+        [M13GateWindow]::Resize($handle, $targetWidth, $original.height)
+        winapp ui scroll 'Todo.Settings.ScrollViewer' --to top -w $mainHwnd | Out-Null
+        $actual = Get-LayoutElement
+        if ([Math]::Abs($actual.width - $targetWidth) -gt 1) { throw "Expected $WindowWidth DIPs, got $($actual.width / $scale)." }
+        $viewport = Get-LayoutElement 'Todo.Settings.ScrollViewer'
+        # Bring the entire action group into the viewport without invoking either command.
+        for ($step = 0; $step -lt 40; $step++) {
+            $disconnect = Get-LayoutElement 'Todo.Settings.Sync.Disconnect'
+            if (!$disconnect.isOffscreen -and $disconnect.height -gt 0 -and
+                $disconnect.y + $disconnect.height -le $viewport.y + $viewport.height) { break }
+            winapp ui scroll 'Todo.Settings.ScrollViewer' --wheel -2 -w $mainHwnd | Out-Null
+        }
+        $now = Get-LayoutElement 'Todo.Settings.Sync.Now'
+        Take-Screenshot "02b-sync-account-${WindowWidth}dip.png"
+        foreach ($button in @($now, $disconnect)) {
+            if ($button.isOffscreen -or $button.width -lt (152 * $scale - 1) -or $button.height -lt (32 * $scale - 1) -or
+                $button.x -lt [Math]::Max($actual.x, $viewport.x) -or $button.y -lt $viewport.y -or
+                $button.x + $button.width -gt [Math]::Min(($actual.x + $actual.width), ($viewport.x + $viewport.width)) -or
+                $button.y + $button.height -gt $viewport.y + $viewport.height) {
+                throw "$($button.automationId) is clipped at $WindowWidth DIPs."
+            }
+        }
+        if ($WindowWidth -eq 640) {
+            if ([Math]::Abs($now.x - $disconnect.x) -gt 1 -or $now.y + $now.height -gt $disconnect.y) {
+                throw 'Expected Sync now above Disconnect at 640 DIPs.'
+            }
+        } elseif ([Math]::Abs($now.y - $disconnect.y) -gt 1 -or $now.x + $now.width -gt $disconnect.x) {
+            throw 'Expected Sync now beside Disconnect at wide width.'
+        }
+    } finally {
+        [M13GateWindow]::Resize($handle, $original.width, $original.height)
+    }
+}
+Test-UI "Long account keeps both Sync actions stacked and visible at 640 DIPs" { Assert-SyncLayout 640 }
+Test-UI "Long account keeps both Sync actions side by side and visible at 1160 DIPs" { Assert-SyncLayout 1160 }
 
 Test-UI "Per-list sync toggle changes" {
     $toggle = (winapp ui search "Todo.Settings.Sync.List." -w $mainHwnd --json 2>$null |
@@ -177,16 +249,6 @@ Test-UI 'Open Suggestions reflects a remote add and completion after background 
     Set-RemoteSuggestion 'suggestion-new'
     # Activation syncs after one minute; advance only the app's clock within the same day.
     # The gate makes no SQLite writes and leaves the same My Day pane open throughout.
-    Add-Type @'
-using System;
-using System.Runtime.InteropServices;
-public static class M13GateWindow {
-    [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
-    [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hwnd);
-}
-'@
-    $handle = if ("$mainHwnd" -match '^0x') { [IntPtr]::new([Convert]::ToInt64("$mainHwnd".Substring(2), 16)) }
-        else { [IntPtr]::new([long]$mainHwnd) }
     [M13GateWindow]::ShowWindowAsync($handle, 6) | Out-Null
     Start-Sleep -Milliseconds 500
     Assert-TimerTrace $firstTrace 'minimize;SYNC=running;MIDNIGHT=off'
@@ -232,7 +294,7 @@ Test-UI "Restart restores account and resumes sync" {
 
     winapp ui wait-for "Todo.Nav.SyncStatus.Text" -w $script:mainHwnd --value "Up to date" -t 15000
     winapp ui invoke "Todo.Nav.Settings" -w $script:mainHwnd
-    winapp ui wait-for "Todo.Settings.Sync.Account" -w $script:mainHwnd --value "alice" -t 5000
+    winapp ui wait-for "Todo.Settings.Sync.Account" -w $script:mainHwnd --value $accountName -t 5000
     winapp ui wait-for "Todo.Settings.Sync.Status" -w $script:mainHwnd --value "Up to date" -t 5000
     Assert-TimerTrace $restartTrace 'startup;SYNC=running;MIDNIGHT=running'
     Assert-TimerTrace $restartTrace 'sync;' 1

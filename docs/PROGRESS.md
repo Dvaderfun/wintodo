@@ -46,8 +46,8 @@ As of 2026-11-21:
 
 The two local maintenance jobs have a shared [owner control menu](guides/workstation-maintenance.md)
 for status, report history, manual inventory, check-only mode and pause/resume.
-Windows App SDK remains at 2.5.1. Revisit the newer SDK in the next
-dependency PR as described in the [prioritized checklist](plans/2026-11-project-health-and-release.md).
+The November 21 SDK evaluation retained 2.5.1 at the time; the working copy
+now targets 2.7.0.
 
 Store-first under **Univera LLC** is selected in
 [ADR-019](adr/ADR-019-store-first-source-available-release.md), superseding only
@@ -98,7 +98,11 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
   GitHub run `42424857115` passed the first batch at `5604256` with 392/392
   tests. Second-batch GitHub run `42428523717` passed for `6342f82`, with
   455/455 and zero failures/skips verified from the four uploaded TRX files.
-- **Maintenance review:** 21 of 22 tracked versions are current on the supported .NET 10 LTS line: exact SDK 10.0.404, WinApp CLI/analyzer 0.8.0, Windows ML 2.5.96, SQLite 3.54.1 and six WinUI skills from Microsoft's v0.8.0 release. Windows App SDK stays at 2.5.1 because both actual 2.7.0 packages failed the existing privacy gate on unchanged Microsoft DLLs. Both unsigned fallback packages passed structure, privacy and NuGet audits, and their Settings resources match all 14 package entries. The full fallback suite is 706/707: a search timing failure remains open. See the [package evidence](plans/2026-11-21-dependency-servicing.md), [prioritized audit](plans/2026-11-project-health-and-release.md) and [weekly servicing schedule](guides/workstation-maintenance.md). These changes have not shipped.
+- **Maintenance review (November 25):** Windows App SDK 2.7.0 brings the working
+  copy to 22/22 tracked stable targets on the selected .NET 10 LTS line.
+  The SDK change and Settings improvements have not shipped. The earlier
+  [2.5.1 fallback and failed 2.7.0 evaluation](plans/2026-11-21-dependency-servicing.md)
+  retain their original results.
 - **ML servicing and SQLite test isolation (2026-11-09):** the declared-compatible
   ML 2.5.96 update passes both isolated AOT/MSIX structure/privacy/audit targets,
   then current-helper Debug/Release builds and x64/ARM64 AOT publishing. Four app
@@ -380,6 +384,47 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-25 — Settings scroll viewport (M8)
+
+In the saved Settings capture a card cut off 48 DIPs above the bottom of the
+window, even in the middle of the list. That space was padding on the
+`ScrollViewer` itself. Settings now uses the full viewport; a 12-DIP inset
+inside the scrolling content follows only the last card. The existing right
+gutter is unchanged. The unsigned package hashes in the earlier SDK entry
+predate this viewport correction. The corrected self-contained x64 Debug
+solution built without warnings or errors; all 756 unit tests passed with
+no skips. Source review found no issue with the viewport change.
+
+### 2026-11-25 — Settings accessibility, save feedback and Windows App SDK 2.7.0
+
+Settings exposes its page and section headings through Windows UI Automation.
+Appearance changes apply immediately; if a write fails, an inline message
+explains that it may revert on restart. A successful resave clears the message
+when no preferences remain unsaved. Connected CalDAV account details wrap,
+and the two actions stack when the Settings column is narrow.
+
+The four app locks, supplier notices and Settings licence list now use Windows
+App SDK 2.7.0. The [package scanner](guides/packaging.md#release-artifact-privacy-dep-14)
+recognizes the exact generic vendor-account marker in 32 reviewed upstream DLLs
+across the two architectures. The x64 Debug and Release builds passed with zero
+warnings and errors; the four unit suites passed 756/756 with no skips, and
+all 245 Python regressions passed. The [fresh unsigned x64 and ARM64 MSIX](plans/2026-11-21-dependency-servicing.md#november-25-development-upgrade)
+passed structure and privacy checks, both resolved graphs had zero advisories,
+and the packaged English Settings strings and supplier notices matched source.
+
+The first WintodoTest run on the self-contained 2.7.0 Debug layout passed the
+ten existing Settings cases. The two new tests failed in the harness: Windows
+PowerShell returned the managed heading `Level1` rather than the raw UIA ID,
+and a picker popup retained keyboard focus after the injected write failed.
+The capture shows the localized Appearance warning. The tests now check the
+managed heading levels and exercise both failure and recovery through a
+switch on the same appearance-save path. Two subsequent clean-checkpoint
+attempts timed out before any gate started; a separate PowerShell Direct
+probe rejected the saved guest credential. The corrected heading/save tests,
+the CalDAV 640/1160-DIP layout assertions and the full M8 accessibility run
+remain pending. No host UI fallback or guest-account change was made. Initial
+results and capture: `tests/ui/artifacts/settings/run-20261125-013620/`.
 
 ### 2026-11-25 — Fade the startup logo into the ready list (M9)
 

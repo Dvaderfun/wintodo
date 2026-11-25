@@ -7,6 +7,7 @@
     xmlns:local="using:Wintodo.Controls"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:settings="using:CommunityToolkit.WinUI.Controls"
+    xmlns:toolkit="using:CommunityToolkit.WinUI"
     xmlns:viewModels="using:Wintodo.ViewModels"
     mc:Ignorable="d">
 
@@ -21,6 +22,7 @@
             BasedOn="{StaticResource BodyStrongTextBlockStyle}"
             TargetType="TextBlock">
             <Setter Property="Margin" Value="0,4,0,0" />
+            <Setter Property="AutomationProperties.HeadingLevel" Value="Level2" />
         </Style>
 
         <!--
@@ -42,6 +44,18 @@
         and lands on the same baseline and inset as the task list title.
     -->
     <Grid AutomationProperties.AutomationId="Todo.Settings.Root">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="InlineSyncActions">
+                    <VisualState.StateTriggers>
+                        <toolkit:ControlSizeTrigger MinWidth="640" TargetElement="{x:Bind SettingsPanel, Mode=OneTime}" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="SyncAccountActions.Orientation" Value="Horizontal" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <Grid.RowDefinitions>
             <RowDefinition Height="64" />
             <RowDefinition Height="*" />
@@ -52,12 +66,13 @@
             Grid.Row="0"
             VerticalAlignment="Top"
             AutomationProperties.AutomationId="Todo.Settings.Title"
+            AutomationProperties.HeadingLevel="Level1"
             Style="{StaticResource TitleTextBlockStyle}" />
 
         <ScrollViewer
             x:Name="SettingsScrollViewer"
             Grid.Row="1"
-            Padding="0,0,12,48"
+            Padding="0,0,12,0"
             HorizontalContentAlignment="Stretch"
             HorizontalScrollBarVisibility="Disabled"
             HorizontalScrollMode="Disabled"
@@ -69,7 +84,7 @@
                 by MaxWidth fills the viewport instead and still keeps the content
                 left-aligned on wide monitors.
             -->
-            <Grid>
+            <Grid Padding="0,0,0,12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" MaxWidth="1000" />
                     <ColumnDefinition Width="Auto" />
@@ -83,8 +98,14 @@
                     <StackPanel Spacing="4">
                         <TextBlock
                             x:Uid="SettingsAppearanceHeader"
+                            AutomationProperties.AutomationId="Todo.Settings.Heading.Appearance"
                             Style="{StaticResource SettingsGroupHeaderStyle}" />
 
+                        <InfoBar
+                            x:Uid="SettingsAppearanceSaveError"
+                            AutomationProperties.AutomationId="Todo.Settings.Appearance.Error"
+                            IsOpen="{x:Bind ViewModel.IsAppearanceSaveErrorOpen, Mode=TwoWay}"
+                            Severity="Error" />
                         <settings:SettingsCard x:Uid="SettingsThemeCard">
                             <settings:SettingsCard.HeaderIcon>
                                 <FontIcon Glyph="&#xE790;" />
@@ -147,7 +168,9 @@
                     </StackPanel>
 
                     <StackPanel Spacing="4">
-                        <TextBlock x:Uid="SettingsTasksHeader" Style="{StaticResource SettingsGroupHeaderStyle}" />
+                        <TextBlock x:Uid="SettingsTasksHeader"
+                            AutomationProperties.AutomationId="Todo.Settings.Heading.Tasks"
+                            Style="{StaticResource SettingsGroupHeaderStyle}" />
                         <InfoBar AutomationProperties.AutomationId="Todo.Settings.Tasks.Error"
                             IsOpen="{x:Bind ViewModel.IsTaskPreferencesErrorOpen, Mode=TwoWay}"
                             Message="{x:Bind ViewModel.TaskPreferencesErrorMessage, Mode=OneWay}" Severity="Error" />
@@ -182,6 +205,7 @@
                     <StackPanel Spacing="4">
                         <TextBlock
                             x:Uid="SettingsNotificationsHeader"
+                            AutomationProperties.AutomationId="Todo.Settings.Heading.Notifications"
                             Style="{StaticResource SettingsGroupHeaderStyle}" />
 
                         <InfoBar AutomationProperties.AutomationId="Todo.Settings.Notifications.Error"
@@ -222,6 +246,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock
                                 x:Uid="SettingsSyncHeader"
+                                AutomationProperties.AutomationId="Todo.Settings.Heading.Sync"
                                 VerticalAlignment="Center"
                                 Style="{StaticResource SettingsGroupHeaderStyle}" />
                             <ProgressRing
@@ -271,25 +296,27 @@
                             <settings:SettingsCard.HeaderIcon>
                                 <FontIcon Glyph="&#xE774;" />
                             </settings:SettingsCard.HeaderIcon>
-                            <StackPanel
-                                VerticalAlignment="Center"
-                                Orientation="Horizontal"
-                                Spacing="16">
-                                <StackPanel VerticalAlignment="Center" Spacing="2">
+                            <settings:SettingsCard.Description>
+                                <StackPanel Spacing="4">
                                     <TextBlock
-                                        HorizontalAlignment="Right"
                                         AutomationProperties.AutomationId="Todo.Settings.Sync.Account"
                                         Style="{StaticResource BodyStrongTextBlockStyle}"
                                         Text="{x:Bind ViewModel.SyncAccountDisplayName, Mode=OneWay}"
-                                        TextTrimming="CharacterEllipsis" />
+                                        TextWrapping="Wrap" />
                                     <TextBlock
-                                        HorizontalAlignment="Right"
                                         AutomationProperties.AutomationId="Todo.Settings.Sync.Status"
                                         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                         Style="{StaticResource CaptionTextBlockStyle}"
                                         Text="{x:Bind ViewModel.SyncStatusText, Mode=OneWay}"
-                                        TextTrimming="CharacterEllipsis" />
+                                        TextWrapping="Wrap" />
+                                    <TextBlock
+                                        x:Uid="SettingsSyncAccountHint"
+                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                        Style="{StaticResource CaptionTextBlockStyle}"
+                                        TextWrapping="Wrap" />
                                 </StackPanel>
+                            </settings:SettingsCard.Description>
+                            <StackPanel x:Name="SyncAccountActions" Spacing="8">
                                 <Button
                                     AutomationProperties.AutomationId="Todo.Settings.Sync.Now"
                                     Command="{x:Bind ViewModel.SyncNowCommand, Mode=OneTime}"
@@ -340,6 +367,7 @@
                             </Grid.ColumnDefinitions>
                             <TextBlock
                                 x:Uid="SettingsDataHeader"
+                                AutomationProperties.AutomationId="Todo.Settings.Heading.Data"
                                 VerticalAlignment="Center"
                                 Style="{StaticResource SettingsGroupHeaderStyle}" />
                             <ProgressRing
@@ -432,6 +460,7 @@
                     <StackPanel Spacing="4">
                         <TextBlock
                             x:Uid="SettingsAboutHeader"
+                            AutomationProperties.AutomationId="Todo.Settings.Heading.About"
                             Style="{StaticResource SettingsGroupHeaderStyle}" />
                         <settings:SettingsCard
                             x:Uid="SettingsVersionCard"

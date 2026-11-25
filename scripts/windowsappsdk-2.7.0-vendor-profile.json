@@ -1,0 +1,84 @@
+[
+  {
+    "package": "Microsoft.WindowsAppSDK.Runtime",
+    "version": "2.7.0",
+    "catalog": "https://api.nuget.org/v3/catalog0/data/2026.11.17.23.10.18/microsoft.windowsappsdk.runtime.2.7.0.json",
+    "archiveSha512": "xkFOFGhahpTwwm+FdlP5usNaYBxGds0wACmkeSUeTR0NPwEjywzUwX3URitzmUelnC0m/LLIqy6kHey+3qXQWA==",
+    "archiveEntry": "tools/MSIX/win10-{architecture}/Microsoft.WindowsAppRuntime.2.msix!/{name}",
+    "files": {
+      "CoreMessagingXP.dll": {
+        "x64": "78e2b33c1f38ecfef2a457c259fd45f4780d07a7b964a269758bb234f76e314b",
+        "arm64": "e7e5b80d9ff31593bf65f0fb69c5458fd11eeec4055a8ed07568423639f5b532"
+      },
+      "DwmSceneI.dll": {
+        "x64": "49485d1b9e578b4f1cc0c54e8c083cdee15407a329b3f97ed5e0e027e7a6230f",
+        "arm64": "26b23503f6da1f199145f9dcbaf937051c2b3c24ff899aa50f7a4ca9ff2a9057"
+      },
+      "Microsoft.DirectManipulation.dll": {
+        "x64": "77708e10197a939740989e06e64b8aa5ef8adf81cd263b0f4e4a2640b2e69a4d",
+        "arm64": "7109894ef0eb40e82c53145602d5e35f52cdb651be9769a583d8e10af17dc118"
+      },
+      "Microsoft.Graphics.Display.dll": {
+        "x64": "87c3534b882401c5223159b8ddebacd7d51aec82df7d7e12c9a156e0eb5e51b2",
+        "arm64": "200e74183383a0bacbf0c0c685b2e1993e31c68f66db6c5f7105a08c330e7b9b"
+      },
+      "Microsoft.InputStateManager.dll": {
+        "x64": "d2e078696c2a0bb06a0c6b2d555911dfec102ef5b96da2f818d68d456c1ac98d",
+        "arm64": "17b05d37e464d98b91429a4713000950f048f7a698a98d36182c84bdaa17258e"
+      },
+      "Microsoft.UI.Composition.OSSupport.dll": {
+        "x64": "4adbb28a8ac20818c95f0dc1ccf6c860bd2541e46277f81e98fc955d108a9fc1",
+        "arm64": "a3499df7180c6d5ce2fb78d1a2b760a0f4944c256baa556a1830a85aa6f66c9d"
+      },
+      "Microsoft.UI.Designer.dll": {
+        "x64": "0e7bed01a2ed3ac6d3af0c0a637cfdc7198a7cf7649dd4f77e9cadae88e82685",
+        "arm64": "e5ecfeeae4125f7d7ef34a788d9a4359ec7f0127231f66eb90c2b972bf7b3f11"
+      },
+      "Microsoft.UI.Input.dll": {
+        "x64": "e20ff1a0e8ed9735b708fb48a4fba7aabe6aeb818458a5b281acec71fe99b7a3",
+        "arm64": "80c596c2ec13cfa21c4948e2d1cb96e2eebfb4f8d8a9b7fa03e6b734049f443d"
+      },
+      "Microsoft.UI.Windowing.Core.dll": {
+        "x64": "64b0be07c7c6a8b9da31716a4f6f0f4c689f0d677e647934727260c293046a0c",
+        "arm64": "607519d0fcf30a7e8e73f1673455894c8b27afd7972d48cea675b0660191a8b4"
+      },
+      "Microsoft.UI.Windowing.dll": {
+        "x64": "a0b7da2d04b3b64bf809553c205daa86f96b1d43849845ebe3cab2692cb5bd0f",
+        "arm64": "9f650321ca3b90d8d0585d91bc2895a021876771038a7f7508f785d472993673"
+      },
+      "Microsoft.UI.dll": {
+        "x64": "b66292810105e9ebcd5362a9786cfe39bf6dd1466b4935ce4b4356258d294609",
+        "arm64": "6adfec6d3e650e7da4856b5e9beac17caf2c61ca1ea90fdcab5ce1c0bb73154e"
+      },
+      "dcompi.dll": {
+        "x64": "299513a952d7bf10a618eabf8c304040263a9f0e0889068a6f5b897ec36115be",
+        "arm64": "6c8ac023cd82f4355b8edba6b2f66288cecd7f93338da1633d4986785af203bd"
+      },
+      "dwmcorei.dll": {
+        "x64": "4651241ca9754f9a7525c50c945dd48981712e576318ab03848fe519449467e0",
+        "arm64": "065f91e68044337cc77cfc0f1a66fca89784d931acb30d52192a0e2176cd0147"
+      },
+      "marshal.dll": {
+        "x64": "cffb9d9d0e69377a7a8d295287eb1d1fd91a2515ebbf30be79973e091f759bd2",
+        "arm64": "c56988863b6bb56d37f28614ed13a949939705c16e01e9a0e1aafd4e58fca543"
+      },
+      "wuceffectsi.dll": {
+        "x64": "cc5ccfd6f867ed5381a373eef909e6a7592d9de2b6260be2cb925e85226f08a7",
+        "arm64": "c85b97adf13002239b7257e999f9ba13c20bd57ba9ad038a935cd063208cb50e"
+      }
+    }
+  },
+  {
+    "package": "Microsoft.WindowsAppSDK.InteractiveExperiences",
+    "version": "2.7.0",
+    "catalog": "https://api.nuget.org/v3/catalog0/data/2026.11.17.23.18.01/microsoft.windowsappsdk.interactiveexperiences.2.7.0.json",
+    "archiveSha512": "IjwdiGVDRYGtZPaJjOsTgsFMc+h3Sf0lf21szsz16F5Uro3OqhS3Q/wrT9EBWXylch6omxQqeVDHowmPBLPXIg==",
+    "archiveEntry": "runtimes-framework/win-{architecture}/native/{name}",
+    "files": {
+      "Microsoft.Internal.FrameworkUdk.dll": {
+        "x64": "044dd5964cf053c49f20b18a3183d4b958e0123065a15f16f31b20342a9436a5",
+        "arm64": "a830bad4815d1454297c13ba43c00c2d1d212ffbcb6f1dc478469bc68591acc2"
+      }
+    }
+  }
+]

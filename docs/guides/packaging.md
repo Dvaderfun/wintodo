@@ -90,9 +90,15 @@ symbols/build recipes and embedded first-party PDBs, and checks profile paths an
 explicit private roots/markers in UTF-8/UTF-16 and JSON-escaped forms. Supply a
 private JSON string array through `--marker-file` for synthetic private markers;
 matches and filenames are never printed. Review its sanitized JSON counters and
-hashes. Nonidentifying vendor CodeView paths are counted separately; this gate
-does not claim to remove Microsoft's own build paths or replace the source secret
-scan and final attribution review. Bundles require scanning each contained MSIX.
+hashes. Nonidentifying vendor CodeView paths are counted separately. For Windows
+App SDK 2.7.0, the scanner also reports Microsoft's generic NuGet build-account
+prefix as informational in the [reviewed DLLs](../../scripts/windowsappsdk-2.7.0-vendor-profile.json).
+The manifest records the signed NuGet archive, catalog digest, archive entry and
+DLL SHA-256 for each architecture. The shipped file must match the expected
+package-relative name, PE architecture and bytes. Every other profile path, and
+every explicitly supplied private marker, is still checked in those DLLs.
+An SDK update needs its own provenance review. Bundles require scanning each
+contained MSIX.
 
 Any package content change requires rebuilding/repackaging/re-signing and a fresh
 scan. Intermediate/unsigned PASS cannot close final signed-package acceptance.

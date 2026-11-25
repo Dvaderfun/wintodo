@@ -10,6 +10,13 @@ namespace Wintodo.ViewModels;
 
 public sealed partial class ShellViewModel
 {
+    private readonly HashSet<string> _unsavedAppearancePreferences = new(StringComparer.Ordinal);
+
+    internal Task AppearancePreferenceWrites { get; private set; } = Task.CompletedTask;
+
+    [ObservableProperty]
+    public partial bool IsAppearanceSaveErrorOpen { get; set; }
+
     internal string? GetFixedCategoryBackgroundTheme(string navigationKey)
     {
         if (DefaultList?.NavigationKey == navigationKey)
@@ -264,19 +271,36 @@ public sealed partial class ShellViewModel
         AppearanceSettingsChanged?.Invoke();
         if (_areAppearanceSettingsLoaded)
         {
-            _ = PersistAppearanceSettingAsync(key, value);
+            AppearancePreferenceWrites = SavePreferenceAfterAsync(AppearancePreferenceWrites, key, value);
         }
     }
 
-    private async Task PersistAppearanceSettingAsync(string key, string value)
+    private async Task SavePreferenceAfterAsync(Task previous, string key, string value)
+    {
+        // Keep rapid selections in order, including the success or error shown for each write.
+        await previous;
+        if (!await PersistAppearanceSettingAsync(key, value))
+        {
+            _unsavedAppearancePreferences.Add(key);
+            IsAppearanceSaveErrorOpen = true;
+        }
+        else if (_unsavedAppearancePreferences.Remove(key) && _unsavedAppearancePreferences.Count == 0)
+        {
+            IsAppearanceSaveErrorOpen = false;
+        }
+    }
+
+    private async Task<bool> PersistAppearanceSettingAsync(string key, string value)
     {
         try
         {
             await _taskStore.SetSettingAsync(key, value);
+            return true;
         }
         catch (Exception exception)
         {
             Trace.WriteLine($"WINTODO_APPEARANCE_SETTING_ERROR={DiagnosticException.Describe(exception)}");
+            return false;
         }
     }
 

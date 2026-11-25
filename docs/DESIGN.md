@@ -889,7 +889,14 @@ week-start preference;
 
 Single scrolling page, `Frame`-navigated, `SettingsCard` /
 `SettingsExpander` from `CommunityToolkit.WinUI.Controls.SettingsControls`.
-Page padding 36, section spacing 24.
+Sections are 24 DIPs apart, with a 12-DIP right gutter for the scrollbar.
+The scroll viewport reaches the bottom of the pane; a 12-DIP inset follows
+the final card inside the scrolling content.
+
+The page title is a level-one UI Automation heading; each section title is
+level two. Appearance changes apply immediately. If saving fails, a dismissible
+inline error explains that the change may not survive a restart. Saving the
+last outstanding preference clears the error.
 
 Sections: **Appearance** (theme: System/Light/Dark; density: Comfortable/Compact;
 show list backgrounds; colour fixed-category icons) · **Tasks** (default reminder time; week starts on;
@@ -926,8 +933,10 @@ The disconnected CalDAV card offers a Configure command opening a credential
 ContentDialog. Server and username drafts survive reopening; passwords clear
 when the dialog closes. Connect is disabled until all fields are filled and
 while a request runs. A failed connection keeps the dialog open with an inline
-error; success dismisses it and reveals account/sync controls. Settings action
-buttons share a 152 DIP minimum width.
+error; success dismisses it and reveals account/sync controls. The connected
+account name and status wrap in the card description. Sync now and Disconnect
+stack below 640 DIP of available Settings content width and sit side by side
+at wider sizes. Settings action buttons share a 152 DIP minimum width.
 
 The navigation footer shows sync status only when a CalDAV account exists.
 It appears after connecting and remains visible for syncing, offline and error
