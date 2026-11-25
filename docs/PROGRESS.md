@@ -28,6 +28,9 @@ In the [installed-package tests](PERF.md#signed-dev-task-list-visibility-during-
 the same fast wheel sequence that blanked .265 reached task 989 on .270 with
 no missing rows in either the repeat video or the independent title capture. Ordinary scrolling,
 wheel distance in both directions and inline title editing also passed.
+The [resource comparison](PERF.md#cpu-and-memory-cost-of-the-fast-wheel-correction-signed-dev-265-and-270)
+measured higher app CPU during fast wheel jumps; no app CPU counter increase
+was seen in the short foreground idle samples.
 It includes .263's [scrollbar placement](#2026-11-25--move-the-task-scrollbar-outside-the-cards-m8)
 and .261's [shortcut tooltip fix](#2026-11-25--hide-view-wide-keyboard-shortcuts-on-hover-m8).
 It retains .258's Windows App SDK 2.7.0, the [Settings viewport correction](#2026-11-25--settings-scroll-viewport-m8)
@@ -395,6 +398,14 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-25 — Measure the resource cost of the signed fast-wheel correction (M8)
+
+Compared .265 and .270 on fresh WintodoTest restores with 1,000 tasks and no
+screen recording. Three fast-wheel gestures per build all reached task 989;
+median process CPU time rose from 2.359 s to 3.078 s. The ordinary-wheel ranges
+overlapped and neither build registered CPU time in the 10 s foreground idle
+samples. [CPU ranges, memory counters and raw run IDs](PERF.md#cpu-and-memory-cost-of-the-fast-wheel-correction-signed-dev-265-and-270).
 
 ### 2026-11-25 — Verify the fast-wheel correction in signed DEV 1.0.1.270 (M8)
 

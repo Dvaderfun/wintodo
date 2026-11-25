@@ -930,3 +930,56 @@ missing rows, maximum gap 96 ms. The three measured distances repeated exactly.
 Video, frame bundle and report: `tests/ui/artifacts/rapid-scroll/b6cd5db4b14149e9b5d8d81b8debbad1/`.
 Frames from .265 and this passing recording are compared in
 `artifacts/rapid-scroll-comparison/dev265-vs-dev270-verified/contact-sheet.png`.
+
+### CPU and memory cost of the fast-wheel correction (signed DEV .265 and .270)
+
+The visibility recordings above contain no resource counters. For this comparison,
+WintodoTest (4 virtual CPUs, 8 GiB RAM) installs each signed x64 Native AOT package
+from the same clean checkpoint and loads 1,000 numbered tasks. Before recording
+counters, the app completes one ordinary and one fast wheel gesture. Each measured
+gesture starts at task 1 and sends 140 pulses (48 down, 28 up, 64 down); ordinary
+pulses are one notch and fast pulses are eight. Sampling starts before the first
+pulse and ends after the last pulse plus 1.5 s of settling. There is no video
+recording or UI Automation inspection inside the measured interval. Idle samples
+measure the visible, warmed list without input for 10 s.
+
+CPU time is the change in Wintodo's `TotalProcessorTime`, summed across threads;
+dividing by elapsed time and four gives the app's share of total guest CPU.
+`GetSystemTimes` separately counts all guest CPU activity, including Windows
+and the input sender. The working set is resident process memory including
+shared pages. Private bytes measure committed private memory. Both are read at
+interval boundaries; neither is a per-gesture peak. This is a short foreground
+test; it does not measure GPU work, battery use, physical frame latency or a
+long-term memory trend.
+
+Three measured repetitions per condition in one warmed process per build;
+ordinary and fast execution order alternated between repetitions. Times are
+medians [minimum, maximum]. Every ordinary gesture ended at task 146; every
+fast gesture ended at task 989, with both builds starting at task 1.
+
+| Condition | .265 app CPU seconds | .270 app CPU seconds | App share of all four vCPUs, .265 → .270 (median) | End working set, MiB, .265 → .270 (median) | End private bytes, MiB, .265 → .270 (median) |
+|---|---:|---:|---:|---:|---:|
+| Foreground idle, 10 s | 0 [0, 0] | 0 [0, 0] | 0% → 0% | 201.1 → 204.5 | 123.7 → 130.4 |
+| Ordinary wheel, 140 pulses | 1.563 [1.547, 1.750] | 1.625 [1.594, 1.828] | 10.4% → 10.8% | 203.4 → 205.6 | 125.3 → 129.6 |
+| Fast wheel, 140 pulses | 2.359 [2.047, 2.703] | 3.078 [2.906, 3.172] | 14.8% → 20.5% | 202.1 → 205.6 | 123.6 → 130.2 |
+
+The fast run used 0.719 more CPU seconds per sequence on .270 (+30.5%);
+all three .270 values exceeded all three .265 values. With the quiet tail, the
+median observation windows were 3.98 s and 3.76 s respectively; those are
+not timings of rendered frames. This is a cost for rendering the destination
+rows consistently: .265 showed blank viewports on this input in the separate
+visibility test. Ordinary CPU ranges overlap. No foreground idle sample showed
+a change in the process CPU counter. The median change in resident memory *within*
+a fast gesture was +1.6 MiB on .265 and +2.2 MiB on .270; absolute endpoint
+differences across processes are not evidence of a permanent allocation.
+
+Whole-guest CPU varied even at idle (8.5–42.5% on .265, 7.0–36.5% on .270).
+Fast-window ranges were 23.2–56.8% and 29.4–56.4%, respectively. The test
+supports a difference in Wintodo process work, not a causal estimate of total
+physical-machine CPU. Raw reports and UI trees: `tests/ui/artifacts/scroll-cost/`
+(`1f97c005ccba4dc3aa8c5ff0c4e97e9d` for .265; `102671c6946241419eab23bb92f72149`
+for .270). The ignored `artifacts/rapid-scroll-comparison/Invoke-ScrollCostPair.ps1`
+reruns the two clean installations; its generated guest script and the aggregated
+`scroll-cost-summary.json` are in the same local evidence directory. A preliminary
+setup run that opened the detail pane and changed the viewport width was excluded
+before collecting any measured trials.
