@@ -420,6 +420,9 @@ and aligned, but only the first 26 pixels of Disconnect were above the window
 edge. The test had stopped scrolling at the first visible slice. It now waits
 for both full button heights and saves the actual rectangles at each scroll
 position. Original capture: `tests/ui/artifacts/m13/run-20261125-022327/`.
+The M13-only rerun with this correction stopped before deployment: PowerShell
+Direct did not connect within 300 seconds. The full-button check at 640 DIPs
+remains unverified; no host automation was used.
 
 Signed private x64 DEV `1.0.1.258` uses the same identity and signer as .257.
 Its signature was valid and all 336 package entries passed structure and privacy
