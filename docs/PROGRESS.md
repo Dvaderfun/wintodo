@@ -389,6 +389,17 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 
 ## History
 
+### 2026-11-25 — Hide view-wide keyboard shortcuts on hover (M8)
+
+Hovering over a task could show `Ctrl+N`, the first shortcut on the task list.
+The shell, task list and import wizard now hide WinUI's automatic shortcut
+tooltips. The shortcuts still run, and icon buttons keep their descriptive tips.
+The composer gate checks row and button hover, the Task options tooltip, and
+that `Ctrl+N` moves keyboard focus from a task to the composer.
+
+The x64 Debug solution built with zero warnings or errors. All 763 unit tests
+passed with no skips. WinUI source review found no issues.
+
 ### 2026-11-25 — Preserve row edits when saving from the open detail pane (M8)
 
 The Settings/SDK validation exposed a data-loss bug in the detail editor.

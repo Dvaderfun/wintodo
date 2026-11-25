@@ -12,6 +12,7 @@
     d:DesignHeight="720"
     d:DesignWidth="640"
     IsTabStop="False"
+    KeyboardAcceleratorPlacementMode="Hidden"
     mc:Ignorable="d">
 
     <UserControl.KeyboardAccelerators>

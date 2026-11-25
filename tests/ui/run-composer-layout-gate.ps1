@@ -64,9 +64,11 @@ function Assert-DetailName([string]$Control, [string]$Name) {
 }
 
 function Save-Screenshot {
-    param([string]$Name)
+    param([string]$Name, [switch]$CaptureScreen)
     $path = Join-Path $artifactDirectory $Name
-    Invoke-Ui @('screenshot', '--output', $path) | Out-Null
+    $arguments = @('screenshot', '--output', $path)
+    if ($CaptureScreen) { $arguments += '--capture-screen' }
+    Invoke-Ui $arguments | Out-Null
     if (-not (Test-Path -LiteralPath $path) -or (Get-Item -LiteralPath $path).Length -eq 0) {
         throw "Screenshot not delivered: $path"
     }
@@ -130,6 +132,21 @@ try {
     Test-UI 'Detail open keeps a usable single-row composer' {
         Assert-CompactLayout
         Save-Screenshot '01-detail-open.png'
+    }
+    Test-UI 'Task and button hover omit shortcut popups; Ctrl+N still focuses the composer' {
+        # Verify we can see a real tooltip, including those in separate app popup windows.
+        Invoke-Ui @('hover', 'Todo.Composer.OptionsButton', '--dwell-time', '1200') | Out-Null
+        Invoke-Ui @('wait-for', 'Task options', '--type', 'ToolTip', '-t', '2000') | Out-Null
+        foreach ($target in @($dailyRow, 'Todo.Detail.Due')) {
+            Invoke-Ui @('hover', $target, '--dwell-time', '1200') | Out-Null
+            foreach ($shortcut in @('Ctrl+N', 'Ctrl+L')) {
+                Invoke-Ui @('wait-for', $shortcut, '--type', 'ToolTip', '--gone', '-t', '100') | Out-Null
+            }
+            if ($target -eq $dailyRow) { Save-Screenshot '06-task-hover.png' -CaptureScreen }
+        }
+        Invoke-Ui @('focus', $dailyRow) | Out-Null
+        Invoke-Ui @('send-keys', 'ctrl+vk=0x4E', '--via', 'send-input') | Out-Null
+        Invoke-Ui @('wait-for', 'Todo.List.AddTaskBox', '-p', 'HasKeyboardFocus', '--value', 'True', '-t', '3000') | Out-Null
     }
     Test-UI 'Daily repeat sets an undated task due today and completion advances it to tomorrow' {
         Assert-DetailName 'Due' 'Add due date'

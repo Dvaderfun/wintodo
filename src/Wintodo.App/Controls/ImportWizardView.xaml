@@ -8,6 +8,7 @@
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:settings="using:CommunityToolkit.WinUI.Controls"
     xmlns:viewModels="using:Wintodo.ViewModels"
+    KeyboardAcceleratorPlacementMode="Hidden"
     mc:Ignorable="d">
     <UserControl.KeyboardAccelerators>
         <KeyboardAccelerator Key="Escape" Invoked="OnEscape" />

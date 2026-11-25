@@ -10,6 +10,7 @@
     xmlns:sizers="using:CommunityToolkit.WinUI.Controls"
     xmlns:viewModels="using:Wintodo.ViewModels"
     x:Name="RootPage"
+    KeyboardAcceleratorPlacementMode="Hidden"
     mc:Ignorable="d">
 
     <Page.KeyboardAccelerators>

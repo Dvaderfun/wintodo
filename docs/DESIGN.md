@@ -643,7 +643,9 @@ The circle spring transforms the decorative 20 px circle only; its interactive
 ## 8. Keyboard
 
 Every one of these is a `KeyboardAccelerator` and appears in a shortcuts dialog
-reachable from the list menu and from `Ctrl+?`.
+reachable from the list menu and from `Ctrl+?`. Hovering over a task or button
+does not show a shortcut for the surrounding view. Icon buttons can still show
+a tooltip describing their action.
 
 | Shortcut | Action |
 |---|---|
