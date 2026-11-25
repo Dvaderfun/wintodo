@@ -23,6 +23,8 @@ list and use existing undo and recurrence paths.
 
 **Private DEV installer:** Wintodo DEV **1.0.1.265** is the signed x64 Native
 AOT build of `be50c6e7`. It [prepares task titles during fast scrolling](#2026-11-25--prepare-task-titles-during-fast-scrolling-m8).
+The [installed-package recording](PERF.md#signed-dev-task-list-visibility-during-fast-wheel-scrolling-2026-11-25)
+still shows blank cards when a fast wheel burst outruns the populated viewport.
 It includes .263's [scrollbar placement](#2026-11-25--move-the-task-scrollbar-outside-the-cards-m8)
 and .261's [shortcut tooltip fix](#2026-11-25--hide-view-wide-keyboard-shortcuts-on-hover-m8).
 It retains .258's Windows App SDK 2.7.0, the [Settings viewport correction](#2026-11-25--settings-scroll-viewport-m8)
@@ -390,6 +392,18 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-25 — Reproduce fast wheel blanking on the installed DEV packages (M8)
+
+After repairing VM sign-in, the signed, self-contained x64 DEV packages ran
+without installing another runtime. With 1,000 tasks and ordinary wheel pulses,
+no sampled frame on .263 or .265 lacked a row, but both recordings exceeded
+the 100 ms sampling-gap limit. At eight notches per pulse both versions lost the
+cards during motion. On .265 the scrollbar remained visible across five blank
+samples spanning 157 ms (maximum sampling gap 60 ms). F2/Escape, Enter and
+focus-loss saves by task UID passed on .265. Disabling scrolling placeholders
+and deferring the editor did not by themselves fix the fast-wheel case.
+See [measurements and capture locations](PERF.md#signed-dev-task-list-visibility-during-fast-wheel-scrolling-2026-11-25).
 
 ### 2026-11-25 — Prepare task titles during fast scrolling (M8)
 

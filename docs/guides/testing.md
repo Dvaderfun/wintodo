@@ -84,7 +84,7 @@ never persist it in a user/machine environment variable or shell profile. Run
 one desktop workflow at a time. Local synthetic input moves the real cursor and
 changes focus; contrast and reduced-motion gates also change Windows settings.
 
-Each `run-*-gate.ps1` launches the **already-built Debug x64 output**
+Most `run-*-gate.ps1` scripts launch the **already-built Debug x64 output**
 (`src\Wintodo.App\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64`) with
 `winapp run <folder> --detach --json`, points it at a throwaway database under
 `tests\ui\artifacts\<area>\run-<timestamp>\`, runs the matching suite, then
@@ -213,6 +213,26 @@ dotnet build Wintodo.sln -p:Platform=x64                       # Debug x64: ever
 .\scripts\Invoke-VmGate.ps1 -Gate run-m13-gate.ps1 -GateArguments '-Aot'
 .\scripts\Invoke-VmGate.ps1 -Gate run-m8-gate.ps1 -KeepRunning # leave the VM up to inspect it
 ```
+
+To check the installer itself, point the rapid-scroll gate at a signed x64 DEV
+preview. This skips the framework-dependent Debug warmup. The gate checks the
+package signature, SHA-256, registered identity, and installed executable and
+resources before exercising the packaged app. The 1,000 numbered tasks go in
+the disposable guest's DEV profile. Run once per version from the clean checkpoint:
+
+```powershell
+$preview = 'artifacts/dev-preview/1.0.1.265-be50c6e7'
+.\scripts\Invoke-VmGate.ps1 -Gate run-rapid-scroll-gate.ps1 -NoWarmup -Include $preview `
+    -GateArguments '-InputDirectory',$preview,'-WheelNotchesPerPulse','8','-CheckRename'
+```
+
+Use `1` for regular wheel pulses or `8` for rapid scrolling. Both send 140
+pulses with two direction reversals; compare the same setting across builds.
+`-CheckRename` verifies F2 focus, Escape, Enter and moving focus away on a row
+reached by scrolling. Look in `tests/ui/artifacts/rapid-scroll/<run>/` for
+`scroll.mp4`, the timestamped frame bundle and `results.json`. A gap over
+100 ms in the measured interval fails the recording coverage check even if
+the available frames show no blank list. This is a visibility check, not an FPS benchmark.
 
 `-GateArguments` passes arguments through to the gate. `-Include` adds extra
 repo-relative files or folders to the copy, such as a baseline under `tests/ui/artifacts`:

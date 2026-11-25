@@ -859,3 +859,32 @@ settled list were adjacent samples, 65 ms apart. Windows' original setting
 was restored. The dark handoff and real interrupted-import pixel checks also
 passed. Capture directory and natural-speed `startup-fade.gif`:
 `tests/ui/artifacts/startup-placement/c9f619a3fe0842819618a3ebe107b955/`.
+
+### Signed DEV task-list visibility during fast wheel scrolling (2026-11-25)
+
+WintodoTest, 1,000 numbered tasks, signed x64 Native AOT installers and the same
+wheel sequence (48 pulses down, 28 up, 64 down). The numbers below count actual
+samples inside the input interval, excluding settling. A blank means that none
+of the calibrated titles appeared in the central 90% of the list height. A
+repeated image can occur at several sample times. Frame cadence is not app FPS.
+
+| Signed build | Notches per pulse | First fully visible task, before → after | Samples during input | Samples with no titles | Longest sample gap during input |
+|---|---:|---|---:|---:|---:|
+| .263 | 1 | 1 → 146 | 110 | 0 | 110 ms |
+| .265 | 1 | 1 → 146 | 89 | 0 | 104 ms |
+| .263 | 8 | 1 → 989 | 43 | 38 | 1,575 ms |
+| .265 | 8 | 1 → 989 | 72 | 5 | 60 ms |
+
+The one-notch recordings exceeded the 100 ms coverage limit. Both eight-notch
+recordings directly show a blank viewport with the scrollbar still visible.
+On .265, rows 518–529 are visible at 2,423 ms. Five samples from 2,456 to
+2,613 ms have no cards, titles or checkboxes. At 2,645 ms only four rows are
+visible; at 2,676 ms the bottom of the list is populated. The long gap on .263
+does not erase its observed blank frames, but prevents a duration or speedup
+comparison. On .265, F2 focused the editor after scrolling, Escape discarded
+the draft, and Enter and moving focus saved it against the expected task UID.
+
+Recordings and UI trees: `tests/ui/artifacts/rapid-scroll/` (`ae59ecce6d6d450c9ded37ae3b0c5b88`
+and `da08b969751f45f38f5e6180721ca5ab` for one notch; `cc13a80ce28a44cf8989feb75255566b`
+and `94cde993f86441bb81a2d01764aa087b` for eight). Side-by-side frames:
+`artifacts/rapid-scroll-comparison/fast/contact-sheet.png`.

@@ -1,9 +1,17 @@
 # A second writer for the Suggestions gates' disposable guest databases.
-function Invoke-SuggestionsFixtureSql([string]$Database, [string]$Sql) {
+function Invoke-SuggestionsFixtureSql([string]$Database, [string]$Sql, [switch]$InstalledDevFixture) {
     $fixtureRoot = 'C:\wintodo\tests\ui\artifacts\'
     $path = [IO.Path]::GetFullPath($Database)
-    if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $PSScriptRoot -ine 'C:\wintodo\tests\ui' -or
-        !$path.StartsWith($fixtureRoot, [StringComparison]::OrdinalIgnoreCase) -or
+    $allowed = $path.StartsWith($fixtureRoot, [StringComparison]::OrdinalIgnoreCase)
+    if ($InstalledDevFixture) {
+        $devFamily = 'Wintodo.Hybrid.Dev_1z32rh13vfry6'
+        $local = Join-Path $env:LOCALAPPDATA "Packages\$devFamily\LocalState"
+        $allowed = $path -ieq (Join-Path $local 'wintodo.db') -and
+            (Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Virtual Machine\Guest\Parameters' VirtualMachineName) -ceq 'WintodoTest' -and
+            !(Get-Item -LiteralPath $local).Attributes.HasFlag([IO.FileAttributes]::ReparsePoint) -and
+            !(Get-Item -LiteralPath $path).Attributes.HasFlag([IO.FileAttributes]::ReparsePoint)
+    }
+    if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $PSScriptRoot -ine 'C:\wintodo\tests\ui' -or !$allowed -or
         [IO.Path]::GetExtension($path) -ine '.db' -or !(Test-Path -LiteralPath $path -PathType Leaf)) {
         throw 'Expected an existing, disposable UI gate database in WintodoTest.'
     }
