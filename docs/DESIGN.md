@@ -318,6 +318,12 @@ Suggestions sidebar. Showing or expanding the scrollbar does not resize the card
 The task list reuses offscreen rows and binds each new card's content as it is
 prepared, including during fast scrolling. The inline title editor is created
 only while that task is being renamed.
+When a mouse delivers multiple whole vertical wheel notches together, the task
+list combines their displacement for the next frame and lays out the destination
+cards before that frame is presented. A smaller vertical packet that arrives
+before that frame contributes its distance too. Standalone ordinary wheel steps,
+touch gestures, modified and horizontal scrolling, and the native scrollbars
+keep their normal behavior.
 
 The marker dimensions come from Microsoft's
 [`ListViewBaseItemChrome`](https://github.com/microsoft/microsoft-ui-xaml/blob/main/dxaml/xcp/core/core/elements/ListViewBaseItemChrome.cpp)

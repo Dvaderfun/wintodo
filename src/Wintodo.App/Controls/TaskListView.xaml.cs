@@ -44,7 +44,7 @@ public sealed partial class TaskListView : UserControl
     {
         InitializeComponent();
         TasksList.BringIntoViewRequested += OnTaskBringIntoViewRequested;
-        TasksList.PointerPressed += OnTaskPointerInteraction;
+        TasksList.AddHandler(PointerPressedEvent, new PointerEventHandler(OnTaskWheelPointerPressed), true);
         TasksList.PointerWheelChanged += OnTaskPointerInteraction;
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
@@ -217,6 +217,7 @@ public sealed partial class TaskListView : UserControl
         DependencyPropertyChangedEventArgs args)
     {
         var view = (TaskListView)dependencyObject;
+        view.CancelTaskWheel();
         if (args.OldValue is TaskListViewModel oldViewModel)
         {
             view.ClearObservedTaskItems();
@@ -334,6 +335,7 @@ public sealed partial class TaskListView : UserControl
     private void OnUnloaded(object sender, RoutedEventArgs args)
     {
         _uiSettings.AnimationsEnabledChanged -= OnAnimationsEnabledChanged;
+        DetachTaskWheel();
     }
 
     private void OnAnimationsEnabledChanged(UISettings sender, UISettingsAnimationsEnabledChangedEventArgs args)
@@ -486,6 +488,7 @@ public sealed partial class TaskListView : UserControl
 
     private void OnVisibleItemsUpdating(bool preserveViewport)
     {
+        CancelTaskWheel();
         _savedTransitions ??= TasksList.ItemContainerTransitions;
         TasksList.ItemContainerTransitions = null;
         _isSynchronizingSelection = true;
@@ -570,8 +573,12 @@ public sealed partial class TaskListView : UserControl
         });
     }
 
-    private void OnTaskPanelLoaded(object sender, RoutedEventArgs args) =>
-        UpdateStickyGroupHeaders((ItemsStackPanel)sender);
+    private void OnTaskPanelLoaded(object sender, RoutedEventArgs args)
+    {
+        var panel = (ItemsStackPanel)sender;
+        UpdateStickyGroupHeaders(panel);
+        AttachTaskWheel(panel);
+    }
 
     private void UpdateStickyGroupHeaders(ItemsStackPanel panel)
     {
@@ -930,6 +937,7 @@ public sealed partial class TaskListView : UserControl
 
     private void OnTasksListPreviewKeyDown(object sender, KeyRoutedEventArgs args)
     {
+        CancelTaskWheel();
         ++_updateVersion;
         _restoringTaskFocus = false;
         TasksList.ItemContainerTransitions = _savedTransitions ?? TasksList.ItemContainerTransitions;

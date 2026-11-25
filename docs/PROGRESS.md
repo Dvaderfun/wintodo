@@ -393,6 +393,22 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 
 ## History
 
+### 2026-11-25 — Prepare the visible cards before presenting a large wheel move (M8)
+
+WintodoTest reproduced the blank cards on the signed .265 package. Increasing
+the virtualizing panel's cache, disabling scroll inertia, and using a flat
+collection with native wheel input all still lost rows in the 1,000-task test.
+The wheel reaches the inner scroll viewer's template root even when the pointer
+is between realized cards. The list now accumulates large vertical detents on
+that surface, moves the native viewer without animation, and lets WinUI lay out
+the new rows before presenting the frame. Each ordinary standalone step, the
+scrollbar, nested scroll areas and touch still use their native input paths.
+The grouping, task row and virtualizing panel are unchanged.
+
+The matched Debug experiment passed: first fully visible task 1 → 989, zero
+sampled missing rows and a maximum sample gap of 64 ms
+(`tests/ui/artifacts/rapid-scroll/b2ea9d90f2354982804de8b209e33a19`).
+
 ### 2026-11-25 — Reproduce fast wheel blanking on the installed DEV packages (M8)
 
 After repairing VM sign-in, the signed, self-contained x64 DEV packages ran
