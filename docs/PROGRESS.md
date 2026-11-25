@@ -21,8 +21,9 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.261** is the signed x64 Native
-AOT build of `f84cd54c`. It [hides view-wide shortcut tooltips on hover](#2026-11-25--hide-view-wide-keyboard-shortcuts-on-hover-m8).
+**Private DEV installer:** Wintodo DEV **1.0.1.263** is the signed x64 Native
+AOT build of `4ee6f533`. It [moves the task scrollbar outside the cards](#2026-11-25--move-the-task-scrollbar-outside-the-cards-m8)
+and includes .261's [shortcut tooltip fix](#2026-11-25--hide-view-wide-keyboard-shortcuts-on-hover-m8).
 It retains .258's Windows App SDK 2.7.0, the [Settings viewport correction](#2026-11-25--settings-scroll-viewport-m8)
 and the fix for [loss of saved row edits from the open detail
 pane](#2026-11-25--preserve-row-edits-when-saving-from-the-open-detail-pane-m8).
@@ -401,7 +402,13 @@ Suggestions starts after that space when open; the detail sizer stays separate.
 The x64 Debug solution built with zero warnings or errors; all 763 unit tests
 passed with no skips. WinUI source review found no issues. The layout gate
 now measures the gutter, expanded scrollbar and card alignment both at 960 DIPs
-and with detail open at 1180 DIPs.
+and with detail open at 1180 DIPs. It did not run: PowerShell Direct rejected
+the saved guest credential and the VM runner timed out before deployment.
+Live visual verification remains pending.
+
+Signed private DEV `1.0.1.263` (`4ee6f533`) passed signature, structure and
+privacy checks. The resource index contains the rebuilt task list and shell
+XAML. Installer: `artifacts/dev-preview/1.0.1.263-4ee6f533/`.
 
 ### 2026-11-25 — Hide view-wide keyboard shortcuts on hover (M8)
 
