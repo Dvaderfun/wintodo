@@ -115,14 +115,14 @@ function VisibleAdds($List) {
     Nodes $List.children | Where-Object { $_.automationId -like 'Todo.Suggestions.Add.*' -and !$_.isOffscreen -and
         $_.y -ge $List.y -and $_.y + $_.height -le $List.y + $List.height } | Sort-Object y
 }
-function RailInkGap([string]$Path,$Window,$List,[double]$ButtonRight) {
+function RailInkGap([string]$Path,$Window,$List,[double]$ContentRight) {
     # WinUI can hide the scroll peer from the control tree. Locate the rendered
     # thumb/track as a sustained coloured strip in the right edge of the hover screenshot.
     $bmp = [Drawing.Bitmap]::new($Path)
     try {
         $origin = $Window.elements[0]
         if ($bmp.Width -ne $origin.width -or $bmp.Height -ne $origin.height) { throw 'Hover capture and UIA window bounds differ.' }
-        $reference = [int]($ButtonRight-$origin.x+1)
+        $reference = [int]($ContentRight-$origin.x+1)
         $last = [int]($List.x+$List.width-$origin.x-1)
         $top = [int]($List.y-$origin.y+20*$scale)
         $bottom = [int]($List.y+$List.height-$origin.y-20*$scale)
@@ -138,9 +138,31 @@ function RailInkGap([string]$Path,$Window,$List,[double]$ButtonRight) {
                 } else { $run = 0 }
             }
         }
-        if ($firstInk -ge 0) { return @{gapDip=($firstInk+$origin.x-$ButtonRight)/$scale; widthDip=($lastInk-$firstInk+1)/$scale} }
+        if ($firstInk -ge 0) { return @{gapDip=($firstInk+$origin.x-$ContentRight)/$scale; widthDip=($lastInk-$firstInk+1)/$scale} }
         return $null
     } finally { $bmp.Dispose() }
+}
+function Check-TaskCardRail($Window,[string]$RowId,[string]$Name) {
+    $list = Element $Window 'Todo.List.Tasks'
+    $row = @(Nodes $list.children | Where-Object { $_.type -eq 'ListItem' -and $_.automationId -ceq $RowId -and !$_.isOffscreen })
+    if ($row.Count -ne 1 -or $list.scrollDir -ne 'v') { throw 'Expected a visible card in an overflowing task list.' }
+    $star = Element $Window ($RowId.Replace('Todo.Row.','Todo.Row.ImportanceToggle.'))
+    $menu = Element $Window 'Todo.List.MenuButton'
+    $right = $list.x+$list.width
+    $cardRight = $row[0].x+$row[0].width
+    $starRight = $star.x+$star.width
+    # At the top of the fixture the thumb is near the top of the track.
+    [SuggestionsLayoutNative]::Pointer($hwnd,[int]($right-5*$scale),[int]($list.y+32*$scale),$false)
+    Start-Sleep -Milliseconds 700
+    $ink = RailInkGap (Capture $Name) $Window $list $cardRight
+    $report.measurements.taskCards += [ordered]@{screenshot="$Name.png"; listWidthDip=$list.width/$scale;
+        cardInsetDip=($right-$cardRight)/$scale; starInsetDip=($right-$starRight)/$scale; expandedRail=$ink}
+    if ([math]::Abs($cardRight-$menu.x-$menu.width) -gt 1 -or [math]::Abs($right-$cardRight-24*$scale) -gt 1) {
+        $report.issues += "Card does not align with the list header and leave its 24-DIP scrollbar gutter in $Name."
+    }
+    if ($starRight -gt $cardRight -or !$ink -or $ink.widthDip -lt 4 -or $ink.gapDip -lt 4-1/$scale) {
+        $report.issues += "Expanded task scrollbar must be visible and clear of the entire card and star in $Name."
+    }
 }
 Add-Type -AssemblyName System.Drawing
 Add-Type @'
@@ -227,6 +249,17 @@ SELECT count(*) FROM tasks WHERE uid LIKE 'a0000000-0000-4000-8000-%';
     $report.measurements.tasksCommandGapDip = $gap/$scale
     Capture '01-tasks' | Out-Null
     if ([math]::Abs($gap-8*$scale) -gt 1) { $report.issues += "Sort to list menu: $gap px. Expected 8 DIPs when the bulb is absent." }
+
+    $report.measurements.taskCards = @()
+    $taskRow = 'Todo.Row.a0000000-0000-4000-8000-000000000001'
+    Check-TaskCardRail $closed $taskRow '01-task-rail'
+    Set-Width 1180
+    Ui @('click',$taskRow,'--type','ListItem') | Out-Null
+    Ui @('wait-for','Todo.Detail.Title','--value','Suggestion 01','-t','5000') | Out-Null
+    Check-TaskCardRail (Snapshot '01-task-detail') $taskRow '01-task-detail-rail'
+    Ui @('invoke','Todo.Detail.Close') | Out-Null
+    Ui @('wait-for','Todo.Detail.Title','--gone','-t','5000') | Out-Null
+    Set-Width 960
 
     Ui @('invoke','Todo.Nav.MyDay') | Out-Null
     Ui @('wait-for','Todo.Row.a0000000-0000-4000-8000-000000000000','-t','10000') | Out-Null

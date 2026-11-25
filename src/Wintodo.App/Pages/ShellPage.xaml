@@ -469,6 +469,7 @@
                             Padding="24,16,24,0">
                             <controls:TaskListView
                                 x:Name="TaskList"
+                                Margin="0,0,-24,0"
                                 Loaded="OnTaskListLoaded"
                                 ViewModel="{x:Bind ViewModel.TaskList, Mode=OneWay}"
                                 Visibility="{x:Bind controls:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}" />

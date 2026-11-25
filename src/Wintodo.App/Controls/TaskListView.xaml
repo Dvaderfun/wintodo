@@ -244,6 +244,8 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
+            <!-- The task list uses the shell's trailing inset for its native scrollbar. -->
+            <ColumnDefinition Width="24" />
             <ColumnDefinition
                 MaxWidth="348"
                 Width="{x:Bind local:TaskListView.SuggestionsColumnWidth(ViewModel.IsSuggestionsOpen), Mode=OneWay}" />
@@ -796,15 +798,22 @@
         <Grid
             x:Name="TaskContent"
             Grid.Row="4"
+            Grid.ColumnSpan="2"
             Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.IsTaskListVisible), Mode=OneWay}">
             <Grid.RowDefinitions>
                 <!-- Centering in the upper 80% anchors the empty state at 40% without clipping its caption. -->
                 <RowDefinition Height="4*" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="24" />
+            </Grid.ColumnDefinitions>
             <ListView
                 x:Name="TasksList"
                 Grid.RowSpan="2"
+                Grid.ColumnSpan="2"
+                Padding="0,0,24,0"
                 AutomationProperties.AutomationId="Todo.List.Tasks"
                 AllowDrop="{x:Bind ViewModel.CanReorderTasks, Mode=OneWay}"
                 CanDragItems="True"
@@ -930,8 +939,8 @@
         <Border
             x:Name="SuggestionsSidebar"
             Grid.RowSpan="5"
-            Grid.Column="1"
-            Margin="12,-16,-24,0"
+            Grid.Column="2"
+            Margin="0,-16,0,0"
             Padding="16,12,0,0"
             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
             BorderThickness="1,0,0,0"

@@ -312,6 +312,10 @@ fill) + `ContentPresenter`, with `CommonStates`, `DisabledStates`, and
 | Activation | Clicking a row selects it and opens detail; Ctrl+click toggles membership and Esc clears selection |
 | Drag-over | 2 px accent insertion line, 4 px inset |
 
+Cards and group headers align with the composer. The native vertical scrollbar
+uses the 24-DIP space after the cards, before the edge of the pane or the
+Suggestions sidebar. Showing or expanding the scrollbar does not resize the cards.
+
 The marker dimensions come from Microsoft's
 [`ListViewBaseItemChrome`](https://github.com/microsoft/microsoft-ui-xaml/blob/main/dxaml/xcp/core/core/elements/ListViewBaseItemChrome.cpp)
 (`s_selectionIndicatorSize`, `s_selectionIndicatorMargin` and

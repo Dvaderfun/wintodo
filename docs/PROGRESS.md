@@ -389,6 +389,20 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 
 ## History
 
+### 2026-11-25 — Move the task scrollbar outside the cards (M8)
+
+WinUI overlays its vertical scrollbar on the list. A saved task-list capture
+had the card and the viewport ending at the same pixel, leaving the scrollbar
+on the card beside the star. The list now uses the pane's existing 24-DIP
+right inset for its scrollbar. Cards, group headers and the composer keep
+their width and alignment whether the scrollbar is hidden or expanded.
+Suggestions starts after that space when open; the detail sizer stays separate.
+
+The x64 Debug solution built with zero warnings or errors; all 763 unit tests
+passed with no skips. WinUI source review found no issues. The layout gate
+now measures the gutter, expanded scrollbar and card alignment both at 960 DIPs
+and with detail open at 1180 DIPs.
+
 ### 2026-11-25 — Hide view-wide keyboard shortcuts on hover (M8)
 
 Hovering over a task could show `Ctrl+N`, the first shortcut on the task list.
