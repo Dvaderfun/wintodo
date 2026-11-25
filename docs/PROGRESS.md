@@ -419,6 +419,16 @@ the package resource index byte for byte and differ from `.263`. The package
 retains the DEV identity and signer for an in-place update. Installer:
 `artifacts/dev-preview/1.0.1.265-be50c6e7/Wintodo-DEV-1.0.1.265-x64.msix`.
 
+**VM follow-up:** The guest sign-in screen confirmed the `tester` password had
+expired. After rotation, cold boot signed in automatically and a restore of
+the new `clean` checkpoint accepted the normal saved credential with an
+unlocked desktop. The retry copied the payload and ran the gate scripts in
+the guest. Both ordinary Debug scroll launches and the inline-edit launch
+stopped at package registration: the guest lacks a compatible x64/neutral
+`Microsoft.WindowsAppRuntime.2` version `2.7.0.0` or later (`0x80073CF3`).
+No visual result was obtained. This was the framework-dependent Debug layout;
+the signed self-contained DEV installer was not exercised in this attempt.
+
 ### 2026-11-25 — Move the task scrollbar outside the cards (M8)
 
 WinUI overlays its vertical scrollbar on the list. A saved task-list capture
