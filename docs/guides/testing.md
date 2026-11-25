@@ -221,15 +221,17 @@ resources before exercising the packaged app. The 1,000 numbered tasks go in
 the disposable guest's DEV profile. Run once per version from the clean checkpoint:
 
 ```powershell
-$preview = 'artifacts/dev-preview/1.0.1.265-be50c6e7'
+$preview = 'artifacts/dev-preview/1.0.1.270-650849df'
 .\scripts\Invoke-VmGate.ps1 -Gate run-rapid-scroll-gate.ps1 -NoWarmup -Include $preview `
-    -GateArguments '-InputDirectory',$preview,'-WheelNotchesPerPulse','8','-CheckRename'
+    -GateArguments '-InputDirectory',$preview,'-WheelNotchesPerPulse','8','-CheckRename','-CheckWheelDistance'
 ```
 
 Use `1` for regular wheel pulses or `8` for rapid scrolling. Both send 140
 pulses with two direction reversals; compare the same setting across builds.
 `-CheckRename` verifies F2 focus, Escape, Enter and moving focus away on a row
-reached by scrolling. Look in `tests/ui/artifacts/rapid-scroll/<run>/` for
+reached by scrolling. `-CheckWheelDistance` checks that a short burst and a
+reversal move the expected distance without reaching an end of the list, then
+verifies that an ordinary wheel step still moves. Look in `tests/ui/artifacts/rapid-scroll/<run>/` for
 `scroll.mp4`, the timestamped frame bundle and `results.json`. A gap over
 100 ms in the measured interval fails the recording coverage check even if
 the available frames show no blank list. This is a visibility check, not an FPS benchmark.

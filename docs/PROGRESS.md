@@ -21,10 +21,13 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.265** is the signed x64 Native
-AOT build of `be50c6e7`. It [prepares task titles during fast scrolling](#2026-11-25--prepare-task-titles-during-fast-scrolling-m8).
-The [installed-package recording](PERF.md#signed-dev-task-list-visibility-during-fast-wheel-scrolling-2026-11-25)
-still shows blank cards when a fast wheel burst outruns the populated viewport.
+**Private DEV installer:** Wintodo DEV **1.0.1.270** is the signed x64 Native
+AOT build of `650849df`. During a large vertical mouse-wheel jump it
+[prepares the visible cards before painting](#2026-11-25--prepare-the-visible-cards-before-presenting-a-large-wheel-move-m8).
+In the [installed-package tests](PERF.md#signed-dev-task-list-visibility-during-fast-wheel-scrolling-2026-11-25),
+the same fast wheel sequence that blanked .265 reached task 989 on .270 with
+no missing rows in either the repeat video or the independent title capture. Ordinary scrolling,
+wheel distance in both directions and inline title editing also passed.
 It includes .263's [scrollbar placement](#2026-11-25--move-the-task-scrollbar-outside-the-cards-m8)
 and .261's [shortcut tooltip fix](#2026-11-25--hide-view-wide-keyboard-shortcuts-on-hover-m8).
 It retains .258's Windows App SDK 2.7.0, the [Settings viewport correction](#2026-11-25--settings-scroll-viewport-m8)
@@ -392,6 +395,22 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-25 — Verify the fast-wheel correction in signed DEV 1.0.1.270 (M8)
+
+The x64 solution build passed with zero warnings, and all 763 unit tests passed
+with no skips. The signed x64 Native AOT DEV package from `650849df` passed
+signature, structure and privacy checks (336 payload files). Installer SHA-256:
+`9865397bb3081090d5914fd26d902ed7fa52beae66659528713947b3607fb372`.
+
+WintodoTest ran the installed build against 1,000 numbered tasks. The independent
+fast-wheel title capture, ordinary-wheel video and short-distance reversal checks
+passed. The first full fast-wheel video had no missing titles but a 304 ms capture
+gap; it did not meet the 100 ms coverage requirement. On a fresh VM restore,
+the repeat video passed with no missing rows in 110 samples through settling
+and a 96 ms maximum gap. The tracked short-distance test also passed. F2 focused the right task,
+Escape discarded its draft, and both Enter and leaving the editor saved it. See
+the [measurements and recordings](PERF.md#signed-dev-task-list-visibility-during-fast-wheel-scrolling-2026-11-25).
 
 ### 2026-11-25 — Prepare the visible cards before presenting a large wheel move (M8)
 

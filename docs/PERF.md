@@ -872,10 +872,13 @@ repeated image can occur at several sample times. Frame cadence is not app FPS.
 |---|---:|---|---:|---:|---:|
 | .263 | 1 | 1 → 146 | 110 | 0 | 110 ms |
 | .265 | 1 | 1 → 146 | 89 | 0 | 104 ms |
+| .270 | 1 | 1 → 146 | 89 | 0 | 92 ms |
 | .263 | 8 | 1 → 989 | 43 | 38 | 1,575 ms |
 | .265 | 8 | 1 → 989 | 72 | 5 | 60 ms |
+| .270 (first video) | 8 | 1 → 989 | 99 | 0 | 304 ms |
+| .270 (repeat video) | 8 | 1 → 989 | 102 | 0 | 96 ms |
 
-The one-notch recordings exceeded the 100 ms coverage limit. Both eight-notch
+The .263 and .265 one-notch recordings exceeded the 100 ms coverage limit. Their eight-notch
 recordings directly show a blank viewport with the scrollbar still visible.
 On .265, rows 518–529 are visible at 2,423 ms. Five samples from 2,456 to
 2,613 ms have no cards, titles or checkboxes. At 2,645 ms only four rows are
@@ -888,3 +891,42 @@ Recordings and UI trees: `tests/ui/artifacts/rapid-scroll/` (`ae59ecce6d6d450c9d
 and `da08b969751f45f38f5e6180721ca5ab` for one notch; `cc13a80ce28a44cf8989feb75255566b`
 and `94cde993f86441bb81a2d01764aa087b` for eight). Side-by-side frames:
 `artifacts/rapid-scroll-comparison/fast/contact-sheet.png`.
+
+On the self-contained Debug layout the same eight-notch input also exposed
+missing rows with twice the default cache (46 affected samples), scroll
+inertia off (62), and a flat collection with native input (15). Forcing layout
+after a native offset change still lost rows in 43 samples with a 62 ms maximum
+sample gap. In a matched instrumented run, some wheel events hit the internal
+scroll viewer's template grid between cards and did not route through the
+content presenter. Applying the combined vertical distance on that grid,
+without animation, then laying out the destination before painting produced
+zero missing rows in 81 samples through settling (44 distinct title patterns;
+64 ms maximum gap; tasks 1 → 989). Debug experiment ID:
+`b2ea9d90f2354982804de8b209e33a19`. The sample counts are observations from
+individual runs, not frame-rate or relative-speed measurements.
+
+With signed .270 (`650849df`), eight-notch input again took the first fully
+visible task from 1 to 989. The first full-list video had no missing rows in
+107 samples through settling, but its 304 ms maximum gap exceeded the 100 ms
+limit, so that recording alone is inconclusive. An independent run sampled
+the displayed title column without encoding video during input. It passed:
+83 samples through settling, 55 distinct title images, at least 11 title bands
+in every sample, no missing rows and an 81.53 ms maximum capture gap. The two
+run IDs are `dde453912e5344bc9b435c8df58ff69f` and `6e13981051374aa784152617d6d7194d`.
+The inputs here are mouse-wheel packets; no physical touchpad was measured.
+
+Ordinary one-notch input on .270 passed: tasks 1 → 146, 106 samples through
+settling with no missing rows and a maximum gap of 92 ms (`f95f03e6cf8e46d3b2c8fcd8c2e340d8`).
+With a 620 px viewport and the guest's three-line wheel setting, four eight-notch
+packets moved exactly 2,976 px down and two moved 1,488 px back up, both away
+from the list ends. A native one-notch step then moved 93 px down. F2, Escape,
+Enter and the focus-loss save passed for the expected task in both the fast video
+and the distance run (`375e7757b1204931a243cd33ef6686c2`).
+
+On a fresh restore, the tracked gate combined the full fast-wheel recording,
+inline edits and the short-distance regression on the same signed package.
+All passed: 110 samples through settling (49 distinct title patterns), zero
+missing rows, maximum gap 96 ms. The three measured distances repeated exactly.
+Video, frame bundle and report: `tests/ui/artifacts/rapid-scroll/b6cd5db4b14149e9b5d8d81b8debbad1/`.
+Frames from .265 and this passing recording are compared in
+`artifacts/rapid-scroll-comparison/dev265-vs-dev270-verified/contact-sheet.png`.

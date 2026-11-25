@@ -24,6 +24,16 @@ public static class RapidScrollWheel
     [DllImport("user32.dll")] static extern bool GetCursorPos(out Point point);
     [DllImport("user32.dll")] static extern bool SetCursorPos(int x, int y);
     [DllImport("user32.dll", SetLastError = true)] static extern uint SendInput(uint count, Input[] input, int size);
+    [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+    static extern bool ReadSystemParameter(uint action, uint unused, out uint value, uint flags);
+
+    public static uint GetSystemWheelScrollLines()
+    {
+        const uint SpiGetWheelScrollLines = 0x0068;
+        if (!ReadSystemParameter(SpiGetWheelScrollLines, 0, out uint lines, 0))
+            throw new InvalidOperationException("Cannot read the Windows wheel setting: " + Marshal.GetLastWin32Error());
+        return lines;
+    }
 
     static void CheckTarget(uint expectedPid, Point point)
     {
@@ -35,6 +45,18 @@ public static class RapidScrollWheel
     }
 
     public static int Run(int expectedPid, int screenX, int screenY, int notchesPerPulse)
+        => Send(expectedPid, screenX, screenY, notchesPerPulse, new[] { -48, 28, -64 });
+
+    // Positive wheel deltas scroll up; a distance check sends at most four packets per leg.
+    public static int SendBurst(int expectedPid, int screenX, int screenY, int signedNotchesPerPacket, int packets)
+    {
+        if (signedNotchesPerPacket is not (-8 or -1 or 1 or 8) || packets < 1 || packets > 4)
+            throw new ArgumentOutOfRangeException(nameof(packets), "Expected 1–4 packets of ±1 or ±8 notches.");
+        return Send(expectedPid, screenX, screenY, Math.Abs(signedNotchesPerPacket),
+            new[] { Math.Sign(signedNotchesPerPacket) * packets });
+    }
+
+    static int Send(int expectedPid, int screenX, int screenY, int notchesPerPulse, int[] bursts)
     {
         if (notchesPerPulse != 1 && notchesPerPulse != 8)
             throw new ArgumentOutOfRangeException("notchesPerPulse", "Expected one or eight notches per pulse.");
@@ -56,7 +78,7 @@ public static class RapidScrollWheel
             var input = new Input[1]; // INPUT_MOUSE
             input[0].Mouse.Flags = 0x0800; // MOUSEEVENTF_WHEEL
             int size = Marshal.SizeOf(typeof(Input)), sent = 0;
-            foreach (int notches in new[] { -48, 28, -64 })
+            foreach (int notches in bursts)
             {
                 input[0].Mouse.Data = Math.Sign(notches) * notchesPerPulse * 120; // WHEEL_DELTA
                 for (int n = 0; n < Math.Abs(notches); n++)

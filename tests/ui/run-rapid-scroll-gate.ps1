@@ -4,6 +4,7 @@ param(
     [Parameter(ParameterSetName='Debug')][string]$AppOutput = 'src/Wintodo.App/bin/x64/Debug/net10.0-windows10.0.26100.0/win-x64',
     [Parameter(Mandatory,ParameterSetName='Dev')][string]$InputDirectory,
     [switch]$CheckRename,
+    [switch]$CheckWheelDistance,
     [ValidateSet('1','8')][int]$WheelNotchesPerPulse = 1
 )
 $ErrorActionPreference = 'Stop'
@@ -240,6 +241,14 @@ SELECT printf('d0000000-0000-4000-8000-%012d',n), (SELECT id FROM lists WHERE is
         try { Test-Rename $report.firstAfter }
         catch { $renameError = $_.Exception.Message; $report.rename = "FAIL: $renameError" }
     }
+    # Capture and optional F2 verification are complete; subsequent input cannot change the video.
+    $distanceError = $null
+    if ($CheckWheelDistance) {
+        try {
+            . (Join-Path $PSScriptRoot 'Test-RapidScrollDistance.ps1')
+            Test-RapidScrollDistance $appPid $report
+        } catch { $distanceError = $_.Exception.Message; $report.wheelDistance = "FAIL: $distanceError" }
+    }
     $report.rowDelta = [int]$report.firstAfter.Substring(0,4) - [int]$report.firstBefore.Substring(0,4)
     if ([Math]::Abs($report.rowDelta) -lt 2*$before.titles.Count) {
         throw 'Wheel input did not move at least two screens of tasks.'
@@ -315,6 +324,7 @@ SELECT printf('d0000000-0000-4000-8000-%012d',n), (SELECT id FROM lists WHERE is
         throw 'Insufficient motion, sampling coverage, or settling time; inspect the frame bundle.'
     }
     $report.scroll = 'PASS'
+    if ($distanceError) { throw "Scroll recording passed, but the wheel distance check failed: $distanceError" }
     if ($renameError) { throw "Scroll passed, but the inline edit check failed: $renameError" }
     $report.status = 'PASS'
 } catch {
