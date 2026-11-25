@@ -21,10 +21,11 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.257** is the signed x64 Native
-AOT build of `71bf90e0`. It uses Windows App SDK 2.7.0 and has the
+**Private DEV installer:** Wintodo DEV **1.0.1.258** is the signed x64 Native
+AOT build of `1f56f770`. It uses Windows App SDK 2.7.0 and has the
 [Settings viewport correction](#2026-11-25--settings-scroll-viewport-m8).
-Do not use .257 with important tasks: a detail edit can overwrite a saved row edit.
+It supersedes .257, fixing the [loss of saved row edits from the open detail
+pane](#2026-11-25--preserve-row-edits-when-saving-from-the-open-detail-pane-m8).
 The window opens at its saved size, shows Glide while
 the local view loads, then fades the artwork over the ready list for 240 ms.
 Windows users with animation effects turned off get the immediate handoff.
@@ -404,6 +405,27 @@ The focused UI gate checks the same task UID in SQLite before and after the
 Tomorrow action. The first attempt to rerun the Settings and CalDAV harness
 checks stopped before deployment because PowerShell Direct did not become
 available within five minutes.
+
+The reviewed x64 Debug build then passed the focused regression in WintodoTest:
+the same SQLite row kept its new title, priority 1 and My Day date after
+Tomorrow set its due date. Settings passed 13/13, including the reminder
+picker, headings, save-failure recovery and scroll viewport. Design and
+accessibility passed 17/17. Evidence under `tests/ui/artifacts/`:
+`detail-row-edits/run-20261125-021959`, `m8/run-20261125-022013` and
+`settings/run-20261125-022213`.
+
+The same guest passed 13/14 CalDAV checks, including all sync operations and
+the 1160-DIP layout. At 640 DIPs, the screenshot showed the buttons stacked
+and aligned, but only the first 26 pixels of Disconnect were above the window
+edge. The test had stopped scrolling at the first visible slice. It now waits
+for both full button heights and saves the actual rectangles at each scroll
+position. Original capture: `tests/ui/artifacts/m13/run-20261125-022327/`.
+
+Signed private x64 DEV `1.0.1.258` uses the same identity and signer as .257.
+Its signature was valid and all 336 package entries passed structure and privacy
+inspection. Package SHA-256:
+`b4a2dae170c84f3442b34e9eda5ffc17986895ed50e28f3116896f6aed83a587`.
+The installer and checks are under `artifacts/dev-preview/1.0.1.258-1f56f770/`.
 
 ### 2026-11-25 — Settings scroll viewport (M8)
 

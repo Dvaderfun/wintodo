@@ -199,6 +199,7 @@ function Assert-SyncLayout([int]$WindowWidth) {
         $scroll = $viewer.GetCurrentPattern([System.Windows.Automation.ScrollPattern]::Pattern)
         $nowPeer = Get-LayoutPeer 'Todo.Settings.Sync.Now'
         $disconnectPeer = Get-LayoutPeer 'Todo.Settings.Sync.Disconnect'
+        $samples = [Collections.Generic.List[object]]::new()
         # Use the ScrollViewer's own pattern and raw UIA bounds, including offscreen
         # controls. Both actions must be fully within the same live viewport.
         for ($percent = 0; $percent -le 100; $percent += 5) {
@@ -210,10 +211,16 @@ function Assert-SyncLayout([int]$WindowWidth) {
             $viewport = Get-LayoutBounds $viewer
             $now = Get-LayoutBounds $nowPeer
             $disconnect = Get-LayoutBounds $disconnectPeer
-            if (!$now.isOffscreen -and !$disconnect.isOffscreen -and $now.height -gt 0 -and $disconnect.height -gt 0 -and
+            $samples.Add([ordered]@{ scrollPercent = $scroll.Current.VerticalScrollPercent; viewport = $viewport; syncNow = $now; disconnect = $disconnect })
+            # UIA clips BoundingRectangle to the viewport. A newly visible slice of
+            # Disconnect can already end at the viewport bottom but is not a full button.
+            if (!$now.isOffscreen -and !$disconnect.isOffscreen -and
+                $now.height -ge (32 * $scale - 1) -and $disconnect.height -ge (32 * $scale - 1) -and
                 $now.y -ge $viewport.y -and $disconnect.y -ge $viewport.y -and
                 [Math]::Max(($now.y + $now.height), ($disconnect.y + $disconnect.height)) -le $viewport.y + $viewport.height) { break }
         }
+        [ordered]@{ windowWidthDip = $WindowWidth; scale = $scale; window = $actual; samples = $samples.ToArray() } |
+            ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $ArtifactDirectory "02b-sync-account-${WindowWidth}dip.json")
         Take-Screenshot "02b-sync-account-${WindowWidth}dip.png"
         foreach ($button in @($now, $disconnect)) {
             if ($button.isOffscreen -or $button.width -lt (152 * $scale - 1) -or $button.height -lt (32 * $scale - 1) -or
