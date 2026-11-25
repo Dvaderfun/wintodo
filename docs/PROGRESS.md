@@ -15,18 +15,16 @@ Row completion and My Day edits update the list and open detail; all-day tasks
 keep their calendar date in Planned and in accessible row labels. The Store
 version below predates these changes.
 
-The working copy also [prepares task titles during fast scrolling](#2026-11-25--prepare-task-titles-during-fast-scrolling-m8).
-This change is not in the DEV `.263` installer.
-
 My Day Suggestions (UX-19) is implemented under ADR-025.
 The right-hand sidebar opens from the header beside the overflow menu and lists overdue
 tasks under Earlier and future tasks under Later. Recently added appears immediately
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.263** is the signed x64 Native
-AOT build of `4ee6f533`. It [moves the task scrollbar outside the cards](#2026-11-25--move-the-task-scrollbar-outside-the-cards-m8)
-and includes .261's [shortcut tooltip fix](#2026-11-25--hide-view-wide-keyboard-shortcuts-on-hover-m8).
+**Private DEV installer:** Wintodo DEV **1.0.1.265** is the signed x64 Native
+AOT build of `be50c6e7`. It [prepares task titles during fast scrolling](#2026-11-25--prepare-task-titles-during-fast-scrolling-m8).
+It includes .263's [scrollbar placement](#2026-11-25--move-the-task-scrollbar-outside-the-cards-m8)
+and .261's [shortcut tooltip fix](#2026-11-25--hide-view-wide-keyboard-shortcuts-on-hover-m8).
 It retains .258's Windows App SDK 2.7.0, the [Settings viewport correction](#2026-11-25--settings-scroll-viewport-m8)
 and the fix for [loss of saved row edits from the open detail
 pane](#2026-11-25--preserve-row-edits-when-saving-from-the-open-detail-pane-m8).
@@ -414,6 +412,12 @@ and automation IDs; no open findings. The VM runner restored `WintodoTest`
 but PowerShell Direct did not open a session in 300 s. Neither the original
 versus updated scroll recording nor the inline-edit gate ran. Visual and
 scroll smoothness results remain pending.
+
+Signed DEV `1.0.1.265` (`be50c6e7`) passed signature, structure and privacy
+checks. Both compiled controls (`TaskListView.xbf` and `TaskRow.xbf`) match
+the package resource index byte for byte and differ from `.263`. The package
+retains the DEV identity and signer for an in-place update. Installer:
+`artifacts/dev-preview/1.0.1.265-be50c6e7/Wintodo-DEV-1.0.1.265-x64.msix`.
 
 ### 2026-11-25 — Move the task scrollbar outside the cards (M8)
 
