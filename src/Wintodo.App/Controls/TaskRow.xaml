@@ -183,13 +183,13 @@
                 Visibility="{x:Bind local:TaskRow.InverseBoolToVisibility(ViewModel.IsEditingTitle), Mode=OneWay}" />
             <TextBox
                 x:Name="TaskTitleEditBox"
+                x:Load="{x:Bind ViewModel.IsEditingTitle, Mode=OneWay}"
                 x:Uid="TaskEditTitleBox"
                 AutomationProperties.AutomationId="{x:Bind ViewModel.EditAutomationId, Mode=OneWay}"
                 BorderThickness="0"
                 KeyDown="OnTaskTitleEditBoxKeyDown"
                 LostFocus="OnTaskTitleEditBoxLostFocus"
-                Text="{x:Bind ViewModel.EditTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                Visibility="{x:Bind local:TaskRow.BoolToVisibility(ViewModel.IsEditingTitle), Mode=OneWay}" />
+                Text="{x:Bind ViewModel.EditTitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
             <TextBlock
                 x:Name="MetadataText"
                 Foreground="{ThemeResource TextFillColorSecondaryBrush}"

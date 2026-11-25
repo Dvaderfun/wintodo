@@ -63,9 +63,25 @@ try {
     Invoke-Main @('send-keys','ctrl+vk=0x54','--via','send-input')
     Wait-Sql "SELECT my_day_date FROM tasks WHERE uid='$uid'" '2026-11-25' | Out-Null
     Invoke-Main @('send-keys','f2','--via','send-input')
-    Invoke-Main @('wait-for',$editor,'-t','5000')
+    Invoke-Main @('wait-for',$editor,'-p','HasKeyboardFocus','--value','True','-t','5000')
+    Invoke-Main @('set-value',$editor,'Discard this draft')
+    Invoke-Main @('send-keys','escape','--via','send-input')
+    Invoke-Main @('wait-for',$editor,'--gone','-t','5000')
+    Wait-Sql $fields 'Before row edit|1||2026-11-25' | Out-Null
+    Invoke-Main @('focus',$row)
+    Invoke-Main @('send-keys','f2','--via','send-input')
+    Invoke-Main @('wait-for',$editor,'--value','Before row edit','-t','5000')
+    Invoke-Main @('wait-for',$editor,'-p','HasKeyboardFocus','--value','True','-t','5000')
+    Invoke-Main @('set-value',$editor,'Saved with Enter')
+    Invoke-Main @('send-keys','enter','--via','send-input')
+    Invoke-Main @('wait-for',$editor,'--gone','-t','5000')
+    Wait-Sql $fields 'Saved with Enter|1||2026-11-25' | Out-Null
+    Invoke-Main @('focus',$row)
+    Invoke-Main @('send-keys','f2','--via','send-input')
+    Invoke-Main @('wait-for',$editor,'-p','HasKeyboardFocus','--value','True','-t','5000')
     Invoke-Main @('set-value',$editor,'After row edit')
-    Invoke-Main @('send-keys','enter','--target',$editor,'--via','send-input')
+    Invoke-Main @('focus','Todo.List.AddTaskBox')
+    Invoke-Main @('wait-for',$editor,'--gone','-t','5000')
     $result.beforeDue = Wait-Sql $fields 'After row edit|1||2026-11-25'
 
     Invoke-Main @('invoke','Todo.Detail.Due')

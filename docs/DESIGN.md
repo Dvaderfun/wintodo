@@ -315,6 +315,9 @@ fill) + `ContentPresenter`, with `CommonStates`, `DisabledStates`, and
 Cards and group headers align with the composer. The native vertical scrollbar
 uses the 24-DIP space after the cards, before the edge of the pane or the
 Suggestions sidebar. Showing or expanding the scrollbar does not resize the cards.
+The task list reuses offscreen rows and binds each new card's content as it is
+prepared, including during fast scrolling. The inline title editor is created
+only while that task is being renamed.
 
 The marker dimensions come from Microsoft's
 [`ListViewBaseItemChrome`](https://github.com/microsoft/microsoft-ui-xaml/blob/main/dxaml/xcp/core/core/elements/ListViewBaseItemChrome.cpp)

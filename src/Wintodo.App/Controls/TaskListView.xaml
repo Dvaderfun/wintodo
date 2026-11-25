@@ -830,7 +830,8 @@
                 ItemTemplate="{StaticResource TaskRowTemplate}"
                 PreviewKeyDown="OnTasksListPreviewKeyDown"
                 SelectionChanged="OnTaskSelectionChanged"
-                SelectionMode="Extended">
+                SelectionMode="Extended"
+                ShowsScrollingPlaceholders="False">
                 <ListView.ItemsPanel>
                     <ItemsPanelTemplate>
                         <ItemsStackPanel

@@ -67,11 +67,6 @@ public sealed partial class TaskRow : UserControl
         return isCompleted ? HasText(completionDateText) : Visibility.Collapsed;
     }
 
-    public static Visibility BoolToVisibility(bool value)
-    {
-        return value ? Visibility.Visible : Visibility.Collapsed;
-    }
-
     public static Visibility InverseBoolToVisibility(bool value)
     {
         return value ? Visibility.Collapsed : Visibility.Visible;
@@ -149,12 +144,16 @@ public sealed partial class TaskRow : UserControl
             DispatcherQueue.TryEnqueue(ApplySearchHighlight);
         }
         else if (args.PropertyName == nameof(TaskItemViewModel.IsEditingTitle)
-                 && ViewModel.IsEditingTitle)
+                 && sender is TaskItemViewModel { IsEditingTitle: true } editingTask)
         {
             DispatcherQueue.TryEnqueue(() =>
             {
-                TaskTitleEditBox.Focus(FocusState.Programmatic);
-                TaskTitleEditBox.SelectAll();
+                if (!IsLoaded || !ReferenceEquals(ViewModel, editingTask) || !editingTask.IsEditingTitle) return;
+                if (FindName(nameof(TaskTitleEditBox)) is TextBox editor)
+                {
+                    editor.Focus(FocusState.Programmatic);
+                    editor.SelectAll();
+                }
             });
         }
         else if (args.PropertyName == nameof(TaskItemViewModel.IsCompleted))
@@ -248,7 +247,8 @@ public sealed partial class TaskRow : UserControl
 
     private void OnTaskTitleEditBoxLostFocus(object sender, RoutedEventArgs args)
     {
-        if (ViewModel.IsEditingTitle
+        // An unloaded editor can lose focus after the row has started another edit.
+        if (ReferenceEquals(sender, TaskTitleEditBox) && ViewModel.IsEditingTitle
             && ViewModel.CommitTitleEditCommand.CanExecute(null))
         {
             ViewModel.CommitTitleEditCommand.Execute(null);

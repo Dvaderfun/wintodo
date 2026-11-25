@@ -15,6 +15,9 @@ Row completion and My Day edits update the list and open detail; all-day tasks
 keep their calendar date in Planned and in accessible row labels. The Store
 version below predates these changes.
 
+The working copy also [prepares task titles during fast scrolling](#2026-11-25--prepare-task-titles-during-fast-scrolling-m8).
+This change is not in the DEV `.263` installer.
+
 My Day Suggestions (UX-19) is implemented under ADR-025.
 The right-hand sidebar opens from the header beside the overflow menu and lists overdue
 tasks under Earlier and future tasks under Later. Recently added appears immediately
@@ -389,6 +392,28 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-25 — Prepare task titles during fast scrolling (M8)
+
+The custom task card has no placeholder visual. With scrolling placeholders
+enabled, [WinUI 2.7 defers assigning container content](https://github.com/microsoft/microsoft-ui-xaml/blob/1b5b1a0ccc05ce5c8b5931dc303666975b57f498/src/dxaml/xcp/dxaml/lib/ListViewBase_Partial_ContainerPhase.cpp#L186-L211).
+`TasksList` now asks for the actual content as each container is prepared;
+virtualization, reuse and cache size are unchanged. `TaskRow` creates its
+title editor on demand and checks that deferred focus still belongs to the
+same edit when a row is reused. A lost-focus event from a discarded editor
+cannot commit a later draft.
+
+The rapid-scroll gate records the title column of 1,000 numbered tasks
+during wheel bursts; the inline-edit gate also covers keyboard focus,
+cancel/reopen, Enter and moving focus to the composer.
+
+The x64 Debug solution built with zero warnings or errors, all 763 tests
+passed (none skipped), and the x64 Native AOT publish succeeded. WinUI review
+checked deferred binding, recycled editor focus, and the existing row commands
+and automation IDs; no open findings. The VM runner restored `WintodoTest`
+but PowerShell Direct did not open a session in 300 s. Neither the original
+versus updated scroll recording nor the inline-edit gate ran. Visual and
+scroll smoothness results remain pending.
 
 ### 2026-11-25 — Move the task scrollbar outside the cards (M8)
 
