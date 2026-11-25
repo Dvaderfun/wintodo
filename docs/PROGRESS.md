@@ -405,6 +405,13 @@ focus-loss saves by task UID passed on .265. Disabling scrolling placeholders
 and deferring the editor did not by themselves fix the fast-wheel case.
 See [measurements and capture locations](PERF.md#signed-dev-task-list-visibility-during-fast-wheel-scrolling-2026-11-25).
 
+The self-contained x64 Debug layout also passed the detail/row edit gate in
+`tests/ui/artifacts/detail-row-edits/run-20261125-202334`: F2 edits, flag and
+My Day survived saving Tomorrow from the open detail pane. The ordinary guest
+Debug framework is still absent; supply the self-contained layout with
+`-AppOutput` and skip the VM runner's warmup. A first cold launch exceeded the
+old ten-second shell wait; the gate now waits for the actual page for up to two minutes.
+
 ### 2026-11-25 — Prepare task titles during fast scrolling (M8)
 
 The custom task card has no placeholder visual. With scrolling placeholders

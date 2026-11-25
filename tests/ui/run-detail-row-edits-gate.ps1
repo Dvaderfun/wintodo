@@ -1,12 +1,14 @@
 # A detail pane can stay open while shortcuts change the same task in the list.
 # Check the committed row by UID before and after Tomorrow, even if its title reverts.
+param([string]$AppOutput = 'src/Wintodo.App/bin/x64/Debug/net10.0-windows10.0.26100.0/win-x64')
+
 if ($env:WINTODO_ALLOW_LOCAL_UI -ne '1' -or $PSScriptRoot -ine 'C:\wintodo\tests\ui') {
     throw 'Run this gate in WintodoTest with scripts/Invoke-VmGate.ps1.'
 }
 $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'SuggestionsFixtureSql.ps1')
 $repository = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$app = Join-Path $repository 'src/Wintodo.App/bin/x64/Debug/net10.0-windows10.0.26100.0/win-x64'
+$app = if ([IO.Path]::IsPathRooted($AppOutput)) { $AppOutput } else { Join-Path $repository $AppOutput }
 $artifacts = Join-Path $PSScriptRoot ('artifacts/detail-row-edits/run-' + [DateTime]::UtcNow.ToString('yyyyMMdd-HHmmss'))
 New-Item -ItemType Directory -Path $artifacts | Out-Null
 $database = Join-Path $artifacts 'row-edits.db'
@@ -40,7 +42,7 @@ try {
     $launch = Run-WinApp @('run',$app,'--detach','--json','--','--database-path',$database,'--clock-file',$clock) | ConvertFrom-Json
     if (!$launch.ProcessId -or ($launch.ProcessScope -and $launch.ProcessScope -ne 'local')) { throw 'No local app PID.' }
     $appPid = [int]$launch.ProcessId
-    Run-WinApp @('ui','wait-for','Todo.Shell.PageTitle','--on','local','-a',"$appPid",'-t','10000') | Out-Null
+    Run-WinApp @('ui','wait-for','Todo.Shell.PageTitle','--on','local','-a',"$appPid",'-t','120000') | Out-Null
     $mainHwnd = [string]((Run-WinApp @('ui','list-windows','--on','local','-a',"$appPid",'--json') |
         ConvertFrom-Json | Where-Object title -eq 'Wintodo' | Select-Object -First 1).hwnd)
     if (!$mainHwnd) { throw 'No Wintodo main window.' }
