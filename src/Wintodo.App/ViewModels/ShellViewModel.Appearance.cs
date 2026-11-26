@@ -1,7 +1,5 @@
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml;
 using Wintodo.Core.Models;
 using Wintodo.Core.Services;
 using Wintodo.Services;
@@ -58,91 +56,56 @@ public sealed partial class ShellViewModel
             : null;
     }
 
-    private void UpdateFixedCategoryIconBrushes()
+    private void UpdateFixedCategoryIconColors()
     {
-        MyDayIconBrush = ResolveAppearanceBrush(
-            ResolveFixedCategoryIconBrushKey(MyDayNavigationKey));
-        ImportantIconBrush = ResolveAppearanceBrush(
-            ResolveFixedCategoryIconBrushKey(ImportantNavigationKey));
-        PlannedIconBrush = ResolveAppearanceBrush(
-            ResolveFixedCategoryIconBrushKey(PlannedNavigationKey));
-        AllIconBrush = ResolveAppearanceBrush(
-            ResolveFixedCategoryIconBrushKey(AllNavigationKey));
-        CompletedIconBrush = ResolveAppearanceBrush(
-            ResolveFixedCategoryIconBrushKey(CompletedNavigationKey));
-        TasksIconBrush = ResolveAppearanceBrush(
-            ResolveFixedCategoryIconBrushKey(DefaultList?.NavigationKey));
-        TaskList.FixedHeaderIconBrush = ResolveAppearanceBrush(
-            ResolveFixedCategoryIconBrushKey(_selectedNavigationKey));
+        MyDayIconColor = GetFixedCategoryIconColor(MyDayNavigationKey);
+        ImportantIconColor = GetFixedCategoryIconColor(ImportantNavigationKey);
+        PlannedIconColor = GetFixedCategoryIconColor(PlannedNavigationKey);
+        AllIconColor = GetFixedCategoryIconColor(AllNavigationKey);
+        CompletedIconColor = GetFixedCategoryIconColor(CompletedNavigationKey);
+        TasksIconColor = GetFixedCategoryIconColor(DefaultList?.NavigationKey);
+        TaskList.FixedHeaderIconColor = GetFixedCategoryIconColor(_selectedNavigationKey);
     }
 
-    internal void RefreshFixedCategoryIconBrushes()
+    private ListColor? GetFixedCategoryIconColor(string? navigationKey)
     {
-        UpdateFixedCategoryIconBrushes();
-        OnPropertyChanged(nameof(MyDayIconBrush));
-        OnPropertyChanged(nameof(ImportantIconBrush));
-        OnPropertyChanged(nameof(PlannedIconBrush));
-        OnPropertyChanged(nameof(AllIconBrush));
-        OnPropertyChanged(nameof(CompletedIconBrush));
-        OnPropertyChanged(nameof(TasksIconBrush));
-        TaskList.RefreshFixedHeaderIconBrush();
-    }
-
-    private string ResolveFixedCategoryIconBrushKey(string? navigationKey)
-    {
-        if (!TintFixedCategoryIcons || !IsFixedCategoryNavigationKey(navigationKey))
+        if (!TintFixedCategoryIcons || navigationKey is null)
         {
-            return "TextFillColorPrimaryBrush";
+            return null;
         }
 
-        string? backgroundTheme =
-            GetFixedCategoryBackgroundTheme(navigationKey!);
+        string? backgroundTheme = GetFixedCategoryBackgroundTheme(navigationKey);
         if (backgroundTheme is not null)
         {
             return backgroundTheme switch
             {
-                "Coast" => "ListAccentBlueBrush",
-                "Forest" => "ListAccentGreenBrush",
-                "Mist" => "ListAccentTealBrush",
-                "Sunrise" => "ListAccentOrangeBrush",
-                "Indigo" => "ListAccentPurpleBrush",
-                "Petals" => "ListAccentPinkBrush",
-                "Graphite" => "ListAccentGraphiteBrush",
-                "Field" => "ListAccentLimeBrush",
-                _ => "ListAccentBlueBrush",
+                "Coast" => ListColor.Blue,
+                "Forest" => ListColor.Green,
+                "Mist" => ListColor.Teal,
+                "Sunrise" => ListColor.Orange,
+                "Indigo" => ListColor.Purple,
+                "Petals" => ListColor.Pink,
+                "Graphite" => ListColor.Graphite,
+                "Field" => ListColor.Lime,
+                _ => ListColor.Blue,
             };
         }
 
         if (DefaultList is { } defaultList
             && defaultList.NavigationKey == navigationKey)
         {
-            return defaultList.AccentResourceKey;
+            return defaultList.Color;
         }
 
         return navigationKey switch
         {
-            MyDayNavigationKey => "ListAccentYellowBrush",
-            ImportantNavigationKey => "ListAccentPinkBrush",
-            PlannedNavigationKey => "ListAccentBlueBrush",
-            AllNavigationKey => "ListAccentPurpleBrush",
-            CompletedNavigationKey => "ListAccentGreenBrush",
-            _ => "TextFillColorPrimaryBrush",
+            MyDayNavigationKey => ListColor.Yellow,
+            ImportantNavigationKey => ListColor.Pink,
+            PlannedNavigationKey => ListColor.Blue,
+            AllNavigationKey => ListColor.Purple,
+            CompletedNavigationKey => ListColor.Green,
+            _ => null,
         };
-    }
-
-    private bool IsFixedCategoryNavigationKey(string? navigationKey)
-    {
-        return navigationKey is MyDayNavigationKey
-            or ImportantNavigationKey
-            or PlannedNavigationKey
-            or AllNavigationKey
-            or CompletedNavigationKey
-            || DefaultList?.NavigationKey == navigationKey;
-    }
-
-    private static Brush ResolveAppearanceBrush(string resourceKey)
-    {
-        return (Brush)Application.Current.Resources[resourceKey];
     }
 
     private void OnBackgroundThemeChanged(string navigationKey, string? theme)
@@ -152,7 +115,7 @@ public sealed partial class ShellViewModel
             _fixedCategoryBackgrounds[navigationKey] = theme;
         }
 
-        UpdateFixedCategoryIconBrushes();
+        UpdateFixedCategoryIconColors();
         AppearanceSettingsChanged?.Invoke();
     }
 
@@ -178,7 +141,7 @@ public sealed partial class ShellViewModel
 
     partial void OnTintFixedCategoryIconsChanged(bool value)
     {
-        UpdateFixedCategoryIconBrushes();
+        UpdateFixedCategoryIconColors();
         SaveAppearanceSetting(TintFixedCategoryIconsSetting, value.ToString());
     }
 

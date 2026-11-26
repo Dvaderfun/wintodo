@@ -399,6 +399,19 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 
 ## History
 
+### 2026-11-26 — Update list icons with navigation and the window theme (M8)
+
+The header now changes its glyph and tint before reading tasks. Fixed-category
+icons follow the window's Light/Dark palette, including when Windows uses the
+opposite theme. In High Contrast the sidebar inherits the navigation item's
+selection and hover foregrounds. User-list dots and header accents refresh in
+place. The signed .270 crash dump identified an unhandled `E_INVALIDARG` during
+`ActualThemeChanged`; that callback no longer tears down the navigation items.
+
+Added a VM regression that cycles the theme eight times, checks the six category
+icons and a custom list dot against the palette, then samples All → Completed
+with 1,000 completed tasks. All 763 unit tests passed.
+
 ### 2026-11-25 — Measure the resource cost of the signed fast-wheel correction (M8)
 
 Compared .265 and .270 on fresh WintodoTest restores with 1,000 tasks and no

@@ -87,41 +87,32 @@ public sealed partial class ShellPage
 
     private void OnActualThemeChanged(FrameworkElement sender, object args)
     {
-        string? selectedKey =
-            (ShellNavigation.SelectedItem as NavigationViewItem)?.Tag as string;
-        PopulateUserListNavigationItems();
-        _selectedList = ViewModel.UserLists.FirstOrDefault(
-            list => list.NavigationKey == selectedKey);
-        ApplyListAccent(_selectedList);
-        ApplyListBackground();
-        ViewModel.RefreshFixedCategoryIconBrushes();
+        // Let WinUI finish updating the tree before changing its scoped resources.
+        DispatcherQueue.TryEnqueue(RefreshListTheme);
     }
 
     private void OnColorValuesChanged(UISettings sender, object args)
     {
-        bool isHighContrast = IsSystemHighContrastEnabled();
-        DispatcherQueue.TryEnqueue(() =>
-        {
-            _isHighContrast = isHighContrast;
-            ApplyListAccent(_selectedList, isHighContrast);
-            RefreshUserListAccentBrushes(isHighContrast);
-            ApplyListBackground(isHighContrast);
-            ViewModel.RefreshFixedCategoryIconBrushes();
-        });
+        DispatcherQueue.TryEnqueue(RefreshListTheme);
     }
 
-    private void ApplyListAccent(
-        ShellListItemViewModel? list,
-        bool? isHighContrast = null)
+    private void RefreshListTheme()
+    {
+        if (_timersStopped) return;
+        IsHighContrast = IsSystemHighContrastEnabled();
+        ApplyListAccent(_selectedList);
+        RefreshUserListAccentBrushes(IsHighContrast);
+        ApplyListBackground();
+    }
+
+    private void ApplyListAccent(ShellListItemViewModel? list)
     {
         string resourceKey = list?.AccentResourceKey ?? "ListAccentBrush";
-        Brush brush = (isHighContrast ?? _isHighContrast)
-            ? ResolveBrush("SystemColorHighlightColorBrush")
-            : ResolveBrush(resourceKey);
+        Brush brush = ResolveBrush(resourceKey);
         TaskList.Resources["ListAccentBrush"] = brush;
-        TaskList.SetHeaderPlaceholderBrush((isHighContrast ?? _isHighContrast)
+        TaskList.SetHeaderPlaceholderBrush(IsHighContrast
             ? ResolveBrush("SystemColorWindowTextColorBrush")
-            : ResolveHeaderPlaceholderBrush(list));
+            : ResolveBrush(list?.AccentResourceKey ?? "ListHeaderPlaceholderBrush"));
         DetailPane.Resources["ListAccentBrush"] = brush;
         ShellNavigation.Resources["NavigationViewSelectionIndicatorForeground"] = brush;
     }
@@ -177,7 +168,7 @@ public sealed partial class ShellPage
             && ViewModel.UserLists.FirstOrDefault(list => list.NavigationKey == navigationKey)
                 is { } list)
         {
-            RefreshUserListAccentBrush(item, list, _isHighContrast);
+            RefreshUserListAccentBrush(item, list, IsHighContrast);
         }
     }
 
@@ -202,6 +193,7 @@ public sealed partial class ShellPage
     {
         DispatcherQueue.TryEnqueue(() =>
         {
+            if (_timersStopped) return;
             ThemeChanged?.Invoke(ThemeForIndex(ViewModel.AppearanceThemeIndex));
             ApplyListBackground();
         });
@@ -242,7 +234,7 @@ public sealed partial class ShellPage
     private void OnListPaneSizeChanged(object sender, SizeChangedEventArgs args)
     {
         if (!_isDraggingDetailSizer && args.PreviousSize.Width != args.NewSize.Width
-            && ViewModel.ShowListBackgrounds && !_isHighContrast
+            && ViewModel.ShowListBackgrounds && !IsHighContrast
             && ResolveBackgroundAsset(ViewModel.TaskList.BackgroundTheme) is not null)
             QueueSettledPaneResize();
     }
@@ -271,12 +263,12 @@ public sealed partial class ShellPage
         await ViewModel.FlushDetailPaneWidthAsync();
     }
 
-    private void ApplyListBackground(bool? isHighContrast = null)
+    private void ApplyListBackground()
     {
         string? assetName = ResolveBackgroundAsset(ViewModel.TaskList.BackgroundTheme);
         if (!ViewModel.ShowListBackgrounds
             || assetName is null
-            || (isHighContrast ?? _isHighContrast))
+            || IsHighContrast)
         {
             ListBackgroundImage.Source = null;
             _displayedBackgroundAsset = null;
@@ -323,18 +315,14 @@ public sealed partial class ShellPage
 
     private Brush ResolveBrush(string resourceKey)
     {
-        return (Brush)Application.Current.Resources[resourceKey];
-    }
-
-    private Brush ResolveHeaderPlaceholderBrush(ShellListItemViewModel? list)
-    {
-        // Application-level lookup follows the system theme, not the app override.
-        // Resolve the selected palette explicitly and update the shape immediately;
-        // replacing a local resource does not invalidate an existing ThemeResource.
-        string themeKey = ShellRoot.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
-        string resourceKey = list?.AccentResourceKey ?? "ListHeaderPlaceholderBrush";
-        foreach (ResourceDictionary merged in Application.Current.Resources.MergedDictionaries)
+        // A lookup against Application.Resources alone follows the system theme,
+        // even when this window explicitly requests a different palette.
+        string themeKey = IsHighContrast ? "HighContrast"
+            : ShellRoot.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
+        var dictionaries = Application.Current.Resources.MergedDictionaries;
+        for (int index = dictionaries.Count - 1; index >= 0; index--)
         {
+            ResourceDictionary merged = dictionaries[index];
             if (merged.ThemeDictionaries.TryGetValue(themeKey, out object? theme)
                 && theme is ResourceDictionary palette
                 && palette.TryGetValue(resourceKey, out object? value)
@@ -344,7 +332,7 @@ public sealed partial class ShellPage
             }
         }
 
-        return ResolveBrush(resourceKey);
+        return (Brush)Application.Current.Resources[resourceKey];
     }
 
 }

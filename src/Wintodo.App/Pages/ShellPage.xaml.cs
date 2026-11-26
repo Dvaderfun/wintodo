@@ -38,7 +38,6 @@ public sealed partial class ShellPage : Page
     private bool _isSyncConflictDialogOpen;
     private bool _isNavigationInitialized;
     private bool _isRebuildingNavigation;
-    private bool _isHighContrast;
     private bool _isShortcutsDialogOpen;
     private bool _taskListEventsAttached;
     private ShellListItemViewModel? _selectedList;
@@ -53,7 +52,7 @@ public sealed partial class ShellPage : Page
         _clock = clock;
         _taskStore = taskStore;
         _windowsIntegration = windowsIntegration;
-        _isHighContrast = IsSystemHighContrastEnabled();
+        IsHighContrast = IsSystemHighContrastEnabled();
         ViewModel = viewModel;
         KeyboardShortcuts = CreateKeyboardShortcuts();
         InitializeComponent();
@@ -91,6 +90,15 @@ public sealed partial class ShellPage : Page
     }
 
     public ShellViewModel ViewModel { get; }
+
+    public static readonly DependencyProperty IsHighContrastProperty =
+        DependencyProperty.Register(nameof(IsHighContrast), typeof(bool), typeof(ShellPage), new PropertyMetadata(false));
+
+    public bool IsHighContrast
+    {
+        get => (bool)GetValue(IsHighContrastProperty);
+        private set => SetValue(IsHighContrastProperty, value);
+    }
 
     public IList<object> KeyboardShortcuts { get; }
 

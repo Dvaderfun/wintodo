@@ -14,6 +14,45 @@
             <x:Double x:Key="ListHeaderIconSize">28</x:Double>
             <x:Double x:Key="ListEmojiPickerIconSize">20</x:Double>
             <Thickness x:Key="FixedNavigationCountBadgeMargin">0,0,8,0</Thickness>
+            <Style x:Key="NeutralCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+            </Style>
+            <Style x:Key="BlueCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentBlueBrush}" />
+            </Style>
+            <Style x:Key="RedCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentRedBrush}" />
+            </Style>
+            <Style x:Key="OrangeCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentOrangeBrush}" />
+            </Style>
+            <Style x:Key="YellowCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentYellowBrush}" />
+            </Style>
+            <Style x:Key="GreenCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentGreenBrush}" />
+            </Style>
+            <Style x:Key="TealCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentTealBrush}" />
+            </Style>
+            <Style x:Key="LimeCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentLimeBrush}" />
+            </Style>
+            <Style x:Key="PurpleCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentPurpleBrush}" />
+            </Style>
+            <Style x:Key="PinkCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentPinkBrush}" />
+            </Style>
+            <Style x:Key="OliveCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentOliveBrush}" />
+            </Style>
+            <Style x:Key="GraphiteCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentGraphiteBrush}" />
+            </Style>
+            <Style x:Key="NavyCategoryIconStyle" TargetType="FontIcon">
+                <Setter Property="Foreground" Value="{ThemeResource ListAccentNavyBrush}" />
+            </Style>
             <Style x:Key="NavigationTaskCountBadgeStyle" TargetType="InfoBadge">
                 <Setter Property="MinWidth" Value="32" />
                 <Setter Property="Height" Value="24" />

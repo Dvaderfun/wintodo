@@ -179,6 +179,9 @@ public sealed partial class ShellPage
     internal void StopMidnightRefresh()
     {
         _timersStopped = true;
+        ShellRoot.ActualThemeChanged -= OnActualThemeChanged;
+        _uiSettings.ColorValuesChanged -= OnColorValuesChanged;
+        ViewModel.AppearanceSettingsChanged -= OnAppearanceSettingsChanged;
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
         ViewModel.CancelDetailRead();
         _stoppedPaneResize = true;

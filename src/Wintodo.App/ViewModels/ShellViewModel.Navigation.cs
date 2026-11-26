@@ -55,6 +55,8 @@ public sealed partial class ShellViewModel
         CancellationToken cancellationToken)
     {
         string navigationKey = _selectedNavigationKey;
+        // Publish the tint with the new glyph, before the list query can yield.
+        TaskList.FixedHeaderIconColor = GetFixedCategoryIconColor(navigationKey);
         if (navigationKey.StartsWith(UserListNavigationPrefix, StringComparison.Ordinal))
         {
             string uid = navigationKey[UserListNavigationPrefix.Length..];
@@ -83,8 +85,6 @@ public sealed partial class ShellViewModel
                 GetFixedCategoryBackgroundTheme(navigationKey),
                 cancellationToken);
         }
-
-        UpdateFixedCategoryIconBrushes();
     }
 
     internal void SelectSettings()
@@ -325,7 +325,7 @@ public sealed partial class ShellViewModel
 
         RebuildGroups();
         TaskList.SetLists(UserLists);
-        UpdateFixedCategoryIconBrushes();
+        UpdateFixedCategoryIconColors();
     }
 
     private void ApplySmartListTaskCounts(
@@ -407,7 +407,7 @@ public sealed partial class ShellViewModel
             return;
         }
 
-        UpdateFixedCategoryIconBrushes();
+        UpdateFixedCategoryIconColors();
         RebuildGroups();
         NavigationStructureChanged?.Invoke();
     }

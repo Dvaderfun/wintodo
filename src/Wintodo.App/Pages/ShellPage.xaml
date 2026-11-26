@@ -154,7 +154,7 @@
                     <NavigationViewItem.Icon>
                         <FontIcon
                             x:Name="MyDayNavigationIcon"
-                            Foreground="{x:Bind ViewModel.MyDayIconBrush, Mode=OneWay}"
+                            Style="{x:Bind controls:CategoryIconStyles.ForNavigation(ViewModel.MyDayIconColor, IsHighContrast), Mode=OneWay}"
                             Glyph="&#xE706;" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.InfoBadge>
@@ -175,7 +175,7 @@
                     <NavigationViewItem.Icon>
                         <FontIcon
                             x:Name="ImportantNavigationIcon"
-                            Foreground="{x:Bind ViewModel.ImportantIconBrush, Mode=OneWay}"
+                            Style="{x:Bind controls:CategoryIconStyles.ForNavigation(ViewModel.ImportantIconColor, IsHighContrast), Mode=OneWay}"
                             Glyph="&#xE734;" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.InfoBadge>
@@ -196,7 +196,7 @@
                     <NavigationViewItem.Icon>
                         <FontIcon
                             x:Name="PlannedNavigationIcon"
-                            Foreground="{x:Bind ViewModel.PlannedIconBrush, Mode=OneWay}"
+                            Style="{x:Bind controls:CategoryIconStyles.ForNavigation(ViewModel.PlannedIconColor, IsHighContrast), Mode=OneWay}"
                             Glyph="&#xE787;" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.InfoBadge>
@@ -217,7 +217,7 @@
                     <NavigationViewItem.Icon>
                         <FontIcon
                             x:Name="AllNavigationIcon"
-                            Foreground="{x:Bind ViewModel.AllIconBrush, Mode=OneWay}"
+                            Style="{x:Bind controls:CategoryIconStyles.ForNavigation(ViewModel.AllIconColor, IsHighContrast), Mode=OneWay}"
                             Glyph="&#xE8FD;" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.InfoBadge>
@@ -238,7 +238,7 @@
                     <NavigationViewItem.Icon>
                         <FontIcon
                             x:Name="CompletedNavigationIcon"
-                            Foreground="{x:Bind ViewModel.CompletedIconBrush, Mode=OneWay}"
+                            Style="{x:Bind controls:CategoryIconStyles.ForNavigation(ViewModel.CompletedIconColor, IsHighContrast), Mode=OneWay}"
                             Glyph="&#xE930;" />
                     </NavigationViewItem.Icon>
                     <NavigationViewItem.InfoBadge>
@@ -258,7 +258,7 @@
                     <NavigationViewItem.Icon>
                         <FontIcon
                             x:Name="TasksNavigationIcon"
-                            Foreground="{x:Bind ViewModel.TasksIconBrush, Mode=OneWay}"
+                            Style="{x:Bind controls:CategoryIconStyles.ForNavigation(ViewModel.TasksIconColor, IsHighContrast), Mode=OneWay}"
                             Glyph="&#xE80F;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>

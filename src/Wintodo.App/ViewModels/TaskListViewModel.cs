@@ -3,8 +3,6 @@ using System.Globalization;
 using System.Windows.Input;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.Core.Models;
 using Wintodo.Core.Presentation;
@@ -128,8 +126,7 @@ public sealed partial class TaskListViewModel : ObservableObject
     public partial string? BackgroundTheme { get; set; }
 
     [ObservableProperty]
-    public partial Brush FixedHeaderIconBrush { get; set; } =
-        (Brush)Application.Current.Resources["TextFillColorPrimaryBrush"];
+    public partial ListColor? FixedHeaderIconColor { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(RequestExportListCommand))]
@@ -246,11 +243,6 @@ public sealed partial class TaskListViewModel : ObservableObject
     internal TaskItemViewModel? FindTask(string uid)
     {
         return _itemCache.GetValueOrDefault(uid);
-    }
-
-    internal void RefreshFixedHeaderIconBrush()
-    {
-        OnPropertyChanged(nameof(FixedHeaderIconBrush));
     }
 
     internal void SetLists(IReadOnlyList<ShellListItemViewModel> lists)

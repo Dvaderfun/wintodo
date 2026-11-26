@@ -771,7 +771,10 @@ still visible at the edges. Each fixed category stores its selection in
 the selected theme's accent colour; when no background is selected, each fixed
 category uses its semantic accent. Appearance settings include a toggle that
 returns fixed-category glyphs to the neutral foreground without changing the
-selected background.
+selected background. The header glyph and its tint change together, before
+tasks finish loading. Switching between Light and Dark updates the existing
+sidebar icons in place, using the window's palette even when it differs from
+the Windows theme.
 
 - Ship 8 built-in images, each ≤ 200 KB, as `ms-appx` assets.
 - Decode at display size: set `BitmapImage.DecodePixelWidth` to the actual pane

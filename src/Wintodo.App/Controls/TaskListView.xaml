@@ -282,7 +282,7 @@
                             AutomationProperties.AccessibilityView="Raw"
                             AutomationProperties.AutomationId="Todo.List.FixedHeaderIcon"
                             FontSize="{StaticResource ListHeaderIconSize}"
-                            Foreground="{x:Bind ViewModel.FixedHeaderIconBrush, Mode=OneWay}"
+                            Style="{x:Bind controls:CategoryIconStyles.ForColor(ViewModel.FixedHeaderIconColor), Mode=OneWay}"
                             Glyph="{x:Bind ViewModel.FixedHeaderGlyph, Mode=OneWay}"
                             Visibility="{x:Bind local:TaskListView.BoolToVisibility(ViewModel.HasFixedHeaderGlyph), Mode=OneWay}" />
                         <TextBlock

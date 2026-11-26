@@ -2,8 +2,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml;
 using Microsoft.Windows.ApplicationModel.Resources;
 using Wintodo.Core.Models;
 using Wintodo.Core.Queries;
@@ -241,28 +239,22 @@ public sealed partial class ShellViewModel : ObservableObject
     public partial int CompletedTaskCount { get; set; }
 
     [ObservableProperty]
-    public partial Brush MyDayIconBrush { get; set; } =
-        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+    public partial ListColor? MyDayIconColor { get; set; }
 
     [ObservableProperty]
-    public partial Brush ImportantIconBrush { get; set; } =
-        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+    public partial ListColor? ImportantIconColor { get; set; }
 
     [ObservableProperty]
-    public partial Brush PlannedIconBrush { get; set; } =
-        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+    public partial ListColor? PlannedIconColor { get; set; }
 
     [ObservableProperty]
-    public partial Brush AllIconBrush { get; set; } =
-        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+    public partial ListColor? AllIconColor { get; set; }
 
     [ObservableProperty]
-    public partial Brush CompletedIconBrush { get; set; } =
-        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+    public partial ListColor? CompletedIconColor { get; set; }
 
     [ObservableProperty]
-    public partial Brush TasksIconBrush { get; set; } =
-        ResolveAppearanceBrush("TextFillColorPrimaryBrush");
+    public partial ListColor? TasksIconColor { get; set; }
 
     [ObservableProperty]
     public partial bool LaunchAtLogin { get; set; }

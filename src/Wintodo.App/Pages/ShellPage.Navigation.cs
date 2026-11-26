@@ -76,11 +76,6 @@ public sealed partial class ShellPage
             return;
         }
 
-        await ViewModel.SelectAsync(
-            navigationKey,
-            navigationItem.Content?.ToString() ?? string.Empty,
-            ReferenceEquals(navigationItem, MyDayNavigationItem),
-            cancellationToken);
         _selectedList = navigationKey.StartsWith(
                 UserListNavigationPrefix,
                 StringComparison.Ordinal)
@@ -88,7 +83,15 @@ public sealed partial class ShellPage
                 list => list.NavigationKey == navigationKey)
             : null;
         ApplyListAccent(_selectedList);
+        Task selection = ViewModel.SelectAsync(
+            navigationKey,
+            navigationItem.Content?.ToString() ?? string.Empty,
+            ReferenceEquals(navigationItem, MyDayNavigationItem),
+            cancellationToken);
+        // SelectAsync sets the header and background before it reads the tasks.
+        // An older query must never repaint a newer selection when it finishes.
         ApplyListBackground();
+        await selection;
     }
 
     // NavigationView caps its menu ScrollViewer with a MaxHeight computed from the
@@ -208,7 +211,7 @@ public sealed partial class ShellPage
         navigationItem.RegisterPropertyChangedCallback(
             NavigationViewItem.IsSelectedProperty,
             OnUserListSelectionChanged);
-        RefreshUserListAccentBrush(navigationItem, list, _isHighContrast);
+        RefreshUserListAccentBrush(navigationItem, list, IsHighContrast);
         _navigationItems[list.NavigationKey] = navigationItem;
         return navigationItem;
     }
@@ -234,7 +237,6 @@ public sealed partial class ShellPage
             {
                 Width = 16,
                 Height = 16,
-                Fill = ResolveBrush(list.AccentResourceKey),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
             };
