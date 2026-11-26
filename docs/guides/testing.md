@@ -149,10 +149,18 @@ $preview = 'artifacts/dev-preview/1.0.1.273-38d554bc'
     -GateArguments '-DevPackageDirectory',$preview
 ```
 
-The gate checks the installed version, renders both palettes, and captures the
-All → Completed transition. Without `-DevPackageDirectory` it tests the Debug
+The gate uses a dark Windows desktop and restarts the app with a saved Light
+preference and 1,000 completed tasks. It checks the completed row's fill,
+checkmark and text on launch and after switches, both sidebar palettes, rapid
+keyboard changes and the All → Completed header transition. Without
+`-DevPackageDirectory` it tests the Debug
 layout instead; use a self-contained Windows App SDK layout if the guest lacks
 the corresponding runtime.
+
+For a reproducible crash on this gate, add `-KeepRunning -CaptureWintodoCrashDump`.
+WER then retains a full `Wintodo.exe` dump inside `C:\wintodo-crash-dumps` in
+the test VM. The runner does not enable dumps on the host or copy full dumps
+with the normal artifacts; the next checkpoint restore clears this guest setting.
 
 `run-startup-placement-gate.ps1` checks the first visible window and task row
 in a signed Native AOT DEV build. Supply the preview's repo-relative directory

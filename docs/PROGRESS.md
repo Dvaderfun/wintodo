@@ -401,6 +401,24 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 
 ## History
 
+### 2026-11-26 — Fix the DEV Mica theme-switch crash and completed-row colors (M8)
+
+Signed .273 reproduced the reported crash on the first switch to Dark after a
+restart with a saved Light preference on dark Windows. Event 1000 and the
+installed WinUI module offset matched the host's `0xC000027B` fail-fast. A
+full guest dump from the synthetic fixture identified `E_INVALIDARG` for the
+null `target` argument in the projected base implementation of
+`OnDefaultSystemBackdropConfigurationChanged`. WinUI had already updated the
+configuration given to the private Mica controller. The preview now handles
+that notification without calling the base method; the startup ordering and
+the Store backdrop are unchanged.
+
+The same fixture captured a dark-theme cyan fill (`#99EBFF`) behind a light
+checkmark before the first switch. The shell now retains a brush per theme
+and updates its color when the list changes, so realized rows and their checks
+resolve against the same window theme. Debug x64 built without warnings;
+all 763 unit tests passed.
+
 ### 2026-11-26 — Update list icons with navigation and the window theme (M8)
 
 The header now changes its glyph and tint before reading tasks. Fixed-category

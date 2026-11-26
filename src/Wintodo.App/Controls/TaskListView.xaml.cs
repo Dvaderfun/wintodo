@@ -176,11 +176,6 @@ public sealed partial class TaskListView : UserControl
         Composer.FocusComposer();
     }
 
-    internal void SetHeaderPlaceholderBrush(Brush brush)
-    {
-        ListIconPlaceholder.Fill = brush;
-    }
-
     internal void SelectTask(TaskItemViewModel item)
     {
         TasksList.SelectedItem = item;

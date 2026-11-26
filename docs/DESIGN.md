@@ -753,10 +753,11 @@ holds in both Light and Dark.
 Rules:
 - Each enum value maps to a Light hex and a Dark hex, both ≥ **4.5:1** contrast
   against their surface. Do not reuse one hex across themes.
-- Applied by overriding a single named brush (`ListAccentBrush`) in the
-  `TaskListView`'s local `Resources` when the list changes. Everything that
-  should tint — header title, completion circle fill, star, add glyph,
-  selection bar, nav-pane list dot — binds to `ListAccentBrush`.
+- The shell keeps a `ListAccentBrush` in each theme dictionary. Changing lists
+  updates the existing brush in each palette so already-visible task rows change
+  with it. Smart lists use the window's system accent shade: Dark2 in Light,
+  Light3 in Dark. The completion circle and its checkmark must switch palettes
+  together, even when the app theme differs from Windows.
 - **High Contrast ignores list colours entirely.** `ListAccentBrush` redirects to
   `SystemColorHighlightColorBrush`. This is a hard requirement, not a nicety.
 - The colours live in `Themes/Colors.xaml` inside the Light/Dark/HighContrast

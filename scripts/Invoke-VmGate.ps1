@@ -41,7 +41,8 @@ param(
     [string]$VmName = 'WintodoTest',
     [int]$TimeoutMinutes = 30,
     [switch]$NoWarmup,
-    [switch]$KeepRunning
+    [switch]$KeepRunning,
+    [switch]$CaptureWintodoCrashDump
 )
 
 $ErrorActionPreference = 'Stop'
@@ -49,6 +50,10 @@ $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $gateName = Split-Path -Leaf $Gate
+if ($CaptureWintodoCrashDump -and ($VmName -cne 'WintodoTest' -or
+        $gateName -ne 'run-category-colors-gate.ps1' -or !$KeepRunning)) {
+    throw 'Guest crash capture requires WintodoTest, run-category-colors-gate.ps1 and -KeepRunning.'
+}
 $debugOutput = 'src\Wintodo.App\bin\x64\Debug\net10.0-windows10.0.26100.0\win-x64'
 $releaseOutput = 'src\Wintodo.App\bin\x64\Release\net10.0-windows10.0.26100.0\win-x64'
 $aotOutput = 'publish\aot\win-x64'
@@ -124,6 +129,32 @@ try {
     Start-VM -Name $VmName
     $session = Wait-TestVmSession -VmName $VmName -Credential $credential
     Wait-TestVmDesktop -Session $session
+
+    if ($CaptureWintodoCrashDump) {
+        # LocalDumps requires HKLM. Run this in the disposable guest's elevated
+        # PowerShell Direct session; keep the app and its UI test non-elevated.
+        Invoke-Command -Session $session -ScriptBlock {
+            $ErrorActionPreference = 'Stop'
+            if ((Get-ItemPropertyValue 'HKLM:\SOFTWARE\Microsoft\Virtual Machine\Guest\Parameters' VirtualMachineName) -cne 'WintodoTest') {
+                throw 'Refusing to enable dumps outside WintodoTest.'
+            }
+            $dir = 'C:\wintodo-crash-dumps'
+            $key = 'HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\Wintodo.exe'
+            if ((Test-Path -LiteralPath $dir) -or (Test-Path -LiteralPath $key)) { throw 'Expected a fresh guest dump location.' }
+            $null = New-Item -ItemType Directory -Path $dir
+            $acl = Get-Acl -LiteralPath $dir
+            $acl.AddAccessRule([System.Security.AccessControl.FileSystemAccessRule]::new(
+                [System.Security.Principal.WindowsIdentity]::GetCurrent().User, 'Modify', 'ContainerInherit,ObjectInherit', 'None', 'Allow'))
+            Set-Acl -LiteralPath $dir -AclObject $acl
+            $parentKey = Split-Path -Parent $key
+            if (!(Test-Path -LiteralPath $parentKey)) { $null = New-Item -Path $parentKey -Force }
+            $null = New-Item -Path $key -Force
+            $null = New-ItemProperty -Path $key -Name DumpType -PropertyType DWord -Value 2
+            $null = New-ItemProperty -Path $key -Name DumpCount -PropertyType DWord -Value 2
+            $null = New-ItemProperty -Path $key -Name DumpFolder -PropertyType ExpandString -Value $dir
+        }
+        Write-Host 'Full Wintodo.exe crash dumps stay in C:\wintodo-crash-dumps in the retained guest.'
+    }
 
     Write-Host 'Copying payload into the guest'
     Copy-TestVmPayload -Session $session -Path $payloadPath -Destination $guestRoot

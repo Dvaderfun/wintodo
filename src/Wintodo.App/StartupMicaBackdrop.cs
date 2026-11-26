@@ -29,6 +29,14 @@ internal sealed partial class StartupMicaBackdrop(ElementTheme initialTheme) : S
         _controller.AddSystemBackdropTarget(target);
     }
 
+    protected override void OnDefaultSystemBackdropConfigurationChanged(
+        ICompositionSupportsSystemBackdrop target, XamlRoot xamlRoot)
+    {
+        // WinUI has already updated the live configuration given to our controller.
+        // The notification can arrive with a null target; forwarding it to the
+        // projected base throws E_INVALIDARG (microsoft/microsoft-ui-xaml#11535).
+    }
+
     protected override void OnTargetDisconnected(ICompositionSupportsSystemBackdrop target)
     {
         _controller?.RemoveSystemBackdropTarget(target);

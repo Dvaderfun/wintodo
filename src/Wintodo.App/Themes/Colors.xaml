@@ -21,9 +21,7 @@
             <StaticResource
                 x:Key="ShellDividerBrush"
                 ResourceKey="DividerStrokeColorDefaultBrush" />
-            <StaticResource
-                x:Key="ListAccentBrush"
-                ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <SolidColorBrush x:Key="ListAccentBrush" Color="{ThemeResource SystemAccentColorDark2}" />
             <StaticResource
                 x:Key="CompletionCheckForegroundBrush"
                 ResourceKey="TextOnAccentFillColorPrimaryBrush" />
@@ -59,9 +57,7 @@
             <StaticResource
                 x:Key="ShellDividerBrush"
                 ResourceKey="DividerStrokeColorDefaultBrush" />
-            <StaticResource
-                x:Key="ListAccentBrush"
-                ResourceKey="AccentTextFillColorPrimaryBrush" />
+            <SolidColorBrush x:Key="ListAccentBrush" Color="{ThemeResource SystemAccentColorLight3}" />
             <StaticResource
                 x:Key="CompletionCheckForegroundBrush"
                 ResourceKey="TextOnAccentFillColorPrimaryBrush" />

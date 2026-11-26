@@ -13,6 +13,28 @@
     KeyboardAcceleratorPlacementMode="Hidden"
     mc:Ignorable="d">
 
+    <Page.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="ListAccentBrush" Color="{ThemeResource SystemAccentColorDark2}" />
+                    <StaticResource x:Key="ListHeaderPlaceholderBrush" ResourceKey="ListAccentBrush" />
+                    <StaticResource x:Key="NavigationViewSelectionIndicatorForeground" ResourceKey="ListAccentBrush" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="ListAccentBrush" Color="{ThemeResource SystemAccentColorLight3}" />
+                    <StaticResource x:Key="ListHeaderPlaceholderBrush" ResourceKey="ListAccentBrush" />
+                    <StaticResource x:Key="NavigationViewSelectionIndicatorForeground" ResourceKey="ListAccentBrush" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="HighContrast">
+                    <StaticResource x:Key="ListAccentBrush" ResourceKey="SystemColorHighlightColorBrush" />
+                    <StaticResource x:Key="ListHeaderPlaceholderBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+                    <StaticResource x:Key="NavigationViewSelectionIndicatorForeground" ResourceKey="SystemColorHighlightColorBrush" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Page.Resources>
+
     <Page.KeyboardAccelerators>
         <KeyboardAccelerator Key="L" Modifiers="Control" Invoked="OnNewListAccelerator" />
         <KeyboardAccelerator Key="L" Modifiers="Control,Shift" Invoked="OnNewGroupAccelerator" />

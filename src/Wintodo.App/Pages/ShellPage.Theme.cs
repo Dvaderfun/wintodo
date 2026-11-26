@@ -107,14 +107,21 @@ public sealed partial class ShellPage
 
     private void ApplyListAccent(ShellListItemViewModel? list)
     {
-        string resourceKey = list?.AccentResourceKey ?? "ListAccentBrush";
-        Brush brush = ResolveBrush(resourceKey);
-        TaskList.Resources["ListAccentBrush"] = brush;
-        TaskList.SetHeaderPlaceholderBrush(IsHighContrast
-            ? ResolveBrush("SystemColorWindowTextColorBrush")
-            : ResolveBrush(list?.AccentResourceKey ?? "ListHeaderPlaceholderBrush"));
-        DetailPane.Resources["ListAccentBrush"] = brush;
-        ShellNavigation.Resources["NavigationViewSelectionIndicatorForeground"] = brush;
+        string key = list?.AccentResourceKey ?? "ListAccentBrush";
+        // A realized control retains its brush. Update both palettes' colors
+        // in place; replacing a dictionary entry would leave old rows behind.
+        SetListAccentColor("Light", key);
+        SetListAccentColor("Dark", key);
+    }
+
+    private void SetListAccentColor(string theme, string resourceKey)
+    {
+        var palette = (ResourceDictionary)Resources.ThemeDictionaries[theme];
+        var accent = (SolidColorBrush)palette["ListAccentBrush"];
+        var source = (SolidColorBrush)ResolveBrush(resourceKey, theme);
+        var color = source.Color;
+        if (!accent.Color.Equals(color))
+            accent.Color = color;
     }
 
     private void UpdateFixedCategoryNavigationAccessibility()
@@ -313,12 +320,13 @@ public sealed partial class ShellPage
             : null;
     }
 
-    private Brush ResolveBrush(string resourceKey)
+    private Brush ResolveBrush(string resourceKey) => ResolveBrush(resourceKey,
+        IsHighContrast ? "HighContrast" : ShellRoot.ActualTheme == ElementTheme.Dark ? "Dark" : "Light");
+
+    private static Brush ResolveBrush(string resourceKey, string themeKey)
     {
         // A lookup against Application.Resources alone follows the system theme,
         // even when this window explicitly requests a different palette.
-        string themeKey = IsHighContrast ? "HighContrast"
-            : ShellRoot.ActualTheme == ElementTheme.Dark ? "Dark" : "Light";
         var dictionaries = Application.Current.Resources.MergedDictionaries;
         for (int index = dictionaries.Count - 1; index >= 0; index--)
         {
