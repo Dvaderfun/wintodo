@@ -141,6 +141,19 @@ explicit opt-in above. The VM being unavailable does not authorize host automati
 
 ## Running gates in the test VM
 
+To check list icon colors on an installed DEV build, run this from the host:
+
+```powershell
+$preview = 'artifacts/dev-preview/1.0.1.273-38d554bc'
+.\scripts\Invoke-VmGate.ps1 -Gate run-category-colors-gate.ps1 -NoWarmup -Include $preview `
+    -GateArguments '-DevPackageDirectory',$preview
+```
+
+The gate checks the installed version, renders both palettes, and captures the
+All → Completed transition. Without `-DevPackageDirectory` it tests the Debug
+layout instead; use a self-contained Windows App SDK layout if the guest lacks
+the corresponding runtime.
+
 `run-startup-placement-gate.ps1` checks the first visible window and task row
 in a signed Native AOT DEV build. Supply the preview's repo-relative directory
 as both `-Include $candidate` and `-GateArguments '-InputDirectory',$candidate`

@@ -21,8 +21,10 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.270** is the signed x64 Native
-AOT build of `650849df`. During a large vertical mouse-wheel jump it
+**Private DEV installer:** Wintodo DEV **1.0.1.273** is the signed x64 Native
+AOT build of `38d554bc`. It [switches list icons and their colors together,
+and updates the sidebar in place when the window theme changes](#2026-11-26--update-list-icons-with-navigation-and-the-window-theme-m8).
+It retains .270's scrolling correction: during a large vertical mouse-wheel jump it
 [prepares the visible cards before painting](#2026-11-25--prepare-the-visible-cards-before-presenting-a-large-wheel-move-m8).
 In the [installed-package tests](PERF.md#signed-dev-task-list-visibility-during-fast-wheel-scrolling-2026-11-25),
 the same fast wheel sequence that blanked .265 reached task 989 on .270 with
@@ -410,7 +412,23 @@ place. The signed .270 crash dump identified an unhandled `E_INVALIDARG` during
 
 Added a VM regression that cycles the theme eight times, checks the six category
 icons and a custom list dot against the palette, then samples All → Completed
-with 1,000 completed tasks. All 763 unit tests passed.
+with 1,000 completed tasks. On signed .270 with the app set to Dark, the My
+Day screenshot contained the exact Light yellow (`#716000`) and no pixels
+matching its Dark counterpart (`#E8D56A`): `category-colors/3d2fffa01520444f85e0bbfef120a331`.
+The x64 solution build had zero warnings and all 763 unit tests passed.
+The self-contained Debug build passed all eight guest switches and all 14
+palette checks. All five sampled Completed frames were green
+(`category-colors/aca7832e9b444c8299c5ea755205200b`).
+
+The signed x64 Native AOT DEV installer **1.0.1.273** (`38d554bc`) passed
+signature, structure and privacy checks. A fresh WintodoTest guest verified its
+installed executable and compiled XAML against the MSIX. The same eight
+switches and 14 palette checks passed there. The first sampled Completed
+header was green (48 ms between samples); all five Completed samples were
+green. Screenshots and results: `tests/ui/artifacts/category-colors/8da1434db9ba46a297b5669875a3dfaa`.
+The existing M8 accessibility gate also passed 17/17 on Debug; its sidebar
+captures show readable selected and unselected glyphs in Aquatic, Desert, Dusk
+and Night sky (`tests/ui/artifacts/m8/run-20261126-155623`).
 
 ### 2026-11-25 — Measure the resource cost of the signed fast-wheel correction (M8)
 
