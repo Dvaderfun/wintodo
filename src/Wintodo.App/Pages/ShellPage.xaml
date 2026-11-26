@@ -570,13 +570,22 @@
                                     <ColumnDefinition Width="32" />
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="32" />
-                                    <ColumnDefinition Width="32" />
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
-                                <Grid Width="24" Height="24" Margin="0,4,0,0" VerticalAlignment="Top"
+                                <Button
+                                    x:Uid="DetailCloseButton"
+                                    Grid.Column="2"
+                                    Width="32" Height="32" Padding="0" HorizontalAlignment="Right"
+                                    AutomationProperties.AutomationId="Todo.Detail.PreviewClose"
+                                    Command="{x:Bind ViewModel.CloseDetailPreviewCommand, Mode=OneTime}"
+                                    Style="{StaticResource SubtleButtonStyle}">
+                                    <FontIcon Glyph="&#xE711;" />
+                                </Button>
+                                <Grid Grid.Row="1" Width="24" Height="24" Margin="0,4,0,0" VerticalAlignment="Top"
                                       AutomationProperties.AccessibilityView="Raw">
                                     <Ellipse Stroke="{ThemeResource TextFillColorSecondaryBrush}" StrokeThickness="1" />
                                     <Grid Visibility="{x:Bind local:ShellPage.BoolToVisibility(ViewModel.IsPreviewCompleted), Mode=OneWay}">
@@ -585,6 +594,7 @@
                                     </Grid>
                                 </Grid>
                                 <TextBlock
+                                    Grid.Row="1"
                                     Grid.Column="1"
                                     Margin="12,8,8,0"
                                     MaxLines="3"
@@ -594,23 +604,15 @@
                                     TextTrimming="CharacterEllipsis"
                                     TextWrapping="Wrap" />
                                 <FontIcon
+                                    Grid.Row="1"
                                     Grid.Column="2"
                                     Height="32"
                                     VerticalAlignment="Top"
                                     AutomationProperties.AccessibilityView="Raw"
                                     Foreground="{ThemeResource ListAccentBrush}"
                                     Glyph="{x:Bind controls:TaskDetailView.ImportanceGlyph(ViewModel.IsPreviewImportant), Mode=OneWay}" />
-                                <Button
-                                    x:Uid="DetailCloseButton"
-                                    Grid.Column="3"
-                                    Width="32" Height="32" Padding="0" VerticalAlignment="Top"
-                                    AutomationProperties.AutomationId="Todo.Detail.PreviewClose"
-                                    Command="{x:Bind ViewModel.CloseDetailPreviewCommand, Mode=OneTime}"
-                                    Style="{StaticResource SubtleButtonStyle}">
-                                    <FontIcon Glyph="&#xE711;" />
-                                </Button>
                                 <StackPanel
-                                    Grid.Row="1" Grid.ColumnSpan="4"
+                                    Grid.Row="2" Grid.ColumnSpan="3"
                                     Spacing="8"
                                     Visibility="{x:Bind local:ShellPage.BoolToVisibility(ViewModel.IsDetailLoadError), Mode=OneWay}">
                                     <TextBlock

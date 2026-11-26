@@ -526,7 +526,8 @@ and a `Setter` would fight the binding.
 
 ```
 ┌──────────────────────────────────────┐
-│  ○  Buy tickets for the show      ✕  │  title block
+│                                   ✕  │  close pane
+│  ○  Buy tickets for the show      ☆  │  title block
 │  ────────────────────────────────── │
 │  ○  Check seat map                   │  steps
 │  ○  Ask about the discount           │
@@ -548,7 +549,8 @@ and a `Setter` would fight the binding.
 
 | Region | Spec |
 |---|---|
-| Title block | Completion circle (24 px here, larger than in rows) + multi-line `TextBox`, `BodyLargeTextBlockStyle`, borderless, transparent, `AcceptsReturn="True"`, `TextWrapping="Wrap"`, **`UpdateSourceTrigger=PropertyChanged`**; importance star at the right of the title row; close `✕` (`Cancel` `E711`) 32 × 32 top-right |
+| Pane controls | Close `✕` (`Cancel` `E711`) has a 32 × 32 target in its own row at the top right. It dismisses the pane and leaves the task in its list. |
+| Title block | Below Close: completion circle (24 px here, larger than in rows) + multi-line `TextBox`, `BodyLargeTextBlockStyle`, borderless, transparent, `AcceptsReturn="True"`, `TextWrapping="Wrap"`, **`UpdateSourceTrigger=PropertyChanged`**; importance star at the right of the title row |
 | Steps | Each: 20 px circle + borderless `TextBox` + `✕` on hover. Height 36. Drag-reorder. Completed steps: 0.6 opacity + strikethrough. "Next step" row has an `Add` glyph and creates a step on `Enter`, keeping focus for the next one |
 | Action rows | Height 40, `Subtle` `Button`, full width, `[20px glyph][12 gap][label *][trailing]`, **4 px apart** so each hover fill reads as its own button. Unset: label is the action ("Remind me"), glyph **and** label `TextFillColorSecondaryBrush`. Set: label is the value ("Due Tomorrow"), glyph and label `ListAccentBrush`, trailing `✕` clears it. Driven by one `VisualStateGroup` per row (`StateTrigger` on `IsMyDay` / `HasReminder` / `HasDue` / `HasRepeat`) so the brushes re-resolve on theme change |
 | Separators | 1 px `DividerStrokeColorDefaultBrush`, 12 px vertical margins |

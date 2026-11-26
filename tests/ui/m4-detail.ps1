@@ -149,6 +149,41 @@ Test-UI "Detail XAML is deferred until first open" {
         -t 5000
 }
 
+Test-UI "Close sits above the task and dismisses the pane without deleting it" {
+    $bounds = @{}
+    foreach ($id in 'Close', 'Complete', 'Title', 'Importance') {
+        $selector = "Todo.Detail.$id"
+        $match = @(Get-SearchMatches $selector | Where-Object { $_.automationId -ceq $selector })
+        if ($match.Count -ne 1 -or $match[0].width -le 0 -or $match[0].height -le 0) {
+            throw "Expected one visible $selector."
+        }
+        $bounds[$id] = $match[0]
+    }
+    $close = $bounds.Close
+    foreach ($id in 'Complete', 'Title', 'Importance') {
+        if ($close.y + $close.height -gt $bounds[$id].y) {
+            throw "Close overlaps the $id row."
+        }
+    }
+    if ($close.x + $close.width -lt $bounds.Title.x + $bounds.Title.width) {
+        throw 'Expected Close at the right edge, beyond the title field.'
+    }
+    $screenshot = Join-Path $ArtifactDirectory "00-detail-close.png"
+    winapp ui screenshot -w ((Get-Process -Id $AppPid).MainWindowHandle.ToInt64()) -o $screenshot
+    if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $screenshot -PathType Leaf) -or
+        (Get-Item -LiteralPath $screenshot).Length -eq 0) { throw 'Missing detail header screenshot.' }
+
+    $row = Get-TaskRow "M4 recurring task"
+    if (!$row) { throw 'The original task row is missing.' }
+    winapp ui invoke "Todo.Detail.Close" -a $AppPid
+    if ($LASTEXITCODE -ne 0) { throw 'Could not invoke Close.' }
+    winapp ui wait-for "Todo.Detail.Title" --gone -a $AppPid -t 3000
+    if ($LASTEXITCODE -ne 0) { throw 'Close did not dismiss the pane.' }
+    winapp ui invoke $row.automationId -a $AppPid
+    if ($LASTEXITCODE -ne 0) { throw 'Could not reopen the original task.' }
+    winapp ui wait-for "Todo.Detail.Title" --value "M4 recurring task" -a $AppPid -t 5000
+}
+
 Test-UI "Created date uses the app's English language" {
     $expectedCreated = 'Created {0}' -f $today.ToString('ddd, d MMM', $culture)
     winapp ui wait-for $expectedCreated -a $AppPid -t 3000

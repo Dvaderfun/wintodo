@@ -209,24 +209,36 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
+        <Button
+            x:Uid="DetailCloseButton"
+            Width="32"
+            Height="32"
+            Padding="0"
+            HorizontalAlignment="Right"
+            AutomationProperties.AutomationId="Todo.Detail.Close"
+            Command="{x:Bind ViewModel.CloseCommand, Mode=OneWay}"
+            Style="{StaticResource SubtleButtonStyle}">
+            <FontIcon Glyph="&#xE711;" />
+        </Button>
+
         <InfoBar
             x:Uid="DetailErrorBar"
-            Margin="0,0,0,8"
+            Grid.Row="1"
             AutomationProperties.AutomationId="Todo.Detail.Error"
             IsClosable="False"
             IsOpen="{x:Bind ViewModel.IsErrorOpen, Mode=OneWay}"
             Message="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
             Severity="Error" />
 
-        <Grid Grid.Row="1" ColumnSpacing="4">
+        <Grid Grid.Row="2" Margin="0,8,0,0" ColumnSpacing="4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="32" />
                 <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="32" />
                 <ColumnDefinition Width="32" />
             </Grid.ColumnDefinitions>
             <ToggleButton
@@ -285,6 +297,7 @@
                 Width="32"
                 Height="32"
                 Padding="0"
+                VerticalAlignment="Top"
                 AutomationProperties.AutomationId="Todo.Detail.Importance"
                 AutomationProperties.Name="{x:Bind local:TaskDetailView.ImportanceName(ViewModel.IsImportant), Mode=OneWay}"
                 Command="{x:Bind ViewModel.ToggleImportanceCommand, Mode=OneWay}"
@@ -300,28 +313,17 @@
                     Foreground="{ThemeResource ListAccentBrush}"
                     Glyph="{x:Bind local:TaskDetailView.ImportanceGlyph(ViewModel.IsImportant), Mode=OneWay}" />
             </ToggleButton>
-            <Button
-                x:Uid="DetailCloseButton"
-                Grid.Column="3"
-                Width="32"
-                Height="32"
-                Padding="0"
-                AutomationProperties.AutomationId="Todo.Detail.Close"
-                Command="{x:Bind ViewModel.CloseCommand, Mode=OneWay}"
-                Style="{StaticResource SubtleButtonStyle}">
-                <FontIcon Glyph="&#xE711;" />
-            </Button>
         </Grid>
 
         <Rectangle
-            Grid.Row="2"
+            Grid.Row="3"
             Height="1"
             Margin="0,12"
             Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
         <ListView
             x:Name="StepsList"
-            Grid.Row="3"
+            Grid.Row="4"
             MaxHeight="180"
             AutomationProperties.AutomationId="Todo.Detail.Steps"
             AllowDrop="True"
@@ -342,7 +344,7 @@
             </ListView.ItemContainerTransitions>
         </ListView>
 
-        <Grid Grid.Row="4" Height="36" ColumnSpacing="4">
+        <Grid Grid.Row="5" Height="36" ColumnSpacing="4">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="32" />
                 <ColumnDefinition Width="*" />
@@ -370,14 +372,14 @@
         </Grid>
 
         <Rectangle
-            Grid.Row="5"
+            Grid.Row="6"
             Height="1"
             Margin="0,12"
             Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
 
         <ScrollViewer
             x:Name="DetailBodyViewport"
-            Grid.Row="6"
+            Grid.Row="7"
             HorizontalScrollBarVisibility="Disabled"
             HorizontalScrollMode="Disabled"
             VerticalScrollBarVisibility="Auto"
@@ -795,7 +797,7 @@
             </Grid>
         </ScrollViewer>
 
-        <Grid Grid.Row="7" Margin="0,12,0,0">
+        <Grid Grid.Row="8" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="32" />

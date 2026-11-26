@@ -125,8 +125,13 @@ if (Get-SearchMatches "m4-attachment.txt") {
     throw "Attachment remained visible after removal."
 }
 
+# UIA can remove the attachment while the restarted window is still in the background.
+winapp ui focus "Todo.Detail.Close" -a $AppPid
+if ($LASTEXITCODE -ne 0) { throw "Could not focus Close in the restarted detail pane." }
 winapp ui send-keys "escape" -a $AppPid --via send-input
+if ($LASTEXITCODE -ne 0) { throw "Could not send Escape to the restarted detail pane." }
 winapp ui wait-for "Todo.Detail.Title" -a $AppPid --gone -t 3000
+if ($LASTEXITCODE -ne 0) { throw "Escape did not dismiss the restarted detail pane." }
 
 @{
     name = "M4 restart round-trip"

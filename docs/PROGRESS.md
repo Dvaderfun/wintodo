@@ -15,6 +15,9 @@ Row completion and My Day edits update the list and open detail; all-day tasks
 keep their calendar date in Planned and in accessible row labels. The Store
 version below predates these changes.
 
+On `dev`, the [Close button sits above the task title](#2026-11-26--separate-close-from-the-task-title-in-the-detail-pane-m4).
+The private DEV installer below predates this layout.
+
 My Day Suggestions (UX-19) is implemented under ADR-025.
 The right-hand sidebar opens from the header beside the overflow menu and lists overdue
 tasks under Earlier and future tasks under Later. Recently added appears immediately
@@ -402,6 +405,24 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-26 — Separate Close from the task title in the detail pane (M4)
+
+Close now sits alone at the top right in both the loading preview and the editor.
+The completion circle, title and importance star share the row below. Hovering
+over the × says “Close task details”; the trash button stays in the footer.
+
+The x64 Debug build had no warnings; all 763 unit tests passed without skips.
+The WintodoTest detail gate measured Close above all three task controls and
+reopened the same task by its original ID. The screenshot and WinUI review
+confirmed the separation. All ten first-phase checks passed on both runs.
+The full M4 gate remains pending: the first restart verified the saved task
+but could not send Escape to a background window. The restart check now
+focuses Close before sending Escape and verifies dismissal before recording a
+pass. The rerun timed out waiting for the app to exit before it reached that
+check; the note typed immediately before closing was present in the test
+database. Logs: `run-m4-gate-20261126-204907.log` and
+`run-m4-gate-20261126-205614.log`.
 
 ### 2026-11-26 — Fix the DEV Mica theme-switch crash and completed-row colors (M8)
 
