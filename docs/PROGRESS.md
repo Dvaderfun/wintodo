@@ -21,9 +21,11 @@ tasks under Earlier and future tasks under Later. Recently added appears immedia
 above No Due Date. Add and complete actions preserve the source
 list and use existing undo and recurrence paths.
 
-**Private DEV installer:** Wintodo DEV **1.0.1.273** is the signed x64 Native
-AOT build of `38d554bc`. It [switches list icons and their colors together,
-and updates the sidebar in place when the window theme changes](#2026-11-26--update-list-icons-with-navigation-and-the-window-theme-m8).
+**Private DEV installer:** Wintodo DEV **1.0.1.275** is the signed x64 Native
+AOT build of `a52353ed`. It [fixes the Mica crash after restarting with an
+explicit theme and restores completed checkmark contrast in Light mode](#2026-11-26--fix-the-dev-mica-theme-switch-crash-and-completed-row-colors-m8).
+It keeps .273's fix to [switch list icons and their colors together
+and update the sidebar in place when the window theme changes](#2026-11-26--update-list-icons-with-navigation-and-the-window-theme-m8).
 It retains .270's scrolling correction: during a large vertical mouse-wheel jump it
 [prepares the visible cards before painting](#2026-11-25--prepare-the-visible-cards-before-presenting-a-large-wheel-move-m8).
 In the [installed-package tests](PERF.md#signed-dev-task-list-visibility-during-fast-wheel-scrolling-2026-11-25),
@@ -418,6 +420,38 @@ checkmark before the first switch. The shell now retains a brush per theme
 and updates its color when the list changes, so realized rows and their checks
 resolve against the same window theme. Debug x64 built without warnings;
 all 763 unit tests passed.
+
+On the self-contained Debug build, the same saved-Light restart and first
+switch to Dark passed, followed by repeated changes from Completed and a
+rapid keyboard sequence. In the guest, the Light row fill was `#003E92` on
+both launch and return to Light; the measured checkmark contrast was 6.70:1
+in Light and 5.02:1 in Dark. All five sampled Completed headers had green
+icons. Evidence: `category-colors/1a9d3f62b9fd4c468f4fc0949a482b63`.
+
+The signed x64 Native AOT installer **1.0.1.275** (`a52353ed`) passed the
+signature, package and privacy checks. A clean WintodoTest guest verified the
+installed files against the MSIX, then passed the same 1,000-task restart,
+eight theme switches and rapid keyboard changes that follow the restart.
+Cold and switched Light rows both measured 6.70:1 check contrast, up from
+1.26:1 on .273. Dark rows measured 5.02:1. The six smart/default icons and
+custom list dot matched both sidebar palettes, all five sampled Completed
+headers were green, and the custom list's header dot was orange after
+leaving Completed. See `tests/ui/artifacts/category-colors/bb51fc5ec3f8431ba98d950c9c5f6583`;
+the signed .273 reproduction is `category-colors/d02fb70f3ede4382aee522250b5c7fd9`.
+
+The self-contained Debug M8 accessibility gate passed 17/17
+(`m8/run-20261126-165800`). The selected and unselected sidebar icons were
+legible in all four Windows contrast themes; the guest palette was restored.
+
+The signed startup capture `startup-placement/35504fb06a8a403e92c5df151541d579`
+showed a dark logo and dark list from a saved Dark preference on light Windows.
+That launch and its sampled handoff passed, but the full run failed: the HWND
+observer missed the hidden-to-visible boundary in the separate interrupted-import
+run. Recovery finished and its task appeared; no crash was observed.
+The unchanged repeat (`startup-placement/a2376393023e432fb5d25217d70cb5b9`)
+again passed normal, maximized and saved-Dark launches, but missed the same
+boundary in recovery. Neither full startup run nor its overall pixel checker
+is counted as passed.
 
 ### 2026-11-26 — Update list icons with navigation and the window theme (M8)
 

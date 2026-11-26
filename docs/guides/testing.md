@@ -144,7 +144,7 @@ explicit opt-in above. The VM being unavailable does not authorize host automati
 To check list icon colors on an installed DEV build, run this from the host:
 
 ```powershell
-$preview = 'artifacts/dev-preview/1.0.1.273-38d554bc'
+$preview = 'artifacts/dev-preview/1.0.1.275-a52353ed'
 .\scripts\Invoke-VmGate.ps1 -Gate run-category-colors-gate.ps1 -NoWarmup -Include $preview `
     -GateArguments '-DevPackageDirectory',$preview
 ```
@@ -152,7 +152,8 @@ $preview = 'artifacts/dev-preview/1.0.1.273-38d554bc'
 The gate uses a dark Windows desktop and restarts the app with a saved Light
 preference and 1,000 completed tasks. It checks the completed row's fill,
 checkmark and text on launch and after switches, both sidebar palettes, rapid
-keyboard changes and the All → Completed header transition. Without
+keyboard changes, the All → Completed header transition and the accent dot
+when returning to a custom list. Without
 `-DevPackageDirectory` it tests the Debug
 layout instead; use a self-contained Windows App SDK layout if the guest lacks
 the corresponding runtime.
