@@ -27,14 +27,15 @@ owner's acknowledgement first (`AGENTS.md`, Working style).
 | [016](ADR-016-microsoft-todo-import.md) | One-way Microsoft To Do import through Microsoft Graph | accepted |
 | [017](ADR-017-recoverable-synced-task-moves.md) | Durable recovery for synced task moves, steps and undo | accepted |
 | [018](ADR-018-direct-msix-first-release.md) | Direct MSIX first release with preserved production launch controls | distribution superseded by ADR-019; launch policy retained |
-| [019](ADR-019-store-first-source-available-release.md) | Store-first under Univera LLC; free self-builds with commercial redistribution reserved | accepted |
+| [019](ADR-019-store-first-source-available-release.md) | Store-first under Univera LLC; free self-builds with commercial redistribution reserved | source licence superseded by ADR-027; Store-first route retained |
 | [020](ADR-020-pin-sdk-with-lockfiles.md) | Service the exact .NET SDK and its reviewed lockfiles together | accepted |
 | [021](ADR-021-store-package-icon-proposal.md) | Use Glide for the Wintodo package icons | accepted |
 | [022](ADR-022-public-free-store-launch.md) | Launch free in the public Store without a tester group; retain manual publication | accepted |
-| [023](ADR-023-first-party-rights-and-draft-artwork.md) | Reserve official branding and monetization; retain eight backgrounds in the Store draft | accepted |
+| [023](ADR-023-first-party-rights-and-draft-artwork.md) | Reserve official branding and monetization; retain eight backgrounds in the Store draft | source licence and unverified backgrounds superseded by ADR-027; brand reservation retained |
 | [024](ADR-024-glide-taskbar-sizing.md) | Enlarge Glide at taskbar sizes | accepted |
 | [025](ADR-025-my-day-suggestions.md) | Add rule-based My Day suggestions | accepted |
 | [026](ADR-026-branded-startup-preview.md) | Try Glide while the first view loads in Debug and private DEV | proposed |
+| [027](ADR-027-mpl-2-0-open-source-license.md) | Relicence first-party source under MPL-2.0, reserve brand assets, and replace list backgrounds with verified CC0 photographs | accepted (pending contributor consent in #14 before `main`) |
 
 ADR-001…007 were written inline in `PLAN.md` §2 and moved here verbatim by ADR-010.
 

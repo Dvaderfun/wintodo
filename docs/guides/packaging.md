@@ -10,7 +10,9 @@ Store signing/certification and
 data-preserving updates of the production family remain to be tested.
 [ADR-019](../adr/ADR-019-store-first-source-available-release.md)
 selects Store-first under Univera LLC; no purchased CA certificate or direct
-production-signing job is needed for that route. See
+production-signing job is needed for that route. [ADR-027](../adr/ADR-027-mpl-2-0-open-source-license.md)
+relicences first-party source under [MPL-2.0](../../LICENSE) while keeping
+official brand and visual assets reserved in [TRADEMARKS.md](../../TRADEMARKS.md). See
 [Store preparation](../plans/deployment-store-first-preparation.md) and the
 [signing/licensing recommendation](../plans/deployment-signing-licensing-recommendation.md).
 The remaining decisions, owner-run checks and clean-install premise are tracked

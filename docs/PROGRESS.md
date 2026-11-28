@@ -75,9 +75,14 @@ Store-first under **Univera LLC** is selected in
 ADR-018's first distribution route. DEP-12 policy A retains documented launch
 controls. Wintodo/current artwork subject to rights, public source after review,
 a fresh production installation with data-preserving future updates, first
-`v1.0.0` / `1.0.0.0`, and support@univera.app are selected. The active
-[source licence](../LICENSE.md) allows free self-builds and unbranded community
-copies; the individual author retains the official brand and monetization. The
+`v1.0.0` / `1.0.0.0`, and support@univera.app are selected. On `dev`, [ADR-027](adr/ADR-027-mpl-2-0-open-source-license.md) switches
+first-party source code and documentation to [MPL-2.0](../LICENSE) with
+official brand and visual assets reserved in [TRADEMARKS.md](../TRADEMARKS.md),
+inbound = outbound contributions in [CONTRIBUTING.md](../CONTRIBUTING.md), and
+all eight list backgrounds replaced with verified CC0 1.0 photographs
+([PROVENANCE.md](../src/Wintodo.App/Assets/ListBackgrounds/PROVENANCE.md)),
+pending recorded written consent from `@ramarahul` in
+[#14](https://github.com/Dvaderfun/wintodo/issues/14) before merging to `main`. The
 [reserved Store identity](plans/deployment-store-first-preparation.md#owner-supplied-identity-handoff)
 and version `1.0.0.0` are in both unsigned packages. Each contains the nine
 approved [Glide icon files](adr/ADR-021-store-package-icon-proposal.md).
@@ -405,6 +410,40 @@ The [first submission readback](plans/deployment-store-first-preparation.md#part
 ---
 
 ## History
+
+### 2026-11-28 — Switch first-party source licence to MPL-2.0 with separate brand policy (ADR-027)
+
+Prepared the switch from the custom source-available licence to the OSI-approved
+**Mozilla Public License 2.0 (`MPL-2.0`)** on `dev` to support open-source
+growth and credibility alongside a planned paid **Wintodo Cloud Sync** freemium
+service:
+
+- Replaced `LICENSE.md` with verbatim official `MPL-2.0` text in `LICENSE` for
+  clean GitHub/SPDX detection.
+- Added `TRADEMARKS.md` reserving the **Wintodo** name, **Glide** icons/logos,
+  Store identity, and promotional visuals (`All Rights Reserved`).
+- Replaced all eight unverified list background JPEGs in
+  `src/Wintodo.App/Assets/ListBackgrounds/` (`Coast`, `Field`, `Forest`,
+  `Graphite`, `Indigo`, `Mist`, `Petals`, `Sunrise`) with verified **CC0 1.0
+  Universal** photographs from Wikimedia Commons, normalized to metadata-free
+  `2560x1600 (16:10)` JPEGs (JFIF `0xFFE0` only, zero EXIF/IPTC/XMP), and recorded
+  exact source links, credits, and SHA-256 hashes in
+  `src/Wintodo.App/Assets/ListBackgrounds/PROVENANCE.md`.
+- Added `CONTRIBUTING.md` establishing inbound = outbound `MPL-2.0` terms with
+  no CLA.
+- Opened [GitHub issue #14](https://github.com/Dvaderfun/wintodo/issues/14)
+  requesting written `MPL-2.0` relicensing confirmation from `@ramarahul`
+  (`Chintalapati Venkata Rama Rahul`, commits `6a67c4a`, `bfe05eb`, `9fb7711`,
+  `a301e1c` via #8 and #11).
+- Recorded `ADR-027` superseding the source-licence selections in `ADR-019` §3
+  and the source licence / unverified background retention in `ADR-023`
+  (preserving Univera LLC Store publishing and brand reservation), and updated
+  `README.md`, `PLAN.md`, `docs/README.md`, `docs/adr/README.md`,
+  `docs/guides/packaging.md`, `docs/guides/release-checklist.md`, and
+  `docs/plans/wintodo-source-available-license-draft.md`.
+
+**Open gate before merging to `main` / public announcement:** record written
+consent from `@ramarahul` on [#14](https://github.com/Dvaderfun/wintodo/issues/14).
 
 ### 2026-11-26 — Separate Close from the task title in the detail pane (M4)
 

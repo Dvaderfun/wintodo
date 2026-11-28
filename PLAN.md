@@ -634,8 +634,11 @@ single pass), then `/winui-code-review`.
 ### M10 — Packaging and release
 
 Selected first production route: [ADR-019](docs/adr/ADR-019-store-first-source-available-release.md)
-uses Store MSIX under Univera LLC, Microsoft-managed Store signing, public
-source after review and free self-builds with commercial redistribution reserved.
+uses Store MSIX under Univera LLC and Microsoft-managed Store signing;
+[ADR-027](docs/adr/ADR-027-mpl-2-0-open-source-license.md) switches first-party
+source to [MPL-2.0](LICENSE) with brand and visual assets reserved separately
+in [TRADEMARKS.md](TRADEMARKS.md) (pending external contributor consent before
+public release / `main`).
 Development test signatures remain groundwork; direct production signing and
 downloads are a separate later route. The Store identity and `1.0.0.0` are in
 the manifest. Rights, Store certification and customer/runtime gates remain pending.

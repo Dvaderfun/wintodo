@@ -5,7 +5,7 @@
 <h1 align="center">Wintodo</h1>
 
 <p align="center">
-  <strong>A free, native task manager for Windows 11.</strong><br>
+  <strong>A free, open-source native task manager for Windows 11.</strong><br>
   Plan your day offline. Keep your lists on your PC or sync them with your own CalDAV server.
 </p>
 
@@ -21,7 +21,7 @@
 <p align="center">
   <a href="docs/releases/INSTALLATION.md#windows-and-architecture"><img src="https://img.shields.io/badge/Windows_11-24H2%2B-137D9C" alt="Requires Windows 11 24H2 or later"></a>
   <a href="docs/releases/INSTALLATION.md#windows-and-architecture"><img src="https://img.shields.io/badge/architecture-x64_%C2%B7_ARM64-087F89" alt="Supported architectures: x64 and ARM64"></a>
-  <a href="LICENSE.md"><img src="https://img.shields.io/badge/licence-source--available-126C64" alt="Wintodo Source-Available Licence"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/licence-MPL--2.0-126C64" alt="Mozilla Public License 2.0"></a>
 </p>
 
 <picture>
@@ -59,15 +59,13 @@ dotnet test  Wintodo.sln -p:Platform=x64
 .\BuildAndRun.ps1
 ```
 
-Details: [docs/guides/build-and-run.md](docs/guides/build-and-run.md).
+Details: [docs/guides/build-and-run.md](docs/guides/build-and-run.md). Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Licence
+## Licence and trademarks
 
-Wintodo is distributed under the [Wintodo Source-Available Licence 1.0](LICENSE.md):
-
-- Free to inspect, modify, and self-build for personal or internal business use.
-- Free unbranded community redistributions are permitted with matching source and notices.
-- The individual author retains the **Wintodo** brand and commercial licensing rights; **Univera LLC** publishes the official Microsoft Store release.
+- First-party source code and documentation are licensed under the [Mozilla Public License 2.0 (MPL-2.0)](LICENSE).
+- The **Wintodo** name, **Glide** icon/logo, and official Microsoft Store identity are **not** licensed under MPL-2.0 and remain reserved to the individual author; **Univera LLC** publishes the official Microsoft Store release. See [TRADEMARKS.md](TRADEMARKS.md) before redistributing builds or forks.
+- Third-party components keep their own licences (see `src/Wintodo.App/Assets/ThirdPartyNotices.txt`).
 
 ## Documentation
 
@@ -77,6 +75,8 @@ Wintodo is distributed under the [Wintodo Source-Available Licence 1.0](LICENSE.
 | Product scope, milestones, budgets | [PLAN.md](PLAN.md) |
 | Measured performance log | [docs/PERF.md](docs/PERF.md) |
 | Privacy policy | [docs/releases/PRIVACY.md](docs/releases/PRIVACY.md) |
+| Contributing guide | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Trademarks & brand assets | [TRADEMARKS.md](TRADEMARKS.md) |
 | Current progress & release history | [docs/PROGRESS.md](docs/PROGRESS.md) |
 | Full documentation index | [docs/README.md](docs/README.md) |
 | Rules for AI coding agents | [AGENTS.md](AGENTS.md) |

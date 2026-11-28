@@ -9,12 +9,12 @@ M9 performance remains owner-deferred.
 
 | Decision | Current value | Needed before |
 |---|---|---|
-| App display name | Wintodo and the Glide icon selected; rights to eight retained backgrounds pending | Final listing and artwork acceptance |
+| App display name | Wintodo and the Glide icon selected; all eight list backgrounds replaced with verified CC0 1.0 photographs (`src/Wintodo.App/Assets/ListBackgrounds/PROVENANCE.md`, ADR-027) | Next Store submission updates backgrounds |
 | Package identity / publisher | Partner Center reservation for Wintodo / Univera LLC is in the manifest | Verify actual Store-delivered package family |
 | Distribution | Store-first selected (ADR-019); public source after review selected; actual protection/visibility/submission pending | Store certification and release CI |
 | Release version | Manifest `1.0.0.0` on the reserved family; first tag is `v1.0.0` when authorized | Keep the test family separate and verify a staged higher-version update |
 | Production overrides | DEP-12 A selected: retain/document established local database/clock controls | Default-storage/time, precedence and final installed-package gates |
-| Source licence / contact | [First-party source licence](../../LICENSE.md); individual rights holder, official publisher Univera LLC; support@univera.app | Preserve third-party rights and separate Store customer terms |
+| Source licence / contact | [MPL-2.0](../../LICENSE) for code + [TRADEMARKS.md](../../TRADEMARKS.md) for reserved brand/visuals ([ADR-027](../adr/ADR-027-mpl-2-0-open-source-license.md)); official publisher Univera LLC; support@univera.app | Record external contributor consent in #14 before merging to `main`; preserve third-party rights and Store terms |
 
 For Store distribution, use the exact reserved Partner Center identity and
 publisher. For direct distribution, the signing certificate subject must match

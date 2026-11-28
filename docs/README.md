@@ -26,9 +26,11 @@ job and the separate update PRs and reports on GitHub.
 |---|---|
 | [Deployment readiness and GitHub release](plans/deployment-readiness.md) | Audit remediation, data/API security, privacy, CI/CD, signing and final deployment gates (`DEP-01`–`DEP-20`) |
 | [Owner release decisions](plans/deployment-owner-decisions.md) | Selected name/artwork, future public source, fresh first release/version and remaining signer/publisher/licence values |
-| [Signing and licensing research](plans/deployment-signing-licensing-recommendation.md) | Selected Store signing and source-available policy, with researched alternatives and unresolved exact terms |
+| [Signing and licensing research](plans/deployment-signing-licensing-recommendation.md) | Selected Store signing and prior source-available policy (superseded by ADR-027), with researched alternatives |
 | [Store-first preparation](plans/deployment-store-first-preparation.md) | Exact Univera LLC Partner Center identity handoff, rights evidence and Store-signed deployment requirements |
-| [Source-available licence](../LICENSE.md) | Free self-builds and free unbranded community copies; the individual author reserves official branding and monetization |
+| [MPL-2.0 source licence](../LICENSE) | First-party source code and documentation under Mozilla Public License 2.0 (ADR-027) |
+| [Trademarks and brand assets](../TRADEMARKS.md) | Official Wintodo name, Glide icon/logo, Store identity, and excluded asset rules |
+| [Contributing guide](../CONTRIBUTING.md) | Inbound = outbound MPL-2.0 contribution terms and build/test commands |
 | [Recoverable synced moves implementation plan](plans/dep04-synced-moves.md) | DEP-04 baseline reproduction and accepted durable recovery under ADR-017 |
 | [Downloaded attachment provenance](plans/dep10-attachment-provenance.md) | DEP-10 Internet-zone metadata, Windows opening policy and verification limits |
 | [Production override policy proposal](plans/dep12-production-overrides.md) | DEP-12 launch/storage/clock inventory, affected AOT gates and concrete owner policy choices |
